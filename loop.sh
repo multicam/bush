@@ -61,16 +61,10 @@ while true; do
 #        --model opus \
 
     # Push changes after each iteration
-#    git push origin "$CURRENT_BRANCH" || {
-#        echo "Failed to push. Creating remote branch..."
-#        git push -u origin "$CURRENT_BRANCH"
-#    }
-
-    # Commit changes after each iteration
-    if [ -n "$(git status --porcelain)" ]; then
-        git add -A
-        git commit -m "Iteration $ITERATION - $MODE mode"
-    fi
+    git push origin "$CURRENT_BRANCH" || {
+        echo "Failed to push. Creating remote branch..."
+        git push -u origin "$CURRENT_BRANCH"
+    }
 
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
