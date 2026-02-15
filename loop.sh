@@ -60,12 +60,24 @@ while true; do
         --verbose
 #        --model opus \
 
-    # Push changes after each iteration
-    git push origin "$CURRENT_BRANCH" || {
-        echo "Failed to push. Creating remote branch..."
-        git push -u origin "$CURRENT_BRANCH"
-    }
+    # Commit and push changes after each iteration
+    if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        git commit -m "Iteration $ITERATION - $MODE mode"
+        git push origin "$CURRENT_BRANCH" || {
+            echo "Failed to push. Setting upstream and retrying..."
+            git push -u origin "$CURRENT_BRANCH"
+        }
+    fi
 
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
+
+    # In plan mode, check for pause gate between iterations
+    # Usage: touch .pause → edit specs → rm .pause
+    if [ "$MODE" = "plan" ] && [ -f ".pause" ]; then
+        echo "⏸ Paused. Edit specs, then: rm .pause"
+        while [ -f ".pause" ]; do sleep 2; done
+        echo "Resuming..."
+    fi
 done

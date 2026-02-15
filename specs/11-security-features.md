@@ -15,6 +15,7 @@ Bush provides industry-leading security, scalability, and admin controls for con
 - Block screen recordings
 - Full content protection
 
+
 ## Access Control
 
 ### Authentication
