@@ -3,10 +3,6 @@
 ## Summary
 The Bush Transfer app enables quick upload and download of large files or entire projects with a single click. It provides fast, efficient, and reliable bulk transfers.
 
-## Download Options
-- **macOS (Apple Silicon)**: DMG installer
-- **macOS (Intel)**: DMG installer
-- **Windows**: EXE installer
 
 ## Key Features
 

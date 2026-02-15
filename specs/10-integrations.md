@@ -39,9 +39,6 @@ Bush integrates with leading creative tools to keep workflows seamless and creat
 - Camera to Cloud compatible devices
 - Professional film equipment
 
-## API & Developer Resources
-- Developer documentation: https://developer.adobe.com/frameio/
-
 ## Integration Benefits
 | Integration | Key Benefit |
 |-------------|-------------|

@@ -464,7 +464,7 @@ Account
 - 540p
 - 720p
 - 1080p
-- 4K (Pro+)
+- 4K
 
 ## 9.3 JKL Shuttle Controls
 

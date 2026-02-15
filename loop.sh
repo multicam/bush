@@ -56,14 +56,15 @@ while true; do
     cat "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
-        --model opus \
+        --model sonnet \
         --verbose
+#        --model opus \
 
     # Push changes after each iteration
-    git push origin "$CURRENT_BRANCH" || {
-        echo "Failed to push. Creating remote branch..."
-        git push -u origin "$CURRENT_BRANCH"
-    }
+#    git push origin "$CURRENT_BRANCH" || {
+#        echo "Failed to push. Creating remote branch..."
+#        git push -u origin "$CURRENT_BRANCH"
+#    }
 
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
