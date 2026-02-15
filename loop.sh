@@ -66,6 +66,12 @@ while true; do
 #        git push -u origin "$CURRENT_BRANCH"
 #    }
 
+    # Commit changes after each iteration
+    if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        git commit -m "Iteration $ITERATION - $MODE mode"
+    fi
+
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
 done
