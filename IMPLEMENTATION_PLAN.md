@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System IN PROGRESS (types, schema, service, tests done; integration tests and middleware pending), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -232,26 +232,26 @@ This section is the single source of truth for what to do next. It lists every a
     - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
     - **NOTE**: WorkOS handles identity verification, social auth, MFA, SSO, and token issuance. This may be faster than originally estimated (custom auth). Timeline kept at 3 days to account for role system, guest access, and account switcher complexity.
 
-15. **[1.4] Build Permission System** [2 days] -- IN PROGRESS
+15. **[1.4] Build Permission System** [2 days] -- COMPLETED
     - Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only -- DONE (PermissionLevel type with hierarchy)
     - Permission models: WorkspacePermission, ProjectPermission, FolderPermission -- DONE (schema tables added)
     - Permission inheritance: Workspace > Project > Folder (cannot lower inherited permissions) -- DONE (service with inheritance logic)
-    - Restricted Project/Folder logic (breaks inheritance chain, invite-only)
-    - Access Groups for bulk permission management (Team+ feature -- plan gate check)
-    - Permission check middleware for API routes -- PENDING
+    - Restricted Project/Folder logic (breaks inheritance chain, invite-only) -- DONE (service handles restricted resources)
+    - Access Groups for bulk permission management (Team+ feature -- plan gate check) -- PENDING (deferred to Phase 5)
+    - Permission check middleware for API routes -- DONE (src/permissions/middleware.ts)
     - Guest role constraints: 1 project max, cannot invite others, cannot delete -- DONE (defined in types)
-    - Extensive permission edge-case tests (see permission matrices in `specs/00-complete-support-documentation.md` 2.4, 2.5) -- DONE (31 unit tests for permission types)
-    - Integration tests with database -- PENDING
+    - Extensive permission edge-case tests (see permission matrices in `specs/00-complete-support-documentation.md` 2.4, 2.5) -- DONE (31 unit tests, 18 integration tests)
+    - Integration tests with database -- DONE (src/permissions/permissions-integration.test.ts)
     - **Depends on**: 1.2, 1.3
     - **Blocks**: 1.5, all Phase 2+
     - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.5, `specs/11-security-features.md`
 
-16. **[QW4] Build Error Handling Utilities** [0.5 day, alongside 1.5] -- NOT STARTED
-    - Standardized API error response format matching `specs/00-atomic-features.md` Section 18.7-18.8
-    - HTTP error code mapping: 400, 401, 403, 404, 409, 422, 429, 500, 503
-    - Error class hierarchy: ValidationError, AuthError, ForbiddenError, NotFoundError, RateLimitError
-    - Client-side error recovery patterns (retry logic, error boundary components)
-    - Structured error logging (JSON with request_id, user_id, timestamp, level)
+16. **[QW4] Build Error Handling Utilities** [0.5 day, alongside 1.5] -- COMPLETED
+    - Standardized API error response format matching `specs/00-atomic-features.md` Section 18.7-18.8 -- DONE (JSON:API format)
+    - HTTP error code mapping: 400, 401, 403, 404, 409, 422, 429, 500, 503 -- DONE
+    - Error class hierarchy: ValidationError, AuthError, ForbiddenError, NotFoundError, RateLimitError -- DONE (src/errors/index.ts)
+    - Client-side error recovery patterns (retry logic, error boundary components) -- PENDING (deferred to frontend work)
+    - Structured error logging (JSON with request_id, user_id, timestamp, level) -- DONE (errorLogger utility)
     - **Rationale**: Every API route and every frontend fetch needs consistent error handling
     - **Spec refs**: `specs/00-atomic-features.md` Sections 18.7-18.8
 
@@ -972,7 +972,7 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 8-10 (may complete faster than estimated due to WorkOS delegation)
 - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
 
-### 1.4 Permission System [IN PROGRESS]
+### 1.4 Permission System [COMPLETED]
 
 **Completed:**
 - PermissionLevel type with 5-level hierarchy (full_access > edit_and_share > edit > comment_only > view_only)
@@ -980,12 +980,12 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - Permission service with inheritance logic (cannot lower inherited permissions)
 - Guest role constraints defined (1 project max, cannot invite, cannot delete)
 - Unit tests for permission types (31 tests)
-
-**Remaining:**
-- Integration tests with database
-- Permission middleware for API routes
-- Access Groups for bulk permission management (Team+ feature)
+- Integration tests with database (18 tests in src/permissions/permissions-integration.test.ts)
+- Permission middleware for API routes (src/permissions/middleware.ts)
 - Restricted Project/Folder logic (breaks inheritance chain, invite-only)
+
+**Deferred to Phase 5:**
+- Access Groups for bulk permission management (Team+ feature -- requires plan gate)
 
 - **Depends on**: 1.2, 1.3
 - **Blocks**: 1.5, all Phase 2+

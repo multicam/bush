@@ -14,7 +14,7 @@ import {
   folderPermissions,
   accountMemberships,
 } from "../db/schema.js";
-import { eq, and, or, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { AccountRole } from "../auth/types.js";
 import type {
   PermissionLevel,
@@ -527,15 +527,9 @@ export const permissionService = {
       return false;
     }
 
-    // Check each account for project permissions
-    for (const membership of guestMemberships) {
-      const projectCount = await this.getUserProjectCount(userId);
-      if (projectCount >= GUEST_CONSTRAINTS.MAX_PROJECTS) {
-        return true;
-      }
-    }
-
-    return false;
+    // Check project count for guest
+    const projectCount = await this.getUserProjectCount(userId);
+    return projectCount >= GUEST_CONSTRAINTS.MAX_PROJECTS;
   },
 
   /**
@@ -547,12 +541,6 @@ export const permissionService = {
       .select()
       .from(projectPermissions)
       .where(eq(projectPermissions.userId, userId));
-
-    // Count workspace permissions (each gives access to all non-restricted projects)
-    const workspacePerms = await db
-      .select()
-      .from(workspacePermissions)
-      .where(eq(workspacePermissions.userId, userId));
 
     // This is a simplified count - in reality we'd need to count unique projects
     // For the guest limit check, direct permissions are the main concern

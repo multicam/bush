@@ -5,7 +5,6 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  PermissionLevel,
   PERMISSION_HIERARCHY,
   getPermissionIndex,
   comparePermissions,
