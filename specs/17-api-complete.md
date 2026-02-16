@@ -148,6 +148,8 @@ HTTP 204 with empty body. Used for DELETE operations and some updates.
     {
       "title": "Validation Error",
       "detail": "Name must be between 1 and 255 characters",
+      "status": 422,
+      "code": "validation_error",
       "source": {
         "pointer": "/data/attributes/name"
       }
@@ -155,6 +157,8 @@ HTTP 204 with empty body. Used for DELETE operations and some updates.
   ]
 }
 ```
+
+Error codes: `validation_error`, `bad_request`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `rate_limit_exceeded`, `service_unavailable`, `internal_error`.
 
 Multiple errors can be returned in a single response.
 
@@ -184,23 +188,27 @@ Multiple errors can be returned in a single response.
 All list endpoints use cursor-based pagination. Offset-based pagination is not supported.
 
 **Query parameters:**
-- `page[size]` -- Number of items per page (default: 50, max: 100)
-- `page[cursor]` -- Opaque cursor token from previous response
-- `include_total_count` -- Boolean, include `total_count` in response (default: false, adds query overhead)
+- `limit` -- Number of items per page (default: 50, max: 100)
+- `cursor` -- Opaque base64url cursor token from previous response
 
 **Example:**
 
 ```http
-GET /v4/projects/xyz/files?page[size]=25&include_total_count=true
+GET /v4/projects/xyz/files?limit=25
 ```
 
 ```json
 {
   "data": [ ... ],
   "links": {
-    "next": "/v4/projects/xyz/files?page[size]=25&page[cursor]=eyJpZCI6ImFiYzEyMyIsImRpciI6Im5leHQifQ=="
+    "self": "/v4/projects/xyz/files?limit=25",
+    "next": "/v4/projects/xyz/files?limit=25&cursor=eyJpZCI6ImFiYzEyMyJ9"
   },
-  "total_count": 142
+  "meta": {
+    "total_count": 142,
+    "page_size": 25,
+    "has_more": true
+  }
 }
 ```
 
@@ -220,47 +228,44 @@ GET /v4/projects/xyz/files?page[size]=25&include_total_count=true
 
 ### 5.1 Algorithm
 
-Leaky bucket algorithm backed by Redis. Each endpoint category has its own bucket.
+Sliding window algorithm backed by Redis sorted sets. Each endpoint category has its own rate limit configuration. Requests are tracked per IP (or per account when authenticated).
 
 ### 5.2 Limits
 
-| Endpoint Category | Rate | Bucket Size |
-|-------------------|------|-------------|
-| Read (GET) | 100 req/sec | 200 |
-| Write (POST, PUT, PATCH) | 30 req/sec | 60 |
-| Delete (DELETE) | 10 req/sec | 20 |
-| Search | 10 req/sec | 20 |
-| Bulk operations | 5 req/sec | 10 |
-| Auth endpoints | 10 req/min | 10 |
-| File upload initiation | 30 req/sec | 60 |
-| Webhooks management | 10 req/min | 10 |
+| Endpoint Category | Rate | Window |
+|-------------------|------|--------|
+| Standard (all API) | 100 req/min | 60s |
+| Auth endpoints | 10 req/min | 60s |
+| Upload endpoints | 20 req/min | 60s |
+| Search endpoints | 30 req/min | 60s |
+| Webhook endpoints | 1000 req/min | 60s |
 
-Limits are per-account, not per-user.
+Configurable via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` environment variables.
 
 ### 5.3 Response Headers
 
 Every response includes rate limit headers:
 
 ```
-x-ratelimit-limit: 100
-x-ratelimit-remaining: 87
-x-ratelimit-reset: 1706123456
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1706123456
 ```
 
 | Header | Description |
 |--------|-------------|
-| `x-ratelimit-limit` | Maximum requests allowed in the window |
-| `x-ratelimit-remaining` | Requests remaining in the current window |
-| `x-ratelimit-reset` | Unix timestamp when the bucket refills |
+| `X-RateLimit-Limit` | Maximum requests allowed in the window |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
 
 ### 5.4 Rate Limit Exceeded Response
 
 ```http
 HTTP/1.1 429 Too Many Requests
-Retry-After: 2
-x-ratelimit-limit: 100
-x-ratelimit-remaining: 0
-x-ratelimit-reset: 1706123456
+Retry-After: 60
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1706123456
 ```
 
 ```json
@@ -926,8 +931,8 @@ SDKs handle authentication, pagination, rate limit retries, and provide typed in
 | Header | Description |
 |--------|-------------|
 | `x-request-id` | Server-generated or echoed request ID |
-| `x-ratelimit-limit` | Rate limit ceiling |
-| `x-ratelimit-remaining` | Remaining requests |
-| `x-ratelimit-reset` | Reset timestamp (Unix) |
+| `X-RateLimit-Limit` | Rate limit ceiling |
+| `X-RateLimit-Remaining` | Remaining requests |
+| `X-RateLimit-Reset` | Reset timestamp (Unix) |
 | `content-type` | `application/json; charset=utf-8` |
 | `cache-control` | Caching directives |

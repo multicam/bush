@@ -4,6 +4,7 @@
  * Client-side and server-side auth utilities for the Next.js app.
  */
 import type { AuthState, AccountRole } from "@/auth";
+import { isRoleAtLeast } from "@/auth/types";
 
 /**
  * Get the current auth state on the client side
@@ -91,18 +92,7 @@ export function hasRole(authState: AuthState, requiredRole: AccountRole): boolea
     return false;
   }
 
-  const roleHierarchy: AccountRole[] = [
-    "reviewer",
-    "guest",
-    "member",
-    "content_admin",
-    "owner",
-  ];
-
-  const userRoleIndex = roleHierarchy.indexOf(authState.currentAccount.role);
-  const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-
-  return userRoleIndex >= requiredRoleIndex;
+  return isRoleAtLeast(authState.currentAccount.role, requiredRole);
 }
 
 /**

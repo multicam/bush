@@ -8,8 +8,7 @@
 import { handleAuth } from "@workos-inc/authkit-nextjs";
 import { cookies } from "next/headers";
 import { authService } from "@/auth";
-
-const BUSH_SESSION_COOKIE = "bush_session";
+import { BUSH_SESSION_COOKIE } from "@/web/lib/session-cookie";
 
 export const GET = handleAuth({
   returnPathname: "/dashboard",
@@ -39,9 +38,9 @@ export const GET = handleAuth({
         user.id
       );
 
-      // Set Bush session cookie
+      // Set Bush session cookie (store only the session token, not the full session data)
       const cookieStore = await cookies();
-      cookieStore.set(BUSH_SESSION_COOKIE, Buffer.from(JSON.stringify(bushSession)).toString("base64"), {
+      cookieStore.set(BUSH_SESSION_COOKIE, `${bushSession.userId}:${bushSession.sessionId}`, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

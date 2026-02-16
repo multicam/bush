@@ -30,7 +30,7 @@ Examples:
 ```
 acc_abc/proj_123/ast_456/original/interview_final.mov
 acc_abc/proj_123/ast_456/proxy/720p.mp4
-acc_abc/proj_123/ast_456/thumbnail/thumb_001.jpg
+acc_abc/proj_123/ast_456/thumbnail/thumb_320.jpg
 acc_abc/proj_123/ast_456/filmstrip/strip.jpg
 acc_abc/proj_123/ast_456/hls/720p/playlist.m3u8
 ```
@@ -71,7 +71,7 @@ acc_abc/proj_123/ast_456/hls/720p/playlist.m3u8
 ### Upload Constraints
 | Constraint | Limit |
 |------------|-------|
-| Max file size | 5 TB |
+| Max file size | 10 GB |
 | Concurrent uploads per user | 10 |
 | Assets per batch upload | 500 |
 | Pre-signed URL expiry | 1 hour |
@@ -97,13 +97,13 @@ acc_abc/proj_123/ast_456/hls/720p/playlist.m3u8
 - Recently Deleted items still count until permanently deleted or 30-day expiry
 
 ### Quota Tracking
-- `accounts` table: `storage_used_bytes` (BIGINT), `storage_limit_bytes` (BIGINT)
+- `accounts` table: `storage_used_bytes` (BIGINT), `storage_quota_bytes` (BIGINT)
 - Atomic increment on upload completion: `UPDATE accounts SET storage_used_bytes = storage_used_bytes + ? WHERE id = ?`
 - Atomic decrement on permanent deletion
 - Recalculation job (weekly) to reconcile drift between DB and actual storage
 
 ### Quota Enforcement
-1. **Pre-upload check**: reject upload if `storage_used_bytes + file_size > storage_limit_bytes`
+1. **Pre-upload check**: reject upload if `storage_used_bytes + file_size > storage_quota_bytes`
 2. **Return clear error**: HTTP 413 with remaining quota in response body
 3. **Grace period**: none -- hard limit enforcement
 4. **Quota change on plan upgrade/downgrade**: immediate effect, no retroactive enforcement (over-quota accounts can't upload but aren't force-deleted)
@@ -135,7 +135,7 @@ acc_abc/proj_123/ast_456/hls/720p/playlist.m3u8
 
 ### Derivative Key Naming
 ```
-{account_id}/{project_id}/{asset_id}/thumbnail/thumb_001.jpg
+{account_id}/{project_id}/{asset_id}/thumbnail/thumb_320.jpg   # named by pixel width (320, 640, 1280)
 {account_id}/{project_id}/{asset_id}/filmstrip/strip.jpg
 {account_id}/{project_id}/{asset_id}/waveform/waveform.json
 {account_id}/{project_id}/{asset_id}/waveform/waveform.png

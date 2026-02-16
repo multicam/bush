@@ -72,14 +72,15 @@ export const RATE_LIMIT_PRESETS = {
 
 /**
  * Extract client identifier from request
- * Uses X-Forwarded-For header if behind a proxy, otherwise falls back to IP
+ * Only trusts X-Forwarded-For when TRUST_PROXY is enabled
  */
 function getDefaultIdentifier(c: Context): string {
-  // Check for forwarded header (when behind reverse proxy)
-  const forwarded = c.req.header("x-forwarded-for");
-  if (forwarded) {
-    // Take the first IP in the chain (original client)
-    return forwarded.split(",")[0].trim();
+  // Only trust X-Forwarded-For when running behind a configured trusted proxy
+  if (config.TRUST_PROXY) {
+    const forwarded = c.req.header("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0].trim();
+    }
   }
 
   // Fall back to connection remote address

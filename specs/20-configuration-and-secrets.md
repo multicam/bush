@@ -111,7 +111,7 @@ RATE_LIMIT_WINDOW_MS=60000               # 1 minute
 RATE_LIMIT_MAX_REQUESTS=100              # Per window per IP
 
 # -- Upload --
-UPLOAD_MAX_FILE_SIZE=5368709120          # 5 GB in bytes (5 TB supported via multipart)
+UPLOAD_MAX_FILE_SIZE=10737418240         # 10 GB in bytes
 UPLOAD_PRESIGNED_URL_EXPIRY=3600         # 1 hour in seconds
 UPLOAD_MULTIPART_CHUNK_SIZE=10485760     # 10 MB
 
@@ -144,7 +144,7 @@ const envSchema = z.object({
   DATABASE_BUSY_TIMEOUT: z.coerce.number().int().positive().default(5000),
 
   // Redis
-  REDIS_URL: z.string().url(),
+  REDIS_URL: z.string().min(1),
   REDIS_KEY_PREFIX: z.string().default("bush:"),
 
   // WorkOS
@@ -157,7 +157,7 @@ const envSchema = z.object({
 
   // Storage
   STORAGE_PROVIDER: z.enum(["minio", "s3", "r2", "b2"]).default("minio"),
-  STORAGE_ENDPOINT: z.string().url(),
+  STORAGE_ENDPOINT: z.string().min(1),
   STORAGE_REGION: z.string().default("us-east-1"),
   STORAGE_ACCESS_KEY: z.string().min(1),
   STORAGE_SECRET_KEY: z.string().min(1),
@@ -192,7 +192,7 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
 
   // Upload
-  UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(5368709120),
+  UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(10737418240),
   UPLOAD_PRESIGNED_URL_EXPIRY: z.coerce.number().int().positive().default(3600),
   UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
 

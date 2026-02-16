@@ -3,7 +3,7 @@
  *
  * Tests for error classes and utilities.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ValidationError,
   BadRequestError,
@@ -18,6 +18,8 @@ import {
   toMultiErrorResponse,
   toAppError,
   generateRequestId,
+  errorLogger,
+  type RequestContext,
 } from "./index.js";
 
 describe("Error Classes", () => {
@@ -229,26 +231,95 @@ describe("Error Utilities", () => {
       expect(converted).toBe(original);
     });
 
-    it("should convert Error to InternalServerError", () => {
+    it("should convert Error to InternalServerError and log it", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       const original = new Error("Something went wrong");
       const converted = toAppError(original);
 
       expect(converted).toBeInstanceOf(InternalServerError);
-      expect(converted.message).toBe("Something went wrong");
+      expect(converted.message).toBe("An unexpected error occurred");
+      expect(spy).toHaveBeenCalledWith(
+        "[toAppError] Unexpected error:",
+        "Something went wrong",
+        expect.any(String)
+      );
+      spy.mockRestore();
     });
 
-    it("should convert string to InternalServerError", () => {
+    it("should convert string to InternalServerError and log it", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       const converted = toAppError("Unknown error");
 
       expect(converted).toBeInstanceOf(InternalServerError);
-      expect(converted.message).toBe("Unknown error");
+      expect(converted.message).toBe("An unexpected error occurred");
+      expect(spy).toHaveBeenCalledWith(
+        "[toAppError] Unexpected non-Error thrown:",
+        "Unknown error"
+      );
+      spy.mockRestore();
     });
 
-    it("should convert unknown types to InternalServerError", () => {
+    it("should convert unknown types to InternalServerError and log them", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       const converted = toAppError({ weird: "object" });
 
       expect(converted).toBeInstanceOf(InternalServerError);
-      expect(converted.message).toBe("[object Object]");
+      expect(converted.message).toBe("An unexpected error occurred");
+      expect(spy).toHaveBeenCalledWith(
+        "[toAppError] Unexpected non-Error thrown:",
+        { weird: "object" }
+      );
+      spy.mockRestore();
+    });
+  });
+
+  describe("errorLogger", () => {
+    const ctx: RequestContext = {
+      requestId: "req_test123",
+      userId: "user_1",
+      accountId: "acc_1",
+    };
+
+    it("should log info messages as JSON", () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+      errorLogger.info("test message", ctx, { extra: "data" });
+      expect(spy).toHaveBeenCalledOnce();
+      const logged = JSON.parse(spy.mock.calls[0][0]);
+      expect(logged.level).toBe("info");
+      expect(logged.message).toBe("test message");
+      expect(logged.request_id).toBe("req_test123");
+      expect(logged.extra).toBe("data");
+      spy.mockRestore();
+    });
+
+    it("should log warn messages as JSON", () => {
+      const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      errorLogger.warn("warning message", ctx);
+      expect(spy).toHaveBeenCalledOnce();
+      const logged = JSON.parse(spy.mock.calls[0][0]);
+      expect(logged.level).toBe("warn");
+      expect(logged.message).toBe("warning message");
+      spy.mockRestore();
+    });
+
+    it("should log error messages with error details", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const error = new Error("something broke");
+      errorLogger.error("error occurred", ctx, error);
+      expect(spy).toHaveBeenCalledOnce();
+      const logged = JSON.parse(spy.mock.calls[0][0]);
+      expect(logged.level).toBe("error");
+      expect(logged.error.name).toBe("Error");
+      expect(logged.error.message).toBe("something broke");
+      spy.mockRestore();
+    });
+
+    it("should log error messages without error object", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      errorLogger.error("error occurred", ctx);
+      const logged = JSON.parse(spy.mock.calls[0][0]);
+      expect(logged.error).toBeUndefined();
+      spy.mockRestore();
     });
   });
 

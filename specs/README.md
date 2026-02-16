@@ -2,7 +2,11 @@
 
 ---
 
-Important note: some features are marked "Phase 2". They have to be implemented in Phase 2. The IMPLEMENTATION_PLAN.md should be updated accordingly. However, if one or several of these features are blocking for implementation, they should loose their Phase 2 labelling.
+**Current Phase**: Phase 2 (Refactoring & Architecture Consolidation)
+
+Phase 1 delivered the working web shell with WorkOS authentication, API routes, database schema, and test coverage. Phase 2 focuses on consolidating shared utilities, eliminating duplication, and establishing clean architecture patterns before expanding features.
+
+Features marked "Phase 2" are being actively implemented. See IMPLEMENTATION_PLAN.md for current status.
 ---
 
 ## Specification Files
@@ -141,7 +145,85 @@ Single-line text, Multi-line text, Number, Date, Single-select, Multi-select, Ch
 - TPN+ Gold Shield
 - ISO 27001
 
+---
 
+## Code Architecture Patterns
+
+### Shared Utilities
+| Module | Location | Purpose |
+|--------|----------|---------|
+| ID Generation | `src/shared/id.ts` | `generateId(prefix)` — single source for all prefixed IDs (`usr_`, `acc_`, `req_`, etc.) |
+| Role Hierarchy | `src/auth/types.ts` | `ROLE_HIERARCHY` constant + `isRoleAtLeast(a, b)` for all role comparisons |
+| Permission Hierarchy | `src/permissions/types.ts` | `PERMISSION_HIERARCHY` + `isPermissionAtLeast(a, b)` for permission checks |
+| Error Utilities | `src/errors/index.ts` | `AppError` hierarchy, `toAppError()`, `toErrorResponse()`, `errorLogger`, `generateRequestId()` |
+| Session Cookies | `src/web/lib/session-cookie.ts` | `encodeSessionCookie()`, `decodeSessionCookie()`, `BUSH_SESSION_COOKIE` constant |
+
+### API Access Control
+Centralized resource ownership verification in `src/api/access-control.ts`:
+
+| Function | Purpose |
+|----------|---------|
+| `verifyProjectAccess(projectId, accountId)` | Verifies project belongs to account (joins projects + workspaces) |
+| `verifyFolderAccess(folderId, accountId)` | Verifies folder belongs to account (joins folders + projects + workspaces) |
+| `verifyWorkspaceAccess(workspaceId, accountId)` | Verifies workspace belongs to account |
+| `verifyAccountMembership(userId, accountId, requiredRole?)` | Checks user is account member with optional minimum role |
+
+### Key Patterns
+- **No duplicate ID generators** — always import from `src/shared/id.ts`
+- **No inline role/permission hierarchies** — always use `isRoleAtLeast()` / `isPermissionAtLeast()`
+- **No per-route access checks** — always use `src/api/access-control.ts` helpers
+- **No inline session cookie logic** — always use `src/web/lib/session-cookie.ts`
+- **Error conversion logs first** — `toAppError()` logs the original error before wrapping
+
+---
+
+## Development Workflows
+
+### Quality Gate: Coverage + Test Until Green
+
+Before merging any feature or fix, run this workflow:
+
+```bash
+# 1. Run coverage report to identify gaps
+bun run test:coverage
+
+# 2. Review coverage output — focus on src/ files (web/ excluded)
+#    Targets: statements >60%, branches >75%, functions >60%
+
+# 3. Write tests for uncovered code paths
+#    - Unit tests for pure utilities and services
+#    - Integration tests for route handlers (mock DB)
+
+# 4. Run tests until green
+bun run test
+
+# 5. Verify no regressions
+bun run typecheck && bun run lint
+```
+
+**Coverage scope**: Backend `src/` only (web frontend excluded from coverage).
+**Test runner**: Vitest with v8 coverage provider.
+**Coverage config**: `vitest.config.ts` — includes `src/**/*.ts`, excludes `src/web/**`, `src/db/migrate.ts`, `src/db/seed.ts`, test files.
+
+
+### Refactoring Checklist
+
+When refactoring existing code, follow this pattern:
+
+1. **Identify duplication** — same logic in 2+ locations
+2. **Extract to shared module** — place in appropriate directory:
+   - Cross-cutting utilities → `src/shared/`
+   - Auth/role logic → `src/auth/types.ts`
+   - API access patterns → `src/api/access-control.ts`
+   - Web utilities → `src/web/lib/`
+3. **Update all consumers** — replace inline code with imports
+4. **Add tests** for extracted module
+5. **Run full test suite** — `bun run test` (all 212+ tests must pass)
+6. **Verify no regressions** — `bun run typecheck && bun run lint`
+
+**Decision framework**: Extract only when 2+ locations duplicate the same logic. Three similar lines of code is better than a premature abstraction. Route handlers intentionally vary (file status transitions, folder hierarchy, project archival) — do NOT create generic CRUD helpers.
+
+---
 
 ## Other projects worth studying
 

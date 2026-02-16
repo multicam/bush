@@ -7,19 +7,17 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { projects, workspaces, projectPermissions, folders } from "../../db/schema.js";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { standardRateLimit } from "../rate-limit.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
-import { requirePermission, permissions } from "../../permissions/middleware.js";
+import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js";
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
 
 /**
  * GET /v4/projects - List projects for a workspace
@@ -34,17 +32,7 @@ app.get("/", async (c) => {
   }
 
   // Verify workspace belongs to current account
-  const [workspace] = await db
-    .select()
-    .from(workspaces)
-    .where(
-      and(
-        eq(workspaces.id, workspaceId),
-        eq(workspaces.accountId, session.currentAccountId)
-      )
-    )
-    .limit(1);
-
+  const workspace = await verifyWorkspaceAccess(workspaceId, session.currentAccountId);
   if (!workspace) {
     throw new NotFoundError("workspace", workspaceId);
   }
@@ -74,24 +62,13 @@ app.get("/:id", async (c) => {
   const session = requireAuth(c);
   const projectId = c.req.param("id");
 
-  // Get project with workspace info for account check
-  const [project] = await db
-    .select()
-    .from(projects)
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(eq(projects.id, projectId))
-    .limit(1);
-
-  if (!project) {
-    throw new NotFoundError("project", projectId);
-  }
-
   // Verify project belongs to current account
-  if (project.workspaces.accountId !== session.currentAccountId) {
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
     throw new NotFoundError("project", projectId);
   }
 
-  return sendSingle(c, formatDates(project.projects), RESOURCE_TYPES.PROJECT);
+  return sendSingle(c, formatDates(access.project), RESOURCE_TYPES.PROJECT);
 });
 
 /**
@@ -111,17 +88,7 @@ app.post("/", async (c) => {
   }
 
   // Verify workspace belongs to current account
-  const [workspace] = await db
-    .select()
-    .from(workspaces)
-    .where(
-      and(
-        eq(workspaces.id, body.workspace_id),
-        eq(workspaces.accountId, session.currentAccountId)
-      )
-    )
-    .limit(1);
-
+  const workspace = await verifyWorkspaceAccess(body.workspace_id, session.currentAccountId);
   if (!workspace) {
     throw new NotFoundError("workspace", body.workspace_id);
   }
@@ -184,20 +151,9 @@ app.patch("/:id", async (c) => {
   const projectId = c.req.param("id");
   const body = await c.req.json();
 
-  // Get project with workspace info
-  const [projectWithWorkspace] = await db
-    .select()
-    .from(projects)
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(eq(projects.id, projectId))
-    .limit(1);
-
-  if (!projectWithWorkspace) {
-    throw new NotFoundError("project", projectId);
-  }
-
   // Verify project belongs to current account
-  if (projectWithWorkspace.workspaces.accountId !== session.currentAccountId) {
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
     throw new NotFoundError("project", projectId);
   }
 
@@ -212,10 +168,10 @@ app.patch("/:id", async (c) => {
   if (body.is_restricted !== undefined) {
     updates.isRestricted = body.is_restricted;
   }
-  if (body.archived !== true) {
-    updates.archivedAt = null;
-  } else if (body.archived === true) {
+  if (body.archived === true) {
     updates.archivedAt = new Date();
+  } else if (body.archived === false) {
+    updates.archivedAt = null;
   }
 
   // Update project
@@ -238,20 +194,9 @@ app.delete("/:id", async (c) => {
   const session = requireAuth(c);
   const projectId = c.req.param("id");
 
-  // Get project with workspace info
-  const [projectWithWorkspace] = await db
-    .select()
-    .from(projects)
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(eq(projects.id, projectId))
-    .limit(1);
-
-  if (!projectWithWorkspace) {
-    throw new NotFoundError("project", projectId);
-  }
-
   // Verify project belongs to current account
-  if (projectWithWorkspace.workspaces.accountId !== session.currentAccountId) {
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
     throw new NotFoundError("project", projectId);
   }
 

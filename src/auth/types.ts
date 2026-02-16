@@ -164,9 +164,19 @@ export function hasCapability(role: AccountRole, capability: string): boolean {
 }
 
 /**
+ * Role hierarchy - higher index = more permissive
+ */
+export const ROLE_HIERARCHY: AccountRole[] = [
+  "reviewer",
+  "guest",
+  "member",
+  "content_admin",
+  "owner",
+];
+
+/**
  * Check if role A has equal or higher privileges than role B
  */
 export function isRoleAtLeast(roleA: AccountRole, roleB: AccountRole): boolean {
-  const roleHierarchy: AccountRole[] = ["reviewer", "guest", "member", "content_admin", "owner"];
-  return roleHierarchy.indexOf(roleA) >= roleHierarchy.indexOf(roleB);
+  return ROLE_HIERARCHY.indexOf(roleA) >= ROLE_HIERARCHY.indexOf(roleB);
 }

@@ -5,6 +5,7 @@
  * Reference: specs/17-api-complete.md Section 3.4-3.5
  * Reference: IMPLEMENTATION_PLAN.md QW4
  */
+import { generateId } from "../shared/id.js";
 
 /**
  * JSON:API-style error object
@@ -198,18 +199,23 @@ export function toMultiErrorResponse(
 
 /**
  * Convert an unknown error to an AppError
- * Useful in catch blocks where the error type is unknown
+ * Useful in catch blocks where the error type is unknown.
+ * Logs the original error before converting to prevent context loss.
  */
 export function toAppError(error: unknown): AppError {
   if (error instanceof AppError) {
     return error;
   }
 
+  // Log original error before converting so we don't lose debugging context
   if (error instanceof Error) {
-    return new InternalServerError(error.message);
+    console.error("[toAppError] Unexpected error:", error.message, error.stack);
+  } else {
+    console.error("[toAppError] Unexpected non-Error thrown:", error);
   }
 
-  return new InternalServerError(String(error));
+  // Don't leak internal error details to API consumers
+  return new InternalServerError("An unexpected error occurred");
 }
 
 /**
@@ -222,12 +228,10 @@ export interface RequestContext {
 }
 
 /**
- * Generate a unique request ID
+ * Generate a unique request ID (cryptographically secure)
  */
 export function generateRequestId(): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 10);
-  return `req_${timestamp}_${random}`;
+  return generateId("req");
 }
 
 /**

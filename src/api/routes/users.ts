@@ -9,15 +9,13 @@ import { db } from "../../db/index.js";
 import { users, accountMemberships, accounts } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { standardRateLimit } from "../rate-limit.js";
-import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { sendSingle, RESOURCE_TYPES, formatDates } from "../response.js";
+import { NotFoundError, AuthorizationError } from "../../errors/index.js";
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
 
 /**
  * GET /v4/users/me - Get current user

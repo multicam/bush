@@ -9,16 +9,15 @@ import { db } from "../../db/index.js";
 import { accounts, accountMemberships } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { standardRateLimit } from "../rate-limit.js";
 import { sendSingle, sendCollection, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { verifyAccountMembership } from "../access-control.js";
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
 
 /**
  * GET /v4/accounts - List accounts for current user
@@ -167,18 +166,8 @@ app.patch("/:id", async (c) => {
   const body = await c.req.json();
 
   // Verify user is owner or content_admin
-  const [membership] = await db
-    .select({ role: accountMemberships.role })
-    .from(accountMemberships)
-    .where(
-      and(
-        eq(accountMemberships.userId, session.userId),
-        eq(accountMemberships.accountId, accountId)
-      )
-    )
-    .limit(1);
-
-  if (!membership || (membership.role !== "owner" && membership.role !== "content_admin")) {
+  const memberRole = await verifyAccountMembership(session.userId, accountId, "content_admin");
+  if (!memberRole) {
     throw new AuthorizationError("Only account owners and content admins can update account settings");
   }
 
@@ -189,7 +178,7 @@ app.patch("/:id", async (c) => {
   }
 
   // Only owner can change slug
-  if (body.slug !== undefined && membership.role === "owner") {
+  if (body.slug !== undefined && memberRole === "owner") {
     // Check if slug is taken
     const existing = await db
       .select({ id: accounts.id })

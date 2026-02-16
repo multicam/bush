@@ -6,6 +6,7 @@
 import { Hono, type Context } from "hono";
 import type { AppError } from "../errors/index.js";
 import { toErrorResponse, toAppError, generateRequestId } from "../errors/index.js";
+import { generateId } from "../shared/id.js";
 
 /**
  * Create a new Hono router with common configuration
@@ -59,14 +60,8 @@ export function notFoundHandler(c: Parameters<Parameters<Hono["notFound"]>[0]>[0
   }, 404);
 }
 
-/**
- * Generate a unique ID with prefix
- */
-export function generateId(prefix: string): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 14);
-  return `${prefix}_${timestamp}${random}`;
-}
+// Re-export generateId from shared module for convenience
+export { generateId } from "../shared/id.js";
 
 /**
  * Parse include parameter for relationships

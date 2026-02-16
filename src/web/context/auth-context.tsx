@@ -16,6 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthState, AccountRole } from "@/auth";
+import { isRoleAtLeast } from "@/auth/types";
 import { getAuthState, login as authLogin, logout as authLogout, switchAccount as authSwitchAccount } from "@/web/lib/auth";
 
 interface AuthContextValue extends AuthState {
@@ -60,8 +61,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let cancelled = false;
+    getAuthState().then((state) => {
+      if (!cancelled) {
+        setAuthState({ ...state, isLoading: false });
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          currentAccount: null,
+          accounts: [],
+        });
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const login = useCallback((redirect?: string) => {
     authLogin(redirect);
@@ -120,18 +137,7 @@ export function useHasRole(requiredRole: AccountRole): boolean {
     return false;
   }
 
-  const roleHierarchy: AccountRole[] = [
-    "reviewer",
-    "guest",
-    "member",
-    "content_admin",
-    "owner",
-  ];
-
-  const userRoleIndex = roleHierarchy.indexOf(currentAccount.role);
-  const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-
-  return userRoleIndex >= requiredRoleIndex;
+  return isRoleAtLeast(currentAccount.role, requiredRole);
 }
 
 /**
@@ -139,7 +145,7 @@ export function useHasRole(requiredRole: AccountRole): boolean {
  * Note: This will be expanded when workspace context is added
  */
 export function useCurrentWorkspace() {
-  const { currentAccount } = useAuth();
+  useAuth();
   // TODO: Implement workspace context selection
   return {
     workspace: null as unknown,

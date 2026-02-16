@@ -6,54 +6,39 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { files, projects, workspaces, folders } from "../../db/schema.js";
-import { eq, and, desc, isNull, isNotNull, inArray } from "drizzle-orm";
+import { files, folders } from "../../db/schema.js";
+import { eq, and, desc, isNull, lt } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { standardRateLimit, searchRateLimit } from "../rate-limit.js";
-import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, encodeCursor, decodeCursor } from "../response.js";
+import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, decodeCursor } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { config } from "../../config/index.js";
+import { verifyProjectAccess } from "../access-control.js";
+
+/** Valid file statuses */
+const VALID_FILE_STATUSES = ["uploading", "processing", "ready", "processing_failed", "deleted"] as const;
+type FileStatus = typeof VALID_FILE_STATUSES[number];
+
+/** Allowed status transitions (from → to[]) */
+const ALLOWED_STATUS_TRANSITIONS: Record<FileStatus, FileStatus[]> = {
+  uploading: ["processing", "ready", "deleted"],
+  processing: ["ready", "processing_failed", "deleted"],
+  ready: ["processing", "deleted"],
+  processing_failed: ["processing", "deleted"],
+  deleted: [],
+};
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
-
-/**
- * Helper to verify project belongs to current account
- */
-async function verifyProjectAccess(
-  projectId: string,
-  accountId: string
-): Promise<{ project: typeof projects.$inferSelect; workspace: typeof workspaces.$inferSelect } | null> {
-  const [result] = await db
-    .select()
-    .from(projects)
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(
-      and(
-        eq(projects.id, projectId),
-        eq(workspaces.accountId, accountId)
-      )
-    )
-    .limit(1);
-
-  if (!result) return null;
-
-  return {
-    project: result.projects,
-    workspace: result.workspaces,
-  };
-}
 
 /**
  * GET /v4/projects/:projectId/files - List files in a project
  */
 app.get("/", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const limit = parseLimit(c.req.query("limit"));
   const folderId = c.req.query("folder_id");
   const status = c.req.query("status");
@@ -82,6 +67,14 @@ app.get("/", async (c) => {
   // Exclude deleted files by default
   conditions.push(isNull(files.deletedAt));
 
+  // Apply cursor pagination via SQL WHERE
+  if (cursor) {
+    const cursorData = decodeCursor(cursor);
+    if (cursorData?.createdAt) {
+      conditions.push(lt(files.createdAt, new Date(cursorData.createdAt as string)));
+    }
+  }
+
   // Get files
   const results = await db
     .select()
@@ -90,19 +83,7 @@ app.get("/", async (c) => {
     .orderBy(desc(files.createdAt))
     .limit(limit + 1);
 
-  // Apply cursor pagination
-  let items = results.slice(0, limit);
-  if (cursor) {
-    const cursorData = decodeCursor(cursor);
-    if (cursorData?.id) {
-      // Find cursor position and slice
-      const cursorIndex = results.findIndex((r) => r.id === cursorData.id);
-      if (cursorIndex >= 0) {
-        items = results.slice(cursorIndex + 1, cursorIndex + 1 + limit);
-      }
-    }
-  }
-
+  const items = results.slice(0, limit);
   const formattedItems = items.map((f) => formatDates(f));
 
   return sendCollection(c, formattedItems, RESOURCE_TYPES.FILE, {
@@ -117,7 +98,7 @@ app.get("/", async (c) => {
  */
 app.get("/:id", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const fileId = c.req.param("id");
 
   // Verify project access
@@ -151,7 +132,7 @@ app.get("/:id", async (c) => {
  */
 app.post("/", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const body = await c.req.json();
 
   // Verify project access
@@ -249,7 +230,7 @@ app.post("/", async (c) => {
  */
 app.patch("/:id", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const fileId = c.req.param("id");
   const body = await c.req.json();
 
@@ -297,6 +278,14 @@ app.patch("/:id", async (c) => {
     updates.folderId = body.folder_id;
   }
   if (body.status !== undefined) {
+    if (!VALID_FILE_STATUSES.includes(body.status)) {
+      throw new ValidationError(`Invalid status '${body.status}'. Must be one of: ${VALID_FILE_STATUSES.join(", ")}`, { pointer: "/data/attributes/status" });
+    }
+    const currentStatus = file.status as FileStatus;
+    const allowed = ALLOWED_STATUS_TRANSITIONS[currentStatus];
+    if (!allowed?.includes(body.status as FileStatus)) {
+      throw new ValidationError(`Cannot transition from '${currentStatus}' to '${body.status}'`, { pointer: "/data/attributes/status" });
+    }
     updates.status = body.status;
   }
 
@@ -318,7 +307,7 @@ app.patch("/:id", async (c) => {
  */
 app.delete("/:id", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const fileId = c.req.param("id");
 
   // Verify project access
@@ -361,7 +350,7 @@ app.delete("/:id", async (c) => {
  */
 app.post("/:id/move", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const fileId = c.req.param("id");
   const body = await c.req.json();
 

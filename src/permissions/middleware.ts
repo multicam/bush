@@ -9,7 +9,7 @@ import type { Context, Next } from "hono";
 import { permissionService } from "./service.js";
 import { AuthorizationError, NotFoundError } from "../errors/index.js";
 import type { PermissionLevel, ResourceAction, PermissionResourceType } from "./types.js";
-import { canPerformAction, GUEST_CONSTRAINTS } from "./types.js";
+import { canPerformAction, isPermissionAtLeast, GUEST_CONSTRAINTS } from "./types.js";
 import type { SessionData } from "../auth/types.js";
 
 /**
@@ -105,16 +105,6 @@ export function requirePermission(options: PermissionCheckOptions) {
       throw new NotFoundError(options.resourceType);
     }
 
-    // Get account ID (default to session's current account)
-    // Note: accountId could be used for cross-account permission checks in the future
-    void (
-      options.accountIdSource !== undefined
-        ? typeof options.accountIdSource === "function"
-          ? options.accountIdSource(c)
-          : c.req.param(options.accountIdSource)
-        : session.currentAccountId
-    );
-
     // Check permission
     const hasPermission = await permissionService.canPerformAction(
       session.userId,
@@ -198,16 +188,7 @@ export function requirePermissionLevel(
     }
 
     // Check if permission level is sufficient
-    const userLevel = permissionResult.permission;
-    const levels: PermissionLevel[] = [
-      "view_only",
-      "comment_only",
-      "edit",
-      "edit_and_share",
-      "full_access",
-    ];
-
-    if (levels.indexOf(userLevel) < levels.indexOf(requiredLevel)) {
+    if (!isPermissionAtLeast(permissionResult.permission, requiredLevel)) {
       throw new AuthorizationError(
         `You need ${requiredLevel} permission to perform this action`
       );
@@ -267,7 +248,7 @@ export async function checkGuestConstraints(
           throw new AuthorizationError("Guests cannot invite other users");
         }
         break;
-      case "create_project":
+      case "create_project": {
         const reachedLimit = await permissionService.hasGuestReachedProjectLimit(
           session.userId
         );
@@ -277,6 +258,7 @@ export async function checkGuestConstraints(
           );
         }
         break;
+      }
     }
   }
 }

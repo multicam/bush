@@ -9,7 +9,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
-      exclude: ["node_modules", "dist", ".next", "**/*.d.ts"],
+      include: ["src/**/*.ts", "src/**/*.tsx"],
+      exclude: [
+        "node_modules",
+        "dist",
+        "src/web/**",
+        "src/db/migrate.ts",
+        "src/db/seed.ts",
+        "**/*.d.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+      ],
     },
   },
 });

@@ -6,19 +6,18 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { workspaces, accounts, accountMemberships, workspacePermissions } from "../../db/schema.js";
-import { eq, and, desc } from "drizzle-orm";
-import { authMiddleware, requireAuth, getCurrentAccountId } from "../auth-middleware.js";
-import { standardRateLimit } from "../rate-limit.js";
-import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, encodeCursor, decodeCursor } from "../response.js";
+import { workspaces, workspacePermissions } from "../../db/schema.js";
+import { eq, and, desc, lt } from "drizzle-orm";
+import { authMiddleware, requireAuth } from "../auth-middleware.js";
+import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, decodeCursor } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { NotFoundError, AuthorizationError } from "../../errors/index.js";
+import { verifyWorkspaceAccess, verifyAccountMembership } from "../access-control.js";
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
 
 /**
  * GET /v4/workspaces - List workspaces for current account
@@ -28,8 +27,18 @@ app.get("/", async (c) => {
   const limit = parseLimit(c.req.query("limit"));
   const cursor = c.req.query("cursor");
 
-  // Build query - only show workspaces for current account
-  let query = db
+  // Build conditions
+  const conditions = [eq(workspaces.accountId, session.currentAccountId)];
+
+  // Apply cursor pagination via SQL WHERE
+  if (cursor) {
+    const cursorData = decodeCursor(cursor);
+    if (cursorData?.createdAt) {
+      conditions.push(lt(workspaces.createdAt, new Date(cursorData.createdAt as string)));
+    }
+  }
+
+  const results = await db
     .select({
       id: workspaces.id,
       name: workspaces.name,
@@ -39,35 +48,9 @@ app.get("/", async (c) => {
       accountId: workspaces.accountId,
     })
     .from(workspaces)
-    .where(eq(workspaces.accountId, session.currentAccountId))
+    .where(and(...conditions))
     .orderBy(desc(workspaces.createdAt))
-    .limit(limit + 1); // +1 to check for hasMore
-
-  // Apply cursor if provided
-  if (cursor) {
-    const cursorData = decodeCursor(cursor);
-    if (cursorData?.id) {
-      query = db
-        .select({
-          id: workspaces.id,
-          name: workspaces.name,
-          description: workspaces.description,
-          createdAt: workspaces.createdAt,
-          updatedAt: workspaces.updatedAt,
-          accountId: workspaces.accountId,
-        })
-        .from(workspaces)
-        .where(
-          and(
-            eq(workspaces.accountId, session.currentAccountId)
-          )
-        )
-        .orderBy(desc(workspaces.createdAt))
-        .limit(limit + 1);
-    }
-  }
-
-  const results = await query;
+    .limit(limit + 1);
 
   // Get total count
   const countResult = await db
@@ -91,17 +74,7 @@ app.get("/:id", async (c) => {
   const session = requireAuth(c);
   const workspaceId = c.req.param("id");
 
-  const [workspace] = await db
-    .select()
-    .from(workspaces)
-    .where(
-      and(
-        eq(workspaces.id, workspaceId),
-        eq(workspaces.accountId, session.currentAccountId)
-      )
-    )
-    .limit(1);
-
+  const workspace = await verifyWorkspaceAccess(workspaceId, session.currentAccountId);
   if (!workspace) {
     throw new NotFoundError("workspace", workspaceId);
   }
@@ -164,17 +137,7 @@ app.patch("/:id", async (c) => {
   const body = await c.req.json();
 
   // Check workspace exists and belongs to current account
-  const [workspace] = await db
-    .select()
-    .from(workspaces)
-    .where(
-      and(
-        eq(workspaces.id, workspaceId),
-        eq(workspaces.accountId, session.currentAccountId)
-      )
-    )
-    .limit(1);
-
+  const workspace = await verifyWorkspaceAccess(workspaceId, session.currentAccountId);
   if (!workspace) {
     throw new NotFoundError("workspace", workspaceId);
   }
@@ -208,18 +171,14 @@ app.delete("/:id", async (c) => {
   const session = requireAuth(c);
   const workspaceId = c.req.param("id");
 
-  // Check workspace exists and belongs to current account
-  const [workspace] = await db
-    .select()
-    .from(workspaces)
-    .where(
-      and(
-        eq(workspaces.id, workspaceId),
-        eq(workspaces.accountId, session.currentAccountId)
-      )
-    )
-    .limit(1);
+  // Verify user is owner or content_admin
+  const role = await verifyAccountMembership(session.userId, session.currentAccountId, "content_admin");
+  if (!role) {
+    throw new AuthorizationError("Only account owners and content admins can delete workspaces");
+  }
 
+  // Check workspace exists and belongs to current account
+  const workspace = await verifyWorkspaceAccess(workspaceId, session.currentAccountId);
   if (!workspace) {
     throw new NotFoundError("workspace", workspaceId);
   }

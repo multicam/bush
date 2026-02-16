@@ -84,9 +84,10 @@ const envSchema = z.object({
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+  TRUST_PROXY: z.coerce.boolean().default(false),
 
   // Upload
-  UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(5368709120),
+  UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(10737418240),
   UPLOAD_PRESIGNED_URL_EXPIRY: z.coerce.number().int().positive().default(3600),
   UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
 
@@ -141,6 +142,7 @@ function loadConfig(): Env {
       SESSION_MAX_AGE: 604800,
       RATE_LIMIT_WINDOW_MS: 60000,
       RATE_LIMIT_MAX_REQUESTS: 100,
+      TRUST_PROXY: false,
       UPLOAD_MAX_FILE_SIZE: 5368709120,
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,

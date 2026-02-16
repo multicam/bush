@@ -16,27 +16,23 @@ import {
 import { config } from "@/config";
 import { authService } from "@/auth";
 import type { SessionData } from "@/auth/types";
-
-/**
- * Cookie name for Bush session data
- */
-const BUSH_SESSION_COOKIE = "bush_session";
+import {
+  BUSH_SESSION_COOKIE,
+  encodeSessionCookie,
+  decodeSessionCookie,
+} from "@/web/lib/session-cookie";
 
 /**
  * Set the Bush session cookie on a response
  */
 function setBushSessionCookie(response: NextResponse, session: SessionData): void {
-  response.cookies.set(
-    BUSH_SESSION_COOKIE,
-    Buffer.from(JSON.stringify(session)).toString("base64"),
-    {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: config.SESSION_MAX_AGE,
-      path: "/",
-    }
-  );
+  response.cookies.set(BUSH_SESSION_COOKIE, encodeSessionCookie(session), {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: config.SESSION_MAX_AGE,
+    path: "/",
+  });
 }
 
 /**
@@ -63,7 +59,6 @@ async function getSession(_request: NextRequest) {
 
   if (!bushSessionCookie) {
     // WorkOS session exists but no Bush session - need to create one
-    // This can happen if the callback didn't complete Bush session creation
     return NextResponse.json({
       isAuthenticated: true,
       isLoading: false,
@@ -84,9 +79,10 @@ async function getSession(_request: NextRequest) {
   }
 
   try {
-    const bushSession = JSON.parse(
-      Buffer.from(bushSessionCookie.value, "base64").toString()
-    ) as SessionData;
+    const bushSession = decodeSessionCookie(bushSessionCookie.value);
+    if (!bushSession) {
+      throw new Error("Invalid session cookie");
+    }
 
     // Get user's accounts
     const accounts = await authService.getUserAccounts(bushSession.userId);
@@ -228,7 +224,6 @@ async function callback(request: NextRequest) {
 
     // If new user with no accounts, redirect to onboarding
     if (accounts.length === 0) {
-      // Redirect to account creation page
       const response = NextResponse.redirect(
         new URL("/onboarding/create-account", request.url)
       );
@@ -245,7 +240,7 @@ async function callback(request: NextRequest) {
 
       response.cookies.set(
         BUSH_SESSION_COOKIE,
-        Buffer.from(JSON.stringify(minimalSession)).toString("base64"),
+        encodeSessionCookie(minimalSession),
         {
           httpOnly: true,
           secure: config.NODE_ENV === "production",
@@ -271,8 +266,6 @@ async function callback(request: NextRequest) {
 
     // Redirect to the intended destination
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
-
-    // Set Bush session cookie
     setBushSessionCookie(response, bushSession);
 
     return response;
@@ -291,18 +284,12 @@ async function logout(request: NextRequest) {
   const bushSessionCookie = request.cookies.get(BUSH_SESSION_COOKIE);
 
   if (bushSessionCookie) {
-    try {
-      const sessionData = JSON.parse(
-        Buffer.from(bushSessionCookie.value, "base64").toString()
+    const sessionData = decodeSessionCookie(bushSessionCookie.value);
+    if (sessionData?.userId && sessionData?.sessionId) {
+      await authService.invalidateSession(
+        sessionData.userId,
+        sessionData.sessionId
       );
-      if (sessionData.userId && sessionData.sessionId) {
-        await authService.invalidateSession(
-          sessionData.userId,
-          sessionData.sessionId
-        );
-      }
-    } catch {
-      // Session already invalid
     }
   }
 
@@ -335,11 +322,8 @@ async function switchAccount(request: NextRequest) {
       );
     }
 
-    const sessionData = JSON.parse(
-      Buffer.from(bushSessionCookie.value, "base64").toString()
-    );
-
-    if (!sessionData.userId || !sessionData.sessionId) {
+    const sessionData = decodeSessionCookie(bushSessionCookie.value);
+    if (!sessionData?.userId || !sessionData?.sessionId) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 

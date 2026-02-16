@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-16
+**Last updated**: 2026-02-17
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System COMPLETED (WorkOS AuthKit SDK integration, token exchange, session management, login/logout flows, middleware protection), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static COMPLETED (login, signup, dashboard, workspaces, projects, settings pages), [1.7b] Web App Shell Connected COMPLETED (API client library, real data fetching, loading/error/empty states), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: Phase 1 substantially COMPLETED. [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED. Code refactoring pass COMPLETED (shared utilities, access control, session cookies, error logging). Phase 2 is CURRENT.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -603,7 +603,7 @@ These small, high-leverage items should be built during their respective phases 
 - Accessible by default: ARIA attributes, keyboard navigation, focus management -- NOT STARTED
 - **Estimated effort**: 6 hours
 
-### QW4. Error Handling Utilities [Day 10, with API Foundation] -- NOT STARTED
+### QW4. Error Handling Utilities [Day 10, with API Foundation] -- COMPLETED
 
 - Shared error classes: `AppError` base, `ValidationError`, `AuthenticationError`, `AuthorizationError`, `NotFoundError`, `ConflictError`, `RateLimitError`
 - API error formatter: converts error classes to JSON:API error response format
@@ -929,7 +929,7 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 
 ## PHASE 1: FOUNDATION
 
-**Status**: NOT STARTED
+**Status**: SUBSTANTIALLY COMPLETED
 **Goal**: Infrastructure, data models, auth, permissions, API, and web shell.
 **Timeline**: Days 1-14
 
@@ -1074,12 +1074,25 @@ Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 - **Timeline**: Days 3-14
 - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/00-complete-support-documentation.md` Sections 4.2, 5.3 (layout specs). NOTE: `specs/03-file-management.md` covers upload methods/transfer, not UI layout.
 
+### 1.8 Code Refactoring Pass [COMPLETED]
+
+Systematic refactoring to eliminate duplication and establish shared patterns:
+- **Shared utilities**: `src/shared/id.ts` (ID generation), `src/auth/types.ts` (role hierarchy + comparison)
+- **Access control**: `src/api/access-control.ts` (centralized resource ownership verification)
+- **Session cookies**: `src/web/lib/session-cookie.ts` (encode/decode/constant)
+- **Error logging**: `toAppError()` now logs original errors before converting
+- **Deduplication**: Removed duplicate DB queries, inline role/permission hierarchies, copy-pasted access checks
+- **Test coverage**: 11 new tests for extracted modules (212 total, all passing)
+- **Decision**: Generic CRUD helpers were evaluated and rejected — route handlers have enough variation (file status transitions, folder hierarchy, project archival) that abstraction would be over-engineering.
+- **Depends on**: 1.5 (API routes exist to refactor)
+- **Blocks**: nothing (refactoring pass, no new functionality)
+
 ---
 
 ## PHASE 2: CORE FEATURES (MVP)
 
-**Status**: NOT STARTED
-**Blocked by**: Phase 1 completion
+**Status**: CURRENT
+**Blocked by**: Phase 1 remaining items (1.5 completion)
 **Goal**: Upload, view, comment, metadata, search, notifications.
 
 ### 2.1 File Upload System [NOT STARTED]
@@ -1591,3 +1604,25 @@ The following updates were made after comprehensive spec analysis and plan revie
 47. **Spec line counts corrected** -- specs/14-realtime-collaboration.md (593 lines), specs/16-storage-and-data.md (333 lines), specs/17-api-complete.md (918 lines) counts updated for accuracy.
 
 48. **1.6 Object Storage spec reference added** -- Added reference to specs/16-storage-and-data.md and specs/20-configuration-and-secrets.md for MinIO setup.
+
+### Refactoring Pass (2026-02-17)
+
+The following refactoring was performed across the codebase to reduce duplication, improve maintainability, and establish shared patterns. All 212 tests pass after refactoring.
+
+23. **Shared ID Generator** -- `generateId()` was duplicated in `auth/service.ts`, `permissions/service.ts`, and `api/router.ts`. Extracted to `src/shared/id.ts` as single source of truth. All three consumers now import from shared module. `generateRequestId()` in `errors/index.ts` also delegates to shared `generateId("req")`.
+
+24. **Role Hierarchy Consolidation** -- Role comparison logic (`isRoleAtLeast`) was implemented inline in 4+ locations (auth/service, permissions/middleware, web/lib/auth, web/context/auth-context). Consolidated to `ROLE_HIERARCHY` constant and `isRoleAtLeast()` function exported from `src/auth/types.ts`. All consumers now use the shared function.
+
+25. **Permission Hierarchy Consolidation** -- `isPermissionAtLeast()` was hardcoded in `permissions/middleware.ts`. Now uses the shared function from `permissions/types.ts`.
+
+26. **API Access Control Extraction** -- `verifyProjectAccess`, `verifyFolderAccess`, `verifyWorkspaceAccess`, and `verifyAccountMembership` were duplicated across route files (`files.ts`, `folders.ts`, `projects.ts`, `workspaces.ts`, `accounts.ts`). Extracted to `src/api/access-control.ts` as centralized access verification module.
+
+27. **Session Cookie Utilities** -- Session cookie encoding/decoding and the cookie name constant (`bush_session`) were duplicated inline in `web/app/api/auth/[...action]/route.ts` and `web/app/auth/callback/route.ts`. Extracted to `src/web/lib/session-cookie.ts` with `encodeSessionCookie()`, `decodeSessionCookie()`, and `BUSH_SESSION_COOKIE` constant.
+
+28. **Error Logging Improvement** -- `toAppError()` in `src/errors/index.ts` was silently converting unknown errors to `InternalServerError`, losing diagnostic context. Updated to log the original error (message + stack for Error instances, raw value for non-Error throws) before converting.
+
+29. **Duplicate DB Query Removal** -- `permissions/service.ts` had its own `getAccountRole()` implementation duplicating the query in `auth/service.ts`. Refactored to delegate to `authService.getUserRole()`.
+
+30. **Named Constants** -- Replaced magic number `5 * 60 * 1000` in `auth/session-cache.ts` with named constant `TOUCH_THROTTLE_MS`.
+
+31. **New Tests Added** -- `src/shared/id.test.ts` (3 tests), `src/api/access-control.test.ts` (3 tests), `src/web/lib/session-cookie.test.ts` (5 tests). Updated `src/errors/errors.test.ts` to verify new logging behavior. Total: 212 tests passing.

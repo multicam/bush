@@ -12,10 +12,10 @@ import {
   workspacePermissions,
   projectPermissions,
   folderPermissions,
-  accountMemberships,
 } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import type { AccountRole } from "../auth/types.js";
+import { authService } from "../auth/service.js";
 import type {
   PermissionLevel,
   PermissionCheckResult,
@@ -27,6 +27,7 @@ import {
   canPerformAction,
   GUEST_CONSTRAINTS,
 } from "./types.js";
+import { generateId } from "../shared/id.js";
 
 /**
  * Account roles that bypass permission checks
@@ -339,24 +340,10 @@ export const permissionService = {
 
   /**
    * Get user's account role for an account
+   * Delegates to authService to avoid duplicate DB query logic
    */
   async getAccountRole(userId: string, accountId: string): Promise<AccountRole | null> {
-    const results = await db
-      .select({ role: accountMemberships.role })
-      .from(accountMemberships)
-      .where(
-        and(
-          eq(accountMemberships.userId, userId),
-          eq(accountMemberships.accountId, accountId)
-        )
-      )
-      .limit(1);
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    return results[0].role as AccountRole;
+    return authService.getUserRole(userId, accountId);
   },
 
   /**
@@ -604,12 +591,3 @@ export const permissionService = {
     return { valid: true };
   },
 };
-
-/**
- * Generate a unique ID with prefix
- */
-function generateId(prefix: string): string {
-  const crypto = require("crypto");
-  const hash = crypto.randomBytes(16).toString("hex").slice(0, 24);
-  return `${prefix}_${hash}`;
-}

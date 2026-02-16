@@ -12,6 +12,9 @@ import { getSessionCacheKey } from "./types.js";
 // Default session TTL (7 days in seconds)
 const DEFAULT_SESSION_TTL = 7 * 24 * 60 * 60;
 
+// Only update last activity if older than this threshold (5 minutes in ms)
+const TOUCH_THROTTLE_MS = 5 * 60 * 1000;
+
 /**
  * Session cache operations
  */
@@ -78,7 +81,7 @@ export const sessionCache = {
     const existing = await this.get(userId, sessionId);
     if (existing) {
       // Only update if last activity is more than 5 minutes old
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      const fiveMinutesAgo = Date.now() - TOUCH_THROTTLE_MS;
       if (existing.lastActivityAt < fiveMinutesAgo) {
         await this.update(userId, sessionId, { lastActivityAt: Date.now() });
       }

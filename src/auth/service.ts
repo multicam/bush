@@ -9,6 +9,8 @@ import { accounts, users, accountMemberships } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { sessionCache, generateSessionId } from "./session-cache.js";
 import type { SessionData, AccountRole } from "./types.js";
+import { isRoleAtLeast } from "./types.js";
+import { generateId } from "../shared/id.js";
 
 /**
  * User info returned from WorkOS after authentication
@@ -272,27 +274,6 @@ export const authService = {
       return false;
     }
 
-    // Role hierarchy: owner > content_admin > member > guest > reviewer
-    const roleHierarchy: AccountRole[] = [
-      "reviewer",
-      "guest",
-      "member",
-      "content_admin",
-      "owner",
-    ];
-
-    const userRoleIndex = roleHierarchy.indexOf(role);
-    const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-
-    return userRoleIndex >= requiredRoleIndex;
+    return isRoleAtLeast(role, requiredRole);
   },
 };
-
-/**
- * Generate a unique ID with prefix
- */
-function generateId(prefix: string): string {
-  const crypto = require("crypto");
-  const hash = crypto.randomBytes(16).toString("hex").slice(0, 24);
-  return `${prefix}_${hash}`;
-}

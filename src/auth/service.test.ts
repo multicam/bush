@@ -5,7 +5,7 @@
  * Uses in-memory SQLite for integration testing.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { authService, type WorkOSUserInfo } from "./service.js";
+import { type WorkOSUserInfo } from "./service.js";
 import { sessionCache } from "./session-cache.js";
 import type { SessionData, AccountRole } from "./types.js";
 
@@ -20,13 +20,6 @@ vi.mock("./session-cache.js", () => ({
   },
   generateSessionId: vi.fn().mockResolvedValue("test-session-id-123"),
 }));
-
-// Mock database with in-memory SQLite
-const mockDb = {
-  select: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-};
 
 vi.mock("../db/index.js", () => ({
   db: {
@@ -51,30 +44,7 @@ vi.mock("../db/index.js", () => ({
   },
 }));
 
-// Create a test harness for database operations
-function createMockQuery(result: unknown[]) {
-  return {
-    from: () => ({
-      where: () => ({
-        limit: async () => result,
-      }),
-    }),
-    innerJoin: () => ({
-      where: async () => result,
-    }),
-  };
-}
-
 describe("authService", () => {
-  const mockWorkosUser: WorkOSUserInfo = {
-    workosUserId: "workos_user_123",
-    email: "test@example.com",
-    firstName: "Test",
-    lastName: "User",
-    avatarUrl: "https://example.com/avatar.png",
-    organizationId: "org_workos_123",
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

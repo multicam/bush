@@ -8,19 +8,6 @@
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
 
 /**
- * Public paths that don't require authentication
- */
-const PUBLIC_PATHS = [
-  "/",
-  "/login",
-  "/signup",
-  "/auth/callback",
-  "/api/auth/login",
-  "/api/auth/session",
-  "/api/auth/logout",
-];
-
-/**
  * Paths that allow sign-up (not just sign-in)
  */
 const SIGN_UP_PATHS = ["/signup"];

@@ -159,7 +159,11 @@ export function collectionResponse<T extends { id: string }>(
   // Add next link if there are more items
   if (hasMore && data.length > 0) {
     const lastItem = data[data.length - 1];
-    const cursor = encodeCursor({ id: lastItem.id });
+    const attrs = lastItem.attributes as Record<string, unknown>;
+    const cursor = encodeCursor({
+      id: lastItem.id,
+      ...(attrs.createdAt ? { createdAt: attrs.createdAt } : {}),
+    });
     links.next = buildUrl(options.basePath, { ...options.queryParams, cursor });
   }
 

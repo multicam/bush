@@ -6,75 +6,18 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { folders, files, projects, workspaces } from "../../db/schema.js";
+import { folders, files } from "../../db/schema.js";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { standardRateLimit } from "../rate-limit.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { verifyProjectAccess, verifyFolderAccess } from "../access-control.js";
 
 const app = new Hono();
 
-// Apply authentication and rate limiting to all routes
+// Apply authentication to all routes (rate limiting applied at v4 router level)
 app.use("*", authMiddleware());
-app.use("*", standardRateLimit);
-
-/**
- * Helper to verify folder belongs to a project in current account
- */
-async function verifyFolderAccess(
-  folderId: string,
-  accountId: string
-): Promise<{ folder: typeof folders.$inferSelect; project: typeof projects.$inferSelect; workspace: typeof workspaces.$inferSelect } | null> {
-  const [result] = await db
-    .select()
-    .from(folders)
-    .innerJoin(projects, eq(folders.projectId, projects.id))
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(
-      and(
-        eq(folders.id, folderId),
-        eq(workspaces.accountId, accountId)
-      )
-    )
-    .limit(1);
-
-  if (!result) return null;
-
-  return {
-    folder: result.folders,
-    project: result.projects,
-    workspace: result.workspaces,
-  };
-}
-
-/**
- * Helper to verify project belongs to current account
- */
-async function verifyProjectAccess(
-  projectId: string,
-  accountId: string
-): Promise<{ project: typeof projects.$inferSelect; workspace: typeof workspaces.$inferSelect } | null> {
-  const [result] = await db
-    .select()
-    .from(projects)
-    .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
-    .where(
-      and(
-        eq(projects.id, projectId),
-        eq(workspaces.accountId, accountId)
-      )
-    )
-    .limit(1);
-
-  if (!result) return null;
-
-  return {
-    project: result.projects,
-    workspace: result.workspaces,
-  };
-}
 
 /**
  * Helper to build folder path
@@ -91,7 +34,7 @@ function buildFolderPath(parentPath: string, folderName: string): string {
  */
 app.get("/", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const limit = parseLimit(c.req.query("limit"));
 
   // Verify project access
@@ -206,7 +149,7 @@ app.get("/:id/children", async (c) => {
  */
 app.post("/", async (c) => {
   const session = requireAuth(c);
-  const projectId = c.req.param("projectId");
+  const projectId = c.req.param("projectId")!;
   const body = await c.req.json();
 
   // Verify project access
