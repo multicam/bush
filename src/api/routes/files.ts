@@ -15,6 +15,7 @@ import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { config } from "../../config/index.js";
 import { verifyProjectAccess } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
+import { enqueueProcessingJobs } from "../../media/index.js";
 
 /** Valid file statuses */
 const VALID_FILE_STATUSES = ["uploading", "processing", "ready", "processing_failed", "deleted"] as const;
@@ -723,6 +724,21 @@ app.post("/:id/multipart/complete", async (c) => {
       .where(eq(accounts.id, session.currentAccountId));
   }
 
+  // Enqueue media processing jobs
+  try {
+    await enqueueProcessingJobs(
+      fileId,
+      session.currentAccountId,
+      projectId,
+      storageKey,
+      file.mimeType,
+      file.originalName
+    );
+  } catch (error) {
+    // Log error but don't fail the request - processing can be retried
+    console.error(`Failed to enqueue processing jobs for file ${fileId}:`, error);
+  }
+
   // Fetch updated file
   const [updatedFile] = await db
     .select()
@@ -851,6 +867,37 @@ app.post("/:id/confirm", async (c) => {
       updatedAt: new Date(),
     })
     .where(eq(files.id, fileId));
+
+  // Update storage used bytes on account
+  const [currentAccount] = await db
+    .select({ storageUsedBytes: accounts.storageUsedBytes })
+    .from(accounts)
+    .where(eq(accounts.id, session.currentAccountId))
+    .limit(1);
+
+  if (currentAccount) {
+    await db
+      .update(accounts)
+      .set({
+        storageUsedBytes: currentAccount.storageUsedBytes + file.fileSizeBytes,
+        updatedAt: new Date(),
+      })
+      .where(eq(accounts.id, session.currentAccountId));
+  }
+
+  // Enqueue media processing jobs
+  try {
+    await enqueueProcessingJobs(
+      fileId,
+      session.currentAccountId,
+      projectId,
+      storageKey,
+      file.mimeType,
+      file.originalName
+    );
+  } catch (error) {
+    console.error(`Failed to enqueue processing jobs for file ${fileId}:`, error);
+  }
 
   // Fetch updated file
   const [updatedFile] = await db

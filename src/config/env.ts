@@ -63,11 +63,26 @@ const envSchema = z.object({
   CDN_BASE_URL: z.string().url().optional().or(z.literal("")),
   CDN_SIGNING_KEY: z.string().optional(),
 
-  // Media
+  // Media Processing
   FFMPEG_PATH: z.string().default("/usr/bin/ffmpeg"),
   FFPROBE_PATH: z.string().default("/usr/bin/ffprobe"),
-  MEDIA_TEMP_DIR: z.string().default("./data/tmp"),
-  MEDIA_MAX_CONCURRENT_JOBS: z.coerce.number().int().positive().default(2),
+  IMAGEMAGICK_PATH: z.string().default("/usr/bin/convert"),
+  IDENTIFY_PATH: z.string().default("/usr/bin/identify"),
+  DCRAW_PATH: z.string().default("/usr/bin/dcraw"),
+  LIBREOFFICE_PATH: z.string().default("/usr/bin/libreoffice"),
+  MEDIA_TEMP_DIR: z.string().default("/tmp/bush-processing"),
+  THUMBNAIL_FORMAT: z.enum(["webp", "jpeg"]).default("webp"),
+  THUMBNAIL_QUALITY: z.coerce.number().int().min(1).max(100).default(80),
+  THUMBNAIL_POSITION: z.coerce.number().min(0).max(1).default(0.5),
+  HLS_SEGMENT_DURATION: z.coerce.number().int().positive().default(6),
+  PROXY_PRESET: z.string().default("medium"),
+
+  // Worker Concurrency
+  WORKER_THUMBNAIL_CONCURRENCY: z.coerce.number().int().positive().default(4),
+  WORKER_FILMSTRIP_CONCURRENCY: z.coerce.number().int().positive().default(2),
+  WORKER_PROXY_CONCURRENCY: z.coerce.number().int().positive().default(2),
+  WORKER_WAVEFORM_CONCURRENCY: z.coerce.number().int().positive().default(4),
+  WORKER_METADATA_CONCURRENCY: z.coerce.number().int().positive().default(8),
 
   // Email
   SMTP_HOST: z.string().default("localhost"),
@@ -149,6 +164,24 @@ function loadConfig(): Env {
       BACKUP_STORAGE_BUCKET: "placeholder",
       LITESTREAM_ENABLED: false,
       NEXT_PUBLIC_APP_NAME: "Bush",
+      // Media Processing
+      FFMPEG_PATH: "/usr/bin/ffmpeg",
+      FFPROBE_PATH: "/usr/bin/ffprobe",
+      IMAGEMAGICK_PATH: "/usr/bin/convert",
+      IDENTIFY_PATH: "/usr/bin/identify",
+      DCRAW_PATH: "/usr/bin/dcraw",
+      LIBREOFFICE_PATH: "/usr/bin/libreoffice",
+      MEDIA_TEMP_DIR: "/tmp/bush-processing",
+      THUMBNAIL_FORMAT: "webp",
+      THUMBNAIL_QUALITY: 80,
+      THUMBNAIL_POSITION: 0.5,
+      HLS_SEGMENT_DURATION: 6,
+      PROXY_PRESET: "medium",
+      WORKER_THUMBNAIL_CONCURRENCY: 4,
+      WORKER_FILMSTRIP_CONCURRENCY: 2,
+      WORKER_PROXY_CONCURRENCY: 2,
+      WORKER_WAVEFORM_CONCURRENCY: 4,
+      WORKER_METADATA_CONCURRENCY: 8,
     } as Env;
   }
 

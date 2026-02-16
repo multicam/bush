@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-16 (Deep Research Update)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - Upload Backend Handler COMPLETED
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Media Processing Update)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - Media Processing Pipeline COMPLETED (BullMQ + Workers)
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -16,7 +16,7 @@
 | **Test Files** | 19 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 1 | `src/web/context/auth-context.tsx:149` |
-| **Media Processing** | 0% | Infrastructure only, no workers |
+| **Media Processing** | 30% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation |
 | **Real-time (WebSocket)** | 0% | Not implemented |
 
 ---
@@ -218,45 +218,45 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.2 Media Processing Pipeline [P0] - 4 days
 
-**NOT STARTED** -- Critical for thumbnails, proxies, all viewers
+**IN PROGRESS** -- BullMQ Setup COMPLETED, Worker Process COMPLETED, Metadata/Thumbnail processors implemented
 
-- **[P0] BullMQ Setup** [2h]
+- **[P0] BullMQ Setup** [2h] -- COMPLETED
   - Install bullmq package
   - Create Redis-backed queues
   - Job types: thumbnail, proxy, waveform, filmstrip, metadata
   - **Dependencies**: None (Redis ready)
 
-- **[P0] Worker Process** [1d]
-  - Separate worker entry point
+- **[P0] Worker Process** [1d] -- COMPLETED
+  - Separate worker entry point (`src/media/worker.ts`)
   - Configurable concurrency per job type
   - FFmpeg/FFprobe integration
   - Job status tracking in DB
   - **Dependencies**: BullMQ setup
 
-- **[P1] Video Processing** [1d]
+- **[P1] Video Processing** [1d] -- NOT STARTED
   - Thumbnail generation (3 sizes: 160px, 320px, 640px)
   - Filmstrip sprites (1-sec intervals)
   - Proxy transcoding (360p, 540p, 720p, 1080p, 4K)
   - HDR tone mapping
   - **Dependencies**: Worker process
 
-- **[P1] Image Processing** [4h]
-  - Thumbnail generation
-  - RAW format proxy (via libraw)
-  - Adobe format proxy (via ImageMagick)
+- **[P1] Image Processing** [4h] -- PARTIAL
+  - Thumbnail generation - COMPLETED
+  - RAW format proxy (via libraw) - NOT STARTED
+  - Adobe format proxy (via ImageMagick) - NOT STARTED
   - **Dependencies**: Worker process
 
-- **[P1] Audio Processing** [4h]
+- **[P1] Audio Processing** [4h] -- NOT STARTED
   - Waveform JSON extraction (peak data)
   - Waveform PNG visualization
   - **Dependencies**: Worker process
 
-- **[P2] Document Processing** [4h]
+- **[P2] Document Processing** [4h] -- NOT STARTED
   - PDF thumbnail/previews
   - DOCX/PPTX/XLSX conversion (LibreOffice headless)
   - **Dependencies**: Worker process, R4 research
 
-- **[P2] Metadata Extraction** [2h]
+- **[P2] Metadata Extraction** [2h] -- COMPLETED
   - FFprobe integration
   - 33 built-in fields extraction
   - Store in files table
@@ -808,6 +808,31 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Media Processing Pipeline Implementation
+
+**Completed Work:**
+1. **BullMQ Setup COMPLETED** - Installed bullmq package, created queue infrastructure
+2. **Worker Process COMPLETED** - `src/media/worker.ts` with graceful shutdown
+3. **Metadata Extraction Processor COMPLETED** - FFprobe integration for all media types
+4. **Thumbnail Generation Processor COMPLETED** - Video and image thumbnails in 3 sizes
+5. **Configuration Extended** - Added 15+ media processing environment variables
+6. **Upload Integration** - Files route now enqueues processing jobs on upload completion
+
+**New Files Created:**
+- `src/media/types.ts` - Job types, queue names, configuration constants
+- `src/media/queue.ts` - BullMQ queue management, job enqueueing
+- `src/media/worker.ts` - Worker entry point with graceful shutdown
+- `src/media/ffmpeg.ts` - FFmpeg/FFprobe utilities, HDR detection
+- `src/media/index.ts` - High-level media processing API
+- `src/media/processors/metadata.ts` - Metadata extraction job processor
+- `src/media/processors/thumbnail.ts` - Thumbnail generation job processor
+
+**Package Scripts Added:**
+- `npm run worker` - Start media processing worker
+- `npm run dev:worker` - Start worker in development mode with watch
+
+**Media Processing Progress:** 0% → 30% (Infrastructure + metadata + thumbnails)
 
 ### 2026-02-16 Iteration 1 Progress Update
 
