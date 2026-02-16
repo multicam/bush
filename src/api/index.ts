@@ -11,6 +11,7 @@ import { serve } from "@hono/node-server";
 import { config, scrubSecrets } from "../config/index.js";
 import { storage } from "../storage/index.js";
 import { sqlite } from "../db/index.js";
+import { redisHealthCheck } from "../redis/index.js";
 
 const app = new Hono();
 
@@ -43,8 +44,11 @@ app.get("/health", async (c) => {
   // Check 2: Redis connection
   try {
     const start = Date.now();
-    // TODO: Add Redis check when Redis client is implemented
-    checks.redis = { status: "ok", latency: Date.now() - start };
+    const isHealthy = await redisHealthCheck();
+    checks.redis = {
+      status: isHealthy ? "ok" : "error",
+      latency: Date.now() - start,
+    };
   } catch (error) {
     checks.redis = { status: "error", error: String(error) };
   }
