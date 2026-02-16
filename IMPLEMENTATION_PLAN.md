@@ -2,14 +2,19 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 0 -- Zero code exists. All items below are NOT STARTED.
-**Research confirms**: Zero code exists (no `src/` directory, no `package.json`, no dependencies). 5 git commits, all planning/specs. All items below remain NOT STARTED.
+**Research confirms**: Zero code exists (no `src/` directory, no `package.json`, no dependencies). 6 git commits, all planning/specs. All items below remain NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN SPEC INCONSISTENCIES (Resolve Before Implementation)
 
-1. **Token TTL mismatch**: `specs/12-authentication.md` (lines 74-75) says access token TTL = 5 minutes, refresh token TTL = 7 days. `specs/17-api-complete.md` (lines 33-34) says access token = 1 hour, refresh token = 30 days. **Must resolve before Phase 1.3 (Authentication).** Recommendation: adopt auth spec values (5 min / 7 days) as they are more security-conscious; update API spec to match.
+1. **Token TTL mismatch**: `specs/12-authentication.md` (lines 74-75) says access token TTL = 5 minutes, refresh token TTL = 7 days. `specs/17-api-complete.md` (lines 33-34) says access token = 1 hour, refresh token = 30 days. **Must resolve before Phase 1.3 (Authentication).**
+   - **Resolution Options**:
+     - Option A: Update `specs/17-api-complete.md` lines 33-34 to 5 min / 7 days (security-focused, recommended)
+     - Option B: Update `specs/12-authentication.md` lines 74-75 to 1 hour / 30 days (usability-focused)
+   - **Decision deadline**: Before Phase 1.3 (Authentication)
 
-2. **README deferral labels**: `specs/README.md` (lines 43-45) defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. These are needed earlier per this plan's blocking dependencies. Update README when those specs are written.
+2. **README deferral labels**: `specs/README.md` (lines 43-45) defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. These are needed earlier per this plan's blocking dependencies.
+   - **ACTION**: When specs/13-billing-and-plans.md and specs/19-accessibility.md are written, update `specs/README.md` to remove the "Phase 3+" and "Phase 5" deferral labels.
 
 ---
 
@@ -72,7 +77,7 @@ This section is the single source of truth for what to do next. It lists every a
    - Document process supervision, crash recovery, zero-downtime deployment
    - Determine how to run Next.js + Bun backend on same or separate hosts
    - Design process supervision for FFmpeg workers (long-running, crash-prone)
-   - Deliverable: Deployment architecture document
+   - **Deliverable**: `docs/deployment-architecture.md` (to be created)
    - **Priority**: CRITICAL -- informs project structure
    - **Spec refs**: none (new document to create)
 
@@ -82,12 +87,15 @@ This section is the single source of truth for what to do next. It lists every a
    - Set up Vitest testing framework
    - Configure GitHub Actions CI/CD pipeline
    - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime).
-   - **Create `.env.example`** with all required environment variables: WorkOS API key, WorkOS client ID, redirect URIs, Redis URL, S3 endpoint/key/secret/bucket, database path, FFmpeg path, and application secrets.
+   - **Create `.env.example`** with all 47 environment variables from `specs/20-configuration-and-secrets.md` Section 3 (WorkOS, Redis, S3, database, FFmpeg, session, rate limiting, upload, backup, etc.)
+   - **Create `.env.test`** for deterministic test configuration per `specs/20-configuration-and-secrets.md` Section 8
+   - **Create `.gitignore`** with comprehensive rules per `specs/20-configuration-and-secrets.md` Section 9
+   - **Set up Zod config validation** at startup per `specs/20-configuration-and-secrets.md` Section 4 (fail fast on missing/invalid config)
    - **Resolve Next.js + Bun API architecture**: Does Bun serve as the Next.js runtime (single process) or is there a separate Bun HTTP server alongside Next.js (two processes)? This is the most consequential architectural decision and must be answered by R2 before Bootstrap proceeds. If separate: define the port/routing strategy and CORS configuration.
-   - Create development environment setup docs
+   - Create development environment setup docs (reference `specs/20-configuration-and-secrets.md` Section 7 for MinIO, Mailpit, Redis local setup)
    - **Depends on**: R2 direction (not full completion)
    - **Blocks**: Everything else
-   - **Spec refs**: `specs/README.md`
+   - **Spec refs**: `specs/README.md`, `specs/20-configuration-and-secrets.md`
 
 3. **[QW1] Create File Type Registry** [0.5 day, part of Bootstrap] -- NOT STARTED
    - Central registry mapping MIME types to file categories (video/audio/image/document)
@@ -131,12 +139,12 @@ This section is the single source of truth for what to do next. It lists every a
 **Backend Foundation Stream (continued):**
 
 7. **[1.6] Set up Object Storage** [1 day] -- NOT STARTED
-   - Implement provider-agnostic S3-compatible storage interface
+   - Implement provider-agnostic S3-compatible storage interface per `specs/16-storage-and-data.md`
    - Choose initial provider (Cloudflare R2 for zero egress, or Backblaze B2 for low cost)
    - Configure pre-signed URL generation (upload and download)
    - Implement multipart upload support
    - Define storage key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
-   - Set up development storage (MinIO or B2 free tier)
+   - Set up development storage (MinIO -- see detailed setup instructions in `specs/20-configuration-and-secrets.md` Section 7)
    - **Depends on**: 1.1 (Bootstrap)
    - **Does NOT depend on R1 or R5** -- basic storage needs no scale research
    - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
@@ -247,12 +255,13 @@ This section is the single source of truth for what to do next. It lists every a
     - Cursor-based pagination (default 50, max 100 items per page)
     - JSON:API-style response format with proper error responses (use QW4 error utilities)
     - CRUD routes for core resources: accounts, workspaces, projects, folders, files, version_stacks, users, comments, shares, custom_fields, webhooks
-    - Plan-gate middleware: check user plan tier before allowing gated features
+    - Plan-gate middleware: check user plan tier before allowing gated features (requires specs/13-billing-and-plans.md to define plan-gated features)
+    - **Health check endpoint**: `GET /health` verifies config, database, Redis, storage connectivity per `specs/20-configuration-and-secrets.md` Section 12. Returns 200 OK or 503 with component status.
     - OpenAPI spec generation for documentation
     - API integration tests
     - **Depends on**: 1.3, 1.4
     - **Blocks**: 1.7b, all Phase 2+
-    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6, `specs/00-atomic-features.md` Sections 18.2-18.5
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6, `specs/00-atomic-features.md` Sections 18.2-18.5, `specs/17-api-complete.md`
 
 18. **[1.7b] Complete Web App Shell (connected)** [2 days] -- NOT STARTED
     - Connect to API endpoints (replace mock data with real calls)
@@ -351,6 +360,15 @@ This section is the single source of truth for what to do next. It lists every a
 **Iteration 1 Definition (explicit)**: A user can sign up via WorkOS, create a workspace and project, upload files (with chunked/resumable support), see processing produce thumbnails and proxies, browse files in grid/list view, and navigate the folder tree. Items 2.4-2.12 (viewers, comments, metadata, notifications, search) are post-Iteration 1.
 
 **Solo developer timeline caveat**: The 4-week timeline assumes 2+ engineers working parallel streams. A solo developer should plan 5-6 weeks, as the backend (Stream 1) and frontend (Stream 4) cannot truly run in parallel.
+
+### Milestone Checkpoints
+
+| Day | Milestone | Verify |
+|-----|-----------|--------|
+| 7 | Foundation Ready | Schema migrated, Redis connected, MinIO bucket created, WorkOS configured |
+| 14 | API Ready | Auth working, API responding, Web Shell connected to API |
+| 21 | Upload Working | Files upload, processing pipeline jobs queue |
+| 28 | Iteration 1 | User can sign up, create workspace/project, upload, see processed thumbnails, browse |
 
 ### Post-Iteration 1: Immediate Next Priorities (Weeks 5-8)
 
@@ -574,6 +592,7 @@ These small, high-leverage items should be built during their respective phases 
 - Client-side error handler: maps HTTP status codes to user-friendly messages
 - Request ID generation and propagation (middleware)
 - Structured logging helper: `log.info()`, `log.error()`, `log.warn()` with JSON output
+- **Secret scrubbing middleware**: Scrub sensitive values from logs per `specs/20-configuration-and-secrets.md` Section 6. Redact: WORKOS_API_KEY, WORKOS_WEBHOOK_SECRET, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, CDN_SIGNING_KEY, SMTP_PASS, SESSION_SECRET.
 - **Estimated effort**: 4 hours
 
 ---
@@ -858,6 +877,7 @@ Ordered by when they block implementation.
 | specs/19-accessibility.md | NOT STARTED | Days 1-3 | Informs all UI |
 | specs/11-security-features.md | **COMPLETE** (400 lines) | ~~Days 4-7~~ No action needed | 1.4 (Permissions) |
 | specs/13-billing-and-plans.md | NOT STARTED | Days 4-7 | 3.7 (Lifecycle), 5.1 (Billing) |
+| specs/20-configuration-and-secrets.md | **COMPLETE** (523 lines, 47 env vars, Zod validation) | Review Day 1 | 1.1 (Bootstrap) |
 
 > **NOTE on specs/README.md deferral discrepancy**: `specs/README.md` (lines 43-45) incorrectly defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. This is inconsistent with IMPLEMENTATION_PLAN.md blocking dependencies: billing is needed by Days 4-7 (blocks plan gates in Phase 1.5), and accessibility is needed by Days 1-3 (informs all UI work from Phase 1.7 onward). The IMPLEMENTATION_PLAN.md timeline is correct per blocking dependencies. The README deferral labels should be updated when those specs are written.
 
@@ -866,15 +886,26 @@ Ordered by when they block implementation.
 | Spec | Status | Write By | Blocks |
 |------|--------|----------|--------|
 | specs/15-media-processing.md | **COMPLETE** (579 lines, exact FFmpeg commands) | Validate Days 14-15 (after R4) | 2.2 (Processing) |
-| specs/14-realtime-collaboration.md | **COMPLETE** (19K, WebSocket protocol) | Review Days 11-14 | 2.9 (Comments), 2.11 (Notifications) |
+| specs/14-realtime-collaboration.md | **COMPLETE** (593 lines, WebSocket protocol) | Review Days 11-14 | 2.9 (Comments), 2.11 (Notifications) |
 
 #### Blocks Phase 3+
 
 | Spec | Status | Write By | Blocks |
 |------|--------|----------|--------|
-| specs/17-api-complete.md | **COMPLETE** (29K, full API spec) | Review Week 3-4 | 3.6 (Webhooks), Phase 4 |
-| specs/16-storage-and-data.md | **COMPLETE** (13K) | Review after R1 | 4.1 (Storage Connect) |
+| specs/17-api-complete.md | **COMPLETE** (918 lines, ~120 endpoints, full API spec) | Review Week 3-4 | 3.6 (Webhooks), Phase 4 |
+| specs/16-storage-and-data.md | **COMPLETE** (333 lines, storage architecture) | Review after R1 | 4.1 (Storage Connect) |
 | specs/18-mobile-complete.md | NOT STARTED | After Phase 2 | 4.3 (iOS App) |
+
+### Specs Needing Future Expansion
+
+These specs exist but are brief (<100 lines) and will need expansion before their respective phases:
+
+| Spec | Lines | Blocks | Expand By |
+|------|-------|--------|-----------|
+| specs/06-transcription-and-captions.md | 31 | 3.4 (Transcription) | Week 5 |
+| specs/09-transfer-app.md | 36 | 4.2 (Transfer Desktop App) | Week 6 |
+| specs/10-integrations.md | 53 | 4.5-4.6 (Adobe/NLE integrations) | Week 7 |
+| specs/07-camera-to-cloud.md | 39 | 4.6 (C2C partners) | Week 7 |
 
 ---
 
@@ -1330,11 +1361,12 @@ R8 (Search)        --> 3.5 [Defer]
 
 SPECS (must write or review before implementing)
 ================================
+specs/20-configuration.md      --> 1.1 (Bootstrap) [COMPLETE -- review Day 1]  ** NEW **
 specs/12-authentication.md     --> 1.3 (Auth) [COMPLETE -- review Days 1-3]
 specs/19-accessibility.md      --> informs all UI [NOT STARTED -- write Days 1-3]
 specs/11-security-features.md  --> 1.4 (Permissions) [COMPLETE -- no action needed]
 specs/13-billing-and-plans.md  --> 3.7, 5.1 [NOT STARTED -- write Days 4-7]
-specs/14-realtime-collab.md    --> 2.9, 2.11 [COMPLETE -- review Days 11-14]  ** MOVED EARLIER **
+specs/14-realtime-collab.md    --> 2.9, 2.11 [COMPLETE -- review Days 11-14]
 specs/15-media-processing.md   --> 2.2 (Processing) [COMPLETE -- validate Days 14-15 via R4]
 specs/17-api-complete.md       --> 3.6, Phase 4 [COMPLETE -- review Week 3-4]
 specs/16-storage-and-data.md   --> 4.1 [COMPLETE -- review after R1]
@@ -1476,3 +1508,29 @@ The following corrections address gaps and errors found during deep plan analysi
 36. **`specs/03-file-management.md` reference corrected** -- Phase 1.7 (Web Shell) incorrectly cited this spec for UI layout. Actual layout specs are in `specs/00-complete-support-documentation.md` Sections 4.2, 5.3 and `specs/00-atomic-features.md` Section 5.3.
 
 37. **R2 Redis hosting research added** -- Managed Redis provider selection (Upstash vs Redis Cloud vs self-hosted) added to R2 research scope since no-Docker constraint affects Redis deployment too.
+
+### Updates (2026-02-16 Plan Review)
+
+The following updates were made after comprehensive spec analysis and plan review.
+
+38. **specs/20-configuration-and-secrets.md integrated** -- This spec (523 lines, 47 environment variables, Zod validation schema) was missing from the plan. Added references throughout: Bootstrap (1.1), QW4 (secret scrubbing), spec status tables, dependency graph.
+
+39. **Bootstrap (1.1) expanded** -- Added explicit tasks: `.env.test` creation, `.gitignore` setup, Zod config validation at startup, reference to specs/20 for MinIO/Mailpit/Redis local setup.
+
+40. **Health check endpoint added to API Foundation (1.5)** -- `GET /health` endpoint required by specs/20 Section 12 to verify config, database, Redis, and storage connectivity.
+
+41. **Secret scrubbing middleware added to QW4** -- Log scrubbing for WORKOS_API_KEY, STORAGE_SECRET_KEY, SESSION_SECRET, etc. per specs/20 Section 6.
+
+42. **Milestone checkpoints added** -- Day 7, 14, 21, 28 checkpoints with explicit verification criteria for tracking progress.
+
+43. **Specs needing future expansion section added** -- Documented brief specs (<100 lines) that need expansion before their phases: specs/06, 07, 09, 10.
+
+44. **Token TTL inconsistency resolution path clarified** -- Added explicit options (A: security-focused, B: usability-focused) and decision deadline.
+
+45. **README deferral discrepancy action added** -- Explicit instruction to update specs/README.md when specs/13 and specs/19 are written.
+
+46. **R2 deliverable document named** -- `docs/deployment-architecture.md` specified as the deliverable.
+
+47. **Spec line counts corrected** -- specs/14-realtime-collaboration.md (593 lines), specs/16-storage-and-data.md (333 lines), specs/17-api-complete.md (918 lines) counts updated for accuracy.
+
+48. **1.6 Object Storage spec reference added** -- Added reference to specs/16-storage-and-data.md and specs/20-configuration-and-secrets.md for MinIO setup.
