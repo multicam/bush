@@ -203,3 +203,62 @@ export const notifications = sqliteTable("notifications", {
 }, (table) => ({
   userIdx: index("notifications_user_id_idx").on(table.userId),
 }));
+
+/**
+ * Permission levels for resources
+ */
+export type PermissionLevel = "full_access" | "edit_and_share" | "edit" | "comment_only" | "view_only";
+
+/**
+ * Workspace Permissions - User access to workspaces
+ */
+export const workspacePermissions = sqliteTable("workspace_permissions", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permission: text("permission", {
+    enum: ["full_access", "edit_and_share", "edit", "comment_only", "view_only"]
+  }).notNull().default("view_only"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  workspaceUserIdx: uniqueIndex("workspace_permissions_workspace_user_idx").on(table.workspaceId, table.userId),
+  workspaceIdx: index("workspace_permissions_workspace_id_idx").on(table.workspaceId),
+  userIdx: index("workspace_permissions_user_id_idx").on(table.userId),
+}));
+
+/**
+ * Project Permissions - User access to projects
+ */
+export const projectPermissions = sqliteTable("project_permissions", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permission: text("permission", {
+    enum: ["full_access", "edit_and_share", "edit", "comment_only", "view_only"]
+  }).notNull().default("view_only"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  projectUserIdx: uniqueIndex("project_permissions_project_user_idx").on(table.projectId, table.userId),
+  projectIdx: index("project_permissions_project_id_idx").on(table.projectId),
+  userIdx: index("project_permissions_user_id_idx").on(table.userId),
+}));
+
+/**
+ * Folder Permissions - User access to restricted folders
+ */
+export const folderPermissions = sqliteTable("folder_permissions", {
+  id: text("id").primaryKey(),
+  folderId: text("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permission: text("permission", {
+    enum: ["full_access", "edit_and_share", "edit", "comment_only", "view_only"]
+  }).notNull().default("view_only"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  folderUserIdx: uniqueIndex("folder_permissions_folder_user_idx").on(table.folderId, table.userId),
+  folderIdx: index("folder_permissions_folder_id_idx").on(table.folderId),
+  userIdx: index("folder_permissions_user_id_idx").on(table.userId),
+}));

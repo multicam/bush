@@ -32,6 +32,7 @@
       "@/auth": ["auth/index.ts"],
       "@/auth/types": ["auth/types.ts"],
       "@/redis": ["redis/index.ts"],
+      "@/permissions": ["permissions/index.ts"],
       "@/shared/*": ["shared/*"]
     }
   },

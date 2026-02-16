@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System IN PROGRESS (types, schema, service, tests done; integration tests and middleware pending), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -232,15 +232,16 @@ This section is the single source of truth for what to do next. It lists every a
     - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
     - **NOTE**: WorkOS handles identity verification, social auth, MFA, SSO, and token issuance. This may be faster than originally estimated (custom auth). Timeline kept at 3 days to account for role system, guest access, and account switcher complexity.
 
-15. **[1.4] Build Permission System** [2 days] -- NOT STARTED
-    - Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only
-    - Permission models: WorkspacePermission, ProjectPermission, FolderPermission
-    - Permission inheritance: Workspace > Project > Folder (cannot lower inherited permissions)
+15. **[1.4] Build Permission System** [2 days] -- IN PROGRESS
+    - Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only -- DONE (PermissionLevel type with hierarchy)
+    - Permission models: WorkspacePermission, ProjectPermission, FolderPermission -- DONE (schema tables added)
+    - Permission inheritance: Workspace > Project > Folder (cannot lower inherited permissions) -- DONE (service with inheritance logic)
     - Restricted Project/Folder logic (breaks inheritance chain, invite-only)
     - Access Groups for bulk permission management (Team+ feature -- plan gate check)
-    - Permission check middleware for API routes
-    - Guest role constraints: 1 project max, cannot invite others, cannot delete
-    - Extensive permission edge-case tests (see permission matrices in `specs/00-complete-support-documentation.md` 2.4, 2.5)
+    - Permission check middleware for API routes -- PENDING
+    - Guest role constraints: 1 project max, cannot invite others, cannot delete -- DONE (defined in types)
+    - Extensive permission edge-case tests (see permission matrices in `specs/00-complete-support-documentation.md` 2.4, 2.5) -- DONE (31 unit tests for permission types)
+    - Integration tests with database -- PENDING
     - **Depends on**: 1.2, 1.3
     - **Blocks**: 1.5, all Phase 2+
     - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.5, `specs/11-security-features.md`
@@ -971,12 +972,21 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 8-10 (may complete faster than estimated due to WorkOS delegation)
 - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
 
-### 1.4 Permission System [NOT STARTED]
+### 1.4 Permission System [IN PROGRESS]
 
-- Five levels, three models (Workspace/Project/Folder Permission)
-- Inheritance (cannot lower), restricted project/folder logic
-- Access Groups (Team+), Guest constraints (1 project max)
-- Permission check middleware, edge-case tests
+**Completed:**
+- PermissionLevel type with 5-level hierarchy (full_access > edit_and_share > edit > comment_only > view_only)
+- Permission tables in schema: workspacePermissions, projectPermissions, folderPermissions
+- Permission service with inheritance logic (cannot lower inherited permissions)
+- Guest role constraints defined (1 project max, cannot invite, cannot delete)
+- Unit tests for permission types (31 tests)
+
+**Remaining:**
+- Integration tests with database
+- Permission middleware for API routes
+- Access Groups for bulk permission management (Team+ feature)
+- Restricted Project/Folder logic (breaks inheritance chain, invite-only)
+
 - **Depends on**: 1.2, 1.3
 - **Blocks**: 1.5, all Phase 2+
 - **Timeline**: Days 11-12
