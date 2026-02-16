@@ -6,26 +6,141 @@
  */
 "use client";
 
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { Button, Badge } from "@/web/components/ui";
 import { useAuth } from "@/web/context";
+import {
+  workspacesApi,
+  projectsApi,
+  extractCollectionAttributes,
+  getErrorMessage,
+  type WorkspaceAttributes,
+  type ProjectAttributes,
+} from "@/web/lib/api";
 import styles from "./dashboard.module.css";
 
+interface Workspace extends WorkspaceAttributes {
+  id: string;
+}
+
+interface Project extends ProjectAttributes {
+  id: string;
+  workspaceName?: string;
+}
+
+interface DashboardStats {
+  workspacesCount: number;
+  projectsCount: number;
+}
+
+type LoadingState = "loading" | "error" | "loaded";
+
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, login } = useAuth();
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    workspacesCount: 0,
+    projectsCount: 0,
+  });
+  const [loadingState, setLoadingState] = useState<LoadingState>("loading");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Mock data for static shell - will be replaced with real API calls
-  const recentProjects = [
-    { id: "1", name: "Marketing Campaign Q1", files: 45, status: "active" },
-    { id: "2", name: "Product Launch Video", files: 23, status: "active" },
-    { id: "3", name: "Brand Guidelines 2024", files: 12, status: "archived" },
-  ];
+  useEffect(() => {
+    async function fetchDashboardData() {
+      // Wait for auth to load
+      if (authLoading) return;
 
-  const recentActivity = [
-    { id: "1", type: "upload", message: "John uploaded final_cut_v3.mp4", time: "2 hours ago" },
-    { id: "2", type: "comment", message: "Sarah commented on brand_logo.png", time: "4 hours ago" },
-    { id: "3", type: "share", message: "You shared Project Overview with client", time: "1 day ago" },
-  ];
+      // Redirect to login if not authenticated
+      if (!isAuthenticated) {
+        login(window.location.pathname);
+        return;
+      }
+
+      try {
+        setLoadingState("loading");
+
+        // Fetch workspaces
+        const workspacesResponse = await workspacesApi.list();
+        const workspaceItems = extractCollectionAttributes(workspacesResponse) as Workspace[];
+
+        // Fetch projects for each workspace
+        const allProjects: Project[] = [];
+        for (const workspace of workspaceItems) {
+          try {
+            const projectsResponse = await projectsApi.list(workspace.id, { limit: 10 });
+            const projectItems = extractCollectionAttributes(projectsResponse) as Project[];
+            const projectsWithWorkspace = projectItems.map((p) => ({
+              ...p,
+              workspaceName: workspace.name,
+            }));
+            allProjects.push(...projectsWithWorkspace);
+          } catch (error) {
+            console.error(`Failed to fetch projects for workspace ${workspace.id}:`, error);
+          }
+        }
+
+        // Sort by updated date and take the most recent 5
+        const sortedProjects = allProjects
+          .filter((p) => !p.archivedAt) // Only active projects
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          .slice(0, 5);
+        setRecentProjects(sortedProjects);
+
+        // Set stats
+        setStats({
+          workspacesCount: workspaceItems.length,
+          projectsCount: allProjects.filter((p) => !p.archivedAt).length,
+        });
+
+        setLoadingState("loaded");
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        setErrorMessage(getErrorMessage(error));
+        setLoadingState("error");
+      }
+    }
+
+    fetchDashboardData();
+  }, [isAuthenticated, authLoading, login]);
+
+  // Loading state
+  if (authLoading || loadingState === "loading") {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Loading dashboard...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Error state
+  if (loadingState === "error") {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <div className={styles.error}>
+            <h2>Failed to load dashboard</h2>
+            <p>{errorMessage}</p>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setLoadingState("loading");
+                setErrorMessage("");
+                window.location.reload();
+              }}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -50,20 +165,12 @@ export default function DashboardPage() {
         {/* Stats Overview */}
         <div className={styles.stats}>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>3</span>
+            <span className={styles.statValue}>{stats.workspacesCount}</span>
             <span className={styles.statLabel}>Workspaces</span>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statValue}>12</span>
+            <span className={styles.statValue}>{stats.projectsCount}</span>
             <span className={styles.statLabel}>Projects</span>
-          </div>
-          <div className={styles.statCard}>
-            <span className={styles.statValue}>248</span>
-            <span className={styles.statLabel}>Files</span>
-          </div>
-          <div className={styles.statCard}>
-            <span className={styles.statValue}>15</span>
-            <span className={styles.statLabel}>Team Members</span>
           </div>
         </div>
 
@@ -74,75 +181,84 @@ export default function DashboardPage() {
               <h2 className={styles.sectionTitle}>Recent Projects</h2>
               <a href="/projects" className={styles.sectionLink}>View all</a>
             </div>
-            <div className={styles.projectList}>
-              {recentProjects.map((project) => (
-                <a
-                  key={project.id}
-                  href={`/projects/${project.id}`}
-                  className={styles.projectCard}
-                >
-                  <div className={styles.projectInfo}>
-                    <span className={styles.projectName}>{project.name}</span>
-                    <span className={styles.projectMeta}>
-                      {project.files} files
-                    </span>
-                  </div>
-                  <Badge
-                    variant={project.status === "active" ? "success" : "default"}
-                    size="sm"
+            {recentProjects.length > 0 ? (
+              <div className={styles.projectList}>
+                {recentProjects.map((project) => (
+                  <a
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                    className={styles.projectCard}
                   >
-                    {project.status}
-                  </Badge>
-                </a>
-              ))}
-            </div>
+                    <div className={styles.projectInfo}>
+                      <span className={styles.projectName}>{project.name}</span>
+                      <span className={styles.projectMeta}>
+                        {project.workspaceName}
+                      </span>
+                    </div>
+                    <Badge
+                      variant={project.isRestricted ? "warning" : "success"}
+                      size="sm"
+                    >
+                      {project.isRestricted ? "restricted" : "active"}
+                    </Badge>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptySection}>
+                <p>No projects yet</p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => window.location.href = "/projects/new"}
+                >
+                  Create your first project
+                </Button>
+              </div>
+            )}
           </section>
 
-          {/* Recent Activity */}
+          {/* Quick Actions */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Recent Activity</h2>
+              <h2 className={styles.sectionTitle}>Quick Actions</h2>
             </div>
-            <div className={styles.activityList}>
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className={styles.activityItem}>
-                  <div className={styles.activityIcon}>
-                    {activity.type === "upload" && "📤"}
-                    {activity.type === "comment" && "💬"}
-                    {activity.type === "share" && "🔗"}
-                  </div>
-                  <div className={styles.activityContent}>
-                    <span className={styles.activityMessage}>{activity.message}</span>
-                    <span className={styles.activityTime}>{activity.time}</span>
-                  </div>
-                </div>
-              ))}
+            <div className={styles.actionList}>
+              <a href="/files/upload" className={styles.actionItem}>
+                <span className={styles.actionIcon}>+</span>
+                <span className={styles.actionLabel}>Upload Files</span>
+              </a>
+              <a href="/shares/new" className={styles.actionItem}>
+                <span className={styles.actionIcon}>#</span>
+                <span className={styles.actionLabel}>Create Share</span>
+              </a>
+              <a href="/settings/team" className={styles.actionItem}>
+                <span className={styles.actionIcon}>*</span>
+                <span className={styles.actionLabel}>Invite Team</span>
+              </a>
+              <a href="/workspaces/new" className={styles.actionItem}>
+                <span className={styles.actionIcon}>+</span>
+                <span className={styles.actionLabel}>New Workspace</span>
+              </a>
             </div>
           </section>
         </div>
 
-        {/* Quick Actions */}
-        <section className={styles.quickActions}>
-          <h2 className={styles.sectionTitle}>Quick Actions</h2>
-          <div className={styles.actionGrid}>
-            <a href="/files/upload" className={styles.actionCard}>
-              <span className={styles.actionIcon}>📤</span>
-              <span className={styles.actionLabel}>Upload Files</span>
-            </a>
-            <a href="/shares/new" className={styles.actionCard}>
-              <span className={styles.actionIcon}>🔗</span>
-              <span className={styles.actionLabel}>Create Share</span>
-            </a>
-            <a href="/settings/team" className={styles.actionCard}>
-              <span className={styles.actionIcon}>👥</span>
-              <span className={styles.actionLabel}>Invite Team</span>
-            </a>
-            <a href="/collections/new" className={styles.actionCard}>
-              <span className={styles.actionIcon}>📑</span>
-              <span className={styles.actionLabel}>New Collection</span>
-            </a>
-          </div>
-        </section>
+        {/* Getting Started */}
+        {stats.workspacesCount === 0 && (
+          <section className={styles.gettingStarted}>
+            <h2 className={styles.sectionTitle}>Getting Started</h2>
+            <p className={styles.gettingStartedText}>
+              Welcome to Bush! To get started, create your first workspace to organize your projects and files.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => window.location.href = "/workspaces/new"}
+            >
+              Create your first workspace
+            </Button>
+          </section>
+        )}
       </div>
     </AppLayout>
   );

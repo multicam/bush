@@ -216,6 +216,121 @@
   color: var(--text-primary);
 }
 
+/* Loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  margin: 0;
+}
+
+/* Error state */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.error h2 {
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.error p {
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem;
+}
+
+/* Empty Section */
+.emptySection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptySection p {
+  margin-bottom: 1rem;
+}
+
+/* Action List */
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.actionItem:hover {
+  border-color: var(--color-primary);
+  background-color: var(--bg-secondary);
+}
+
+.actionItem .actionIcon {
+  font-size: 1rem;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.actionItem .actionLabel {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* Getting Started */
+.gettingStarted {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 2rem;
+  text-align: center;
+}
+
+.gettingStartedText {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .grid {

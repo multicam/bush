@@ -6,70 +6,111 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/web/components/layout";
-import { Button, Badge } from "@/web/components/ui";
+import { Button } from "@/web/components/ui";
+import { useAuth } from "@/web/context";
+import {
+  workspacesApi,
+  extractCollectionAttributes,
+  getErrorMessage,
+  type WorkspaceAttributes,
+} from "@/web/lib/api";
 import styles from "./workspaces.module.css";
 
-interface Workspace {
+interface Workspace extends WorkspaceAttributes {
   id: string;
-  name: string;
-  description: string;
-  projectsCount: number;
-  membersCount: number;
-  storageUsed: string;
-  role: "owner" | "admin" | "member";
 }
 
+type LoadingState = "loading" | "error" | "loaded";
+
 export default function WorkspacesPage() {
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>("loading");
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock data for static shell - will be replaced with real API calls
-  const workspaces: Workspace[] = [
-    {
-      id: "1",
-      name: "Marketing Team",
-      description: "Marketing campaigns and brand assets",
-      projectsCount: 8,
-      membersCount: 12,
-      storageUsed: "156 GB",
-      role: "admin",
-    },
-    {
-      id: "2",
-      name: "Product Development",
-      description: "Product demos, tutorials, and documentation",
-      projectsCount: 5,
-      membersCount: 8,
-      storageUsed: "89 GB",
-      role: "member",
-    },
-    {
-      id: "3",
-      name: "Client Projects",
-      description: "External client work and deliverables",
-      projectsCount: 15,
-      membersCount: 6,
-      storageUsed: "234 GB",
-      role: "owner",
-    },
-  ];
+  useEffect(() => {
+    async function fetchWorkspaces() {
+      // Wait for auth to load
+      if (authLoading) return;
+
+      // Redirect to login if not authenticated
+      if (!isAuthenticated) {
+        login(window.location.pathname);
+        return;
+      }
+
+      try {
+        setLoadingState("loading");
+        const response = await workspacesApi.list();
+        const items = extractCollectionAttributes(response);
+        setWorkspaces(items as Workspace[]);
+        setLoadingState("loaded");
+      } catch (error) {
+        console.error("Failed to fetch workspaces:", error);
+        setErrorMessage(getErrorMessage(error));
+        setLoadingState("error");
+      }
+    }
+
+    fetchWorkspaces();
+  }, [isAuthenticated, authLoading, login]);
 
   const filteredWorkspaces = workspaces.filter((workspace) =>
     workspace.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workspace.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (workspace.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
-  const getRoleBadgeVariant = (role: Workspace["role"]) => {
-    switch (role) {
-      case "owner":
-        return "primary";
-      case "admin":
-        return "success";
-      default:
-        return "default";
-    }
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
+
+  // Loading state
+  if (authLoading || loadingState === "loading") {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Loading workspaces...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Error state
+  if (loadingState === "error") {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <div className={styles.error}>
+            <h2>Failed to load workspaces</h2>
+            <p>{errorMessage}</p>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setLoadingState("loading");
+                setErrorMessage("");
+                // Re-trigger fetch
+                window.location.reload();
+              }}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -107,23 +148,15 @@ export default function WorkspacesPage() {
             >
               <div className={styles.cardHeader}>
                 <h3 className={styles.cardTitle}>{workspace.name}</h3>
-                <Badge variant={getRoleBadgeVariant(workspace.role)} size="sm">
-                  {workspace.role}
-                </Badge>
               </div>
-              <p className={styles.cardDescription}>{workspace.description}</p>
+              <p className={styles.cardDescription}>
+                {workspace.description || "No description"}
+              </p>
               <div className={styles.cardStats}>
                 <div className={styles.stat}>
-                  <span className={styles.statValue}>{workspace.projectsCount}</span>
-                  <span className={styles.statLabel}>Projects</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{workspace.membersCount}</span>
-                  <span className={styles.statLabel}>Members</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{workspace.storageUsed}</span>
-                  <span className={styles.statLabel}>Used</span>
+                  <span className={styles.statLabel}>
+                    Created {formatDate(workspace.createdAt)}
+                  </span>
                 </div>
               </div>
             </a>
@@ -136,6 +169,14 @@ export default function WorkspacesPage() {
             {searchQuery && (
               <Button variant="secondary" onClick={() => setSearchQuery("")}>
                 Clear search
+              </Button>
+            )}
+            {workspaces.length === 0 && (
+              <Button
+                variant="primary"
+                onClick={() => window.location.href = "/workspaces/new"}
+              >
+                Create your first workspace
               </Button>
             )}
           </div>
