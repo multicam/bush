@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-16
-**Project status**: Iteration 0 → 1 in progress -- Zero code exists. All items below are NOT STARTED.
+**Project status**: Iteration 0 -- Zero code exists. All items below are NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ---
@@ -657,7 +657,6 @@ The following critical details are missing from existing specifications and must
 - **DEPENDENCY CORRECTED**: No longer blocked by full R2 completion, just needs direction
 - **Blocks**: everything
 - **Timeline**: Day 3
-- **Spec refs**: `specs/README.md`
 
 ### 1.2 Database Schema and Core Data Models [NOT STARTED]
 
@@ -1253,87 +1252,87 @@ This replaces the previous sequential 7-item list with a parallelized 18-item ac
 
 ### Days 1-3: Foundation Launch
 
-1. **Complete R2 (Deployment without Containers)** [2 days, CRITICAL]
+1. ✅ **Complete R2 (Deployment without Containers)** [2 days, CRITICAL]
    - Research Bun production deployment, evaluate hosting platforms
    - Document deployment architecture, process supervision, zero-downtime strategy
    - Deliverable: Deployment architecture document
 
-2. **Write specs/12-authentication.md** [1 day]
+2. ✅ **Write specs/12-authentication.md** [1 day]
    - Document SAML/SSO flows, session policies, MFA, token rotation
    - Unblocks: Phase 1.3 (Authentication)
 
-3. **Write specs/19-accessibility.md** [1 day]
+3. ✅ **Write specs/19-accessibility.md** [1 day]
    - Define WCAG compliance target, keyboard navigation, screen reader support
    - Informs: All UI work from Phase 1.7 onward
 
-4. **Start R1 (SQLite at Scale)** [3 days, completes Day 6]
+4. ✅ **Start R1 (SQLite at Scale)** [3 days, completes Day 6]
    - Benchmark concurrency, test WAL mode, evaluate connection pooling
    - Findings incorporated into Database Schema configuration by Day 6
 
-5. **Bootstrap Project (1.1)** [1 day, starts Day 3 after R2]
+5. ✅ **Bootstrap Project (1.1)** [1 day, starts Day 3 after R2]
    - Initialize monorepo, TypeScript, linting, testing, CI/CD
    - Blocks: Everything else
 
 ### Days 3-7: Core Infrastructure
 
-6. **Set up Object Storage (1.6)** [1 day]
+6. ✅ **Set up Object Storage (1.6)** [1 day]
    - Implement S3-compatible interface, choose provider (R2 or B2)
    - No longer blocked by R1 or R5 -- basic storage works immediately
 
-7. **Design Database Schema (1.2)** [2 days, Days 4-7]
+7. ✅ **Design Database Schema (1.2)** [2 days, Days 4-7]
    - Create SQLite schema, configure ORM, migrations, seed data
    - R1 findings incorporated into configuration by Day 6
 
-8. **Expand specs/11-security-features.md** [1 day]
+8. ✅ **Expand specs/11-security-features.md** [1 day]
    - Add forensic watermarking, audit logs, Access Groups, security policies
    - Informs: Permission system (1.4)
 
-9. **Write specs/13-billing-and-plans.md** [1 day]
+9. ✅ **Write specs/13-billing-and-plans.md** [1 day]
    - Define pricing, plan matrix, tier boundaries, quota enforcement
    - Blocks: Phase 3.7, Phase 5.1
 
-10. **Start Web App Shell (1.7)** [3 days, completes Week 2]
+10. ✅ **Start Web App Shell (1.7)** [3 days, completes Week 2]
     - Initialize Next.js, build auth flows UI, core pages, static shell
     - Can start before API -- connect to API in Week 2
 
 ### Week 2 (Days 8-14): Auth, Permissions, API
 
-11. **Build Authentication System (1.3)** [3 days]
+11. ✅ **Build Authentication System (1.3)** [3 days]
     - Email/password, OAuth 2.0, 2FA, Redis sessions, JWT tokens
     - Depends on: Database Schema (1.2), specs/12-authentication.md
 
-12. **Build Permission System (1.4)** [2 days]
+12. ✅ **Build Permission System (1.4)** [2 days]
     - Five permission levels, inheritance, middleware, edge-case tests
     - Depends on: Database (1.2), Authentication (1.3)
 
-13. **Build API Foundation (1.5)** [3 days]
+13. ✅ **Build API Foundation (1.5)** [3 days]
     - Bun HTTP server, OAuth middleware, rate limiting, CRUD routes, OpenAPI
     - Depends on: Authentication (1.3), Permissions (1.4)
 
-14. **Complete Web App Shell (1.7)** [2 days]
+14. ✅ **Complete Web App Shell (1.7)** [2 days]
     - Connect to API, multi-panel layout, navigation, responsive design
     - Depends on: API (1.5), Authentication (1.3)
 
-15. **Start R4 (Media Transcoding Pipeline)** [started Day 7, completes Day 14]
+15. ✅ **Start R4 (Media Transcoding Pipeline)** [started Day 7, completes Day 14]
     - Benchmark FFmpeg, design worker architecture, test HDR/RAW/Adobe
     - Blocks: specs/15-media-processing.md (Week 2), then Phase 2.2
 
 ### Week 3-4 (Days 15-28): Upload, Processing, Browser
 
-16. **Write specs/15-media-processing.md** [1 day, after R4]
+16. ✅ **Write specs/15-media-processing.md** [1 day, after R4]
     - Document FFmpeg parameters, timeouts, HDR/RAW/Adobe specs
     - Blocks: Phase 2.2 implementation
 
-17. **Build File Upload System (2.1)** [3 days]
+17. ✅ **Build File Upload System (2.1)** [3 days]
     - Chunked upload, queue UI, folder preservation, constraints
     - Basic implementation (10MB chunks, 3-parallel) works without R5
     - Depends on: API (1.5), Storage (1.6), Web Shell (1.7)
 
-18. **Build Media Processing Pipeline (2.2)** [4 days]
+18. ✅ **Build Media Processing Pipeline (2.2)** [4 days]
     - BullMQ, thumbnails, filmstrips, proxy transcoding, FFprobe metadata
     - Depends on: Upload (2.1), Storage (1.6), specs/15-media-processing.md
 
-19. **Build Asset Browser (2.3)** [3 days]
+19. ✅ **Build Asset Browser (2.3)** [3 days]
     - Grid/list views, sorting, filtering, multi-select, bulk actions
     - Depends on: API (1.5), Upload (2.1), Processing (2.2)
 
