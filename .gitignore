@@ -1,1 +1,72 @@
-settings.local.json
+# =============================================================================
+# Bush Platform - Git Ignore Rules
+# =============================================================================
+
+# -- PHPStorm --
+.idea
+
+# -- Claude settings --
+.claude/settings.local.json
+
+# -- Environment files with secrets --
+.env.local
+.env.production
+.env.*.local
+
+# -- Database --
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# -- MinIO data --
+data/minio/
+
+# -- Media temp files --
+data/tmp/
+
+# -- Dependencies --
+node_modules/
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# -- Build output --
+.next/
+dist/
+out/
+build/
+
+# -- Test coverage --
+coverage/
+.nyc_output/
+
+# -- IDE --
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# -- OS files --
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -- Logs --
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log
+
+# -- TypeScript cache --
+*.tsbuildinfo
+
+# -- Environment specific --
+.env

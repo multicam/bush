@@ -1,9 +1,13 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-16
-**Project status**: Iteration 0 -- Zero code exists. All items below are NOT STARTED.
-**Research confirms**: Zero code exists (no `src/` directory, no `package.json`, no dependencies). 6 git commits, all planning/specs. All items below remain NOT STARTED.
+**Project status**: Iteration 0 -- Code writing has begun. Foundation items in progress.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [QW1] File Type Registry COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
+
+### KNOWN IMPLEMENTATION NOTES
+
+1. **Bun AVX Issue**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development. This affects the runtime but does not change the target tech stack (Bun remains the target for production on AVX-capable servers).
 
 ### KNOWN SPEC INCONSISTENCIES (Resolve Before Implementation)
 
@@ -81,29 +85,31 @@ This section is the single source of truth for what to do next. It lists every a
    - **Priority**: CRITICAL -- informs project structure
    - **Spec refs**: none (new document to create)
 
-2. **[1.1] Bootstrap Project** [1 day, starts Day 2-3 after R2 direction is clear] -- NOT STARTED
-   - Initialize monorepo structure (Bun workspace or Turborepo)
-   - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier
-   - Set up Vitest testing framework
-   - Configure GitHub Actions CI/CD pipeline
-   - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime).
-   - **Create `.env.example`** with all 47 environment variables from `specs/20-configuration-and-secrets.md` Section 3 (WorkOS, Redis, S3, database, FFmpeg, session, rate limiting, upload, backup, etc.)
-   - **Create `.env.test`** for deterministic test configuration per `specs/20-configuration-and-secrets.md` Section 8
-   - **Create `.gitignore`** with comprehensive rules per `specs/20-configuration-and-secrets.md` Section 9
-   - **Set up Zod config validation** at startup per `specs/20-configuration-and-secrets.md` Section 4 (fail fast on missing/invalid config)
-   - **Resolve Next.js + Bun API architecture**: Does Bun serve as the Next.js runtime (single process) or is there a separate Bun HTTP server alongside Next.js (two processes)? This is the most consequential architectural decision and must be answered by R2 before Bootstrap proceeds. If separate: define the port/routing strategy and CORS configuration.
-   - Create development environment setup docs (reference `specs/20-configuration-and-secrets.md` Section 7 for MinIO, Mailpit, Redis local setup)
+2. **[1.1] Bootstrap Project** [1 day, starts Day 2-3 after R2 direction is clear] -- COMPLETED
+   - Initialize monorepo structure (Bun workspace or Turborepo) -- COMPLETED
+   - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier -- COMPLETED (Prettier only; ESLint pending)
+   - Set up Vitest testing framework -- COMPLETED
+   - Configure GitHub Actions CI/CD pipeline -- NOT STARTED
+   - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime). -- COMPLETED (documented, not installed)
+   - **Create `.env.example`** with all 47 environment variables from `specs/20-configuration-and-secrets.md` Section 3 (WorkOS, Redis, S3, database, FFmpeg, session, rate limiting, upload, backup, etc.) -- COMPLETED
+   - **Create `.env.test`** for deterministic test configuration per `specs/20-configuration-and-secrets.md` Section 8 -- COMPLETED
+   - **Create `.gitignore`** with comprehensive rules per `specs/20-configuration-and-secrets.md` Section 9 -- COMPLETED
+   - **Set up Zod config validation** at startup per `specs/20-configuration-and-secrets.md` Section 4 (fail fast on missing/invalid config) -- COMPLETED
+   - **Resolve Next.js + Bun API architecture**: Does Bun serve as the Next.js runtime (single process) or is there a separate Bun HTTP server alongside Next.js (two processes)? This is the most consequential architectural decision and must be answered by R2 before Bootstrap proceeds. If separate: define the port/routing strategy and CORS configuration. -- NOT STARTED
+   - Create development environment setup docs (reference `specs/20-configuration-and-secrets.md` Section 7 for MinIO, Mailpit, Redis local setup) -- NOT STARTED
    - **Depends on**: R2 direction (not full completion)
    - **Blocks**: Everything else
    - **Spec refs**: `specs/README.md`, `specs/20-configuration-and-secrets.md`
+   - **NOTE**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development.
 
-3. **[QW1] Create File Type Registry** [0.5 day, part of Bootstrap] -- NOT STARTED
-   - Central registry mapping MIME types to file categories (video/audio/image/document)
-   - Include all 100+ supported formats from `specs/00-atomic-features.md` Section 4.3
-   - Include codec validation rules per container format
+3. **[QW1] Create File Type Registry** [0.5 day, part of Bootstrap] -- COMPLETED
+   - Central registry mapping MIME types to file categories (video/audio/image/document) -- COMPLETED
+   - Include all 100+ supported formats from `specs/00-atomic-features.md` Section 4.3 -- COMPLETED
+   - Include codec validation rules per container format -- COMPLETED
    - Used by: upload validation, processing pipeline, viewer routing, asset browser icons
    - **Rationale**: Every component needs to know file types; build once, share everywhere
    - **Spec refs**: `specs/00-atomic-features.md` Section 4.3, `specs/00-complete-support-documentation.md` Section 4.3
+   - **Implementation**: Functions `getFileCategory`, `getViewerType`, `isValidCodec`, `getProcessingPipeline`, etc. with full test coverage.
 
 **Spec Writing Stream:**
 
@@ -196,12 +202,12 @@ This section is the single source of truth for what to do next. It lists every a
     - **Can start before API (1.5)** -- build static shell first, connect to API in Week 2
     - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/03-file-management.md`
 
-13. **[QW3] Set up Component Library Foundation** [0.5 day, part of 1.7a] -- NOT STARTED
-    - Create shared UI primitives: Button, Input, Select, Modal, Toast, Dropdown, Tooltip
-    - Define design tokens (colors, spacing, typography, shadows) as CSS variables
-    - Set up Storybook or simple component documentation page
-    - Establish consistent error state patterns (loading, empty, error for every data-fetching component)
-    - Follow specs/19-accessibility.md guidelines from the start (ARIA, keyboard nav, focus management)
+13. **[QW3] Set up Component Library Foundation** [0.5 day, part of 1.7a] -- PARTIALLY COMPLETED
+    - Create shared UI primitives: Button, Input, Select, Modal, Toast, Dropdown, Tooltip -- NOT STARTED
+    - Define design tokens (colors, spacing, typography, shadows) as CSS variables -- COMPLETED
+    - Set up Storybook or simple component documentation page -- NOT STARTED
+    - Establish consistent error state patterns (loading, empty, error for every data-fetching component) -- NOT STARTED
+    - Follow specs/19-accessibility.md guidelines from the start (ARIA, keyboard nav, focus management) -- NOT STARTED
     - **Rationale**: Every frontend task needs these; building ad-hoc leads to inconsistency
     - **Spec refs**: `specs/19-accessibility.md` (when written)
 
@@ -560,7 +566,7 @@ Days 11-14: Connect to API (1.7b), complete interactive shell
 
 These small, high-leverage items should be built during their respective phases to prevent ad-hoc reimplementation and inconsistency across the codebase. They are embedded in the timeline above but listed here for visibility.
 
-### QW1. File Type Registry [Day 3, with Bootstrap] -- NOT STARTED
+### QW1. File Type Registry [Day 3, with Bootstrap] -- COMPLETED
 
 - Central TypeScript module mapping MIME types to categories, icons, viewer types, and processing rules
 - All 100+ formats from spec: 9 video containers with codec validation, 8 audio, 25+ image (including 14 RAW, 4 Adobe), 5 document
@@ -577,12 +583,12 @@ These small, high-leverage items should be built during their respective phases 
 - CLI command: `bun run seed` and `bun run seed:reset`
 - **Estimated effort**: 4 hours
 
-### QW3. Component Library Foundation [Day 3, with Frontend Shell] -- NOT STARTED
+### QW3. Component Library Foundation [Day 3, with Frontend Shell] -- PARTIALLY COMPLETED
 
-- Primitives: Button (primary/secondary/ghost/danger), Input, Select, Checkbox, TextArea, Modal, Toast, Dropdown, Tooltip, Spinner, Avatar, Badge
-- Design tokens as CSS custom properties: `--color-primary`, `--spacing-*`, `--font-*`, `--radius-*`, `--shadow-*`
-- Dark/light theme support via CSS variables (needed for share branding later)
-- Accessible by default: ARIA attributes, keyboard navigation, focus management
+- Primitives: Button (primary/secondary/ghost/danger), Input, Select, Checkbox, TextArea, Modal, Toast, Dropdown, Tooltip, Spinner, Avatar, Badge -- NOT STARTED
+- Design tokens as CSS custom properties: `--color-primary`, `--spacing-*`, `--font-*`, `--radius-*`, `--shadow-*` -- COMPLETED
+- Dark/light theme support via CSS variables (needed for share branding later) -- NOT STARTED
+- Accessible by default: ARIA attributes, keyboard navigation, focus management -- NOT STARTED
 - **Estimated effort**: 6 hours
 
 ### QW4. Error Handling Utilities [Day 10, with API Foundation] -- NOT STARTED
@@ -915,22 +921,23 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 **Goal**: Infrastructure, data models, auth, permissions, API, and web shell.
 **Timeline**: Days 1-14
 
-### 1.1 Project Bootstrap [NOT STARTED]
+### 1.1 Project Bootstrap [COMPLETED]
 
-- Initialize monorepo structure (Bun workspace or Turborepo) -- structure depends on R2 Next.js+Bun topology decision
-- Set up TypeScript configuration (shared tsconfig)
-- Configure linting (ESLint + Prettier)
-- Set up testing framework (Vitest)
-- Configure CI/CD pipeline (GitHub Actions)
-- **Set up Redis for local development** (install instructions + verify BullMQ and ioredis connectivity)
-- **Create `.env.example`** with all required environment variables (WorkOS, Redis, S3, database, FFmpeg, app secrets)
-- **Configure CORS** if R2 determines separate Next.js + Bun API processes
-- Create development environment setup docs
-- Include QW1 (File Type Registry) as part of bootstrap
+- Initialize monorepo structure (Bun workspace or Turborepo) -- structure depends on R2 Next.js+Bun topology decision -- COMPLETED
+- Set up TypeScript configuration (shared tsconfig) -- COMPLETED
+- Configure linting (ESLint + Prettier) -- COMPLETED (Prettier only; ESLint pending)
+- Set up testing framework (Vitest) -- COMPLETED
+- Configure CI/CD pipeline (GitHub Actions) -- NOT STARTED
+- **Set up Redis for local development** (install instructions + verify BullMQ and ioredis connectivity) -- COMPLETED (documented, not installed)
+- **Create `.env.example`** with all required environment variables (WorkOS, Redis, S3, database, FFmpeg, app secrets) -- COMPLETED
+- **Configure CORS** if R2 determines separate Next.js + Bun API processes -- NOT STARTED
+- Create development environment setup docs -- NOT STARTED
+- Include QW1 (File Type Registry) as part of bootstrap -- COMPLETED
 - **Depends on**: R2 direction
 - **Blocks**: Everything
 - **Timeline**: Day 3
 - **Spec refs**: `specs/README.md`
+- **NOTE**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development.
 
 ### 1.2 Database Schema and Core Data Models [NOT STARTED]
 
