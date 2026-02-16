@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 42/110+ (38%) | 7 route modules implemented, auth endpoints added |
+| **API Endpoints** | 43/110+ (39%) | 7 route modules implemented, auth + storage endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -76,10 +76,11 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### API Gaps (1.5 Completion)
 
-- **[P1] Storage Usage Endpoint** [2h] -- NOT STARTED
+- **[P1] Storage Usage Endpoint** [2h] -- COMPLETED (2026-02-16)
   - `GET /v4/accounts/:id/storage` - return storageUsedBytes, storageQuotaBytes
-  - Calculate from files table or cache in accounts
+  - Returns: used_bytes, quota_bytes, available_bytes, usage_percent
   - **Dependencies**: None
+  - **Implementation**: `src/api/routes/accounts.ts`
 
 - **[P1] File Download/Access Endpoints** [4h] -- COMPLETED
   - `GET /v4/projects/:projectId/files/:id/download` - Pre-signed download URL for original
@@ -820,6 +821,16 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-16 Storage Usage Endpoint
+
+**Completed Work:**
+1. **Storage Usage Endpoint COMPLETED** - `src/api/routes/accounts.ts`
+   - `GET /v4/accounts/:id/storage` - Returns storage metrics for an account
+   - Response: `used_bytes`, `quota_bytes`, `available_bytes`, `usage_percent`
+   - Calculates available_bytes and usage_percent from account fields
+
+**API Endpoints:** 42 → 43 (+1 storage endpoint)
 
 ### 2026-02-17 Folder Navigation Implementation
 

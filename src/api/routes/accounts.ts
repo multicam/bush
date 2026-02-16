@@ -206,6 +206,53 @@ app.patch("/:id", async (c) => {
 });
 
 /**
+ * GET /v4/accounts/:id/storage - Get storage usage for account
+ */
+app.get("/:id/storage", async (c) => {
+  const session = requireAuth(c);
+  const accountId = c.req.param("id");
+
+  // Verify user is a member of this account
+  const [account] = await db
+    .select({
+      storageUsedBytes: accounts.storageUsedBytes,
+      storageQuotaBytes: accounts.storageQuotaBytes,
+    })
+    .from(accounts)
+    .innerJoin(
+      accountMemberships,
+      and(
+        eq(accountMemberships.accountId, accounts.id),
+        eq(accountMemberships.userId, session.userId)
+      )
+    )
+    .where(eq(accounts.id, accountId))
+    .limit(1);
+
+  if (!account) {
+    throw new NotFoundError("account", accountId);
+  }
+
+  const usedBytes = BigInt(account.storageUsedBytes);
+  const quotaBytes = BigInt(account.storageQuotaBytes);
+  const availableBytes = quotaBytes - usedBytes;
+  const usagePercent = quotaBytes > 0n ? Number((usedBytes * 100n) / quotaBytes) : 0;
+
+  return c.json({
+    data: {
+      id: accountId,
+      type: "storage",
+      attributes: {
+        used_bytes: account.storageUsedBytes,
+        quota_bytes: account.storageQuotaBytes,
+        available_bytes: Number(availableBytes),
+        usage_percent: usagePercent,
+      },
+    },
+  });
+});
+
+/**
  * POST /v4/accounts/:id/switch - Switch to this account
  */
 app.post("/:id/switch", async (c) => {
