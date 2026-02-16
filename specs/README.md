@@ -142,4 +142,6 @@ Single-line text, Multi-line text, Number, Date, Single-select, Multi-select, Ch
 
 
 
+## Other projects worth studying
 
+[reference-projects.md](./reference-projects.md)
