@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Media Processing Update)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - Media Processing Pipeline COMPLETED (BullMQ + Workers)
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Chunked Upload Client Update)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client COMPLETED), [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -13,11 +13,12 @@
 |--------|--------|-------|
 | **API Endpoints** | 39/110+ (35%) | 6 route modules implemented, multipart upload + download added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
-| **Test Files** | 19 | Good coverage on core modules |
+| **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 1 | `src/web/context/auth-context.tsx:149` |
 | **Media Processing** | 70% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 0% | Not implemented |
+| **Upload Client** | 100% | Chunked upload with resumable support |
 
 ---
 
@@ -182,7 +183,7 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.1 File Upload System [P0] - 3 days
 
-**IN PROGRESS** -- Upload Backend Handler COMPLETED
+**IN PROGRESS** -- Upload Backend Handler + Chunked Upload Client COMPLETED
 
 - **[P0] Upload Backend Handler** [4h] -- COMPLETED
   - Wire `POST /v4/projects/:id/files` to actual storage upload
@@ -192,11 +193,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - Storage quota validation added
   - **Dependencies**: 1.6 (Storage) - DONE
 
-- **[P0] Chunked Upload Client** [1d]
+- **[P0] Chunked Upload Client** [1d] -- COMPLETED
   - Browser library with 10MB chunks, 3-5 parallel
   - IndexedDB for resumable state
   - Progress events, pause/resume/cancel
   - **Dependencies**: Upload backend handler
+  - **Implementation**: `src/web/lib/upload-client.ts`
 
 - **[P1] Drag-and-Drop UI** [4h]
   - File and folder drop zones
@@ -808,6 +810,29 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Chunked Upload Client Implementation
+
+**Completed Work:**
+1. **Chunked Upload Client COMPLETED** - `src/web/lib/upload-client.ts`
+   - 10MB chunk size (configurable)
+   - 3-5 parallel uploads (configurable)
+   - IndexedDB for resumable state persistence
+   - Progress events with upload speed and ETA calculation
+   - Pause/resume/cancel functionality
+   - Automatic retry with configurable max retries
+   - Supports both direct upload (small files) and multipart (large files)
+   - Full TypeScript types for all interfaces
+
+2. **Upload Client Tests** - `src/web/lib/upload-client.test.ts`
+   - 19 tests covering upload, pause/resume, cancel, progress callbacks
+   - Mock IndexedDB and fetch for isolated testing
+
+**New Files Created:**
+- `src/web/lib/upload-client.ts` - Browser chunked upload library
+- `src/web/lib/upload-client.test.ts` - Upload client tests
+
+**Test Count:** 230 → 249 tests (+19)
 
 ### 2026-02-17 Media Processing Processors Implementation
 
