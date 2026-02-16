@@ -21,7 +21,19 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "baseUrl": "..",
+    "paths": {
+      "@/config": ["config/index.ts"],
+      "@/config/env": ["config/env.ts"],
+      "@/db": ["db/index.ts"],
+      "@/db/schema": ["db/schema.ts"],
+      "@/api": ["api/index.ts"],
+      "@/auth": ["auth/index.ts"],
+      "@/auth/types": ["auth/types.ts"],
+      "@/redis": ["redis/index.ts"],
+      "@/shared/*": ["shared/*"]
+    }
   },
   "include": [
     "next-env.d.ts",

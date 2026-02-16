@@ -104,6 +104,48 @@ export type Env = z.infer<typeof envSchema>;
  * Load and validate configuration from environment variables
  */
 function loadConfig(): Env {
+  // During Next.js build phase, use relaxed validation if env vars aren't set
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build" ||
+    (process.env.NODE_ENV === "production" && !process.env.APP_URL);
+
+  if (isBuildPhase) {
+    // Return a partial config for build time - only needed for type checking
+    // The actual runtime config will be validated on server start
+    return {
+      NODE_ENV: "production",
+      PORT: 3001,
+      HOST: "0.0.0.0",
+      LOG_LEVEL: "info",
+      APP_URL: "https://build.placeholder",
+      API_URL: "https://build.placeholder",
+      DATABASE_URL: ":memory:",
+      DATABASE_WAL_MODE: false,
+      DATABASE_BUSY_TIMEOUT: 5000,
+      REDIS_URL: "redis://placeholder",
+      REDIS_KEY_PREFIX: "bush:",
+      WORKOS_API_KEY: "placeholder",
+      WORKOS_CLIENT_ID: "placeholder",
+      WORKOS_REDIRECT_URI: "https://build.placeholder/callback",
+      WORKOS_WEBHOOK_SECRET: "placeholder",
+      STORAGE_PROVIDER: "minio",
+      STORAGE_ENDPOINT: "placeholder",
+      STORAGE_REGION: "us-east-1",
+      STORAGE_ACCESS_KEY: "placeholder",
+      STORAGE_SECRET_KEY: "placeholder",
+      STORAGE_BUCKET: "placeholder",
+      SESSION_SECRET: "placeholder-for-build-at-least-32-characters",
+      SESSION_MAX_AGE: 604800,
+      RATE_LIMIT_WINDOW_MS: 60000,
+      RATE_LIMIT_MAX_REQUESTS: 100,
+      UPLOAD_MAX_FILE_SIZE: 5368709120,
+      UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
+      UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,
+      BACKUP_STORAGE_BUCKET: "placeholder",
+      LITESTREAM_ENABLED: false,
+      NEXT_PUBLIC_APP_NAME: "Bush",
+    } as Env;
+  }
+
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {

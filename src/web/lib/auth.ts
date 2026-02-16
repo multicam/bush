@@ -3,7 +3,7 @@
  *
  * Client-side and server-side auth utilities for the Next.js app.
  */
-import type { AuthState, AccountRole, SessionData } from "@/auth";
+import type { AuthState, AccountRole } from "@/auth";
 
 /**
  * Get the current auth state on the client side

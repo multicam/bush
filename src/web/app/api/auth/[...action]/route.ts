@@ -195,7 +195,7 @@ async function switchAccount(request: NextRequest) {
 /**
  * Route handler for auth operations
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }> = { params: Promise.resolve({ action: [] }) }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }) {
   const { action } = await params;
   const actionPath = action?.join("/") || "";
 
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }> = { params: Promise.resolve({ action: [] }) }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }) {
   const { action } = await params;
   const actionPath = action?.join("/") || "";
 
