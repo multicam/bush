@@ -314,6 +314,112 @@ export const projectsApi = {
 };
 
 /**
+ * File attributes from API
+ */
+export interface FileAttributes {
+  name: string;
+  originalName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  status: "uploading" | "processing" | "ready" | "processing_failed" | "deleted";
+  folderId: string | null;
+  versionStackId: string | null;
+  checksum: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+/**
+ * Files API
+ */
+export const filesApi = {
+  /**
+   * List files in a project
+   */
+  list: async (projectId: string, options?: {
+    folder_id?: string;
+    status?: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.folder_id) {
+      params.set("folder_id", options.folder_id);
+    }
+    if (options?.status) {
+      params.set("status", options.status);
+    }
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    if (options?.cursor) {
+      params.set("cursor", options.cursor);
+    }
+    const queryString = params.toString();
+    const path = `/projects/${projectId}/files${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<FileAttributes>>(path);
+  },
+
+  /**
+   * Get a single file by ID
+   */
+  get: async (projectId: string, fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}`);
+  },
+
+  /**
+   * Create file record (for upload)
+   */
+  create: async (projectId: string, data: {
+    name: string;
+    original_name?: string;
+    mime_type: string;
+    file_size_bytes: number;
+    folder_id?: string;
+    checksum?: string;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update file metadata
+   */
+  update: async (projectId: string, fileId: string, data: {
+    name?: string;
+    folder_id?: string | null;
+    status?: string;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a file (soft delete)
+   */
+  delete: async (projectId: string, fileId: string) => {
+    return apiFetch<void>(`/projects/${projectId}/files/${fileId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Get download URL for a file
+   */
+  getDownloadUrl: async (projectId: string, fileId: string) => {
+    return apiFetch<{ data: JsonApiResource<FileAttributes>; meta: { download_url: string; download_expires_at: string } }>(
+      `/projects/${projectId}/files/${fileId}/download`
+    );
+  },
+};
+
+/**
  * Accounts API
  */
 export const accountsApi = {

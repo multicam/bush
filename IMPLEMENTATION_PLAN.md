@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Chunked Upload Client Update)
+**Last updated**: 2026-02-17 (Drag-and-Drop UI + Upload Queue UI Implementation)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client COMPLETED), [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -19,6 +19,7 @@
 | **Media Processing** | 70% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 0% | Not implemented |
 | **Upload Client** | 100% | Chunked upload with resumable support |
+| **Upload UI** | 100% | Dropzone + Upload Queue components |
 
 ---
 
@@ -200,17 +201,19 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: Upload backend handler
   - **Implementation**: `src/web/lib/upload-client.ts`
 
-- **[P1] Drag-and-Drop UI** [4h]
+- **[P1] Drag-and-Drop UI** [4h] -- COMPLETED
   - File and folder drop zones
   - MIME validation via QW1 file type registry
   - Visual feedback, error handling
   - **Dependencies**: 1.7b (Web Shell) - DONE
+  - **Implementation**: `src/web/components/upload/dropzone.tsx`
 
-- **[P1] Upload Queue UI** [4h]
+- **[P1] Upload Queue UI** [4h] -- COMPLETED
   - Progress bars per file
   - Priority reorder, retry failed
   - Max 10 concurrent enforcement
   - **Dependencies**: Upload client
+  - **Implementation**: `src/web/components/upload/upload-queue.tsx`
 
 - **[P2] Folder Structure Preservation** [4h]
   - Parse folder hierarchy on drop
@@ -810,6 +813,44 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Upload UI Implementation (Drag-and-Drop + Queue)
+
+**Completed Work:**
+1. **Drag-and-Drop UI COMPLETED** - `src/web/components/upload/dropzone.tsx`
+   - File and folder drop zones with visual feedback
+   - MIME validation via QW1 file type registry
+   - Drag active/reject states with styling
+   - Max file size validation (5TB default)
+   - Keyboard accessible
+   - Full TypeScript types
+
+2. **Upload Queue UI COMPLETED** - `src/web/components/upload/upload-queue.tsx`
+   - Progress bars per file with percent and bytes uploaded
+   - Upload speed and ETA display
+   - Pause/resume/cancel controls
+   - Retry failed uploads
+   - Overall queue progress summary
+   - Status badges (pending, uploading, paused, completed, failed, cancelled)
+   - File category icons
+
+3. **Project Files Page COMPLETED** - `src/web/app/projects/[id]/page.tsx`
+   - Integrates dropzone and upload queue
+   - Lists files with status badges
+   - Upload files button triggers dropzone
+
+4. **Files API Client Extended** - `src/web/lib/api.ts`
+   - Added `filesApi.list()`, `filesApi.get()`, `filesApi.create()`, etc.
+
+**New Files Created:**
+- `src/web/components/upload/dropzone.tsx` - Drag-and-drop file upload component
+- `src/web/components/upload/upload-queue.tsx` - Upload queue with progress UI
+- `src/web/components/upload/upload.module.css` - Shared upload component styles
+- `src/web/components/upload/index.ts` - Upload components exports
+- `src/web/app/projects/[id]/page.tsx` - Project detail page with file browser
+- `src/web/app/projects/[id]/project.module.css` - Project detail page styles
+
+**Test Count:** 249 tests (no new tests - UI components tested via integration)
 
 ### 2026-02-17 Chunked Upload Client Implementation
 

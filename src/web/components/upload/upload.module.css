@@ -1,0 +1,364 @@
+/**
+ * Bush Platform - Upload Components Styles
+ *
+ * Shared styles for Dropzone and UploadQueue components.
+ * Reference: IMPLEMENTATION_PLAN.md 2.1 [P1]
+ */
+
+/* ==================== DROPZONE ==================== */
+
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast),
+              background-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+
+.dropzone:hover:not(.disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.dropzone:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+}
+
+.dropzone.active {
+  border-color: var(--color-primary);
+  background-color: rgba(0, 102, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+}
+
+.dropzone.reject {
+  border-color: var(--color-danger, #dc3545);
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.dropzone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.dropzone:hover:not(.disabled) .icon,
+.dropzone.active .icon {
+  color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.dropzone.reject .icon {
+  color: var(--color-danger, #dc3545);
+}
+
+.instructions {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+/* ==================== UPLOAD QUEUE ==================== */
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.queueHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.queueTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.queueTitle h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.overallProgress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.queueActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.queueItems {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ==================== QUEUE ITEM ==================== */
+
+.queueItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+.queueItem:last-child {
+  border-bottom: none;
+}
+
+.queueItem:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.queueItem[data-status="completed"] {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.queueItem[data-status="failed"] {
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.itemInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.itemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius);
+  background-color: var(--bg-primary);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.itemIcon[data-category="video"] {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.itemIcon[data-category="audio"] {
+  background-color: rgba(236, 72, 153, 0.1);
+}
+
+.itemIcon[data-category="image"] {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.itemIcon[data-category="document"] {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.itemDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemName {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.separator {
+  color: var(--border-color);
+}
+
+.speed,
+.eta {
+  color: var(--color-primary);
+}
+
+.itemError {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-danger, #dc3545);
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* ==================== PROGRESS BAR ==================== */
+
+.progressContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-left: 52px; /* Align with item name */
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--bg-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.2s ease-out;
+}
+
+.queueItem[data-status="paused"] .progressFill {
+  background-color: var(--color-warning, #f59e0b);
+}
+
+.queueItem[data-status="failed"] .progressFill {
+  background-color: var(--color-danger, #dc3545);
+}
+
+.queueItem[data-status="completed"] .progressFill {
+  background-color: var(--color-success, #10b981);
+}
+
+.progressText {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: right;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 640px) {
+  .dropzone {
+    min-height: 150px;
+    padding: 1.5rem;
+  }
+
+  .icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.75rem;
+  }
+
+  .icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .queueHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .queueTitle {
+    width: 100%;
+  }
+
+  .overallProgress {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .queueActions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .progressContainer {
+    padding-left: 0;
+  }
+
+  .itemInfo {
+    flex-wrap: wrap;
+  }
+
+  .itemActions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-left: 52px;
+    margin-top: -0.5rem;
+  }
+}
