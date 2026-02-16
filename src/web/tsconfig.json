@@ -33,7 +33,14 @@
       "@/auth/types": ["auth/types.ts"],
       "@/redis": ["redis/index.ts"],
       "@/permissions": ["permissions/index.ts"],
-      "@/shared/*": ["shared/*"]
+      "@/shared/*": ["shared/*"],
+      "@/web/context": ["web/context/index.ts"],
+      "@/web/context/*": ["web/context/*"],
+      "@/web/components/ui": ["web/components/ui/index.ts"],
+      "@/web/components/ui/*": ["web/components/ui/*"],
+      "@/web/components/layout": ["web/components/layout/index.ts"],
+      "@/web/components/layout/*": ["web/components/layout/*"],
+      "@/web/lib/*": ["web/lib/*"]
     }
   },
   "include": [

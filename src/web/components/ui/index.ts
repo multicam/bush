@@ -32,7 +32,7 @@ export { Spinner } from "./spinner.js";
 export type { SpinnerProps, SpinnerSize } from "./spinner.js";
 
 export { Badge } from "./badge.js";
-export type { BadgeProps, BadgeVariant } from "./badge.js";
+export type { BadgeProps, BadgeVariant, BadgeSize } from "./badge.js";
 
 export { Avatar } from "./avatar.js";
 export type { AvatarProps, AvatarSize } from "./avatar.js";

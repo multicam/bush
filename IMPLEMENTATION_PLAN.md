@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static IN PROGRESS (login, signup, dashboard, workspaces, projects, settings pages created), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -1034,16 +1034,20 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 3-4
 - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
 
-### 1.7 Web Application Shell [NOT STARTED]
+### 1.7 Web Application Shell [IN PROGRESS]
 
 Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 
-- Next.js 15+ with App Router, TypeScript
-- QW3 (Component Library) built first
-- Pages: login, signup, dashboard, workspaces, projects, settings
-- Multi-panel layout, global navigation, responsive design
-- Auth flows UI, state management (React Context + TanStack Query)
-- Component tests
+- Next.js 15+ with App Router, TypeScript -- DONE
+- QW3 (Component Library) built first -- DONE
+- Pages: login, signup, dashboard, workspaces, projects, settings -- DONE (static pages created)
+- Multi-panel layout (AppLayout component with sidebar, header) -- DONE
+- Global navigation, responsive design -- DONE
+- Auth flows UI (WorkOS AuthKit redirect) -- DONE
+- State management (React Context for auth) -- DONE
+- Connect to API endpoints -- NOT STARTED (1.7b)
+- TanStack Query for server state -- NOT STARTED (1.7b)
+- Component tests -- NOT STARTED
 - **Depends on**: 1.1 (for 1.7a), 1.5 + 1.3 (for 1.7b)
 - **Blocks**: all Phase 2 frontend
 - **Timeline**: Days 3-14
