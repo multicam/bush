@@ -14,8 +14,8 @@ import type { AssetBrowserProps, AssetFile, ViewMode, CardSize, AssetFolder } fr
 import styles from "./asset-browser.module.css";
 
 export function AssetBrowser({
-  projectId,
-  folderId = null,
+  projectId: _projectId,
+  folderId: _folderId = null,
   files,
   folders = [],
   selectedIds = [],

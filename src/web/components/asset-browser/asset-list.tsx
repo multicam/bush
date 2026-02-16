@@ -14,6 +14,32 @@ import styles from "./asset-list.module.css";
 
 type SortField = "name" | "fileSizeBytes" | "createdAt" | "updatedAt" | "status";
 
+// SortHeader defined outside component to avoid React ESLint error
+interface SortHeaderProps {
+  field: SortField;
+  label: string;
+  currentField: string;
+  direction: "asc" | "desc";
+  onSort: (field: string) => void;
+}
+
+function SortHeader({ field, label, currentField, direction, onSort }: SortHeaderProps) {
+  return (
+    <button
+      className={`${styles.sortHeader} ${currentField === field ? styles.active : ""}`}
+      onClick={() => onSort(field)}
+      aria-label={`Sort by ${label}`}
+    >
+      {label}
+      {currentField === field && (
+        <span className={styles.sortIndicator}>
+          {direction === "asc" ? "↑" : "↓"}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function AssetList({
   files,
   folders = [],
@@ -72,7 +98,7 @@ export function AssetList({
     [onFolderClick]
   );
 
-  const getStatusBadgeVariant = (status: AssetFile["status"]): "default" | "success" | "warning" | "danger" => {
+  const getStatusBadgeVariant = (status: AssetFile["status"]): "default" | "success" | "warning" | "error" => {
     switch (status) {
       case "ready":
         return "success";
@@ -81,7 +107,7 @@ export function AssetList({
       case "uploading":
         return "default";
       case "processing_failed":
-        return "danger";
+        return "error";
       default:
         return "default";
     }
@@ -106,21 +132,6 @@ export function AssetList({
     }
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
-
-  const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
-    <button
-      className={`${styles.sortHeader} ${sortField === field ? styles.active : ""}`}
-      onClick={() => handleSort(field)}
-      aria-label={`Sort by ${label}`}
-    >
-      {label}
-      {sortField === field && (
-        <span className={styles.sortIndicator}>
-          {sortDirection === "asc" ? "↑" : "↓"}
-        </span>
-      )}
-    </button>
-  );
 
   const allItems = [...folders, ...files];
 
@@ -148,16 +159,16 @@ export function AssetList({
           />
         </div>
         <div className={styles.nameCell}>
-          <SortHeader field="name" label="Name" />
+          <SortHeader field="name" label="Name" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
         <div className={styles.sizeCell}>
-          <SortHeader field="fileSizeBytes" label="Size" />
+          <SortHeader field="fileSizeBytes" label="Size" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
         <div className={styles.statusCell}>
-          <SortHeader field="status" label="Status" />
+          <SortHeader field="status" label="Status" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
         <div className={styles.dateCell}>
-          <SortHeader field="createdAt" label="Created" />
+          <SortHeader field="createdAt" label="Created" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
       </div>
 

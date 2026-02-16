@@ -49,7 +49,7 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
     [file.id, onSelect]
   );
 
-  const getStatusBadgeVariant = (): "default" | "success" | "warning" | "danger" => {
+  const getStatusBadgeVariant = (): "default" | "success" | "warning" | "error" => {
     switch (file.status) {
       case "ready":
         return "success";
@@ -58,7 +58,7 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
       case "uploading":
         return "default";
       case "processing_failed":
-        return "danger";
+        return "error";
       default:
         return "default";
     }

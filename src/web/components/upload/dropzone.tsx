@@ -13,11 +13,9 @@ import {
   isSupportedExtension,
   detectMimeType,
   formatFileSize,
-  getFileIcon,
   getFileCategory,
   type FileCategory,
 } from "@/shared/file-types";
-import { Button } from "@/web/components/ui";
 import styles from "./upload.module.css";
 
 export interface DroppedFile {
@@ -69,7 +67,7 @@ function validateFile(
   maxFileSize: number
 ): { valid: boolean; error?: string; mimeType: string } {
   // Try to detect MIME type from extension if not provided
-  let mimeType = file.type || detectMimeType(file.name) || "application/octet-stream";
+  const mimeType = file.type || detectMimeType(file.name) || "application/octet-stream";
 
   // Check file size
   if (file.size > maxFileSize) {
@@ -136,7 +134,7 @@ function processFiles(
 
 export function Dropzone({
   onFiles,
-  folderId,
+  folderId: _folderId,
   multiple = true,
   disabled = false,
   maxFileSize = DEFAULT_MAX_FILE_SIZE,

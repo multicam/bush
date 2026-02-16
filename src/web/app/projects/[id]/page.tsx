@@ -7,9 +7,9 @@
  */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/web/components/layout";
-import { Button, Badge } from "@/web/components/ui";
+import { Button } from "@/web/components/ui";
 import { Dropzone, UploadQueue, type DroppedFile, type QueuedFile } from "@/web/components/upload";
 import { AssetBrowser, type AssetFile } from "@/web/components/asset-browser";
 import { useAuth } from "@/web/context";
@@ -35,9 +35,14 @@ interface FileItem extends FileAttributes {
 
 type LoadingState = "loading" | "error" | "loaded";
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
-  const projectId = params.id;
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const [projectId, setProjectId] = useState<string>("");
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+
+  // Unwrap the params Promise
+  useEffect(() => {
+    params.then((p) => setProjectId(p.id));
+  }, [params]);
   const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>("loading");
@@ -47,6 +52,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const uploadClient = getUploadClient();
 
+  // Use refs to hold functions to avoid circular dependencies
+  const refreshFilesRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const startUploadRef = useRef<((queuedFile: QueuedFile) => Promise<void>) | undefined>(undefined);
+
   // Convert FileItem to AssetFile format for AssetBrowser
   const assetFiles: AssetFile[] = files.map((f) => ({
     id: f.id,
@@ -54,15 +63,67 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     mimeType: f.mimeType,
     fileSizeBytes: f.fileSizeBytes,
     status: f.status,
-    thumbnailUrl: f.thumbnailUrl,
+    thumbnailUrl: null, // TODO: Get from file when API returns it
     createdAt: f.createdAt,
     updatedAt: f.updatedAt,
   }));
 
+  // Refresh files list
+  const refreshFiles = useCallback(async () => {
+    try {
+      const filesResponse = await filesApi.list(projectId, { limit: 100 });
+      const fileItems = extractCollectionAttributes(filesResponse) as FileItem[];
+      setFiles(fileItems);
+    } catch (error) {
+      console.error("Failed to refresh files:", error);
+    }
+  }, [projectId]);
+
+  // Start upload for a single file
+  const startUpload = useCallback(
+    async (queuedFile: QueuedFile) => {
+      try {
+        await uploadClient.upload(queuedFile.file, {
+          projectId,
+          onProgress: (progress) => {
+            setUploadQueue((prev) =>
+              prev.map((f) =>
+                f.id === queuedFile.id ? { ...f, progress } : f
+              )
+            );
+          },
+          onComplete: (_result) => {
+            setUploadQueue((prev) => prev.filter((f) => f.id !== queuedFile.id));
+            // Refresh file list
+            refreshFilesRef.current?.();
+          },
+          onError: (error) => {
+            setUploadQueue((prev) =>
+              prev.map((f) =>
+                f.id === queuedFile.id
+                  ? { ...f, error: error.message, progress: { ...f.progress!, status: "failed" } as UploadProgress }
+                  : f
+              )
+            );
+          },
+        });
+      } catch {
+        // Error is handled in onError callback
+      }
+    },
+    [projectId, uploadClient]
+  );
+
+  // Update refs when functions change
+  useEffect(() => {
+    refreshFilesRef.current = refreshFiles;
+    startUploadRef.current = startUpload;
+  }, [refreshFiles, startUpload]);
+
   // Fetch project and files
   useEffect(() => {
     async function fetchData() {
-      if (authLoading) return;
+      if (authLoading || !projectId) return;
 
       if (!isAuthenticated) {
         login(window.location.pathname);
@@ -113,61 +174,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       setUploadQueue((prev) => [...prev, ...newQueuedFiles]);
 
-      // Start uploads
+      // Start uploads using ref to avoid dependency issues
       for (const queuedFile of newQueuedFiles) {
-        startUpload(queuedFile);
+        startUploadRef.current?.(queuedFile);
       }
 
       setShowDropzone(false);
     },
-    [projectId]
+    []
   );
-
-  // Start upload for a single file
-  const startUpload = useCallback(
-    async (queuedFile: QueuedFile) => {
-      try {
-        await uploadClient.upload(queuedFile.file, {
-          projectId,
-          onProgress: (progress) => {
-            setUploadQueue((prev) =>
-              prev.map((f) =>
-                f.id === queuedFile.id ? { ...f, progress } : f
-              )
-            );
-          },
-          onComplete: (result) => {
-            setUploadQueue((prev) => prev.filter((f) => f.id !== queuedFile.id));
-            // Refresh file list
-            refreshFiles();
-          },
-          onError: (error) => {
-            setUploadQueue((prev) =>
-              prev.map((f) =>
-                f.id === queuedFile.id
-                  ? { ...f, error: error.message, progress: { ...f.progress!, status: "failed" } as UploadProgress }
-                  : f
-              )
-            );
-          },
-        });
-      } catch (error) {
-        // Error is handled in onError callback
-      }
-    },
-    [projectId, uploadClient]
-  );
-
-  // Refresh files list
-  const refreshFiles = useCallback(async () => {
-    try {
-      const filesResponse = await filesApi.list(projectId, { limit: 100 });
-      const fileItems = extractCollectionAttributes(filesResponse) as FileItem[];
-      setFiles(fileItems);
-    } catch (error) {
-      console.error("Failed to refresh files:", error);
-    }
-  }, [projectId]);
 
   // Handle remove from queue
   const handleRemoveFromQueue = useCallback((fileId: string) => {
@@ -181,13 +196,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       if (queuedFile) {
         setUploadQueue((prev) =>
           prev.map((f) =>
-            f.id === fileId ? { ...f, error: undefined, progress: { ...f.progress!, status: "pending" } as UploadProgress } : f
+            f.id === fileId ? { ...f, error: undefined, progress: { status: "pending" } as UploadProgress } : f
           )
         );
-        startUpload(queuedFile);
+        startUploadRef.current?.(queuedFile);
       }
     },
-    [uploadQueue, startUpload]
+    [uploadQueue]
   );
 
   // Handle pause
@@ -195,7 +210,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     await uploadClient.pause(fileId);
     setUploadQueue((prev) =>
       prev.map((f) =>
-        f.id === fileId ? { ...f, progress: { ...f.progress!, status: "paused" } as UploadProgress } : f
+        f.id === fileId ? { ...f, progress: { ...f.progress, status: "paused" } as UploadProgress } : f
       )
     );
   }, [uploadClient]);
@@ -208,7 +223,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       setUploadQueue((prev) =>
         prev.map((f) =>
-          f.id === fileId ? { ...f, progress: { ...f.progress!, status: "uploading" } as UploadProgress } : f
+          f.id === fileId ? { ...f, progress: { ...f.progress, status: "uploading" } as UploadProgress } : f
         )
       );
 
@@ -225,9 +240,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   }, [uploadClient]);
 
   // Handle file click in asset browser
-  const handleFileClick = useCallback((file: AssetFile) => {
+  const handleFileClick = useCallback((_file: AssetFile) => {
     // TODO: Open file viewer/preview
-    console.log("File clicked:", file);
   }, []);
 
   // Handle selection change
@@ -236,7 +250,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   }, []);
 
   // Loading state
-  if (authLoading || loadingState === "loading") {
+  if (!projectId || authLoading || loadingState === "loading") {
     return (
       <AppLayout>
         <div className={styles.page}>
@@ -298,7 +312,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className={styles.dropzoneContainer}>
             <Dropzone
               onFiles={handleFilesDropped}
-              projectId={projectId}
               multiple={true}
               maxFiles={200}
             />

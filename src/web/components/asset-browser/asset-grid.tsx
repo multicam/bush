@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { AssetCard } from "./asset-card";
 import { FolderCard } from "./folder-card";
 import type { AssetGridProps, AssetFile, AssetFolder } from "./types";
@@ -21,8 +21,6 @@ export function AssetGrid({
   onFileClick,
   onFolderClick,
 }: AssetGridProps) {
-  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
-
   const handleSelect = useCallback(
     (id: string, selected: boolean) => {
       let newSelectedIds: string[];
@@ -34,7 +32,6 @@ export function AssetGrid({
       }
 
       onSelectionChange?.(newSelectedIds);
-      setLastSelectedId(id);
     },
     [selectedIds, onSelectionChange]
   );

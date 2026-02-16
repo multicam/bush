@@ -76,12 +76,12 @@ export interface UploadQueueProps {
 /**
  * Get status badge variant based on upload status
  */
-function getStatusVariant(status: UploadStatus): "default" | "success" | "warning" | "danger" {
+function getStatusVariant(status: UploadStatus): "default" | "success" | "warning" | "error" {
   switch (status) {
     case "completed":
       return "success";
     case "failed":
-      return "danger";
+      return "error";
     case "paused":
       return "warning";
     default:
@@ -296,7 +296,7 @@ export function UploadQueue({
   files,
   projectId,
   folderId,
-  onUploadStart,
+  onUploadStart: _onUploadStart,
   onProgress,
   onUploadComplete,
   onUploadError,

@@ -14,7 +14,7 @@ export interface AssetFile {
   name: string;
   mimeType: string;
   fileSizeBytes: number;
-  status: "uploading" | "processing" | "ready" | "processing_failed";
+  status: "uploading" | "processing" | "ready" | "processing_failed" | "deleted";
   thumbnailUrl?: string | null;
   createdAt: string;
   updatedAt: string;

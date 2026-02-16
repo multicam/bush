@@ -40,6 +40,10 @@
       "@/web/components/ui/*": ["web/components/ui/*"],
       "@/web/components/layout": ["web/components/layout/index.ts"],
       "@/web/components/layout/*": ["web/components/layout/*"],
+      "@/web/components/upload": ["web/components/upload/index.ts"],
+      "@/web/components/upload/*": ["web/components/upload/*"],
+      "@/web/components/asset-browser": ["web/components/asset-browser/index.ts"],
+      "@/web/components/asset-browser/*": ["web/components/asset-browser/*"],
       "@/web/lib/*": ["web/lib/*"]
     }
   },
