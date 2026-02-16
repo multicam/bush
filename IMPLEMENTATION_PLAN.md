@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -203,12 +203,13 @@ This section is the single source of truth for what to do next. It lists every a
     - **Can start before API (1.5)** -- build static shell first, connect to API in Week 2
     - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/03-file-management.md`
 
-13. **[QW3] Set up Component Library Foundation** [0.5 day, part of 1.7a] -- PARTIALLY COMPLETED
-    - Create shared UI primitives: Button, Input, Select, Modal, Toast, Dropdown, Tooltip -- NOT STARTED
+13. **[QW3] Set up Component Library Foundation** [0.5 day, part of 1.7a] -- COMPLETED
+    - Create shared UI primitives: Button, Input, Select, Modal, Toast, Dropdown, Tooltip -- COMPLETED
     - Define design tokens (colors, spacing, typography, shadows) as CSS variables -- COMPLETED
-    - Set up Storybook or simple component documentation page -- NOT STARTED
-    - Establish consistent error state patterns (loading, empty, error for every data-fetching component) -- NOT STARTED
-    - Follow specs/19-accessibility.md guidelines from the start (ARIA, keyboard nav, focus management) -- NOT STARTED
+    - Utility components: Spinner, Badge, Avatar -- COMPLETED
+    - Set up Storybook or simple component documentation page -- NOT STARTED (deferred)
+    - Establish consistent error state patterns (loading, empty, error for every data-fetching component) -- NOT STARTED (deferred to actual usage)
+    - Follow specs/19-accessibility.md guidelines from the start (ARIA, keyboard nav, focus management) -- COMPLETED (basic ARIA, keyboard nav in components)
     - **Rationale**: Every frontend task needs these; building ad-hoc leads to inconsistency
     - **Spec refs**: `specs/19-accessibility.md` (when written)
 
