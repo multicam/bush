@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
-import { AuthProvider } from "@/web/context";
+import { AuthProvider, WorkspaceProvider } from "@/web/context";
 
 export const metadata: Metadata = {
   title: "Bush - Creative Collaboration Platform",
@@ -18,7 +18,9 @@ export default function RootLayout({
       <body>
         <AuthKitProvider>
           <AuthProvider>
-            {children}
+            <WorkspaceProvider>
+              {children}
+            </WorkspaceProvider>
           </AuthProvider>
         </AuthKitProvider>
       </body>

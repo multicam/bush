@@ -101,6 +101,8 @@ export const folders = sqliteTable("folders", {
   projectIdx: index("folders_project_id_idx").on(table.projectId),
   parentIdx: index("folders_parent_id_idx").on(table.parentId),
   pathIdx: index("folders_path_idx").on(table.path),
+  // Critical composite index for tree queries (children of a folder in a project)
+  projectParentIdx: index("folders_project_parent_idx").on(table.projectId, table.parentId),
 }));
 
 /**
@@ -127,6 +129,9 @@ export const files = sqliteTable("files", {
   projectIdx: index("files_project_id_idx").on(table.projectId),
   folderIdx: index("files_folder_id_idx").on(table.folderId),
   statusIdx: index("files_status_idx").on(table.status),
+  versionStackIdx: index("files_version_stack_id_idx").on(table.versionStackId),
+  mimeTypeIdx: index("files_mime_type_idx").on(table.mimeType),
+  expiresAtIdx: index("files_expires_at_idx").on(table.expiresAt),
 }));
 
 /**
@@ -164,6 +169,8 @@ export const comments = sqliteTable("comments", {
 }, (table) => ({
   fileIdx: index("comments_file_id_idx").on(table.fileId),
   userIdx: index("comments_user_id_idx").on(table.userId),
+  parentIdx: index("comments_parent_id_idx").on(table.parentId),
+  versionStackIdx: index("comments_version_stack_id_idx").on(table.versionStackId),
 }));
 
 /**
@@ -186,6 +193,8 @@ export const shares = sqliteTable("shares", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
   slugIdx: uniqueIndex("shares_slug_idx").on(table.slug),
+  accountIdx: index("shares_account_id_idx").on(table.accountId),
+  projectIdx: index("shares_project_id_idx").on(table.projectId),
 }));
 
 /**
@@ -202,6 +211,7 @@ export const notifications = sqliteTable("notifications", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
   userIdx: index("notifications_user_id_idx").on(table.userId),
+  readAtIdx: index("notifications_read_at_idx").on(table.readAt),
 }));
 
 /**

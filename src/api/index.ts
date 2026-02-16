@@ -18,6 +18,7 @@ import { standardRateLimit } from "./rate-limit.js";
 
 // Import route modules
 import {
+  authRoutes,
   accountRoutes,
   workspaceRoutes,
   projectRoutes,
@@ -120,6 +121,7 @@ const v4 = new Hono();
 v4.use("*", standardRateLimit);
 
 // Mount resource routes
+v4.route("/auth", authRoutes);
 v4.route("/accounts", accountRoutes);
 v4.route("/workspaces", workspaceRoutes);
 v4.route("/projects", projectRoutes);

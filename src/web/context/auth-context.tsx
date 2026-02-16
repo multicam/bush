@@ -18,6 +18,7 @@ import {
 import type { AuthState, AccountRole } from "@/auth";
 import { isRoleAtLeast } from "@/auth/types";
 import { getAuthState, login as authLogin, logout as authLogout, switchAccount as authSwitchAccount } from "@/web/lib/auth";
+import { workspacesApi, type WorkspaceAttributes } from "@/web/lib/api";
 
 interface AuthContextValue extends AuthState {
   isLoading: boolean;
@@ -28,6 +29,27 @@ interface AuthContextValue extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+/**
+ * Workspace context value type
+ */
+interface WorkspaceContextValue {
+  workspace: Workspace | null;
+  workspaces: Workspace[];
+  setWorkspace: (workspace: Workspace | null) => void;
+  isLoading: boolean;
+}
+
+/**
+ * Workspace type for context
+ */
+export interface Workspace {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -141,14 +163,112 @@ export function useHasRole(requiredRole: AccountRole): boolean {
 }
 
 /**
- * Hook to get the current workspace context
- * Note: This will be expanded when workspace context is added
+ * Workspace Provider Component
+ * Manages workspace state for the current account
  */
-export function useCurrentWorkspace() {
-  useAuth();
-  // TODO: Implement workspace context selection
-  return {
-    workspace: null as unknown,
-    setWorkspace: (_workspace: unknown) => {},
-  };
+interface WorkspaceProviderProps {
+  children: ReactNode;
+}
+
+export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
+  const { currentAccount, isAuthenticated } = useAuth();
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load workspaces when account changes
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWorkspaces() {
+      if (!isAuthenticated || !currentAccount) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await workspacesApi.list({ limit: 100 });
+        const workspaceList: Workspace[] = response.data.map((w) => ({
+          id: w.id,
+          name: w.attributes.name,
+          description: w.attributes.description,
+        }));
+
+        if (!cancelled) {
+          setWorkspaces(workspaceList);
+
+          // Auto-select first workspace if none selected
+          if (workspaceList.length > 0 && !currentWorkspace) {
+            // Try to restore from localStorage
+            const savedWorkspaceId = typeof window !== "undefined"
+              ? localStorage.getItem(`bush_workspace_${currentAccount.id}`)
+              : null;
+
+            const savedWorkspace = savedWorkspaceId
+              ? workspaceList.find((w) => w.id === savedWorkspaceId)
+              : null;
+
+            setCurrentWorkspace(savedWorkspace || workspaceList[0]);
+          } else if (workspaceList.length === 0) {
+            setCurrentWorkspace(null);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load workspaces:", error);
+        if (!cancelled) {
+          setWorkspaces([]);
+          setCurrentWorkspace(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadWorkspaces();
+
+    return () => { cancelled = true; };
+  }, [currentAccount?.id, isAuthenticated]);
+
+  // Handler to set workspace and persist to localStorage
+  const setWorkspace = useCallback((workspace: Workspace | null) => {
+    setCurrentWorkspace(workspace);
+
+    // Persist to localStorage
+    if (typeof window !== "undefined" && currentAccount) {
+      if (workspace) {
+        localStorage.setItem(`bush_workspace_${currentAccount.id}`, workspace.id);
+      } else {
+        localStorage.removeItem(`bush_workspace_${currentAccount.id}`);
+      }
+    }
+  }, [currentAccount]);
+
+  return (
+    <WorkspaceContext.Provider
+      value={{
+        workspace: currentWorkspace,
+        workspaces,
+        setWorkspace,
+        isLoading,
+      }}
+    >
+      {children}
+    </WorkspaceContext.Provider>
+  );
+}
+
+/**
+ * Hook to get the current workspace context
+ * Returns the current workspace, all workspaces, and a setter
+ */
+export function useCurrentWorkspace(): WorkspaceContextValue {
+  const context = useContext(WorkspaceContext);
+  if (!context) {
+    throw new Error("useCurrentWorkspace must be used within a WorkspaceProvider");
+  }
+  return context;
 }

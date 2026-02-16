@@ -3,6 +3,7 @@
  *
  * Exports all API route modules.
  */
+export { default as authRoutes } from "./auth.js";
 export { default as accountRoutes } from "./accounts.js";
 export { default as workspaceRoutes } from "./workspaces.js";
 export { default as projectRoutes } from "./projects.js";

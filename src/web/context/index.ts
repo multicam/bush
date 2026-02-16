@@ -3,4 +3,11 @@
  *
  * Exports all React contexts for the Bush platform.
  */
-export { AuthProvider, useAuth, useHasRole, useCurrentWorkspace } from "./auth-context.js";
+export {
+  AuthProvider,
+  useAuth,
+  useHasRole,
+  WorkspaceProvider,
+  useCurrentWorkspace,
+  type Workspace,
+} from "./auth-context.js";

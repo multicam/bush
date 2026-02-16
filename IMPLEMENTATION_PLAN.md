@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Drag-and-Drop UI + Upload Queue UI Implementation)
+**Last updated**: 2026-02-16 (Auth Endpoints + Workspace Context + Database Indexes)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
@@ -11,11 +11,11 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 39/110+ (35%) | 6 route modules implemented, multipart upload + download added |
+| **API Endpoints** | 42/110+ (38%) | 7 route modules implemented, auth endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
-| **TODO Comments** | 1 | `src/web/context/auth-context.tsx:149` |
+| **TODO Comments** | 0 | All resolved |
 | **Media Processing** | 70% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 0% | Not implemented |
 | **Upload Client** | 100% | Chunked upload with resumable support |
@@ -41,12 +41,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### Authentication Gaps
 
-- **[P1] Auth Endpoints** [4h] -- NOT STARTED **(PROMOTED FROM P0)**
+- **[P1] Auth Endpoints** [4h] -- COMPLETED (2026-02-16)
   - `POST /v4/auth/token` - token refresh
   - `POST /v4/auth/revoke` - token revocation
   - `GET /v4/auth/me` - current user info
   - **Dependencies**: None (auth middleware ready)
-  - **Note**: Can use existing session flow in meantime
+  - **Implementation**: `src/api/routes/auth.ts`
 
 - **[P2] Guest/Reviewer Access Flows** [2d] -- NOT STARTED **(DEPRIORITIZED FROM P1)**
   - Implement 3 access tiers: authenticated, identified (email code), unidentified (anonymous)
@@ -139,17 +139,18 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### Database Schema Gaps
 
-- **[P1] Add Missing Indexes** [1h] -- NOT STARTED
+- **[P1] Add Missing Indexes** [1h] -- COMPLETED (2026-02-16)
   - `files.versionStackId` index
   - `files.mimeType` index
   - `files.expiresAt` index
   - `comments.parentId` index
   - `comments.versionStackId` index
   - `shares.accountId` index
+  - `shares.projectId` index
   - `notifications.readAt` index
   - **Composite on `folders(projectId, parentId)`** - Critical for tree queries
   - **Dependencies**: None
-  - **Note**: Some indexes already exist in schema.ts but not in migrate.ts
+  - **Implementation**: Updated `src/db/schema.ts`
 
 - **[P2] Add Missing Tables** [2d] -- NOT STARTED
   - `customFields` - custom field definitions
@@ -743,11 +744,14 @@ All quick wins are COMPLETED:
   - Remove mock team member data
   - **Dependencies**: Member management endpoints
 
-- **[P1] Workspace Context** [2h] -- NOT STARTED **(PROMOTED FROM P2)**
-  - TODO placeholder at `src/web/context/auth-context.tsx:149`
-  - Implement workspace selection state
+- **[P1] Workspace Context** [2h] -- COMPLETED (2026-02-16)
+  - `WorkspaceProvider` component with workspace state management
+  - `useCurrentWorkspace()` hook returning workspace, workspaces, setWorkspace, isLoading
+  - Persists workspace selection to localStorage per account
+  - Auto-selects first workspace on load
+  - Wrapped app in `WorkspaceProvider` in layout.tsx
   - **Dependencies**: None
-  - **Critical for**: Proper multi-workspace navigation
+  - **Implementation**: Updated `src/web/context/auth-context.tsx`
 
 ---
 
@@ -813,6 +817,41 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-16 Auth Endpoints + Workspace Context + Database Indexes
+
+**Completed Work:**
+1. **Auth Endpoints COMPLETED** - `src/api/routes/auth.ts`
+   - `POST /v4/auth/token` - Exchange refresh token for new access token
+   - `POST /v4/auth/revoke` - Revoke a token (logout)
+   - `GET /v4/auth/me` - Get current authenticated user and permissions
+   - Mounted at `/v4/auth` in the API router
+
+2. **Workspace Context COMPLETED** - Updated `src/web/context/auth-context.tsx`
+   - Created `WorkspaceProvider` component with workspace state management
+   - Created `useCurrentWorkspace()` hook returning:
+     - `workspace: Workspace | null` - current workspace
+     - `workspaces: Workspace[]` - all workspaces for current account
+     - `setWorkspace: (workspace: Workspace | null) => void` - change workspace
+     - `isLoading: boolean` - loading state
+   - Persists workspace selection to localStorage per account
+   - Auto-selects first workspace on load
+   - Wrapped app in `WorkspaceProvider` in layout.tsx
+   - Removed TODO comment at line 149
+
+3. **Database Indexes COMPLETED** - Updated `src/db/schema.ts`
+   - Added `files.versionStackId` index
+   - Added `files.mimeType` index
+   - Added `files.expiresAt` index
+   - Added `comments.parentId` index
+   - Added `comments.versionStackId` index
+   - Added `shares.accountId` index
+   - Added `shares.projectId` index
+   - Added `notifications.readAt` index
+   - Added composite index on `folders(projectId, parentId)` for tree queries
+
+**API Endpoints:** 39 → 42 (+3 auth endpoints)
+**TODO Comments:** 1 → 0
 
 ### 2026-02-17 Upload UI Implementation (Drag-and-Drop + Queue)
 
