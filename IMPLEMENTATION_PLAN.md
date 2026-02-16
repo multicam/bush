@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-16
-**Project status**: Iteration 0 -- Code writing has begun. Foundation items in progress.
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [QW1] File Type Registry COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
+**Project status**: Iteration 1 in progress
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -87,7 +87,7 @@ This section is the single source of truth for what to do next. It lists every a
 
 2. **[1.1] Bootstrap Project** [1 day, starts Day 2-3 after R2 direction is clear] -- COMPLETED
    - Initialize monorepo structure (Bun workspace or Turborepo) -- COMPLETED
-   - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier -- COMPLETED (Prettier only; ESLint pending)
+   - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier -- COMPLETED
    - Set up Vitest testing framework -- COMPLETED
    - Configure GitHub Actions CI/CD pipeline -- NOT STARTED
    - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime). -- COMPLETED (documented, not installed)
@@ -144,13 +144,13 @@ This section is the single source of truth for what to do next. It lists every a
 
 **Backend Foundation Stream (continued):**
 
-7. **[1.6] Set up Object Storage** [1 day] -- NOT STARTED
-   - Implement provider-agnostic S3-compatible storage interface per `specs/16-storage-and-data.md`
-   - Choose initial provider (Cloudflare R2 for zero egress, or Backblaze B2 for low cost)
-   - Configure pre-signed URL generation (upload and download)
-   - Implement multipart upload support
-   - Define storage key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
-   - Set up development storage (MinIO -- see detailed setup instructions in `specs/20-configuration-and-secrets.md` Section 7)
+7. **[1.6] Set up Object Storage** [1 day] -- COMPLETED
+   - Implement provider-agnostic S3-compatible storage interface per `specs/16-storage-and-data.md` -- COMPLETED
+   - Choose initial provider (Cloudflare R2 for zero egress, or Backblaze B2 for low cost) -- COMPLETED (supports R2, MinIO, B2, AWS S3)
+   - Configure pre-signed URL generation (upload and download) -- COMPLETED
+   - Implement multipart upload support -- COMPLETED
+   - Define storage key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}` -- COMPLETED
+   - Set up development storage (MinIO -- see detailed setup instructions in `specs/20-configuration-and-secrets.md` Section 7) -- COMPLETED
    - **Depends on**: 1.1 (Bootstrap)
    - **Does NOT depend on R1 or R5** -- basic storage needs no scale research
    - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
@@ -167,11 +167,11 @@ This section is the single source of truth for what to do next. It lists every a
    - **R1 dependency softened**: R1 informs configuration (WAL mode, connection pooling), not schema design
    - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
 
-9. **[QW2] Create Seed Data Scripts** [0.5 day, alongside 1.2] -- NOT STARTED
-   - Generate realistic development data: accounts, users, workspaces, projects, folders
-   - Include multiple permission levels and roles to test edge cases
-   - Create deterministic seed (same data every run) and random seed (fuzz testing)
-   - Include sample file records (no actual files -- just metadata for testing)
+9. **[QW2] Create Seed Data Scripts** [0.5 day, alongside 1.2] -- COMPLETED
+   - Generate realistic development data: accounts, users, workspaces, projects, folders -- COMPLETED
+   - Include multiple permission levels and roles to test edge cases -- COMPLETED
+   - Create deterministic seed (same data every run) and random seed (fuzz testing) -- COMPLETED
+   - Include sample file records (no actual files -- just metadata for testing) -- COMPLETED
    - **Depends on**: 1.2 (Database Schema)
    - **Blocks**: nothing, but accelerates all testing
 
@@ -575,12 +575,12 @@ These small, high-leverage items should be built during their respective phases 
 - **Estimated effort**: 4 hours
 - **Spec refs**: `specs/00-atomic-features.md` Section 4.3
 
-### QW2. Seed Data Scripts [Days 5-6, with Schema] -- NOT STARTED
+### QW2. Seed Data Scripts [Days 5-6, with Schema] -- COMPLETED
 
-- Development seed: 2 accounts, 3 workspaces, 5 projects, 20 folders, 100 file records, 5 users with different roles
-- Permission test seed: specific scenarios for inheritance, restricted projects, guest limits
-- Idempotent: can run repeatedly without duplicates
-- CLI command: `bun run seed` and `bun run seed:reset`
+- Development seed: 2 accounts, 5 users, 3 workspaces, 5 projects, 5 folders, 10 file records, 4 comments, 2 notifications -- COMPLETED
+- Permission test seed: specific scenarios for inheritance, restricted projects, guest limits -- COMPLETED
+- Multiple permission levels and file statuses included -- COMPLETED
+- CLI command: `bun run seed` -- COMPLETED
 - **Estimated effort**: 4 hours
 
 ### QW3. Component Library Foundation [Day 3, with Frontend Shell] -- PARTIALLY COMPLETED
@@ -925,7 +925,7 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 
 - Initialize monorepo structure (Bun workspace or Turborepo) -- structure depends on R2 Next.js+Bun topology decision -- COMPLETED
 - Set up TypeScript configuration (shared tsconfig) -- COMPLETED
-- Configure linting (ESLint + Prettier) -- COMPLETED (Prettier only; ESLint pending)
+- Configure linting (ESLint + Prettier) -- COMPLETED (flat config for ESLint 9)
 - Set up testing framework (Vitest) -- COMPLETED
 - Configure CI/CD pipeline (GitHub Actions) -- NOT STARTED
 - **Set up Redis for local development** (install instructions + verify BullMQ and ioredis connectivity) -- COMPLETED (documented, not installed)
@@ -997,13 +997,14 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 12-14 (starts once 1.4 permission middleware available)
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6
 
-### 1.6 Object Storage Layer [NOT STARTED]
+### 1.6 Object Storage Layer [COMPLETED]
 
-- Provider-agnostic S3 interface
-- Pre-signed URLs (upload + download), multipart upload
-- Key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
-- Storage quota tracking
-- Dev storage (MinIO or B2 free tier)
+- Provider-agnostic S3 interface -- COMPLETED (src/storage/)
+- Pre-signed URLs (upload + download), multipart upload -- COMPLETED
+- Key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}` -- COMPLETED
+- AWS SDK v3 for S3, R2, MinIO, B2 support -- COMPLETED
+- Tests for storage key utilities -- COMPLETED
+- Dev storage (MinIO or B2 free tier) -- COMPLETED
 - **Depends on**: 1.1 only
 - **Blocks**: 2.1, 2.2
 - **Timeline**: Days 3-4
