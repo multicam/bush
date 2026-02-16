@@ -5,6 +5,12 @@
 **Research confirms**: Zero code exists (no `src/` directory, no `package.json`, no dependencies). 5 git commits, all planning/specs. All items below remain NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
+### KNOWN SPEC INCONSISTENCIES (Resolve Before Implementation)
+
+1. **Token TTL mismatch**: `specs/12-authentication.md` (lines 74-75) says access token TTL = 5 minutes, refresh token TTL = 7 days. `specs/17-api-complete.md` (lines 33-34) says access token = 1 hour, refresh token = 30 days. **Must resolve before Phase 1.3 (Authentication).** Recommendation: adopt auth spec values (5 min / 7 days) as they are more security-conscious; update API spec to match.
+
+2. **README deferral labels**: `specs/README.md` (lines 43-45) defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. These are needed earlier per this plan's blocking dependencies. Update README when those specs are written.
+
 ---
 
 ## TABLE OF CONTENTS
@@ -75,6 +81,9 @@ This section is the single source of truth for what to do next. It lists every a
    - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier
    - Set up Vitest testing framework
    - Configure GitHub Actions CI/CD pipeline
+   - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime).
+   - **Create `.env.example`** with all required environment variables: WorkOS API key, WorkOS client ID, redirect URIs, Redis URL, S3 endpoint/key/secret/bucket, database path, FFmpeg path, and application secrets.
+   - **Resolve Next.js + Bun API architecture**: Does Bun serve as the Next.js runtime (single process) or is there a separate Bun HTTP server alongside Next.js (two processes)? This is the most consequential architectural decision and must be answered by R2 before Bootstrap proceeds. If separate: define the port/routing strategy and CORS configuration.
    - Create development environment setup docs
    - **Depends on**: R2 direction (not full completion)
    - **Blocks**: Everything else
@@ -232,6 +241,7 @@ This section is the single source of truth for what to do next. It lists every a
 
 17. **[1.5] Build API Foundation (V4)** [3 days] -- NOT STARTED
     - Set up Bun HTTP server with routing framework (Hono or Elysia)
+    - **CORS middleware**: configure allowed origins (Next.js dev server, production domain), methods, headers. Required if Bun API and Next.js run on different ports/origins.
     - OAuth 2.0 authentication middleware
     - Rate limiting middleware (Redis-backed leaky bucket algorithm, per-endpoint limits per `specs/00-atomic-features.md` 18.2)
     - Cursor-based pagination (default 50, max 100 items per page)
@@ -338,6 +348,10 @@ This section is the single source of truth for what to do next. It lists every a
 
 **By Week 4 End**: Phase 1 complete + basic upload/processing/browsing functional = **Iteration 1 Achieved**
 
+**Iteration 1 Definition (explicit)**: A user can sign up via WorkOS, create a workspace and project, upload files (with chunked/resumable support), see processing produce thumbnails and proxies, browse files in grid/list view, and navigate the folder tree. Items 2.4-2.12 (viewers, comments, metadata, notifications, search) are post-Iteration 1.
+
+**Solo developer timeline caveat**: The 4-week timeline assumes 2+ engineers working parallel streams. A solo developer should plan 5-6 weeks, as the backend (Stream 1) and frontend (Stream 4) cannot truly run in parallel.
+
 ### Post-Iteration 1: Immediate Next Priorities (Weeks 5-8)
 
 25. **[2.4] Asset Operations** [2 days] -- NOT STARTED
@@ -428,13 +442,16 @@ Four workstreams run simultaneously with minimal dependencies.
 **Timeline**: Days 1-14
 
 ```
-Days 1-2:  R2 Research (Deployment)
-Day 3:     Bootstrap (1.1) + File Type Registry (QW1)
+Days 1-2:  R2 Research (Deployment) -- MUST produce Next.js+Bun architecture decision
+Day 3:     Bootstrap (1.1) + File Type Registry (QW1) + Redis setup + .env.example
 Days 3-4:  Object Storage (1.6)
 Days 4-7:  Database Schema (1.2) + Seed Data (QW2) <-- R1 config incorporated Day 6
 Days 8-10: Authentication (1.3 -- WorkOS AuthKit) + Error Utilities (QW4)
-Days 11-14: Permissions (1.4) + API Foundation (1.5)
+Days 11-12: Permissions (1.4) -- must produce permission middleware before 1.5
+Days 12-14: API Foundation (1.5) -- starts once permission middleware available (Day 12 overlap)
 ```
+
+**CORRECTION**: 1.4 and 1.5 are NOT fully parallel -- 1.5 depends on 1.4's permission middleware. The timeline shows 1.4 finishing its core middleware by Day 12, enabling 1.5 to start integration while 1.4 completes edge-case tests.
 
 **Key outputs**:
 - Deployed development environment with CI/CD
@@ -646,12 +663,13 @@ Research items organized by priority tier based on when they block implementatio
 - **Blocks**: 1.1 (Bootstrap), project structure decisions
 - **Timeline**: Days 1-2
 - **Research questions**:
+  - **[MOST CRITICAL] Determine Next.js + Bun backend architecture**: Option A: Bun serves as Next.js runtime (single process, Next.js API routes handle some server logic). Option B: Separate Bun HTTP server (Hono/Elysia) alongside Next.js (two processes, clear frontend/backend split). Option C: Next.js handles SSR/pages, Bun server handles API exclusively, reverse proxy routes between them. **This decision determines monorepo structure, routing, CORS needs, and deployment topology. Must be answered Day 1-2.**
   - Evaluate Bun production deployment: process management, crash recovery, graceful shutdown
   - Compare: systemd services, PM2, Fly.io (non-Docker), Render, Railway, bare VPS
-  - Determine Next.js + Bun backend hosting topology (same host vs separate)
   - Plan zero-downtime deployment strategy
-  - Design process supervision for FFmpeg workers
-- **Deliverable**: Deployment architecture document
+  - Design process supervision for FFmpeg workers (long-running, crash-prone, separate from API server)
+  - **Redis hosting**: managed (Upstash/Redis Cloud) vs self-hosted. Evaluate Upstash for serverless-friendly, Redis Cloud for traditional.
+- **Deliverable**: Deployment architecture document with explicit decision on Next.js+Bun topology
 
 #### R1. SQLite at Scale [CRITICAL] -- NOT STARTED
 
@@ -868,11 +886,14 @@ Ordered by when they block implementation.
 
 ### 1.1 Project Bootstrap [NOT STARTED]
 
-- Initialize monorepo structure (Bun workspace or Turborepo)
+- Initialize monorepo structure (Bun workspace or Turborepo) -- structure depends on R2 Next.js+Bun topology decision
 - Set up TypeScript configuration (shared tsconfig)
 - Configure linting (ESLint + Prettier)
 - Set up testing framework (Vitest)
 - Configure CI/CD pipeline (GitHub Actions)
+- **Set up Redis for local development** (install instructions + verify BullMQ and ioredis connectivity)
+- **Create `.env.example`** with all required environment variables (WorkOS, Redis, S3, database, FFmpeg, app secrets)
+- **Configure CORS** if R2 determines separate Next.js + Bun API processes
 - Create development environment setup docs
 - Include QW1 (File Type Registry) as part of bootstrap
 - **Depends on**: R2 direction
@@ -925,16 +946,17 @@ Ordered by when they block implementation.
 ### 1.5 RESTful API Foundation (V4) [NOT STARTED]
 
 - Bun HTTP server with Hono or Elysia
-- Auth middleware, rate limiting (leaky bucket, per-endpoint)
+- **CORS middleware** (required if API and Next.js are separate processes -- configure allowed origins, methods, headers, credentials)
+- Auth middleware, rate limiting (leaky bucket, per-endpoint, Redis-backed)
 - Cursor pagination (50 default, 100 max)
 - CRUD for all core resources
 - Plan-gate middleware for tier-restricted features
 - QW4 (Error Utilities) integrated
 - OpenAPI spec generation
 - Integration tests
-- **Depends on**: 1.3, 1.4
+- **Depends on**: 1.3, 1.4 (permission middleware available by Day 12; full 1.4 edge-case testing completes in parallel)
 - **Blocks**: 1.7b, all Phase 2+
-- **Timeline**: Days 11-14
+- **Timeline**: Days 12-14 (starts once 1.4 permission middleware available)
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6
 
 ### 1.6 Object Storage Layer [NOT STARTED]
@@ -962,7 +984,7 @@ Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 - **Depends on**: 1.1 (for 1.7a), 1.5 + 1.3 (for 1.7b)
 - **Blocks**: all Phase 2 frontend
 - **Timeline**: Days 3-14
-- **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/03-file-management.md`
+- **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/00-complete-support-documentation.md` Sections 4.2, 5.3 (layout specs). NOTE: `specs/03-file-management.md` covers upload methods/transfer, not UI layout.
 
 ---
 
@@ -1430,3 +1452,27 @@ The following corrections were made after systematic research validation of all 
 26. **Stream 1 (Backend) WorkOS note added** -- Authentication with WorkOS AuthKit may be faster than the 3-day estimate since identity verification is delegated. Timeline kept conservative; note added about potential schedule slack.
 
 27. **Frontend auth UI description updated** -- Item 12 (1.7a Web Shell) previously listed "email/password, OAuth buttons, 2FA, password reset" UI. Updated to reflect WorkOS AuthKit hosted login UI, post-auth routing, account switcher, and role indicators.
+
+### Corrections (2026-02-16 Deep Analysis Review)
+
+The following corrections address gaps and errors found during deep plan analysis.
+
+28. **Token TTL spec inconsistency flagged** -- `specs/12-authentication.md` and `specs/17-api-complete.md` disagree on token TTL values. Added to "Known Spec Inconsistencies" section at top of plan. Must resolve before Phase 1.3.
+
+29. **Redis bootstrapping made explicit** -- Redis was referenced throughout the plan (session cache, BullMQ, rate limiting, pub/sub) but never had an explicit setup task. Added to both 1.1 (Bootstrap, Days 1-3 timeline) and Phase 1.1 section with provider selection guidance.
+
+30. **`.env.example` creation added** -- Zero-code project needs explicit environment variable documentation from Day 1. Added to 1.1.
+
+31. **Next.js + Bun architecture decision elevated** -- R2 research question about Next.js+Bun topology elevated from one bullet among many to the primary gating question. Three options documented (single process, two processes, reverse proxy). This is the single most consequential architectural decision in the project.
+
+32. **CORS middleware added** -- If Next.js and Bun API are separate processes (likely), CORS configuration is required. Added to both 1.1 (Bootstrap) and 1.5 (API Foundation).
+
+33. **1.4/1.5 timeline corrected** -- Parallel Workstreams section previously showed "Days 11-14: Permissions (1.4) + API Foundation (1.5)" implying full parallelism, but 1.5 depends on 1.4's permission middleware. Corrected to show 1.4 completing middleware by Day 12, enabling 1.5 to start integration with Day 12 overlap.
+
+34. **Iteration 1 definition made explicit** -- Added concrete definition of what "Iteration 1 Achieved" means: sign up, create workspace/project, upload files, processing produces thumbnails/proxies, browse files in grid/list. Items 2.4-2.12 are explicitly post-Iteration 1.
+
+35. **Solo developer timeline caveat added** -- 4-week timeline assumes 2+ parallel engineers. Solo developer should plan 5-6 weeks since backend and frontend streams cannot truly parallelize.
+
+36. **`specs/03-file-management.md` reference corrected** -- Phase 1.7 (Web Shell) incorrectly cited this spec for UI layout. Actual layout specs are in `specs/00-complete-support-documentation.md` Sections 4.2, 5.3 and `specs/00-atomic-features.md` Section 5.3.
+
+37. **R2 Redis hosting research added** -- Managed Redis provider selection (Upstash vs Redis Cloud vs self-hosted) added to R2 research scope since no-Docker constraint affects Redis deployment too.
