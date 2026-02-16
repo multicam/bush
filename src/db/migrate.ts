@@ -1,7 +1,7 @@
 /**
  * Database Migration Script
  *
- * Run with: npm run db:migrate
+ * Run with: bun run db:migrate
  */
 import Database from "better-sqlite3";
 import { config } from "../config/index.js";

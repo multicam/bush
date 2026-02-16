@@ -65,8 +65,9 @@ REDIS_KEY_PREFIX=bush:
 # -- WorkOS AuthKit [REQUIRED] [SECRET] --
 WORKOS_API_KEY=sk_test_...               # [SECRET] WorkOS API key
 WORKOS_CLIENT_ID=client_...              # [REQUIRED] WorkOS client ID
-WORKOS_REDIRECT_URI=http://localhost:3000/callback
+NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
 WORKOS_WEBHOOK_SECRET=whsec_...          # [SECRET] WorkOS webhook signing secret
+WORKOS_COOKIE_PASSWORD=                   # [SECRET] Cookie encryption password (min 32 chars). Uses SESSION_SECRET if not set.
 
 # -- Object Storage (S3-compatible) --
 STORAGE_PROVIDER=minio                   # minio | s3 | r2 | b2
@@ -123,7 +124,7 @@ LITESTREAM_ENABLED=false                 # Enable SQLite streaming backup
 
 ## 4. Config Validation Schema
 
-Zod schema at `packages/config/src/env.ts` -- imported by both backend and frontend server code.
+Zod schema at `src/config/env.ts` -- imported by both backend and frontend server code.
 
 ```typescript
 import { z } from "zod";
@@ -147,10 +148,12 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default("bush:"),
 
   // WorkOS
-  WORKOS_API_KEY: z.string().startsWith("sk_"),
-  WORKOS_CLIENT_ID: z.string().startsWith("client_"),
-  WORKOS_REDIRECT_URI: z.string().url(),
+  WORKOS_API_KEY: z.string().min(1),
+  WORKOS_CLIENT_ID: z.string().min(1),
+  WORKOS_REDIRECT_URI: z.string().url().optional(),
+  NEXT_PUBLIC_WORKOS_REDIRECT_URI: z.string().url(),
   WORKOS_WEBHOOK_SECRET: z.string().min(1),
+  WORKOS_COOKIE_PASSWORD: z.string().min(32).optional(), // For AuthKit SDK encryption
 
   // Storage
   STORAGE_PROVIDER: z.enum(["minio", "s3", "r2", "b2"]).default("minio"),
@@ -221,6 +224,7 @@ export const config = loadConfig();
 - **No `.optional()`** on secrets -- forces explicit configuration
 - **`safeParse`** gives all errors at once, not just the first one
 - **`process.exit(1)`** on failure -- never start with bad config
+- **Build phase bypass**: During `NEXT_PHASE=phase-production-build`, config validation is skipped and placeholder values are used (Next.js builds don't have runtime secrets)
 
 ---
 
@@ -252,6 +256,7 @@ export const config = loadConfig();
 | `WORKOS_API_KEY` | GitHub Secrets -> deployment env |
 | `WORKOS_CLIENT_ID` | GitHub Secrets -> deployment env |
 | `WORKOS_WEBHOOK_SECRET` | GitHub Secrets -> deployment env |
+| `WORKOS_COOKIE_PASSWORD` | GitHub Secrets -> deployment env |
 | `STORAGE_ACCESS_KEY` | GitHub Secrets -> deployment env |
 | `STORAGE_SECRET_KEY` | GitHub Secrets -> deployment env |
 | `CDN_SIGNING_KEY` | GitHub Secrets -> deployment env |
@@ -274,7 +279,7 @@ export const config = loadConfig();
 ```typescript
 // Middleware: scrub secrets from log output
 const SECRET_KEYS = [
-  "WORKOS_API_KEY", "WORKOS_WEBHOOK_SECRET",
+  "WORKOS_API_KEY", "WORKOS_WEBHOOK_SECRET", "WORKOS_COOKIE_PASSWORD",
   "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY",
   "CDN_SIGNING_KEY", "SMTP_PASS", "SESSION_SECRET",
 ];
@@ -315,7 +320,7 @@ function scrubSecrets(message: string): string {
 | Tool | Version | Install |
 |------|---------|---------|
 | Bun | >= 1.0 | `curl -fsSL https://bun.sh/install \| bash` |
-| Node.js | >= 20 | Required for Next.js |
+| Node.js | >= 22 | Required for Next.js (tsx uses Node runtime) |
 | Redis | >= 7.0 | `brew install redis` or `apt install redis-server` |
 | FFmpeg | >= 6.0 | `brew install ffmpeg` or `apt install ffmpeg` |
 | MinIO | latest | `brew install minio/stable/minio` or binary download |
@@ -362,15 +367,32 @@ bun run db:migrate
 
 # 9. Start development servers
 bun run dev          # Starts both backend and frontend
+# Or separately:
+bun run dev:api      # Hono API on port 3001
+bun run dev:web      # Next.js on port 3000
 ```
+
+### Dev Server Architecture
+
+The platform runs two development servers:
+
+- **API server** (`:3001`): Hono + tsx, loaded via `tsx watch --env-file=.env.local src/api/index.ts`
+- **Web server** (`:3000`): Next.js, loaded via `bash -c 'set -a; source .env.local; set +a; PORT=3000 exec next dev src/web'`
+
+**Why the `dev:web` workaround?** Next.js looks for `.env.local` relative to the app root (`src/web/`), but the project's `.env.local` is at the repository root. The script sources `.env.local` into the shell environment so Next.js gets all the env vars (WorkOS keys, Redis URL, etc.). `PORT=3000` overrides the `PORT=3001` value from `.env.local` (which is the API port) to prevent the two servers from colliding.
+
+Next.js also proxies `/v4/*` requests to the Hono API via rewrites in `next.config.ts`, so browser requests don't cross origins and cookies are forwarded transparently. See `specs/12-authentication.md` "Next.js → Hono API Proxy" for details.
 
 ### WorkOS Dev Account Setup
 1. Create a free account at [workos.com](https://workos.com)
 2. Create an environment (Development)
 3. Enable AuthKit in the WorkOS dashboard
-4. Configure redirect URI: `http://localhost:3000/callback`
+4. Configure redirect URI: `http://localhost:3000/auth/callback`
 5. Copy API Key (`sk_test_...`) and Client ID (`client_...`) to `.env.local`
-6. Set up a webhook endpoint (use a tunnel like `ngrok` or WorkOS CLI for local testing)
+6. Set `WORKOS_COOKIE_PASSWORD` to a random 32+ character string (or leave blank to use `SESSION_SECRET`)
+7. Set up a webhook endpoint (use a tunnel like `ngrok` or WorkOS CLI for local testing)
+
+**Important:** The redirect URI in the WorkOS dashboard must match `NEXT_PUBLIC_WORKOS_REDIRECT_URI` in `.env.local` exactly. The AuthKit SDK reads this variable (the `NEXT_PUBLIC_` prefix is required).
 
 ### Verifying Local Setup
 ```bash
@@ -403,7 +425,7 @@ REDIS_URL=redis://localhost:6379
 REDIS_KEY_PREFIX=bush:test:
 WORKOS_API_KEY=sk_test_fake_key_for_testing
 WORKOS_CLIENT_ID=client_test_fake_id
-WORKOS_REDIRECT_URI=http://localhost:3002/callback
+NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3002/auth/callback
 WORKOS_WEBHOOK_SECRET=whsec_test_fake_secret
 STORAGE_PROVIDER=minio
 STORAGE_ENDPOINT=http://localhost:9000
@@ -476,12 +498,15 @@ Next.js requires `NEXT_PUBLIC_` prefix for client-side variables. These are **no
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL |
+| `NEXT_PUBLIC_API_URL` | Backend API base URL (optional — web client uses Next.js proxy in browser) |
 | `NEXT_PUBLIC_WS_URL` | WebSocket connection URL |
 | `NEXT_PUBLIC_APP_NAME` | Application display name |
+| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | WorkOS AuthKit redirect URI (required by AuthKit SDK) |
 
 - Never prefix a secret with `NEXT_PUBLIC_` -- it will be exposed to all users
 - Server-side Next.js code (API routes, Server Components) can access all env vars without the prefix
+- The `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is an exception: it's not a secret (it's a URL), but the `NEXT_PUBLIC_` prefix is required by the AuthKit SDK internals
+- In the browser, API calls use relative `/v4` paths (routed through Next.js rewrite proxy to the Hono backend), so `NEXT_PUBLIC_API_URL` is not used for browser requests
 
 ---
 
@@ -489,7 +514,7 @@ Next.js requires `NEXT_PUBLIC_` prefix for client-side variables. These are **no
 
 ### Backend (Hono)
 ```typescript
-import { config } from "@bush/config";
+import { config } from "../config/index.js";
 
 // Type-safe, validated at startup
 const port = config.PORT;           // number
@@ -498,7 +523,7 @@ const redisUrl = config.REDIS_URL;  // string
 
 ### Frontend Server (Next.js Server Components / API Routes)
 ```typescript
-import { config } from "@bush/config";
+import { config } from "../config/index.js";
 
 // Same validated config object
 const apiKey = config.WORKOS_API_KEY;

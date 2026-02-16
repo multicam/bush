@@ -23,7 +23,7 @@ Cloud-based creative collaboration platform for video, design, and marketing tea
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Configure environment
 cp .env.example .env.local
@@ -33,20 +33,22 @@ cp .env.example .env.local
 #   REDIS_URL (defaults to redis://localhost:6379)
 
 # Initialize database
-npm run db:migrate
-npm run db:seed        # optional test data
+bun run db:migrate
+bun run db:seed        # optional test data
 ```
 
 ## Development
 
 ```bash
 # Start API (port 3001) and web (port 3000) together
-npm run dev
+bun run dev
 
 # Or separately
-npm run dev:api
-npm run dev:web
+bun run dev:api
+bun run dev:web
 ```
+
+**Note on `dev:web`:** Next.js doesn't load `.env.local` from the project root when the app lives in a subdirectory (`src/web`). The `dev:web` script works around this by sourcing `.env.local` into the shell environment and overriding `PORT=3000` (since `.env.local` sets `PORT=3001` for the API). See `package.json` for the full command.
 
 ### Health check
 
@@ -58,18 +60,18 @@ curl http://localhost:3001/health
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start API + web in parallel |
-| `npm run dev:api` | Start Hono API server |
-| `npm run dev:web` | Start Next.js dev server |
-| `npm run build` | Build Next.js for production |
-| `npm test` | Run tests (Vitest) |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run lint` | Lint with ESLint |
-| `npm run format` | Format with Prettier |
-| `npm run typecheck` | TypeScript type check |
-| `npm run db:migrate` | Run database migrations |
-| `npm run db:generate` | Generate Drizzle migration files |
-| `npm run db:seed` | Seed database with test data |
+| `bun run dev` | Start API + web in parallel |
+| `bun run dev:api` | Start Hono API server (port 3001) |
+| `bun run dev:web` | Start Next.js dev server (port 3000, sources `.env.local`) |
+| `bun run build` | Build Next.js for production |
+| `bun test` | Run tests (Vitest) |
+| `bun run test:watch` | Run tests in watch mode |
+| `bun run lint` | Lint with ESLint |
+| `bun run format` | Format with Prettier |
+| `bun run typecheck` | TypeScript type check |
+| `bun run db:migrate` | Run database migrations |
+| `bun run db:generate` | Generate Drizzle migration files |
+| `bun run db:seed` | Seed database with test data |
 
 ## Project Structure
 
@@ -108,7 +110,7 @@ From the WorkOS Dashboard, grab:
 In the WorkOS Dashboard under **Redirects**, add:
 
 ```
-http://localhost:3000/api/auth/callback
+http://localhost:3000/auth/callback
 ```
 
 ### 4. Set environment variables
@@ -118,7 +120,7 @@ Add these to `.env.local`:
 ```bash
 WORKOS_API_KEY=sk_test_...
 WORKOS_CLIENT_ID=client_...
-NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/api/auth/callback
+NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
 WORKOS_COOKIE_PASSWORD=<random-string-min-32-chars>  # optional, falls back to SESSION_SECRET
 ```
 

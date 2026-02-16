@@ -20,21 +20,36 @@
 
 ## 2. Authentication
 
-### 2.1 OAuth 2.0 Bearer Tokens (Primary)
+### 2.1 Authentication Methods
 
-Authentication is handled via WorkOS AuthKit. All API requests require a valid bearer token in the `Authorization` header.
+#### Web (Browser) — Cookie-Based Auth
+
+The web frontend authenticates via WorkOS AuthKit cookies. No bearer token is needed for browser requests.
+
+1. User logs in via WorkOS AuthKit hosted UI
+2. AuthKit SDK creates an encrypted `wos-session` cookie (iron-session)
+3. Browser sends this cookie with each request (via Next.js rewrite proxy for `/v4/*`)
+4. Hono auth middleware unseals the `wos-session` cookie and creates/retrieves a Bush session from Redis
+5. Session includes user ID, account ID, role — scoping all API responses
+
+This flow is transparent to the frontend: the web API client simply makes relative `/v4/*` requests.
+
+#### API — Bearer Tokens
+
+External API clients and service-to-service integrations use bearer tokens:
 
 ```
 Authorization: Bearer bush_tok_abc123def456...
 ```
 
-**Token lifecycle:**
-- Tokens issued by WorkOS after OAuth 2.0 authorization code flow
+**Token format:** `bush_tok_` prefix followed by base62 string.
+
+Alternatively, a `userId:sessionId` pair can be used as a bearer token (useful for development/testing).
+
+**Token lifecycle (planned):**
+- Token refresh via `POST /v4/auth/token` with refresh token
 - Access tokens expire after 1 hour
 - Refresh tokens expire after 30 days
-- Token refresh via `POST /v4/auth/token` with refresh token
-
-**Token format:** `bush_tok_` prefix followed by 48-character base62 string.
 
 ### 2.2 API Keys (Server-to-Server)
 

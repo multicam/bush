@@ -14,7 +14,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/signup",
-  "/api/auth/callback",
+  "/auth/callback",
   "/api/auth/login",
   "/api/auth/session",
   "/api/auth/logout",
@@ -42,9 +42,8 @@ export default authkitMiddleware({
       // Auth flows
       "/login",
       "/signup",
-      "/auth/callback", // Standard AuthKit callback
+      "/auth/callback", // WorkOS AuthKit callback (canonical)
       "/api/auth/login",
-      "/api/auth/callback",
       "/api/auth/session",
       "/api/auth/logout",
       // Share links (public access)

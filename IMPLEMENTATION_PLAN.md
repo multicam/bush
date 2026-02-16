@@ -7,8 +7,8 @@
 
 ### KNOWN IMPLEMENTATION NOTES
 
-1. **Bun AVX Issue**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development. This affects the runtime but does not change the target tech stack (Bun remains the target for production on AVX-capable servers).
-2. **Package Manager**: Using npm with package-lock.json for development (not bun.lock) due to AVX issue. CI workflow uses Node.js 22.
+1. **Package Manager**: Bun (`bun install`, `bun run`, `bunx`) is the standard package manager and task runner. All scripts in `package.json` are run via `bun run`.
+2. **Dev Server Workaround**: The `dev:web` script uses `bash -c 'set -a; source .env.local; set +a; PORT=3000 exec next dev src/web'` because Next.js doesn't load `.env.local` from the project root when the app lives in a subdirectory (`src/web`). `PORT=3000` overrides the API port (3001) that gets sourced from `.env.local`.
 
 ### KNOWN SPEC INCONSISTENCIES (Resolve Before Implementation)
 
@@ -90,7 +90,7 @@ This section is the single source of truth for what to do next. It lists every a
    - Initialize monorepo structure (Bun workspace or Turborepo) -- COMPLETED
    - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier -- COMPLETED
    - Set up Vitest testing framework -- COMPLETED
-   - Configure GitHub Actions CI/CD pipeline -- COMPLETED (using Node.js 22 + npm due to Bun AVX issue)
+   - Configure GitHub Actions CI/CD pipeline -- COMPLETED (using Node.js 22 + Bun)
    - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime). -- COMPLETED (documented, not installed)
    - **Create `.env.example`** with all 47 environment variables from `specs/20-configuration-and-secrets.md` Section 3 (WorkOS, Redis, S3, database, FFmpeg, session, rate limiting, upload, backup, etc.) -- COMPLETED
    - **Create `.env.test`** for deterministic test configuration per `specs/20-configuration-and-secrets.md` Section 8 -- COMPLETED

@@ -2,8 +2,8 @@
  * Bush Platform - Database Seed Script
  *
  * Generates realistic development data for testing.
- * Run with: npm run db:seed
- * Reset with: npm run db:seed:reset (if you add it)
+ * Run with: bun run db:seed
+ * Reset with: bun run db:seed:reset (if you add it)
  */
 import Database from "better-sqlite3";
 import { config } from "../config/index.js";

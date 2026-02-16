@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run dev:api & npm run dev:web",
+    "dev": "bun run dev:api & bun run dev:web",
     "dev:api": "tsx watch --env-file=.env.local src/api/index.ts",
     "dev:web": "bash -c 'set -a; source .env.local; set +a; PORT=3000 exec next dev src/web'",
     "build": "next build src/web",
