@@ -36,6 +36,7 @@ In a broader extend, all files need to be critiqued and updated, according the p
 | [15-media-processing.md](./15-media-processing.md) | FFmpeg pipeline, transcoding, thumbnails |
 | [16-storage-and-data.md](./16-storage-and-data.md) | Storage and data |
 | [17-api-complete.md](./17-api-complete.md) | Complete API reference (V4) |
+| [20-configuration-and-secrets.md](./20-configuration-and-secrets.md) | Configuration, secrets management, local dev setup |
 
 ### Deferred Specifications
 | File | Description | Phase |
@@ -55,11 +56,11 @@ These are source of truth -- documentation stating otherwise need to be updated 
 | **Frontend (Web)** | Next.js + TypeScript | SSR, routing, API routes |
 | **Frontend (Mobile)** | Native Swift | iOS/iPadOS/Apple TV (Phase 2) |
 | **Desktop Transfer App** | Tauri | Phase 2 — webapp is standard upload path |
-| **Backend API** | Bun + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
-| **Database** | SQLite | Primary relational store |
+| **Backend API** | Bun + Hono + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
+| **Database** | SQLite + Drizzle ORM | Primary relational store, type-safe schema-as-code |
 | **Cache / Realtime** | Redis | Caching, sessions, rate limiting, pub/sub |
 | **Search** | SQLite FTS5 | Upgrade path to dedicated engine if needed |
-| **Object Storage** | S3-compatible API | Provider-agnostic (AWS S3, R2, MinIO, B2) |
+| **Object Storage** | S3-compatible API | Provider-agnostic; MinIO for dev, R2/B2/S3 for prod |
 | **CDN** | TBD (preference: Bunny CDN) | CDN-agnostic abstraction |
 | **Media Processing** | FFmpeg | Transcoding, thumbnails, filmstrips, waveforms |
 | **Message Queue** | BullMQ + Redis | Async jobs: transcoding, transcription, notifications |
