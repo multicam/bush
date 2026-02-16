@@ -12,3 +12,9 @@ https://piccalil.li/blog/its-about-to-get-a-lot-easier-for-your-javascript-to-cl
 
 https://github.com/image-js/image-js
 
+https://vercel.com/blog/introducing-react-best-practices
+
+https://skills.sh/anthropics/skills/frontend-design
+
+https://openwebf.com/en
+
