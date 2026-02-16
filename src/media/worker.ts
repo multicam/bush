@@ -11,6 +11,9 @@ import { config } from "../config/index.js";
 import { getRedisOptions, QUEUE_NAMES } from "./queue.js";
 import { processMetadata } from "./processors/metadata.js";
 import { processThumbnail } from "./processors/thumbnail.js";
+import { processProxy } from "./processors/proxy.js";
+import { processWaveform } from "./processors/waveform.js";
+import { processFilmstrip } from "./processors/filmstrip.js";
 import type { MediaJobData, QueueName } from "./types.js";
 
 // Worker configuration
@@ -58,19 +61,13 @@ async function processJob(job: Job<MediaJobData>): Promise<unknown> {
       return processThumbnail(data);
 
     case "filmstrip":
-      // TODO: Implement filmstrip processor
-      console.log(`[worker] Filmstrip processing not yet implemented`);
-      return { skipped: true, reason: "not_implemented" };
+      return processFilmstrip(data);
 
     case "proxy":
-      // TODO: Implement proxy processor
-      console.log(`[worker] Proxy processing not yet implemented`);
-      return { skipped: true, reason: "not_implemented" };
+      return processProxy(data);
 
     case "waveform":
-      // TODO: Implement waveform processor
-      console.log(`[worker] Waveform processing not yet implemented`);
-      return { skipped: true, reason: "not_implemented" };
+      return processWaveform(data);
 
     default:
       throw new Error(`Unknown job type: ${(data as { type: string }).type}`);
