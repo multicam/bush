@@ -48,8 +48,8 @@ Alternatively, a `userId:sessionId` pair can be used as a bearer token (useful f
 
 **Token lifecycle (planned):**
 - Token refresh via `POST /v4/auth/token` with refresh token
-- Access tokens expire after 1 hour
-- Refresh tokens expire after 30 days
+- Access tokens expire after 5 minutes (aligned with `specs/12-authentication.md`)
+- Refresh tokens expire after 7 days
 
 ### 2.2 API Keys (Server-to-Server)
 

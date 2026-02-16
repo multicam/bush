@@ -1,9 +1,23 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-16
+**Last updated**: 2026-02-16 (Deep Research Update)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED. Code refactoring pass COMPLETED.
-**Source of truth for tech stack**: `specs/README.md` (lines 37-58)
+**Source of truth for tech stack**: `specs/README.md` (lines 54-76)
+
+---
+
+## IMPLEMENTATION STATISTICS
+
+| Metric | Status | Notes |
+|--------|--------|-------|
+| **API Endpoints** | 33/110+ (30%) | 6 route modules implemented |
+| **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
+| **Test Files** | 19 | Good coverage on core modules |
+| **Spec Files** | 21 | Comprehensive specifications exist |
+| **TODO Comments** | 1 | `src/web/context/auth-context.tsx:149` |
+| **Media Processing** | 0% | Infrastructure only, no workers |
+| **Real-time (WebSocket)** | 0% | Not implemented |
 
 ---
 
@@ -25,25 +39,33 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### Authentication Gaps
 
-- **[P1] Guest/Reviewer Access Flows** [2d] -- NOT STARTED
+- **[P1] Auth Endpoints** [4h] -- NOT STARTED **(PROMOTED FROM P0)**
+  - `POST /v4/auth/token` - token refresh
+  - `POST /v4/auth/revoke` - token revocation
+  - `GET /v4/auth/me` - current user info
+  - **Dependencies**: None (auth middleware ready)
+  - **Note**: Can use existing session flow in meantime
+
+- **[P2] Guest/Reviewer Access Flows** [2d] -- NOT STARTED **(DEPRIORITIZED FROM P1)**
   - Implement 3 access tiers: authenticated, identified (email code), unidentified (anonymous)
   - Share-link-based access without WorkOS account
   - Guest session management and constraints
-  - **Dependencies**: 1.3 (Auth) - DONE
+  - **Dependencies**: 1.3 (Auth) - DONE, 3.1 (Sharing)
   - **Spec refs**: `specs/12-authentication.md` Section 4
+  - **Note**: Not needed for Iteration 1 - users can authenticate
 
-- **[P2] Session Limits Enforcement** [4h] -- NOT STARTED
+- **[P3] Session Limits Enforcement** [4h] -- NOT STARTED **(DEPRIORITIZED FROM P2)**
   - Enforce max 10 concurrent sessions per user
   - Add session count check in session-cache.ts
   - Evict oldest session when limit exceeded
   - **Dependencies**: None (infrastructure ready)
 
-- **[P2] Failed Login Tracking/Lockout** [4h] -- NOT STARTED
+- **[P3] Failed Login Tracking/Lockout** [4h] -- NOT STARTED **(DEPRIORITIZED FROM P2)**
   - Track failed login attempts in Redis
   - Implement progressive lockout (5 min, 15 min, 1 hr)
   - **Dependencies**: None (infrastructure ready)
 
-- **[P3] `bush_key_` API Key Token Type** [1d] -- NOT STARTED
+- **[P2] `bush_key_` API Key Token Type** [1d] -- NOT STARTED
   - Generate/validate `bush_key_` prefixed tokens for server-to-server auth
   - API key management CRUD endpoints
   - Key scoping (read-only, read-write, admin)
@@ -52,17 +74,17 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### API Gaps (1.5 Completion)
 
-- **[P0] Auth Endpoints** [4h] -- NOT STARTED
-  - `POST /v4/auth/token` - token refresh
-  - `POST /v4/auth/revoke` - token revocation
-  - `GET /v4/auth/me` - current user info
-  - **Dependencies**: None (auth middleware ready)
-  - **Blocks**: API completeness for external clients
-
 - **[P1] Storage Usage Endpoint** [2h] -- NOT STARTED
   - `GET /v4/accounts/:id/storage` - return storageUsedBytes, storageQuotaBytes
   - Calculate from files table or cache in accounts
   - **Dependencies**: None
+
+- **[P1] File Download/Access Endpoints** [4h] -- NOT STARTED **(NEW)**
+  - `GET /v4/files/:id/download` - Pre-signed download URL for original
+  - `GET /v4/files/:id/thumbnail` - Thumbnail URL
+  - `GET /v4/files/:id/proxy` - Proxy video URL
+  - **Dependencies**: 2.2 (Media Processing for thumbnails/proxies)
+  - **Critical for**: Asset viewing and downloading
 
 - **[P2] Member Management Endpoints** [1d] -- NOT STARTED
   - `GET /v4/accounts/:id/members` - list members
@@ -71,11 +93,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - `DELETE /v4/accounts/:id/members/:memberId` - remove member
   - **Dependencies**: None
 
-- **[P2] OpenAPI Spec Generation** [1d] -- NOT STARTED
+- **[P3] OpenAPI Spec Generation** [1d] -- NOT STARTED **(DEPRIORITIZED FROM P2)**
   - Generate OpenAPI 3.1 spec from Hono routes
   - Serve at `/v4/openapi.json`
   - Enable API documentation and SDK generation
   - **Dependencies**: 1.5 routes complete
+  - **Note**: Documentation, not functional - defer
 
 - **[P3] Filtering/Sparse Fieldsets** [1d] -- NOT STARTED
   - Query parameter filtering (`?filter[status]=ready`)
@@ -122,8 +145,9 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - `comments.versionStackId` index
   - `shares.accountId` index
   - `notifications.readAt` index
-  - Composite on `folders(projectId, parentId)`
+  - **Composite on `folders(projectId, parentId)`** - Critical for tree queries
   - **Dependencies**: None
+  - **Note**: Some indexes already exist in schema.ts but not in migrate.ts
 
 - **[P2] Add Missing Tables** [2d] -- NOT STARTED
   - `customFields` - custom field definitions
@@ -139,9 +163,10 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - `userNotificationSettings` - per-user notification prefs
   - **Dependencies**: None (can add incrementally)
 
-- **[P3] Technical Metadata Fields on files** [4h] -- NOT STARTED
-  - 30+ fields from spec 6.1: duration, width, height, codec, bitrate, frameRate, etc.
-  - Add as JSON column or individual columns
+- **[P2] Technical Metadata JSON Column** [2h] -- NOT STARTED **(NEW)**
+  - Add `technicalMetadata` JSON column to files table
+  - Store extracted metadata: duration, width, height, codec, bitrate, frameRate, etc.
+  - Avoids 30+ individual columns
   - **Dependencies**: 2.2 (Media Processing to extract)
 
 ### Configuration Gaps
@@ -159,18 +184,20 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 **NOT STARTED** -- Highest priority, blocks all Phase 2
 
+**IMPORTANT**: Current `POST /v4/projects/:id/files` creates a file record but returns a placeholder upload URL that doesn't work. The actual storage upload handler is missing.
+
+- **[P0] Upload Backend Handler** [4h] -- CRITICAL GAP
+  - Wire `POST /v4/projects/:id/files` to actual storage upload
+  - Return pre-signed URL from storage module (already implemented)
+  - File record creation with status tracking
+  - Multipart completion notification endpoint
+  - **Dependencies**: 1.6 (Storage) - DONE
+
 - **[P0] Chunked Upload Client** [1d]
   - Browser library with 10MB chunks, 3-5 parallel
   - IndexedDB for resumable state
   - Progress events, pause/resume/cancel
-  - **Dependencies**: None
-
-- **[P0] Upload Backend Handler** [4h]
-  - Wire `POST /v4/projects/:id/files` to actual storage upload
-  - Pre-signed URL generation (exists in storage module)
-  - File record creation with status tracking
-  - Multipart completion notification
-  - **Dependencies**: 1.6 (Storage) - DONE
+  - **Dependencies**: Upload backend handler
 
 - **[P1] Drag-and-Drop UI** [4h]
   - File and folder drop zones
@@ -712,37 +739,62 @@ All quick wins are COMPLETED:
   - Remove mock team member data
   - **Dependencies**: Member management endpoints
 
-- **[P2] Workspace Context** [2h] -- NOT STARTED
+- **[P1] Workspace Context** [2h] -- NOT STARTED **(PROMOTED FROM P2)**
   - TODO placeholder at `src/web/context/auth-context.tsx:149`
   - Implement workspace selection state
   - **Dependencies**: None
+  - **Critical for**: Proper multi-workspace navigation
 
 ---
 
 ## SPEC INCONSISTENCIES TO RESOLVE
 
-1. **Token TTL Mismatch** -- BLOCKING
+1. **Token TTL Mismatch** -- RESOLVED
    - `specs/12-authentication.md`: 5 min access / 7 days refresh
    - `specs/17-api-complete.md`: 1 hour access / 30 days refresh
-   - **Resolution needed before**: Auth endpoints implementation
+   - **Resolution**: Use 5 min/7 days per auth spec (more secure), update `specs/17-api-complete.md` line 51-52
+   - **Action needed**: Update API spec to match auth spec
 
 2. **README Deferral Labels** -- INFORMATIONAL
-   - `specs/README.md` incorrectly defers billing to Phase 5 and accessibility to Phase 3+
+   - `specs/README.md` correctly defers billing to Phase 5 and accessibility to Phase 3+
    - Update when specs are written
 
 ---
 
 ## SUMMARY: CRITICAL PATH TO ITERATION 1
 
-**Iteration 1 Definition**: User can sign up, create workspace/project, upload files with chunked/resumable support, see processing produce thumbnails and proxies, browse files in grid/list view, navigate folder tree.
+**Iteration 1 Definition**: User can sign up, create workspace/project, upload files with chunked/resumable support, see processing produce thumbnails, browse files in grid/list view, navigate folder tree, view images.
 
-### Blocking Path (Minimum for Iteration 1):
+### Critical Path (Minimum for Iteration 1):
 
-1. **2.1 File Upload System** [3d] - P0
-2. **2.2 Media Processing Pipeline** [4d] - P0 (thumbnails required)
-3. **2.3 Asset Browser** [3d] - P1
+| Week | Track A (Backend) | Track B (Frontend) |
+|------|-------------------|-------------------|
+| 1 | Upload Backend Handler [4h] | - |
+| 1-2 | BullMQ Setup + Worker [6h] | Chunked Upload Client [1d] |
+| 2 | Thumbnail Generation (images) [4h] | Drag-and-Drop UI [4h] |
+| 2-3 | Download/Thumbnail Endpoints [4h] | Asset Browser Grid [4h] |
+| 3 | - | Folder Navigation [4h] |
+| 3 | - | Basic Image Viewer [4h] |
 
-**Total: ~10 days** (plus any R4 research time for media validation)
+**Total: ~10-12 days** (can be parallelized across 2 developers)
+
+### Hard Dependencies (Cannot Parallelize):
+
+1. **BullMQ Setup** → **Worker Process** → **Processing Jobs**
+2. **Upload Backend** → **Upload Client** (need API contract)
+3. **Thumbnail Generation** → **Asset Browser Grid** (need thumbnails)
+4. **Worker Process** → **Image Viewer** (need proxy for RAW/Adobe)
+
+### Can Be Deferred from Iteration 1:
+
+- Video processing (thumbnails, proxies) - Images first
+- Filmstrip generation - Nice-to-have
+- HLS streaming - Defer until video viewer
+- Waveform extraction - Audio-only
+- Real-time WebSocket - Polling acceptable for MVP
+- Comments/Annotations - Phase 2
+- Search - Phase 2
+- Guest/Reviewer flows - Users can authenticate
 
 ### Post-Iteration 1 Priorities:
 
@@ -757,6 +809,29 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-16 Deep Research Update (This Update)
+
+This update incorporates comprehensive research findings using 8 parallel Sonnet agents + 1 Opus analysis agent:
+
+**Research Findings:**
+1. **Specs Analysis**: Read all 21 spec files - 300+ atomic features across 22 categories
+2. **API Coverage**: Verified 33/110+ endpoints (30%) - detailed gap list added
+3. **Media Processing**: Confirmed 0% implementation - no BullMQ, no FFmpeg, no workers
+4. **Realtime**: Confirmed 0% implementation - no WebSocket server
+5. **Database**: Verified 14 tables implemented, 12 missing - added index notes
+6. **Web Frontend**: Core pages exist, file management missing, 1 TODO found
+7. **Configuration**: 49 env vars verified
+8. **Tests**: 19 test files with good coverage
+
+**Priority Adjustments Made:**
+- **DEPRIORITIZED**: Guest/Reviewer Flows (P1→P2), Session Limits (P2→P3), Failed Login Tracking (P2→P3), OpenAPI Generation (P2→P3)
+- **PROMOTED**: Workspace Context (P2→P1), File Download Endpoints (NEW P1)
+- **ADDED**: Technical Metadata JSON Column (P2), Upload Backend Handler clarification
+
+**Key Gap Identified**: The upload endpoint creates a file record but returns a placeholder URL. The actual storage upload handler is missing.
+
+**Spec Inconsistency**: Token TTL mismatch resolved - use auth spec values (5min/7d).
 
 ### 2026-02-16 Research Validation Update
 
