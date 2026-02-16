@@ -420,6 +420,125 @@ export const filesApi = {
 };
 
 /**
+ * Folder attributes from API
+ */
+export interface FolderAttributes {
+  name: string;
+  projectId: string;
+  parentId: string | null;
+  path: string;
+  depth: number;
+  isRestricted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Folders API
+ */
+export const foldersApi = {
+  /**
+   * List root-level folders in a project
+   */
+  listRoot: async (projectId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/projects/${projectId}/folders${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<FolderAttributes>>(path);
+  },
+
+  /**
+   * Get a single folder by ID
+   */
+  get: async (folderId: string) => {
+    return apiFetch<JsonApiSingleResponse<FolderAttributes>>(`/folders/${folderId}`);
+  },
+
+  /**
+   * Get folder children (files and subfolders)
+   */
+  getChildren: async (folderId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/folders/${folderId}/children${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<{
+      data: Array<{
+        id: string;
+        type: string;
+        attributes: FolderAttributes | FileAttributes;
+      }>;
+      meta: {
+        folders_count: number;
+        files_count: number;
+        total_count: number;
+        page_size: number;
+      };
+    }>(path);
+  },
+
+  /**
+   * Create a folder at project root
+   */
+  create: async (projectId: string, data: { name: string }) => {
+    return apiFetch<JsonApiSingleResponse<FolderAttributes>>(`/projects/${projectId}/folders`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Create a subfolder
+   */
+  createSubfolder: async (parentFolderId: string, data: { name: string }) => {
+    return apiFetch<JsonApiSingleResponse<FolderAttributes>>(`/folders/${parentFolderId}/folders`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a folder
+   */
+  update: async (folderId: string, data: { name?: string }) => {
+    return apiFetch<JsonApiSingleResponse<FolderAttributes>>(`/folders/${folderId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a folder
+   */
+  delete: async (folderId: string) => {
+    return apiFetch<void>(`/folders/${folderId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Get files in a folder
+   */
+  getFiles: async (folderId: string, options?: { status?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.status) {
+      params.set("status", options.status);
+    }
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/folders/${folderId}/files${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<FileAttributes>>(path);
+  },
+};
+
+/**
  * Accounts API
  */
 export const accountsApi = {

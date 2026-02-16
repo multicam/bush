@@ -44,6 +44,8 @@
       "@/web/components/upload/*": ["web/components/upload/*"],
       "@/web/components/asset-browser": ["web/components/asset-browser/index.ts"],
       "@/web/components/asset-browser/*": ["web/components/asset-browser/*"],
+      "@/web/components/folder-navigation": ["web/components/folder-navigation/index.ts"],
+      "@/web/components/folder-navigation/*": ["web/components/folder-navigation/*"],
       "@/web/lib/*": ["web/lib/*"]
     }
   },
