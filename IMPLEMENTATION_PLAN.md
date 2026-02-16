@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-16
-**Project status**: Iteration 0 → 1 in progress -- Zero code exists. All items below are NOT STARTED.
+**Project status**: Iteration 0 -- Zero code exists. All items below are NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ---
@@ -9,17 +9,18 @@
 ## TABLE OF CONTENTS
 
 1. [Locked Technology Stack](#locked-technology-stack)
-2. [Iteration 0 → 1: Immediate Actions](#iteration-0--1-immediate-actions)
+2. [Iteration 0 to 1: Four-Week MVP Path](#iteration-0-to-1-four-week-mvp-path)
 3. [Parallel Workstreams](#parallel-workstreams)
-4. [Risk Register](#risk-register)
-5. [Pre-Implementation: Critical Research](#pre-implementation-critical-research)
-6. [Pre-Implementation: Missing Specifications](#pre-implementation-missing-specifications)
-7. [Phase 1: Foundation](#phase-1-foundation)
-8. [Phase 2: Core Features (MVP)](#phase-2-core-features-mvp)
-9. [Phase 3: Advanced Features](#phase-3-advanced-features)
-10. [Phase 4: Integrations and Native Apps](#phase-4-integrations-and-native-apps)
-11. [Phase 5: Enterprise and Scale](#phase-5-enterprise-and-scale)
-12. [Dependency Graph](#dependency-graph)
+4. [Quick Wins (Build First)](#quick-wins-build-first)
+5. [Risk Register](#risk-register)
+6. [Pre-Implementation: Critical Research](#pre-implementation-critical-research)
+7. [Pre-Implementation: Missing Specifications](#pre-implementation-missing-specifications)
+8. [Phase 1: Foundation](#phase-1-foundation)
+9. [Phase 2: Core Features (MVP)](#phase-2-core-features-mvp)
+10. [Phase 3: Advanced Features](#phase-3-advanced-features)
+11. [Phase 4: Integrations and Native Apps](#phase-4-integrations-and-native-apps)
+12. [Phase 5: Enterprise and Scale](#phase-5-enterprise-and-scale)
+13. [Dependency Graph](#dependency-graph)
 
 ---
 
@@ -30,233 +31,449 @@ These choices are final. Any document stating otherwise must be corrected.
 | Category | Technology | Notes |
 |----------|------------|-------|
 | Frontend (Web) | Next.js + TypeScript | SSR, routing, API routes |
-| Frontend (Mobile) | Native Swift | iOS/iPadOS/Apple TV -- Phase 2 |
-| Desktop Transfer App | Tauri | Phase 2 -- webapp is standard upload path |
+| Frontend (Mobile) | Native Swift | iOS/iPadOS/Apple TV -- Phase 4 |
+| Desktop Transfer App | Tauri | Phase 4 -- webapp is standard upload path |
 | Backend API | Bun + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
 | Database | SQLite | Primary relational store (NOT PostgreSQL) |
 | Cache / Realtime | Redis | Caching, sessions, rate limiting, pub/sub |
 | Search | SQLite FTS5 | Upgrade path to dedicated engine if needed |
 | Object Storage | S3-compatible API | Provider-agnostic (AWS S3, R2, MinIO, B2) |
-| CDN | TBD (preference: Bunny CDN) | CDN-agnostic abstraction |
+| CDN | TBD (preference: Bunny CDN) | CDN-agnostic abstraction -- see R10 |
 | Media Processing | FFmpeg | Transcoding, thumbnails, filmstrips, waveforms |
 | Message Queue | BullMQ + Redis | Async jobs: transcoding, transcription, notifications |
 | Transcription | TBD (abstracted interface) | 27 languages, speaker ID -- provider chosen later |
 | AI/ML (Vision) | TBD | Visual search / Media Intelligence |
+| Email Service | TBD (SendGrid or AWS SES) | Transactional email and digest -- see R9 |
 | Deployment | TBD | **No Docker, no Kubernetes** (explicit requirement) |
 | CI/CD | GitHub Actions | |
 
 ---
 
-## ITERATION 0 → 1: IMMEDIATE ACTIONS
+## ITERATION 0 TO 1: FOUR-WEEK MVP PATH
 
 **Goal**: Achieve functional MVP in ~4 weeks through parallelized workstreams.
 
-This section prioritizes the next 18 critical actions organized by timeline. These replace the previous sequential approach and enable parallel progress across multiple workstreams.
+This section is the single source of truth for what to do next. It lists every action needed to reach Iteration 1, organized by timeline and grouped by workstream. Each item is marked NOT STARTED.
 
-### Days 1-3: Launch Foundation
+### Days 1-3: Foundation Launch
 
 **Backend Foundation Stream:**
-1. **Complete R2 (Deployment Research)** [2 days]
-   - Research Bun production deployment options
-   - Evaluate: Fly.io, Render, Railway, bare VPS with systemd
+
+1. **[R2] Complete Deployment Research** [2 days] -- NOT STARTED
+   - Research Bun production deployment options (Fly.io, Render, Railway, bare VPS with systemd)
    - Document process supervision, crash recovery, zero-downtime deployment
+   - Determine how to run Next.js + Bun backend on same or separate hosts
+   - Design process supervision for FFmpeg workers (long-running, crash-prone)
    - Deliverable: Deployment architecture document
    - **Priority**: CRITICAL -- informs project structure
+   - **Spec refs**: none (new document to create)
 
-2. **Bootstrap Project (1.1)** [1 day]
-   - Initialize monorepo with chosen deployment-compatible structure
-   - Set up TypeScript, ESLint, Prettier, Vitest
-   - Configure GitHub Actions CI/CD
+2. **[1.1] Bootstrap Project** [1 day, starts Day 2-3 after R2 direction is clear] -- NOT STARTED
+   - Initialize monorepo structure (Bun workspace or Turborepo)
+   - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier
+   - Set up Vitest testing framework
+   - Configure GitHub Actions CI/CD pipeline
    - Create development environment setup docs
-   - **Depends on**: R2 completion
-   - **Parallel with**: Spec Writing Stream
+   - **Depends on**: R2 direction (not full completion)
+   - **Blocks**: Everything else
+   - **Spec refs**: `specs/README.md`
+
+3. **[QW1] Create File Type Registry** [0.5 day, part of Bootstrap] -- NOT STARTED
+   - Central registry mapping MIME types to file categories (video/audio/image/document)
+   - Include all 100+ supported formats from `specs/00-atomic-features.md` Section 4.3
+   - Include codec validation rules per container format
+   - Used by: upload validation, processing pipeline, viewer routing, asset browser icons
+   - **Rationale**: Every component needs to know file types; build once, share everywhere
+   - **Spec refs**: `specs/00-atomic-features.md` Section 4.3, `specs/00-complete-support-documentation.md` Section 4.3
 
 **Spec Writing Stream:**
-3. **Write specs/12-authentication.md** [1 day]
-   - Document SAML/SSO flows, session policies, token expiration
-   - Define refresh token rotation, MFA flows
-   - Specify IP allowlisting and geo-restrictions
+
+4. **[S12] Write specs/12-authentication.md** [1 day] -- NOT STARTED
+   - Document SAML/SSO enterprise authentication flows
+   - Define session duration policies and token expiration times
+   - Specify refresh token rotation policy
+   - Detail IP allowlisting and geo-restrictions (enterprise tier)
+   - Define multi-factor authentication detailed flows (TOTP setup, recovery codes)
    - **Blocks**: Phase 1.3 (Authentication System)
    - **Parallel with**: R2, Bootstrap
 
-4. **Write specs/19-accessibility.md** [1 day]
+5. **[S19] Write specs/19-accessibility.md** [1 day] -- NOT STARTED
    - Define WCAG compliance target (AA recommended)
-   - Specify keyboard navigation for all interactive components
-   - Document screen reader support requirements
-   - Define color contrast and motion sensitivity guidelines
+   - Specify keyboard navigation for all interactive components (player, browser, comments, modals)
+   - Document screen reader support requirements (ARIA labels, live regions)
+   - Define color contrast ratios and motion sensitivity guidelines (prefers-reduced-motion)
    - **Informs**: All UI work from Phase 1.7 onward
    - **Parallel with**: R2, Bootstrap
 
 **Research Stream:**
-5. **Start R1 (SQLite at Scale)** [3 days, completes Day 6]
+
+6. **[R1] Start SQLite at Scale Research** [3 days, completes Day 6] -- NOT STARTED
    - Benchmark concurrent read/write workloads (100, 500, 1000 users)
    - Test WAL mode configuration, file size behavior (1GB-100GB)
    - Evaluate connection pooling (better-sqlite3, bun:sqlite, Drizzle)
    - Design backup strategy with Litestream
+   - Evaluate multi-database strategy (separate files per account vs single)
+   - Identify bottleneck threshold and migration path to PostgreSQL
    - **Parallel with**: R2, Bootstrap, Spec Writing
 
 ### Days 3-7: Core Infrastructure
 
 **Backend Foundation Stream (continued):**
-6. **Set up Object Storage (1.6)** [1 day]
-   - Implement S3-compatible storage interface
-   - Choose initial provider (Cloudflare R2 or Backblaze B2)
-   - Configure pre-signed URLs, multipart upload support
-   - Set up development storage (MinIO or B2 free tier)
-   - **Depends on**: Bootstrap (1.1)
-   - **Does NOT depend on R1** -- basic storage doesn't require scale research
 
-7. **Design Database Schema (1.2)** [2 days]
-   - Create SQLite schema for core models
-   - Configure ORM/query builder (Drizzle or Kysely)
-   - Implement migration system
+7. **[1.6] Set up Object Storage** [1 day] -- NOT STARTED
+   - Implement provider-agnostic S3-compatible storage interface
+   - Choose initial provider (Cloudflare R2 for zero egress, or Backblaze B2 for low cost)
+   - Configure pre-signed URL generation (upload and download)
+   - Implement multipart upload support
+   - Define storage key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
+   - Set up development storage (MinIO or B2 free tier)
+   - **Depends on**: 1.1 (Bootstrap)
+   - **Does NOT depend on R1 or R5** -- basic storage needs no scale research
+   - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
+
+8. **[1.2] Design Database Schema** [2 days] -- NOT STARTED
+   - Design SQLite schema with proper indexes and foreign keys
+   - Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, Webhook, Notification
+   - Hierarchy enforcement: Account > Workspace > Project > Folder > File
+   - Foreign key constraints, check constraints, triggers for cascades
+   - Choose and configure ORM/query builder (Drizzle ORM recommended -- supports SQLite + PostgreSQL migration path)
+   - Create migration system
    - Write schema validation tests
-   - **Depends on**: Bootstrap (1.1), R1 completion (informs configuration, not design)
-   - **R1 dependency softened**: Basic schema design can proceed with R1 findings incorporated later
+   - **Depends on**: 1.1 (Bootstrap)
+   - **R1 dependency softened**: R1 informs configuration (WAL mode, connection pooling), not schema design
+   - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
+
+9. **[QW2] Create Seed Data Scripts** [0.5 day, alongside 1.2] -- NOT STARTED
+   - Generate realistic development data: accounts, users, workspaces, projects, folders
+   - Include multiple permission levels and roles to test edge cases
+   - Create deterministic seed (same data every run) and random seed (fuzz testing)
+   - Include sample file records (no actual files -- just metadata for testing)
+   - **Depends on**: 1.2 (Database Schema)
+   - **Blocks**: nothing, but accelerates all testing
 
 **Spec Writing Stream (continued):**
-8. **Expand specs/11-security-features.md** [1 day]
-   - Add forensic watermarking implementation details
-   - Specify audit log retention, format, export
-   - Define Access Groups specification
-   - Document organization-wide security policies
-   - **Informs**: Permission system (1.4) and audit logging
 
-9. **Write specs/13-billing-and-plans.md** [1 day]
-   - Define detailed pricing structure for each tier
-   - Create complete plan feature matrix
-   - Specify Team+ and Pro+ tier boundaries
-   - Document storage quota enforcement and overage handling
-   - **Blocks**: Phase 3.7 (Lifecycle), Phase 5.1 (Billing)
+10. **[S11] Expand specs/11-security-features.md** [1 day] -- NOT STARTED
+    - Current file is only 38 lines -- needs major expansion
+    - Add forensic watermarking implementation details (visible/invisible, HLS integration)
+    - Specify audit log retention, format (structured JSON), and export (CSV/JSON)
+    - Define Access Groups detailed specification (CRUD, nesting, permission inheritance)
+    - Document organization-wide security policy configuration
+    - Add 2FA enforcement policies, session management, IP allowlisting
+    - **Informs**: Permission system (1.4) and audit logging
+
+11. **[S13] Write specs/13-billing-and-plans.md** [1 day] -- NOT STARTED
+    - Define detailed pricing structure for each tier (Free, Pro, Team, Enterprise)
+    - Create complete plan feature matrix (which features gated to which plan)
+    - Specify "Team+" and "Pro+" tier boundary definitions
+    - Document storage quota enforcement rules and overage handling
+    - Define plan-gated features explicitly: 4K proxy (Pro+), comment attachments (Pro+), restricted folders (Team+), Access Groups (Team+)
+    - **Blocks**: Phase 3.7 (Lifecycle), Phase 5.1 (Billing)
 
 **Frontend Shell Stream:**
-10. **Start Web App Shell (1.7)** [3 days, completes Week 2]
-    - Initialize Next.js 15+ with App Router
-    - Implement authentication flows UI
-    - Build core page structure (login, signup, dashboard)
-    - Set up state management (React Context, TanStack Query)
-    - **Depends on**: Bootstrap (1.1)
-    - **Can start before API (1.5)** -- build static shell first
 
-### Week 2: Authentication & API Foundation
+12. **[1.7a] Start Web App Shell (static)** [3 days, completes Week 2] -- NOT STARTED
+    - Initialize Next.js 15+ with App Router and TypeScript
+    - Build core page structure (login, signup, dashboard, workspaces, projects, settings)
+    - Implement authentication flows UI (email/password, OAuth buttons, 2FA, password reset)
+    - Set up state management (React Context for auth/workspace, TanStack Query for server state)
+    - **Depends on**: 1.1 (Bootstrap)
+    - **Can start before API (1.5)** -- build static shell first, connect to API in Week 2
+    - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/03-file-management.md`
 
-11. **Build Authentication System (1.3)** [3 days]
-    - Implement email/password auth with bcrypt
-    - Integrate OAuth 2.0 (Google, Apple, Adobe IMS)
-    - Set up Redis session storage
-    - Implement JWT access + refresh tokens
-    - Build 2FA with TOTP
-    - **Depends on**: Database Schema (1.2), specs/12-authentication.md
+13. **[QW3] Set up Component Library Foundation** [0.5 day, part of 1.7a] -- NOT STARTED
+    - Create shared UI primitives: Button, Input, Select, Modal, Toast, Dropdown, Tooltip
+    - Define design tokens (colors, spacing, typography, shadows) as CSS variables
+    - Set up Storybook or simple component documentation page
+    - Establish consistent error state patterns (loading, empty, error for every data-fetching component)
+    - Follow specs/19-accessibility.md guidelines from the start (ARIA, keyboard nav, focus management)
+    - **Rationale**: Every frontend task needs these; building ad-hoc leads to inconsistency
+    - **Spec refs**: `specs/19-accessibility.md` (when written)
 
-12. **Build Permission System (1.4)** [2 days]
-    - Implement five permission levels
-    - Create permission inheritance logic
-    - Build permission check middleware
-    - Write extensive edge-case tests
-    - **Depends on**: Database Schema (1.2), Authentication (1.3)
+### Week 2 (Days 8-14): Authentication, Permissions, API
 
-13. **Build API Foundation (1.5)** [3 days]
-    - Set up Bun HTTP server with Hono or Elysia
-    - Implement OAuth 2.0 middleware
-    - Build rate limiting (Redis-backed)
-    - Create CRUD routes for core resources
-    - Implement cursor-based pagination
-    - Generate OpenAPI spec
-    - **Depends on**: Authentication (1.3), Permission (1.4)
+14. **[1.3] Build Authentication System** [3 days] -- NOT STARTED
+    - Email/password authentication (bcrypt hashing, minimum 8 characters)
+    - OAuth 2.0 integration: Google Sign-In, Apple ID
+    - Adobe IMS integration (see R11 for OAuth details -- can stub initially)
+    - Two-factor authentication (TOTP with QR code generation)
+    - Redis-based session storage with TTL
+    - JWT access token (1hr) + refresh token (30 days)
+    - Secure cookie handling (httpOnly, secure, sameSite)
+    - Account switcher logic (multi-account support)
+    - Account roles: Owner, Content Admin, Member, Guest, Reviewer
+    - Authentication integration tests
+    - **Depends on**: 1.2 (Database Schema), specs/12-authentication.md
+    - **Blocks**: 1.4, 1.5
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
 
-14. **Complete Web App Shell (1.7)** [2 days]
-    - Connect to API endpoints
-    - Implement multi-panel layout
-    - Build navigation (account switcher, sidebar, breadcrumbs)
-    - Add responsive design
-    - Write component tests
-    - **Depends on**: API Foundation (1.5), Authentication (1.3)
+15. **[1.4] Build Permission System** [2 days] -- NOT STARTED
+    - Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only
+    - Permission models: WorkspacePermission, ProjectPermission, FolderPermission
+    - Permission inheritance: Workspace > Project > Folder (cannot lower inherited permissions)
+    - Restricted Project/Folder logic (breaks inheritance chain, invite-only)
+    - Access Groups for bulk permission management (Team+ feature -- plan gate check)
+    - Permission check middleware for API routes
+    - Guest role constraints: 1 project max, cannot invite others, cannot delete
+    - Extensive permission edge-case tests (see permission matrices in `specs/00-complete-support-documentation.md` 2.4, 2.5)
+    - **Depends on**: 1.2, 1.3
+    - **Blocks**: 1.5, all Phase 2+
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.5, `specs/11-security-features.md`
 
-### Week 3-4: Basic Upload & Processing
+16. **[QW4] Build Error Handling Utilities** [0.5 day, alongside 1.5] -- NOT STARTED
+    - Standardized API error response format matching `specs/00-atomic-features.md` Section 18.7-18.8
+    - HTTP error code mapping: 400, 401, 403, 404, 409, 422, 429, 500, 503
+    - Error class hierarchy: ValidationError, AuthError, ForbiddenError, NotFoundError, RateLimitError
+    - Client-side error recovery patterns (retry logic, error boundary components)
+    - Structured error logging (JSON with request_id, user_id, timestamp, level)
+    - **Rationale**: Every API route and every frontend fetch needs consistent error handling
+    - **Spec refs**: `specs/00-atomic-features.md` Sections 18.7-18.8
 
-15. **Write specs/15-media-processing.md** [1 day]
-    - Document FFmpeg transcoding parameters
-    - Specify processing timeouts and failure handling
-    - Define HDR tone mapping parameters
-    - Detail RAW and Adobe format conversion
-    - **Depends on**: R4 completion (started in parallel)
+17. **[1.5] Build API Foundation (V4)** [3 days] -- NOT STARTED
+    - Set up Bun HTTP server with routing framework (Hono or Elysia)
+    - OAuth 2.0 authentication middleware
+    - Rate limiting middleware (Redis-backed leaky bucket algorithm, per-endpoint limits per `specs/00-atomic-features.md` 18.2)
+    - Cursor-based pagination (default 50, max 100 items per page)
+    - JSON:API-style response format with proper error responses (use QW4 error utilities)
+    - CRUD routes for core resources: accounts, workspaces, projects, folders, files, version_stacks, users, comments, shares, custom_fields, webhooks
+    - Plan-gate middleware: check user plan tier before allowing gated features
+    - OpenAPI spec generation for documentation
+    - API integration tests
+    - **Depends on**: 1.3, 1.4
+    - **Blocks**: 1.7b, all Phase 2+
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6, `specs/00-atomic-features.md` Sections 18.2-18.5
+
+18. **[1.7b] Complete Web App Shell (connected)** [2 days] -- NOT STARTED
+    - Connect to API endpoints (replace mock data with real calls)
+    - Implement multi-panel layout: left (folder tree), center (file grid/list), right (metadata inspector), bottom (upload queue) -- all collapsible
+    - Build global navigation: account switcher, workspace sidebar, project list, folder tree, breadcrumbs
+    - Add responsive design (mobile, tablet, desktop)
+    - Implement keyboard shortcuts foundation (Cmd+K search, Cmd+F project search)
+    - Write component tests (Vitest + Testing Library)
+    - **Depends on**: 1.5 (API), 1.3 (Authentication)
+    - **Blocks**: all Phase 2 frontend work
+    - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3
+
+**Research (continuing in background):**
+
+19. **[R4] Start Media Transcoding Research** [Days 7-14] -- NOT STARTED
+    - Benchmark FFmpeg transcoding times: 1GB, 10GB, 100GB files across formats
+    - Design worker architecture: single vs distributed BullMQ workers, concurrency limits
+    - Test HDR tone mapping quality and performance (zscale + tonemap filters)
+    - Evaluate RAW image processing: libraw, dcraw for 15+ camera formats
+    - Test Adobe format rendering: ImageMagick for PSD/AI/EPS, server-side for INDD
+    - Test document rendering: LibreOffice headless for DOCX/PPTX/XLSX to PDF/image conversion
+    - Determine optimal proxy parameters: bitrate targets, CRF values, resolution ladder
+    - Test audio waveform generation: FFmpeg audiowaveform vs BBC audiowaveform tool
+    - Plan FFmpeg worker resource management: CPU/memory limits, tmpdir sizing
+    - **Blocks**: specs/15-media-processing.md, then Phase 2.2
+    - Deliverable: Processing pipeline design document with benchmarks and FFmpeg parameter matrix
+
+20. **[R9] Email Service Provider Research** [1 day, Week 2] -- NOT STARTED
+    - Compare SendGrid vs AWS SES vs Postmark vs Resend
+    - Evaluate: deliverability, cost at scale (10K, 100K, 1M emails/month), template support, webhook tracking
+    - Test transactional email latency (must be <1 minute for immediate alerts per spec)
+    - Evaluate daily digest scheduling capabilities
+    - Assess DKIM/SPF/DMARC configuration complexity
+    - **Blocks**: 2.11 (Notifications email delivery)
+    - Deliverable: Provider recommendation with cost projection
+
+### Week 3-4 (Days 15-28): Upload, Processing, Browser
+
+21. **[S15] Write specs/15-media-processing.md** [1 day, after R4] -- NOT STARTED
+    - Document exact FFmpeg transcoding parameters (bitrate targets, CRF values, codec choices per resolution)
+    - Specify processing timeouts and failure handling policies
+    - Define HDR tone mapping parameter specifications
+    - Detail RAW and Adobe format conversion parameters
+    - Specify audio waveform generation parameters (samples per second, output format)
+    - Define document conversion pipeline (DOCX/PPTX/XLSX to renderable format)
+    - Specify Interactive ZIP (HTML) rendering behavior and sandboxing
+    - **Depends on**: R4 completion
     - **Blocks**: Phase 2.2 implementation
 
-16. **Build File Upload System (2.1)** [3 days]
-    - Implement chunked upload client (10MB chunks)
-    - Build upload queue UI with progress tracking
-    - Add folder structure preservation
-    - Implement upload constraints enforcement
-    - **Depends on**: API (1.5), Object Storage (1.6), Web Shell (1.7)
-    - **Does NOT require R5 completion** -- basic upload works without full research
+22. **[2.1] Build File Upload System** [3 days] -- NOT STARTED
+    - Web browser drag-and-drop (files and folders)
+    - MIME type validation using file type registry (QW1)
+    - Chunked upload client library (10MB chunks, 3-5 parallel, resumable via IndexedDB)
+    - Upload queue UI: progress bars, pause/resume, priority reorder, cancel, retry
+    - Folder structure preservation on drag-and-drop
+    - Upload constraints: max 10 concurrent uploads, 500 assets per upload, 250 folders, 5TB max file size
+    - Backend: pre-signed URL generation, file record creation, completion notification, processing job enqueue
+    - **Depends on**: 1.5 (API), 1.6 (Object Storage), 1.7b (Web Shell)
+    - **Does NOT require R5** -- basic upload works with 10MB chunks, 3-parallel
+    - **Blocks**: 2.2 (Media Processing), 2.3 (Asset Browser)
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 4.1-4.3
 
-17. **Build Media Processing Pipeline (2.2)** [4 days]
-    - Set up BullMQ with Redis
-    - Implement thumbnail generation
-    - Build filmstrip extraction
-    - Create proxy transcoding (basic 720p)
-    - Add metadata extraction via FFprobe
-    - Implement WebSocket progress updates
-    - **Depends on**: Upload (2.1), Object Storage (1.6), specs/15-media-processing.md
+23. **[2.2] Build Media Processing Pipeline** [4 days] -- NOT STARTED
+    - Set up BullMQ with Redis for async job processing
+    - Media processing worker with configurable concurrency (default: 4 workers)
+    - **Video processing**: thumbnail generation (frame at 50% duration, 3 sizes), hover scrub filmstrip (1-sec interval sprite sheets), proxy transcoding (H.264 MP4 at 360p/540p/720p/1080p/4K)
+    - **Image processing**: thumbnail generation, proxy generation for RAW/Adobe/HDR formats
+    - **Audio processing**: waveform extraction (JSON peak data for timeline visualization), thumbnail (waveform image)
+    - **Document processing**: PDF rendering via pdf.js, DOCX/PPTX/XLSX thumbnail generation (LibreOffice headless or similar), Interactive ZIP sandboxing
+    - Metadata extraction via FFprobe (33 built-in fields per `specs/00-atomic-features.md` 6.1)
+    - HDR detection and SDR tone mapping for proxies
+    - Job priorities: thumbnail (high), proxy (medium), waveform (low)
+    - Retry: 3 attempts with exponential backoff
+    - Processing status tracking: uploading > processing > ready / processing_failed
+    - WebSocket progress updates to frontend
+    - **Depends on**: 2.1 (Upload), 1.6 (Object Storage), specs/15-media-processing.md, R4
+    - **Blocks**: 2.3 (Asset Browser -- needs thumbnails), 2.6-2.8b (Viewers -- need proxies)
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Section 4.4, `specs/00-atomic-features.md` Section 6.1
 
-18. **Build Asset Browser (2.3)** [3 days]
-    - Implement grid and list views
-    - Add sorting and filtering
-    - Build multi-select and bulk actions
-    - Implement virtualized lists for performance
-    - **Depends on**: API (1.5), Upload (2.1), Processing (2.2)
+24. **[2.3] Build Asset Browser and Navigation** [3 days] -- NOT STARTED
+    - Grid view with adjustable card size (small 160px, medium 240px, large 320px)
+    - List view with sortable metadata columns
+    - Thumbnail display options: aspect ratio (16:9, 1:1, 9:16), fit vs fill
+    - File type icons using file type registry (QW1) for assets without thumbnails
+    - Flatten folders view (show all nested assets in flat list)
+    - Sorting by any metadata field (ascending/descending, multi-level)
+    - Drag-and-drop: move files to folder, copy with Cmd/Ctrl, reorder in custom sort
+    - Multi-select (max 200): shift-click range, cmd/ctrl-click toggle, select all (Cmd+A)
+    - Bulk actions: move, copy, delete, download, edit metadata
+    - Performance: virtualized lists (react-window or similar), lazy loading thumbnails
+    - Viewer routing: route to correct viewer (video/audio/image/PDF/document) based on file type registry
+    - **Depends on**: 1.5 (API), 2.1 (Upload), 2.2 (Processing -- for thumbnails), 1.4 (Permissions)
+    - **Blocks**: 2.4-2.8b (all downstream Phase 2)
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 4.2, 6.4
 
-**By Week 4 End**: Phase 1 complete + basic upload/processing/browsing functional = Iteration 1 achieved
+**By Week 4 End**: Phase 1 complete + basic upload/processing/browsing functional = **Iteration 1 Achieved**
+
+### Post-Iteration 1: Immediate Next Priorities (Weeks 5-8)
+
+25. **[2.4] Asset Operations** [2 days] -- NOT STARTED
+    - Copy To, Move To, Delete (soft-delete, 30-day retention), Recover, Permanent Delete
+    - Download Original (pre-signed S3 URL, 1hr expiry), Download Proxy (select resolution)
+    - Custom Thumbnail (upload image or select video frame)
+    - Auto-delete scheduled job (BullMQ, daily)
+    - **Depends on**: 2.3 (Asset Browser)
+
+26. **[2.5] Version Stacking** [2 days] -- NOT STARTED
+    - VersionStack model linking multiple File records
+    - Drag-to-stack interaction, auto version numbering, version list UI
+    - Comments persist across versions (linked to stack, not file)
+    - **Depends on**: 2.1 (Upload), 2.3 (Asset Browser)
+
+27. **[2.6] Video Player** [4 days] -- NOT STARTED
+    - Base player (Video.js or alternative per R3 research)
+    - Frame-accurate seeking, JKL shuttle, playback speed 0.25x-1.75x
+    - HLS adaptive streaming with quality selection (360p-4K)
+    - Frame guides, timeline with filmstrip hover preview, comment markers
+    - Full keyboard shortcut suite
+    - **Depends on**: 2.3, 2.2, R3
+
+28. **[2.7] Image Viewer** [2 days] -- NOT STARTED
+    - Zoom 25%-400%, pan, fit-to-screen, 1:1 pixel view
+    - Mini-map for large images (>2000px)
+    - Support: standard, RAW (via proxy), Adobe (via proxy), HDR (via tone-mapped proxy)
+    - **Depends on**: 2.3, 2.2
+
+29. **[2.8a] Audio Player** [2 days] -- NOT STARTED
+    - Waveform visualization (rendered from processing pipeline JSON data)
+    - Playback controls: play/pause, seek via waveform click, volume, mute
+    - Playback speed control (0.25x-1.75x)
+    - Time display (current / total duration)
+    - Comment markers on waveform timeline (timestamped comments)
+    - Keyboard shortcuts (Space play/pause, arrows seek, M mute)
+    - Support all 8 audio formats: AAC, AIFF, FLAC, M4A, MP3, OGG, WAV, WMA
+    - **Depends on**: 2.3 (Asset Browser), 2.2 (Processing -- waveform data)
+    - **Blocks**: 2.9 (Comments -- timestamped comments on audio)
+    - **Spec refs**: `specs/00-atomic-features.md` Section 4.3 (audio formats), `specs/00-complete-support-documentation.md` Section 4.4 (waveform)
+    - **NOTE**: This item was MISSING from the previous plan. The platform supports 8 audio formats but had no audio viewer specified.
+
+30. **[2.8b] PDF and Document Viewer** [3 days] -- NOT STARTED
+    - **PDF Viewer**: PDF.js integration, multi-page navigation (thumbnails sidebar, prev/next, page jump), zoom (in/out, fit width, fit page, actual size), text selection/copy, search within PDF, page rotation
+    - **Document Viewer (DOCX/PPTX/XLSX)**: Render server-generated preview (PDF conversion from processing pipeline), page navigation, zoom
+    - **Interactive ZIP Viewer**: Sandboxed iframe rendering of HTML content, security constraints (no external network, no localStorage access)
+    - **Depends on**: 2.3 (Asset Browser), 2.2 (Processing -- document conversion)
+    - **Blocks**: 2.9 (Comments -- page-stamped comments)
+    - **Spec refs**: `specs/00-complete-support-documentation.md` Section 9.6
+    - **NOTE**: Document rendering (DOCX/PPTX/XLSX) and Interactive ZIP viewer were MISSING from the previous plan.
+
+31. **[2.9] Comments and Annotations** [4 days] -- NOT STARTED
+    - Comment types: single-frame (timestamped), range-based (in/out), anchored (XY position), internal (members-only), public
+    - Comments linked to VersionStack (persist across versions)
+    - Threaded replies, markdown body, emoji reactions, @mentions, hashtags, color hex rendering
+    - Attachments: up to 6 files per comment (Pro+ plan -- use plan gate)
+    - Annotation tools: free draw, line, arrow, rectangle with color picker
+    - HTML5 Canvas overlay on video player, image viewer, audio waveform, PDF viewer
+    - Comment panel with filtering/sorting, quick actions, export (CSV, plain text, EDL)
+    - Real-time sync via WebSocket, optimistic UI updates
+    - **Depends on**: 2.6, 2.7, 2.8a, 2.8b, 1.4, R7, specs/14-realtime-collaboration.md
+
+32. **[2.10] Metadata System** [3 days] -- NOT STARTED
+    - 33 built-in fields, 10 custom field types
+    - Account-wide field library, per-project visibility, field permissions
+    - Metadata inspector panel, bulk edit, badges on cards
+    - **Depends on**: 1.2, 2.1, 2.2, 1.4
+
+33. **[2.11] Notifications System** [3 days] -- NOT STARTED
+    - In-app real-time (WebSocket), email (immediate + daily digest)
+    - Email service integration (chosen per R9)
+    - Email templates, BullMQ scheduled jobs, user preference UI
+    - **Depends on**: 2.9, 1.4, R7, R9, specs/14-realtime-collaboration.md
+
+34. **[2.12] Basic Search** [2 days] -- NOT STARTED
+    - SQLite FTS5, BM25 ranking, typeahead, global search bar (Cmd+K)
+    - Filter refinement, permission-filtered results
+    - **Depends on**: 1.2, 2.10
 
 ---
 
 ## PARALLEL WORKSTREAMS
 
-These four workstreams can run simultaneously with minimal dependencies, accelerating progress from Iteration 0 to Iteration 1.
+Four workstreams run simultaneously with minimal dependencies.
 
 ### Stream 1: Backend Foundation
 **Owner**: Backend engineer
 **Timeline**: Days 1-14
 
 ```
-Days 1-3:  R2 Research → Bootstrap (1.1) → Object Storage (1.6)
-Days 4-7:  Database Schema (1.2) ← R1 findings incorporated
-Days 8-14: Authentication (1.3) → Permissions (1.4) → API (1.5)
+Days 1-2:  R2 Research (Deployment)
+Day 3:     Bootstrap (1.1) + File Type Registry (QW1)
+Days 3-4:  Object Storage (1.6)
+Days 4-7:  Database Schema (1.2) + Seed Data (QW2) <-- R1 config incorporated Day 6
+Days 8-10: Authentication (1.3) + Error Utilities (QW4)
+Days 11-14: Permissions (1.4) + API Foundation (1.5)
 ```
 
 **Key outputs**:
-- Deployed development environment
-- Database schema with migrations
-- RESTful API with auth/permissions
-
-**Dependencies**: R2 (days 1-2), R1 informs schema config (day 6)
+- Deployed development environment with CI/CD
+- Database schema with migrations and seed data
+- RESTful API with auth/permissions/rate-limiting
+- Shared utilities: file type registry, error handling
 
 ### Stream 2: Spec Writing
 **Owner**: Product owner / technical writer
-**Timeline**: Days 1-10
+**Timeline**: Days 1-14
 
 ```
-Days 1-3:  specs/12-authentication.md, specs/19-accessibility.md
-Days 4-7:  specs/11-security-features.md (expansion), specs/13-billing-and-plans.md
-Days 8-10: specs/15-media-processing.md (after R4 starts)
+Days 1-3:  specs/12-authentication.md + specs/19-accessibility.md
+Days 4-7:  specs/11-security-features.md (expansion) + specs/13-billing-and-plans.md
+Days 8-10: specs/15-media-processing.md (after R4 starts, can draft early sections)
+Days 11-14: specs/14-realtime-collaboration.md (start early, before R7 completes)
 ```
 
 **Key outputs**:
-- 5 critical spec documents completed
+- 6 critical spec documents completed or substantially drafted
 - Unblocks Phase 1-3 implementation
 
-**Dependencies**: R4 (for specs/15), otherwise independent
+**Change from previous plan**: specs/14-realtime-collaboration.md writing moved earlier (Days 11-14 instead of "after R7"). Rationale: the spec can be drafted based on requirements and standard WebSocket patterns; R7 research refines the scaling strategy but does not block the protocol design. This prevents the spec from becoming a bottleneck for Phase 2.9 (Comments) and 2.11 (Notifications).
 
 ### Stream 3: Research
 **Owner**: Senior engineer / architect
-**Timeline**: Days 1-21 (overlapping)
+**Timeline**: Days 1-28 (overlapping)
 
 ```
-Days 1-2:  R2 (Deployment) [CRITICAL - blocks Bootstrap]
-Days 1-6:  R1 (SQLite) [CRITICAL - informs Schema]
-Days 7-14: R4 (Media Transcoding) [HIGH - blocks Processing]
-Days 7-21: R5 (Large File Upload) [MEDIUM - basic upload works without]
-Days 14-21: R7 (Real-Time Infrastructure) [MEDIUM - blocks Comments later]
+Days 1-2:   R2 (Deployment) [CRITICAL -- blocks Bootstrap]
+Days 1-6:   R1 (SQLite) [CRITICAL -- informs Schema config]
+Days 7-14:  R4 (Media Transcoding) [HIGH -- blocks Processing pipeline]
+Days 7-21:  R5 (Large File Upload) [MEDIUM -- basic upload works without]
+Days 8-9:   R9 (Email Service) [LOW -- 1 day, quick decision]
+Days 10-11: R10 (CDN Selection) [LOW -- 1 day, quick decision]
+Days 12-13: R11 (Adobe OAuth/IMS) [LOW -- 1 day, understand integration]
+Days 14-21: R7 (Real-Time Infrastructure) [MEDIUM -- blocks Comments]
+Week 4:     R3 (Video Player Architecture) [MEDIUM -- blocks Video Player]
 ```
 
 **Key outputs**:
@@ -264,386 +481,380 @@ Days 14-21: R7 (Real-Time Infrastructure) [MEDIUM - blocks Comments later]
 - SQLite configuration and backup strategy
 - FFmpeg parameter matrix
 - Upload protocol specification
-
-**Dependencies**: None (can all start immediately)
+- Email provider, CDN provider, Adobe OAuth decisions
 
 ### Stream 4: Frontend Shell
 **Owner**: Frontend engineer
 **Timeline**: Days 3-14
 
 ```
-Days 3-7:   Start Web Shell (1.7) - static structure
-Days 8-10:  Continue shell - auth flows UI
-Days 11-14: Connect to API, complete interactive shell
+Day 3:      Component Library Foundation (QW3)
+Days 3-7:   Start Web Shell (1.7a) -- static structure, auth UI
+Days 8-10:  Continue shell -- page layouts, navigation
+Days 11-14: Connect to API (1.7b), complete interactive shell
 ```
 
 **Key outputs**:
-- Next.js app with routing and auth flows
-- Multi-panel layout
-- State management infrastructure
-
-**Dependencies**: Bootstrap (1.1) day 3, API (1.5) day 11 for full functionality
+- Next.js app with routing, auth flows, multi-panel layout
+- Shared component library with design tokens
+- State management infrastructure (React Context + TanStack Query)
 
 ### Parallelization Benefits
 
-**Traditional Sequential Approach**:
-- Phase 1: ~6 weeks
-- Total to Iteration 1 (with basic upload): ~10 weeks
-
-**Parallel Workstreams Approach**:
-- Phase 1: ~2.5 weeks (through overlap)
-- Total to Iteration 1: ~4 weeks (60% faster)
+| Approach | Phase 1 | To Iteration 1 |
+|----------|---------|-----------------|
+| Sequential | ~6 weeks | ~10 weeks |
+| Parallel (this plan) | ~2.5 weeks | ~4 weeks |
 
 **Critical Success Factors**:
 1. R2 must complete by Day 2 (blocks all backend work)
-2. R1 findings incorporated into schema by Day 6 (prevents rework)
+2. R1 findings incorporated into schema config by Day 6 (prevents rework)
 3. Spec writers stay 3-5 days ahead of implementation
 4. Frontend builds static shell while backend builds API (merge at Day 11)
+5. Quick wins (QW1-4) built inline to prevent ad-hoc reimplementation later
+
+---
+
+## QUICK WINS (BUILD FIRST)
+
+These small, high-leverage items should be built during their respective phases to prevent ad-hoc reimplementation and inconsistency across the codebase. They are embedded in the timeline above but listed here for visibility.
+
+### QW1. File Type Registry [Day 3, with Bootstrap] -- NOT STARTED
+
+- Central TypeScript module mapping MIME types to categories, icons, viewer types, and processing rules
+- All 100+ formats from spec: 9 video containers with codec validation, 8 audio, 25+ image (including 14 RAW, 4 Adobe), 5 document
+- Functions: `getFileCategory(mime)`, `getViewerType(mime)`, `isValidCodec(container, codec)`, `getProcessingPipeline(mime)`
+- Used by: upload validation, processing pipeline routing, asset browser icons, viewer component selection
+- **Estimated effort**: 4 hours
+- **Spec refs**: `specs/00-atomic-features.md` Section 4.3
+
+### QW2. Seed Data Scripts [Days 5-6, with Schema] -- NOT STARTED
+
+- Development seed: 2 accounts, 3 workspaces, 5 projects, 20 folders, 100 file records, 5 users with different roles
+- Permission test seed: specific scenarios for inheritance, restricted projects, guest limits
+- Idempotent: can run repeatedly without duplicates
+- CLI command: `bun run seed` and `bun run seed:reset`
+- **Estimated effort**: 4 hours
+
+### QW3. Component Library Foundation [Day 3, with Frontend Shell] -- NOT STARTED
+
+- Primitives: Button (primary/secondary/ghost/danger), Input, Select, Checkbox, TextArea, Modal, Toast, Dropdown, Tooltip, Spinner, Avatar, Badge
+- Design tokens as CSS custom properties: `--color-primary`, `--spacing-*`, `--font-*`, `--radius-*`, `--shadow-*`
+- Dark/light theme support via CSS variables (needed for share branding later)
+- Accessible by default: ARIA attributes, keyboard navigation, focus management
+- **Estimated effort**: 6 hours
+
+### QW4. Error Handling Utilities [Day 10, with API Foundation] -- NOT STARTED
+
+- Shared error classes: `AppError` base, `ValidationError`, `AuthenticationError`, `AuthorizationError`, `NotFoundError`, `ConflictError`, `RateLimitError`
+- API error formatter: converts error classes to JSON:API error response format
+- Client-side error handler: maps HTTP status codes to user-friendly messages
+- Request ID generation and propagation (middleware)
+- Structured logging helper: `log.info()`, `log.error()`, `log.warn()` with JSON output
+- **Estimated effort**: 4 hours
 
 ---
 
 ## RISK REGISTER
 
 ### Risk 1: SQLite Performance at Scale
-**Severity**: HIGH
-**Probability**: MEDIUM
-**Impact**: Could require architectural change mid-project
+**Severity**: HIGH | **Probability**: MEDIUM
 
-**Description**: SQLite may not handle production workload (concurrent writes, large datasets, multi-instance deployment).
+SQLite may not handle production workload (concurrent writes, large datasets, multi-instance deployment).
 
-**Mitigation Strategy**:
-- Complete R1 research by Day 6 with realistic benchmarks
-- Design schema with PostgreSQL migration path from day one
-- Use Drizzle ORM (supports both SQLite and PostgreSQL)
-- Establish trigger criteria: if >500 concurrent users or >100GB database, plan migration
+**Mitigation**:
+- Complete R1 by Day 6 with realistic benchmarks
+- Use Drizzle ORM (supports SQLite and PostgreSQL) for migration path
+- Trigger criteria: >500 concurrent users or >100GB database
 - Budget 2 weeks for PostgreSQL migration if triggered
 
-**Monitoring**: Track query latency, connection pool saturation, write lock contention in production
+**Monitor**: Query latency, write lock contention, connection pool saturation
 
 ### Risk 2: No-Container Deployment Complexity
-**Severity**: MEDIUM
-**Probability**: LOW
-**Impact**: Operational complexity, harder scaling, limited hosting options
+**Severity**: MEDIUM | **Probability**: LOW
 
-**Description**: Deploying Bun + Next.js + FFmpeg workers + Redis without Docker increases configuration complexity and limits platform options.
+Deploying Bun + Next.js + FFmpeg workers + Redis without Docker increases operational complexity.
 
-**Mitigation Strategy**:
-- Complete R2 research by Day 2 to validate chosen approach
-- Document every deployment step in runbook
-- Use infrastructure-as-code (Terraform or similar) even without containers
-- Establish monitoring and alerting from day one
-- Consider gradual migration to containerless platforms (Fly.io, Render) with native support
+**Mitigation**:
+- Complete R2 by Day 2 to validate approach
+- Document every step in runbook
+- Use infrastructure-as-code (Terraform or Pulumi)
+- Consider Fly.io/Render with native Bun support
 
-**Monitoring**: Track deployment success rate, time-to-deploy, configuration drift
+**Monitor**: Deployment success rate, time-to-deploy, configuration drift
 
 ### Risk 3: Bun Production Maturity
-**Severity**: MEDIUM
-**Probability**: MEDIUM
-**Impact**: Runtime crashes, memory leaks, limited community support, ecosystem gaps
+**Severity**: MEDIUM | **Probability**: MEDIUM
 
-**Description**: Bun is relatively new (v1.0 in 2023). Production stability unknown at scale.
+Bun is relatively new. Production stability unknown at scale.
 
-**Mitigation Strategy**:
-- Build comprehensive error handling and crash recovery (process supervision)
-- Implement health checks and automatic restarts
-- Monitor Bun GitHub issues and Discord for production users
-- Plan Node.js fallback: design API to be runtime-agnostic (avoid Bun-specific APIs where possible)
-- Budget 1 week for Node.js migration if Bun proves unstable
+**Mitigation**:
+- Avoid Bun-specific APIs where possible (stay Node-compatible)
+- Comprehensive error handling with process supervision
+- Health checks and automatic restarts
+- Budget 1 week for Node.js migration if unstable
 
-**Monitoring**: Track runtime crashes, memory growth, unhandled promise rejections, dependency compatibility issues
+**Monitor**: Runtime crashes, memory growth, dependency compatibility
 
 ### Risk 4: Over-Engineered for MVP
-**Severity**: LOW
-**Probability**: MEDIUM
-**Impact**: Delayed MVP launch, wasted effort on premature optimization
+**Severity**: LOW | **Probability**: MEDIUM
 
-**Description**: Implementing enterprise features (Access Groups, forensic watermarking, SAML) before validating core product-market fit.
+Building enterprise features before validating product-market fit.
 
-**Mitigation Strategy**:
-- Defer Phase 5 (Enterprise) until post-launch feedback
-- Implement Phase 3 features only after Phase 2 MVP validates market need
-- Use feature flags to ship incrementally
-- Prioritize Phase 2 completion over Phase 3 polish
+**Mitigation**:
+- Defer Phase 5 until post-launch feedback
+- Use feature flags for incremental rollout
 - Timebox each feature: if exceeding estimate by 50%, descope or defer
 
-**Monitoring**: Track time-to-MVP, feature usage analytics post-launch, customer feedback on must-have vs nice-to-have
+### Risk 5: Missing Audio/Document Viewer (NEW)
+**Severity**: MEDIUM | **Probability**: HIGH
+
+Previous plan had no audio viewer despite supporting 8 audio formats, and no document rendering for DOCX/PPTX/XLSX despite listing them as supported.
+
+**Mitigation**:
+- Added 2.8a (Audio Player) and expanded 2.8b (Document Viewer) to the plan
+- Audio waveform generation already in processing pipeline (2.2)
+- Document rendering requires LibreOffice headless or similar -- included in R4 research scope
+- Interactive ZIP sandboxing requires security review
+
+### Risk 6: CDN and Email Provider Lock-in (NEW)
+**Severity**: LOW | **Probability**: LOW
+
+CDN and email service choices are TBD. Late decisions could delay features that depend on them.
+
+**Mitigation**:
+- Added R9 (Email) and R10 (CDN) as quick research items in Week 2
+- Both should use provider-agnostic abstractions (already planned for storage)
+- Email needed by Phase 2.11 (Notifications); CDN needed by Phase 2.6 (Video Player streaming)
 
 ---
 
 ## PRE-IMPLEMENTATION: CRITICAL RESEARCH
 
-Research items are now organized into priority tiers based on when they block implementation.
+Research items organized by priority tier based on when they block implementation.
 
-### TIER 1: Week 1 (CRITICAL - Start Immediately)
+### TIER 1: Week 1 (CRITICAL -- Start Immediately)
 
-#### R2. Deployment without Containers [BLOCKING]
+#### R2. Deployment without Containers [BLOCKING] -- NOT STARTED
 
-- **Status**: NOT STARTED
-- **Blocks**: 1.1 (Bootstrap), 1.5 (API Foundation)
+- **Blocks**: 1.1 (Bootstrap), project structure decisions
 - **Timeline**: Days 1-2
 - **Research questions**:
   - Evaluate Bun production deployment: process management, crash recovery, graceful shutdown
-  - Compare options: systemd services, PM2, Fly.io (non-Docker mode), Render, Railway, bare VPS
-  - Determine how to run Next.js + Bun backend on same or separate hosts
-  - Plan zero-downtime deployment strategy without containers
-  - Evaluate Bun's production stability and runtime maturity
-  - Design process supervision for FFmpeg workers (long-running, crash-prone)
-- **Deliverable**: Deployment architecture document with chosen approach, provisioning steps, and monitoring plan
+  - Compare: systemd services, PM2, Fly.io (non-Docker), Render, Railway, bare VPS
+  - Determine Next.js + Bun backend hosting topology (same host vs separate)
+  - Plan zero-downtime deployment strategy
+  - Design process supervision for FFmpeg workers
+- **Deliverable**: Deployment architecture document
 
-#### R1. SQLite at Scale [CRITICAL]
+#### R1. SQLite at Scale [CRITICAL] -- NOT STARTED
 
-- **Status**: NOT STARTED
-- **Blocks**: 1.2 (Database Schema) -- informs configuration, not initial design
-- **Timeline**: Days 1-6 (can start Day 1, findings incorporated Day 6)
+- **Blocks**: 1.2 configuration (not design)
+- **Timeline**: Days 1-6
 - **Research questions**:
-  - Benchmark SQLite with realistic concurrent read/write workloads (simulate 100, 500, 1000 concurrent users)
-  - Determine WAL mode configuration and journal size limits
-  - Test database file size behavior at 1GB, 10GB, 50GB, 100GB
-  - Evaluate connection pooling strategy for Bun (better-sqlite3 vs bun:sqlite vs Drizzle ORM)
-  - Design backup strategy: evaluate Litestream for continuous replication to S3
-  - Identify the point at which SQLite becomes a bottleneck and document the migration path (to PostgreSQL or other)
-  - Evaluate multi-database strategy (separate SQLite files per account vs single database)
-- **Deliverable**: Written decision document with benchmarks, configuration choices, and backup architecture
-- **Note**: Basic schema design can proceed while R1 runs; findings incorporated into configuration layer
+  - Benchmark concurrent read/write (100, 500, 1000 users)
+  - WAL mode configuration and journal size limits
+  - Database file behavior at 1GB, 10GB, 50GB, 100GB
+  - Connection pooling strategy for Bun (better-sqlite3 vs bun:sqlite vs Drizzle)
+  - Backup strategy: Litestream for continuous S3 replication
+  - Multi-database strategy (per-account vs single)
+  - Bottleneck threshold and PostgreSQL migration path
+- **Deliverable**: Decision document with benchmarks
 
-### TIER 2: Week 2-3 (HIGH - Needed for Phase 2)
+### TIER 2: Weeks 2-3 (HIGH -- Needed for Phase 2)
 
-#### R4. Media Transcoding Pipeline [HIGH]
+#### R4. Media Transcoding Pipeline [HIGH] -- NOT STARTED
 
-- **Status**: NOT STARTED
-- **Blocks**: 2.2 (Media Processing Pipeline), specs/15-media-processing.md
+- **Blocks**: specs/15-media-processing.md, then 2.2
 - **Timeline**: Days 7-14
 - **Research questions**:
-  - Benchmark FFmpeg transcoding times: 1GB, 10GB, 100GB files across formats
-  - Design worker architecture: single vs distributed BullMQ workers, concurrency limits
-  - Test HDR tone mapping quality and performance (zscale + tonemap filters)
-  - Evaluate RAW image processing: libraw, dcraw for 15+ camera formats
-  - Test Adobe format rendering: ImageMagick for PSD/AI/EPS, server-side for INDD
-  - Determine optimal proxy parameters: bitrate targets, CRF values, resolution ladder
-  - Plan FFmpeg worker resource management: CPU/memory limits, tmpdir sizing
-- **Deliverable**: Processing pipeline design document with benchmarks and FFmpeg parameter matrix
+  - Benchmark FFmpeg transcoding times across formats and file sizes
+  - Worker architecture: single vs distributed BullMQ workers
+  - HDR tone mapping quality/performance (zscale + tonemap)
+  - RAW image processing: libraw, dcraw for 15+ formats
+  - Adobe format rendering: ImageMagick for PSD/AI/EPS, server-side for INDD
+  - **Document rendering: LibreOffice headless for DOCX/PPTX/XLSX** (NEW)
+  - **Audio waveform: FFmpeg audiowaveform vs BBC audiowaveform tool** (NEW)
+  - Optimal proxy parameters: bitrate targets, CRF values, resolution ladder
+  - FFmpeg worker resource management: CPU/memory limits, tmpdir sizing
+- **Deliverable**: Processing pipeline design document with FFmpeg parameter matrix
 
-#### R5. Large File Upload Strategy [MEDIUM]
+#### R5. Large File Upload Strategy [MEDIUM] -- NOT STARTED
 
-- **Status**: NOT STARTED
-- **Blocks**: 2.1 advanced features (basic upload can proceed without R5)
+- **Blocks**: 2.1 advanced features (basic upload works without)
 - **Timeline**: Days 7-21
 - **Research questions**:
-  - Determine optimal chunk size for S3 multipart upload (10MB vs 50MB vs 100MB)
-  - Test parallel chunk upload concurrency (3 vs 5 vs 10 concurrent)
-  - Evaluate browser IndexedDB for resumable upload state persistence
-  - Test 5TB upload end-to-end across realistic network conditions
-  - Evaluate tus.io protocol vs custom chunked upload implementation
-  - Test S3 multipart upload limits with different providers (AWS S3, R2, B2)
-- **Deliverable**: Upload protocol specification with chunk sizes, retry strategy, and provider compatibility matrix
-- **Note**: Basic 10MB chunk, 3-parallel upload can launch without R5; research optimizes performance
+  - Optimal chunk size for S3 multipart (10MB vs 50MB vs 100MB)
+  - Parallel chunk concurrency (3 vs 5 vs 10)
+  - Browser IndexedDB for resumable upload state
+  - 5TB end-to-end upload testing
+  - tus.io protocol vs custom implementation
+  - S3 multipart limits across providers (AWS S3, R2, B2)
+- **Deliverable**: Upload protocol specification
 
-#### R7. Real-Time Infrastructure [MEDIUM]
+#### R7. Real-Time Infrastructure [MEDIUM] -- NOT STARTED
 
-- **Status**: NOT STARTED
 - **Blocks**: 2.9 (Comments), 2.11 (Notifications), specs/14-realtime-collaboration.md
 - **Timeline**: Days 14-21
 - **Research questions**:
-  - Design WebSocket connection management for Bun server
-  - Plan horizontal scaling: Redis pub/sub for multi-instance WebSocket broadcast
-  - Define optimistic UI update strategy for comments and metadata edits
-  - Evaluate connection limits per server instance
-  - Plan reconnection and message replay on disconnect
-- **Deliverable**: WebSocket protocol specification and scaling architecture document
+  - WebSocket connection management for Bun server
+  - Horizontal scaling: Redis pub/sub for multi-instance broadcast
+  - Optimistic UI update strategy
+  - Connection limits per instance
+  - Reconnection and message replay on disconnect
+- **Deliverable**: WebSocket protocol specification
 
-### TIER 3: Week 3-4 (MEDIUM - Defer to Phase 2 end or Phase 3)
+### TIER 3: Week 2 (LOW -- Quick Decisions)
 
-#### R3. Video Player Architecture [MEDIUM]
+#### R9. Email Service Provider [LOW] -- NOT STARTED (NEW)
 
-- **Status**: NOT STARTED
-- **Blocks**: 2.6 (Video Player)
-- **Timeline**: Week 3 (before Phase 2.6 implementation)
+- **Blocks**: 2.11 (Notifications -- email delivery)
+- **Timeline**: Days 8-9 (1 day)
 - **Research questions**:
-  - Compare Video.js vs Shaka Player vs fully custom HTML5 player
-  - Test frame-accurate seeking across codecs (H.264 GOP structure challenges)
-  - Evaluate annotation overlay approaches: Canvas, SVG, or WebGL
-  - Test HLS.js integration for adaptive streaming
-  - Prototype JKL shuttle controls with sub-frame accuracy
-  - Assess performance with 4K and HDR content in browser
-- **Deliverable**: Player architecture decision document with prototype demonstrating frame-accurate seeking
+  - Compare SendGrid vs AWS SES vs Postmark vs Resend
+  - Deliverability, cost at scale (10K, 100K, 1M emails/month)
+  - Transactional email latency (<1 min for immediate alerts)
+  - Template support and webhook tracking (open/click/bounce)
+  - DKIM/SPF/DMARC setup complexity
+- **Deliverable**: Provider recommendation with cost projection
+- **NOTE**: This research was MISSING from the previous plan. Notifications spec references email but no provider evaluation existed.
 
-### TIER 4: Phase 3+ (Defer until Phase 2 MVP complete)
+#### R10. CDN Provider Selection [LOW] -- NOT STARTED (NEW)
 
-#### R6. Transcription Service Selection [LOW]
+- **Blocks**: 2.6 (Video Player -- HLS streaming), production media delivery
+- **Timeline**: Days 10-11 (1 day)
+- **Research questions**:
+  - Compare Bunny CDN (preference) vs Cloudflare vs AWS CloudFront vs KeyCDN
+  - HLS streaming support and token authentication
+  - Cost at scale (1TB, 10TB, 100TB egress/month)
+  - Geo-distribution coverage
+  - Integration with S3-compatible origins (R2, B2, AWS S3)
+  - CDN-agnostic abstraction layer design
+- **Deliverable**: CDN architecture document with provider recommendation
+- **NOTE**: This research was MISSING from the previous plan. CDN is listed as "TBD" in tech stack but no evaluation was planned.
 
-- **Status**: NOT STARTED
-- **Blocks**: 3.4 (Transcription and Captions)
-- **Timeline**: After Phase 2 completion
+#### R11. Adobe IMS / OAuth Integration [LOW] -- NOT STARTED (NEW)
+
+- **Blocks**: 1.3 (Authentication -- Adobe ID login), 4.5 (Premiere Pro integration)
+- **Timeline**: Days 12-13 (1 day)
+- **Research questions**:
+  - Adobe IMS OAuth 2.0 flow documentation and requirements
+  - Developer console setup, app registration process
+  - Token scopes needed for Bush integration
+  - Adobe Creative Cloud user profile data available
+  - Rate limits and usage restrictions
+- **Deliverable**: Adobe IMS integration guide
+- **NOTE**: This research was MISSING. Auth system references Adobe IMS but no research item existed. Can stub in 1.3 and fill in later.
+
+### TIER 4: Week 3-4 (MEDIUM -- Before Phase 2 Viewers)
+
+#### R3. Video Player Architecture [MEDIUM] -- NOT STARTED
+
+- **Blocks**: 2.6 (Video Player)
+- **Timeline**: Week 3-4
+- **Research questions**:
+  - Compare Video.js vs Shaka Player vs custom HTML5 player
+  - Frame-accurate seeking across codecs (H.264 GOP challenges)
+  - Annotation overlay approaches: Canvas, SVG, or WebGL
+  - HLS.js integration for adaptive streaming
+  - JKL shuttle controls with sub-frame accuracy
+  - 4K and HDR content performance in browser
+- **Deliverable**: Player architecture decision with prototype
+
+### TIER 5: Phase 3+ (Defer until Phase 2 MVP complete)
+
+#### R6. Transcription Service Selection [LOW] -- NOT STARTED
+
+- **Blocks**: 3.4 (Transcription)
+- **Timeline**: After Phase 2
 - **Research questions**:
   - Compare AWS Transcribe vs Deepgram vs AssemblyAI vs self-hosted Whisper
-  - Test 27-language support coverage for each provider
-  - Evaluate speaker identification accuracy across providers
-  - Calculate cost at scale (1K, 10K, 100K hours of audio per month)
-  - Assess latency (real-time vs batch processing)
-  - Research Texas/Illinois biometric consent legal requirements for speaker ID
-- **Deliverable**: Provider comparison matrix with recommendation and legal compliance plan
+  - 27-language coverage, speaker identification accuracy
+  - Cost at scale (1K-100K hours/month)
+  - Texas/Illinois biometric consent legal requirements
+- **Deliverable**: Provider comparison matrix
 
-#### R8. Search Scalability [LOW]
+#### R8. Search Scalability [LOW] -- NOT STARTED
 
-- **Status**: NOT STARTED
 - **Blocks**: 3.5 (Enhanced Search)
-- **Timeline**: After Phase 2 completion
+- **Timeline**: After Phase 2
 - **Research questions**:
-  - Benchmark SQLite FTS5 with 100K, 1M, 10M indexed documents
-  - Test search latency and relevance quality
-  - Evaluate upgrade path: Meilisearch, Typesense, or Elasticsearch
-  - Determine when FTS5 is no longer sufficient (specific metric thresholds)
-- **Deliverable**: FTS5 benchmark report with upgrade trigger criteria
+  - FTS5 benchmarks at 100K, 1M, 10M documents
+  - Upgrade path: Meilisearch, Typesense, or Elasticsearch
+- **Deliverable**: FTS5 benchmark report with upgrade triggers
 
 ---
 
 ## PRE-IMPLEMENTATION: MISSING SPECIFICATIONS
 
-These specification documents must be written before implementing the features they cover. Prioritized by when they block implementation.
+### Specification Gap Details
 
-### Specification Gaps Identified
+The following critical details are missing from existing specs and must be documented inline or in dedicated sections before implementation begins.
 
-The following critical details are missing from existing specifications and must be documented before implementation:
-
-1. **Error Handling Strategy** (ALL PHASES)
-   - HTTP error code mapping (400, 401, 403, 404, 409, 422, 429, 500, 503)
-   - Error response format standardization
-   - Client-side error recovery patterns
-   - User-facing error messages vs developer error details
-   - Error logging and alerting thresholds
+1. **Error Handling Strategy** (ALL PHASES) -- addressed by QW4
+   - HTTP error code mapping, response format, client recovery patterns, logging thresholds
 
 2. **Rate Limiting Detail** (Phase 1.5)
-   - Per-endpoint rate limits (e.g., /upload vs /search vs /auth)
-   - Anonymous vs authenticated user limits
-   - Plan-based rate limit tiers
-   - Rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
-   - 429 response with Retry-After header
+   - Per-endpoint limits (e.g., /upload 100 req/min vs /auth 10 req/min)
+   - Anonymous vs authenticated limits, plan-based tiers
+   - Rate limit headers (X-RateLimit-*), 429 with Retry-After
 
 3. **Logging and Observability** (ALL PHASES)
-   - Structured logging format (JSON with request_id, user_id, timestamp, level)
-   - Log levels by environment (dev: debug, prod: info)
-   - Metrics to track (latency percentiles, error rates, queue depths)
-   - Distributed tracing strategy (request correlation)
+   - Structured JSON logging (request_id, user_id, timestamp, level)
+   - Metrics: latency percentiles, error rates, queue depths
    - Log retention policies
 
 4. **Status Field Values** (Phase 2.10)
-   - Enumerated allowed values (e.g., "New", "In Review", "Approved", "Rejected", "Final")
-   - Status field behavior: single-select vs free text
-   - Default status value on upload
-   - Status change permissions and audit trail
+   - Enumerated values (e.g., "New", "In Review", "Approved", "Rejected", "Final")
+   - Default status on upload, status change permissions
 
 5. **Guest Role Limits** (Phase 1.4)
-   - Max guests per account/project
-   - Guest session duration before re-authentication
-   - Guest permission constraints (cannot invite others, cannot delete)
-   - Guest-accessible API endpoints whitelist
+   - Max guests per account, session duration, permission constraints
+   - Guest-accessible API endpoint whitelist
 
 6. **Bulk Operation Semantics** (Phase 2.3, 2.4)
-   - Max items per bulk operation (e.g., 200 assets)
-   - Partial failure handling (all-or-nothing vs best-effort)
-   - Bulk operation progress tracking and cancellation
-   - Bulk operation rate limits
+   - Max 200 items per operation, partial failure handling (best-effort vs all-or-nothing)
+   - Progress tracking and cancellation
 
-### Blocks Phase 1
+7. **Plan-Gated Feature Matrix** (ALL PHASES) -- addressed by S13
+   - Explicit mapping of which features require which plan tier
+   - Runtime enforcement via plan-gate middleware
 
-#### specs/12-authentication.md [NOT STARTED - WRITE DAYS 1-3]
+### Specifications to Write
 
-- SAML/SSO enterprise authentication flows
-- Session duration policies and token expiration times
-- Refresh token rotation policy
-- IP allowlisting, geo-restrictions (enterprise tier)
-- Multi-factor authentication detailed flows
-- **Blocked by**: nothing (can be written immediately)
-- **Blocks**: Phase 1.3 (Authentication System)
+Ordered by when they block implementation.
 
-### Blocks Phase 2
+#### Blocks Phase 1
 
-#### specs/15-media-processing.md [NOT STARTED - WRITE WEEK 2]
+| Spec | Status | Write By | Blocks |
+|------|--------|----------|--------|
+| specs/12-authentication.md | NOT STARTED | Days 1-3 | 1.3 (Auth) |
+| specs/19-accessibility.md | NOT STARTED | Days 1-3 | Informs all UI |
+| specs/11-security-features.md (expand) | NOT STARTED | Days 4-7 | 1.4 (Permissions) |
+| specs/13-billing-and-plans.md | NOT STARTED | Days 4-7 | 3.7 (Lifecycle), 5.1 (Billing) |
 
-- Exact FFmpeg transcoding parameters (bitrate targets, CRF values, codec choices per resolution)
-- Processing timeouts and failure handling policies
-- HDR tone mapping parameter specifications
-- Interactive ZIP (HTML) rendering behavior
-- RAW and Adobe format conversion parameters
-- **Blocked by**: R4 (Media Transcoding Pipeline research)
-- **Blocks**: Phase 2.2 (Media Processing Pipeline)
+#### Blocks Phase 2
 
-#### specs/14-realtime-collaboration.md [NOT STARTED - WRITE WEEK 2]
+| Spec | Status | Write By | Blocks |
+|------|--------|----------|--------|
+| specs/15-media-processing.md | NOT STARTED | Days 14-15 (after R4) | 2.2 (Processing) |
+| specs/14-realtime-collaboration.md | NOT STARTED | Days 11-14 (start early) | 2.9 (Comments), 2.11 (Notifications) |
 
-- WebSocket message protocol specification (event types, payload formats)
-- Concurrent editing conflict resolution strategy
-- Presence indicators (who is currently viewing an asset)
-- Connection lifecycle (auth, heartbeat, reconnect)
-- **Blocked by**: R7 (Real-Time Infrastructure research)
-- **Blocks**: Phase 2.9 (Comments), Phase 2.11 (Notifications)
+#### Blocks Phase 3+
 
-### Blocks Phase 3
-
-#### specs/13-billing-and-plans.md [NOT STARTED - WRITE DAYS 4-7]
-
-- Detailed pricing structure for each tier
-- Complete plan feature matrix (which features are gated to which plan)
-- "Team+" and "Pro+" tier boundary definitions
-- Storage quota enforcement rules
-- Overage handling and upgrade prompts
-- **Blocked by**: nothing (can be written immediately)
-- **Blocks**: Phase 3.7 (Asset Lifecycle), Phase 5.1 (Billing Management)
-
-#### specs/17-api-complete.md [NOT STARTED - WRITE WEEK 3]
-
-- Complete endpoint inventory with request/response examples for every resource
-- Bulk API operation specifications
-- Complete webhook event type enumeration with payloads
-- API versioning strategy beyond "V4 current, V2 deprecated"
-- Error code catalog
-- **Blocked by**: Phase 1.5 (API Foundation must be designed first)
-- **Blocks**: Phase 3.6 (Webhooks), Phase 4 (all integrations)
-
-### Blocks Phase 4+
-
-#### specs/16-storage-and-data.md [NOT STARTED]
-
-- Data residency requirements (EU regulations, regional storage)
-- Backup and disaster recovery strategy
-- Storage archival tiers (cold storage for inactive projects)
-- Storage Connect detailed protocol for non-AWS providers
-- **Blocked by**: R1 (SQLite at Scale research)
-- **Blocks**: Phase 4.1 (Storage Connect)
-
-#### specs/18-mobile-complete.md [NOT STARTED]
-
-- Android app decision (build or skip, responsive web fallback)
-- Offline mode specification (what is cached, sync-on-reconnect protocol)
-- Push notification payload specifications
-- Mobile-specific upload constraints and behavior
-- **Blocked by**: Phase 2 API completion
-- **Blocks**: Phase 4.3 (iOS App)
-
-#### specs/19-accessibility.md [NOT STARTED - WRITE DAYS 1-3]
-
-- WCAG compliance level target (AA or AAA)
-- Keyboard navigation specification for all interactive components
-- Screen reader support requirements
-- Color contrast and motion sensitivity requirements
-- **Blocked by**: nothing (can be written immediately, should inform Phase 1.7)
-- **Blocks**: nothing directly, but should be referenced throughout all UI work
-
-### Existing Specs Needing Enhancement
-
-#### specs/11-security-features.md [NEEDS EXPANSION - DAYS 4-7 -- currently only 38 lines]
-
-- Forensic watermarking implementation details
-- Audit log retention, format, and export specification
-- Access Groups detailed specification (referenced but not specified)
-- Organization-wide security policy configuration
+| Spec | Status | Write By | Blocks |
+|------|--------|----------|--------|
+| specs/17-api-complete.md | NOT STARTED | Week 3-4 | 3.6 (Webhooks), Phase 4 |
+| specs/16-storage-and-data.md | NOT STARTED | After R1 | 4.1 (Storage Connect) |
+| specs/18-mobile-complete.md | NOT STARTED | After Phase 2 | 4.3 (iOS App) |
 
 ---
 
 ## PHASE 1: FOUNDATION
 
 **Status**: NOT STARTED
-**Blocked by**: R2 (Deployment research -- Days 1-2), R1 (SQLite research -- informs config by Day 6)
-**Goal**: Establish all infrastructure, data models, auth, permissions, API, and web shell. Everything else depends on this.
+**Goal**: Infrastructure, data models, auth, permissions, API, and web shell.
+**Timeline**: Days 1-14
 
 ### 1.1 Project Bootstrap [NOT STARTED]
 
@@ -652,104 +863,91 @@ The following critical details are missing from existing specifications and must
 - Configure linting (ESLint + Prettier)
 - Set up testing framework (Vitest)
 - Configure CI/CD pipeline (GitHub Actions)
-- Create development environment setup documentation
-- **Depends on**: R2 (Deployment research -- informs project structure)
-- **DEPENDENCY CORRECTED**: No longer blocked by full R2 completion, just needs direction
-- **Blocks**: everything
+- Create development environment setup docs
+- Include QW1 (File Type Registry) as part of bootstrap
+- **Depends on**: R2 direction
+- **Blocks**: Everything
 - **Timeline**: Day 3
 - **Spec refs**: `specs/README.md`
 
 ### 1.2 Database Schema and Core Data Models [NOT STARTED]
 
-- Design SQLite schema with proper indexes and foreign keys
-- Core models: Account, User, Workspace, Project, Folder, File, VersionStack
-- Hierarchy enforcement: Account > Workspace > Project > Folder > File
-- Foreign key constraints, check constraints, triggers for cascades
-- Choose and configure ORM/query builder (Drizzle ORM or Kysely)
-- Create migration system
-- Write schema validation tests
-- Set up seed data for development
-- **Depends on**: 1.1 (Project Bootstrap)
-- **DEPENDENCY SOFTENED**: R1 informs configuration (WAL mode, connection pooling, backup), not initial schema design
-- **Blocks**: 1.3, 1.5, and transitively all Phase 2+
+- SQLite schema with indexes, foreign keys, check constraints, triggers
+- Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, CustomFieldValue, Webhook, Notification, AuditLog
+- Hierarchy: Account > Workspace > Project > Folder > File
+- ORM: Drizzle ORM (supports SQLite + PostgreSQL migration)
+- Migration system, schema validation tests
+- QW2 (Seed Data) included
+- **Depends on**: 1.1
+- **R1 informs config only** (WAL mode, pooling, backup)
+- **Blocks**: 1.3, 1.5, all Phase 2+
 - **Timeline**: Days 4-7
 - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
 
-### 1.3 User and Authentication System [NOT STARTED]
+### 1.3 Authentication System [NOT STARTED]
 
-- Email/password authentication (bcrypt hashing, minimum 8 characters)
-- OAuth 2.0 integration: Google Sign-In, Apple ID, Adobe IMS
-- Two-factor authentication (TOTP with QR code generation)
-- Redis-based session storage with TTL
-- JWT access token (1hr) + refresh token (30 days)
-- Secure cookie handling (httpOnly, secure, sameSite)
-- Account switcher logic (multi-account support)
-- Account roles: Owner, Content Admin, Member, Guest, Reviewer
-- Authentication integration tests
-- **Depends on**: 1.2 (Database Schema), specs/12-authentication.md
-- **Blocks**: 1.4, 1.5 (API Foundation)
+- Email/password (bcrypt, min 8 chars)
+- OAuth 2.0: Google, Apple, Adobe IMS (R11 informs details, can stub)
+- 2FA (TOTP with QR), Redis sessions (TTL), JWT access (1hr) + refresh (30 days)
+- Secure cookies (httpOnly, secure, sameSite)
+- Account switcher, account roles
+- Integration tests
+- **Depends on**: 1.2, specs/12-authentication.md
+- **Blocks**: 1.4, 1.5
 - **Timeline**: Days 8-10
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
 
 ### 1.4 Permission System [NOT STARTED]
 
-- Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only
-- Permission models: WorkspacePermission, ProjectPermission, FolderPermission
-- Permission inheritance: Workspace > Project > Folder (cannot lower inherited permissions)
-- Restricted Project/Folder logic (breaks inheritance chain, invite-only)
-- Access Groups for bulk permission management
-- Permission check middleware for API routes
-- Extensive permission edge-case tests
+- Five levels, three models (Workspace/Project/Folder Permission)
+- Inheritance (cannot lower), restricted project/folder logic
+- Access Groups (Team+), Guest constraints (1 project max)
+- Permission check middleware, edge-case tests
 - **Depends on**: 1.2, 1.3
-- **Blocks**: 1.5 (API Foundation -- needs auth/perm middleware), all Phase 2+
+- **Blocks**: 1.5, all Phase 2+
 - **Timeline**: Days 11-12
-- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.3, `specs/11-security-features.md`
+- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.5, `specs/11-security-features.md`
 
 ### 1.5 RESTful API Foundation (V4) [NOT STARTED]
 
-- Set up Bun HTTP server with routing framework (Hono or Elysia)
-- OAuth 2.0 authentication middleware
-- Rate limiting middleware (Redis-backed leaky bucket algorithm)
-- Cursor-based pagination (default 50, max 100 items per page)
-- JSON:API-style response format with proper error responses
-- CRUD routes for core resources: accounts, workspaces, projects, folders, files, version_stacks, users, comments, shares, custom_fields, webhooks
-- OpenAPI spec generation for documentation
-- API integration tests
-- **Depends on**: 1.2, 1.3, 1.4
-- **DEPENDENCY REMOVED**: No longer depends on R2 (Bootstrap handled deployment architecture)
-- **Blocks**: 1.7 (Web App Shell), all Phase 2+
+- Bun HTTP server with Hono or Elysia
+- Auth middleware, rate limiting (leaky bucket, per-endpoint)
+- Cursor pagination (50 default, 100 max)
+- CRUD for all core resources
+- Plan-gate middleware for tier-restricted features
+- QW4 (Error Utilities) integrated
+- OpenAPI spec generation
+- Integration tests
+- **Depends on**: 1.3, 1.4
+- **Blocks**: 1.7b, all Phase 2+
 - **Timeline**: Days 11-14
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 21.4-21.5, `specs/00-atomic-features.md` Sections 18.2-18.3
+- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6
 
 ### 1.6 Object Storage Layer [NOT STARTED]
 
-- Implement provider-agnostic storage interface (S3-compatible)
-- Choose initial provider (recommendation: Cloudflare R2 for zero egress, or B2 for low cost)
-- Pre-signed URL generation (upload and download)
-- Multipart upload support
-- Storage key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
-- Storage quota tracking (atomic increment/decrement on Account model)
-- Development storage setup (MinIO or B2 free tier)
-- Storage layer tests
-- **Depends on**: 1.1 (Project Bootstrap)
-- **DEPENDENCY REMOVED**: No longer depends on R1 or R5 -- basic storage doesn't require scale research
-- **Blocks**: 2.1 (File Upload), 2.2 (Media Processing)
+- Provider-agnostic S3 interface
+- Pre-signed URLs (upload + download), multipart upload
+- Key structure: `{account_id}/{project_id}/{file_id}/{type}/{filename}`
+- Storage quota tracking
+- Dev storage (MinIO or B2 free tier)
+- **Depends on**: 1.1 only
+- **Blocks**: 2.1, 2.2
 - **Timeline**: Days 3-4
 - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
 
 ### 1.7 Web Application Shell [NOT STARTED]
 
-- Initialize Next.js 15+ with App Router and TypeScript
-- Core pages: login, signup, dashboard, workspaces, projects, settings
-- Global navigation: account switcher, workspace sidebar, project list, folder tree, breadcrumbs
-- Multi-panel layout: left (folder tree), center (file grid/list), right (metadata inspector), bottom (upload queue) -- all collapsible
-- Authentication flows: email/password, OAuth, 2FA, password reset
-- State management: React Context (auth, workspace), TanStack Query (server state)
-- Responsive design (mobile, tablet, desktop)
-- Component tests (Vitest + Testing Library)
-- **Depends on**: 1.5 (API), 1.3 (Authentication)
-- **Blocks**: all Phase 2 frontend work
-- **Timeline**: Days 3-14 (start early with static shell, connect to API days 11-14)
+Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
+
+- Next.js 15+ with App Router, TypeScript
+- QW3 (Component Library) built first
+- Pages: login, signup, dashboard, workspaces, projects, settings
+- Multi-panel layout, global navigation, responsive design
+- Auth flows UI, state management (React Context + TanStack Query)
+- Component tests
+- **Depends on**: 1.1 (for 1.7a), 1.5 + 1.3 (for 1.7b)
+- **Blocks**: all Phase 2 frontend
+- **Timeline**: Days 3-14
 - **Spec refs**: `specs/00-atomic-features.md` Section 1.4, 5.3, `specs/03-file-management.md`
 
 ---
@@ -758,200 +956,154 @@ The following critical details are missing from existing specifications and must
 
 **Status**: NOT STARTED
 **Blocked by**: Phase 1 completion
-**Goal**: Build the minimum viable product -- upload files, view them, comment on them, manage metadata, search, get notifications.
+**Goal**: Upload, view, comment, metadata, search, notifications.
 
 ### 2.1 File Upload System [NOT STARTED]
 
-- Web browser drag-and-drop (files and folders)
-- MIME type validation (100+ formats: 9 video, 8 audio, 25+ image, 5 document)
-- Chunked upload client library (10MB chunks, 3-5 parallel, resumable via IndexedDB)
-- Upload queue UI: progress bars, pause/resume, priority reorder, cancel, retry
-- Folder structure preservation on drag-and-drop
-- Upload constraints: max 10 concurrent uploads, 500 assets per upload, 250 folders, 5TB max file size
-- Backend: pre-signed URL generation, file record creation, completion notification, processing job enqueue
-- **Depends on**: 1.5 (API), 1.6 (Object Storage), 1.7 (Web Shell)
-- **DEPENDENCY SOFTENED**: R5 optimizes performance; basic upload works with 10MB chunks, 3-parallel
-- **Blocks**: 2.2 (Media Processing), 2.3 (Asset Browser)
+- Drag-and-drop (files + folders), MIME validation via QW1 (file type registry)
+- Chunked upload (10MB chunks, 3-5 parallel, IndexedDB resume)
+- Upload queue UI: progress, pause/resume, priority, cancel, retry
+- Folder structure preservation, constraints enforcement
+- Backend: pre-signed URLs, file records, completion, processing enqueue
+- **Depends on**: 1.5, 1.6, 1.7b
+- **Blocks**: 2.2, 2.3
 - **Timeline**: Week 3
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 4.1-4.3
 
 ### 2.2 Media Processing Pipeline [NOT STARTED]
 
-- Set up BullMQ with Redis for async job processing
-- Media processing worker with configurable concurrency (default: 4 workers)
-- Thumbnail generation: extract frame at 50% duration, resize to 320x180, 640x360, 1280x720
-- Hover scrub filmstrip: 1-second interval frames, sprite sheet generation
-- Proxy transcoding: H.264 MP4 at 360p, 540p, 720p, 1080p, 4K (Pro+ only)
-- Audio waveform extraction (JSON or PNG)
-- Metadata extraction via FFprobe (33 built-in fields)
-- HDR detection and SDR tone mapping for proxies
-- Job priorities: thumbnail (high), proxy (medium), waveform (low)
-- Retry: 3 attempts with exponential backoff
-- Processing status tracking: uploading > processing > ready / processing_failed
-- WebSocket progress updates to frontend
-- **Depends on**: 2.1 (Upload), 1.6 (Object Storage), R4 (Media Transcoding research), specs/15-media-processing.md
-- **Blocks**: 2.3 (Asset Browser -- needs thumbnails), 2.6 (Video Player -- needs proxies)
+- BullMQ + Redis, configurable worker concurrency
+- **Video**: thumbnails (3 sizes), filmstrips (1-sec sprites), proxy transcoding (360p-4K), HDR tone mapping
+- **Image**: thumbnails, proxy generation for RAW/Adobe/HDR
+- **Audio**: waveform extraction (JSON peaks + PNG visualization) (NEW -- previously underspecified)
+- **Document**: PDF proxy, DOCX/PPTX/XLSX conversion (LibreOffice headless), Interactive ZIP preparation (NEW)
+- FFprobe metadata extraction (33 fields)
+- Job priorities, retry (3x exponential backoff), status tracking, WebSocket progress
+- **Depends on**: 2.1, 1.6, specs/15-media-processing.md, R4
+- **Blocks**: 2.3, all viewers (2.6-2.8b)
 - **Timeline**: Week 3-4
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 4.4, `specs/00-atomic-features.md` Section 6.1
+- **Spec refs**: `specs/00-complete-support-documentation.md` Section 4.4
 
 ### 2.3 Asset Browser and Navigation [NOT STARTED]
 
-- Grid view with adjustable card size (small 160px, medium 240px, large 320px)
-- List view with sortable metadata columns
-- Thumbnail display options: aspect ratio (16:9, 1:1, 9:16), fit vs fill
-- Flatten folders view (show all nested assets in flat list)
-- Sorting by any metadata field (ascending/descending, multi-level)
-- Drag-and-drop: move files to folder, copy with Cmd/Ctrl, reorder in custom sort
-- Multi-select (max 200): shift-click range, cmd/ctrl-click toggle, select all
-- Bulk actions: move, copy, delete, download, edit metadata
-- Performance: virtualized lists (react-window or similar), lazy loading thumbnails
-- **Depends on**: 1.5 (API), 2.1 (Upload), 2.2 (Processing -- for thumbnails), 1.4 (Permissions)
-- **Blocks**: 2.4 (Asset Operations), 2.5 (Version Stacking), 2.6-2.8 (Viewers)
+- Grid view (adjustable card sizes), list view (sortable columns)
+- Thumbnail display options, file type icons from QW1
+- Flatten folders, multi-level sorting, drag-and-drop
+- Multi-select (max 200), bulk actions
+- Virtualized lists, lazy thumbnail loading
+- Viewer routing based on file type registry (routes to 2.6, 2.7, 2.8a, or 2.8b)
+- **Depends on**: 1.5, 2.1, 2.2, 1.4
+- **Blocks**: 2.4-2.8b
 - **Timeline**: Week 4
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 4.2, 6.4
 
 ### 2.4 Asset Operations [NOT STARTED]
 
-- Copy To: duplicate asset to another folder/project (preserves metadata)
-- Move To: relocate asset (permission check on source and destination)
-- Delete: soft-delete to Recently Deleted (30-day retention)
-- Recover: restore from Recently Deleted to original location
-- Permanent Delete: after 30 days or manual (Owner/Admin only)
-- Download Original: generate pre-signed S3 download URL (1hr expiry)
-- Download Proxy: select resolution for proxy download
-- Custom Thumbnail: upload image or select frame from video
-- Auto-delete scheduled job (BullMQ, daily)
-- **Depends on**: 2.3 (Asset Browser), 1.4 (Permissions), 1.6 (Object Storage)
-- **Blocks**: nothing critical (enhances existing features)
-- **Timeline**: Phase 2 end or Phase 3 start
+- Copy To, Move To, Delete (soft, 30-day), Recover, Permanent Delete
+- Download Original/Proxy, Custom Thumbnail
+- Auto-delete scheduled job (BullMQ daily)
+- **Depends on**: 2.3, 1.4, 1.6
 - **Spec refs**: `specs/00-complete-support-documentation.md` Section 4.6
 
 ### 2.5 Version Stacking [NOT STARTED]
 
-- VersionStack model linking multiple File records
-- Drag-new-file-onto-existing-asset to create version
-- Automatic version numbering (v1, v2, v3...)
-- Version list UI (expand stack to see all versions)
-- Set version as current
-- Compare versions (opens comparison viewer)
-- Comments persist across all versions in stack (linked to stack, not file)
-- Download specific version
-- Delete version (admin permission required)
-- **Depends on**: 2.1 (Upload), 2.3 (Asset Browser)
+- VersionStack model, drag-to-create, auto numbering
+- Version list UI, set current, compare, download specific
+- Comments persist across versions (linked to stack)
+- **Depends on**: 2.1, 2.3
 - **Blocks**: 3.3 (Comparison Viewer)
-- **Timeline**: Phase 2 end
 - **Spec refs**: `specs/00-complete-support-documentation.md` Section 4.5
 
 ### 2.6 Video Player [NOT STARTED]
 
-- Base player setup (Video.js or chosen alternative per R3 research)
-- Frame-accurate seeking (GOP-aware)
-- JKL shuttle controls: J reverse (2x/4x/8x), K pause, L forward (2x/4x/8x)
-- Playback speed: 0.25x to 1.75x
-- In/out point marking (I/O keys), range playback
-- HLS adaptive streaming with auto and manual quality selection (360p-4K)
-- Frame guides / aspect ratio overlays (16:9, 4:3, 1:1, 9:16, 2.39:1, custom)
-- Timeline: frame-accurate hover preview from filmstrip, zoom, comment markers
-- Loop playback toggle
-- Full keyboard shortcut suite (Space, K, J, L, arrows, M, F, I, O, Esc)
-- **Depends on**: 2.3 (Asset Browser), 2.2 (Processing -- proxies/filmstrips), R3 (Video Player research)
-- **Blocks**: 2.9 (Comments -- annotation overlay on player), 3.3 (Comparison Viewer)
-- **Timeline**: Phase 2 end or early Phase 3
+- Base player (Video.js or per R3), frame-accurate seeking
+- JKL shuttle, playback speed 0.25x-1.75x, in/out points
+- HLS adaptive streaming (360p-4K), CDN delivery (requires R10)
+- Frame guides, timeline with filmstrip hover, comment markers
+- Loop, keyboard shortcuts, volume, mute, fullscreen
+- **Depends on**: 2.3, 2.2, R3, R10
+- **Blocks**: 2.9, 3.3
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 9.1-9.4
 
 ### 2.7 Image Viewer [NOT STARTED]
 
-- Zoom: 25% to 400%, mouse wheel, +/- buttons, slider
-- Zoom to cursor position
-- Pan with drag when zoomed
-- Fit to screen (default), 1:1 pixel view
-- Mini-map for large images (>2000px) with viewport highlight
-- Format support: standard (JPG, PNG, GIF, WebP, BMP, TIFF), RAW (via proxy), Adobe (PSD, AI, EPS via proxy), HDR (EXR via tone-mapped proxy)
-- **Depends on**: 2.3 (Asset Browser), 2.2 (Processing -- image proxies)
-- **Blocks**: 2.9 (Comments -- annotation overlay on images)
-- **Timeline**: Phase 2 end
+- Zoom 25%-400% (mouse wheel, buttons, slider), zoom to cursor
+- Pan, fit-to-screen, 1:1 pixel view
+- Mini-map for large images (>2000px)
+- Formats: standard, RAW (via proxy), Adobe (via proxy), HDR (via tone-mapped proxy)
+- **Depends on**: 2.3, 2.2
+- **Blocks**: 2.9
 - **Spec refs**: `specs/00-complete-support-documentation.md` Section 9.5
 
-### 2.8 PDF Viewer [NOT STARTED]
+### 2.8a Audio Player [NOT STARTED] -- NEW
 
-- PDF.js integration for rendering
-- Multi-page navigation: page thumbnails sidebar, prev/next buttons, page jump, keyboard nav
-- Zoom: in/out, slider, fit width, fit page, actual size, mouse wheel
-- Text selection and copy
-- Search within PDF
-- Page rotation (90-degree increments)
-- **Depends on**: 2.3 (Asset Browser), 2.2 (Processing)
-- **Blocks**: 2.9 (Comments -- page-stamped comments on PDFs)
-- **Timeline**: Phase 2 end
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 9.6
+- **Waveform visualization**: render from processing pipeline JSON peak data, interactive (click to seek)
+- **Playback controls**: play/pause, seek via waveform, volume slider, mute toggle
+- **Playback speed**: 0.25x to 1.75x
+- **Time display**: current position / total duration, formatted as HH:MM:SS
+- **Comment integration**: timestamped comment markers on waveform timeline
+- **Range playback**: in/out points on waveform (I/O keys)
+- **Keyboard shortcuts**: Space (play/pause), Left/Right (seek), M (mute), J/K/L (shuttle)
+- **Format support**: AAC, AIFF, FLAC, M4A, MP3, OGG, WAV, WMA (all 8 audio formats from spec)
+- **Depends on**: 2.3, 2.2 (waveform data)
+- **Blocks**: 2.9 (timestamped comments on audio)
+- **NOTE**: This was completely MISSING from the previous plan. The specs list 8 audio formats as supported (`specs/00-atomic-features.md` Section 4.3) and reference audio waveform extraction (`specs/00-complete-support-documentation.md` Section 4.4), but no audio viewer was planned.
+- **Spec refs**: `specs/00-atomic-features.md` Section 4.3, `specs/00-complete-support-documentation.md` Section 4.4
+
+### 2.8b PDF and Document Viewer [NOT STARTED] -- EXPANDED
+
+- **PDF Viewer**: PDF.js, multi-page nav (thumbnails, prev/next, page jump), zoom (in/out, fit width, fit page, actual size), text selection/copy, search within PDF, page rotation
+- **Document Viewer (DOCX/PPTX/XLSX)**: render server-generated PDF/image previews from processing pipeline (2.2), page navigation, zoom (NEW)
+- **Interactive ZIP Viewer**: sandboxed iframe rendering, security constraints (no external network, limited API surface) (NEW)
+- **Depends on**: 2.3, 2.2
+- **Blocks**: 2.9 (page-stamped comments)
+- **NOTE**: Previous plan only had "PDF Viewer" (2.8). Now expanded to cover all 5 document formats listed in specs: PDF, DOCX, PPTX, XLSX, Interactive ZIP.
+- **Spec refs**: `specs/00-complete-support-documentation.md` Section 9.6, `specs/00-atomic-features.md` Section 4.3
 
 ### 2.9 Comments and Annotations [NOT STARTED]
 
-- Comment types: single-frame (timestamped), range-based (in/out), anchored (XY position), internal (members-only), public
-- Comments linked to VersionStack (persist across versions)
-- Threaded replies (parent_comment_id)
-- Comment body: markdown, emoji reactions, @mentions (trigger notifications), hashtags, color hex auto-rendering
-- Attachments: up to 6 files per comment (Pro+ plan)
-- Annotation tools: free draw, line, arrow, rectangle with color picker and configurable brush size
-- HTML5 Canvas overlay on player/image/PDF viewer
-- Annotation data stored as SVG paths or Canvas commands (JSON)
-- Comment panel: thread view, filter by user/hashtag/status/type, sort by date/timestamp
-- Quick actions: reply, edit, delete, mark complete, copy permalink
-- Comment export: CSV, plain text, EDL (CMX 3600 for NLE import)
-- Real-time sync via WebSocket (new comments, replies, edits, deletes)
-- Optimistic UI updates
-- **Depends on**: 2.6 (Video Player), 2.7 (Image Viewer), 2.8 (PDF Viewer), 1.4 (Permissions), R7 (Real-Time research), specs/14-realtime-collaboration.md
-- **Blocks**: 2.11 (Notifications -- @mentions trigger notifications), 3.1 (Sharing)
-- **Timeline**: Phase 3
+- Types: single-frame, range-based, anchored, internal, public
+- Linked to VersionStack, threaded replies
+- Body: markdown, emoji, @mentions, hashtags, color hex
+- Attachments (6 max, Pro+ plan gate)
+- Annotation tools: free draw, line, arrow, rectangle, colors, undo/redo
+- Canvas overlay on **all four viewer types** (video, image, audio waveform, PDF/document)
+- Comment panel: thread view, filter/sort, quick actions, export (CSV, text, EDL)
+- Real-time WebSocket sync, optimistic updates
+- **Depends on**: 2.6, 2.7, 2.8a, 2.8b, 1.4, R7, specs/14-realtime-collaboration.md
+- **Blocks**: 2.11, 3.1
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 8.1-8.6
 
 ### 2.10 Metadata System [NOT STARTED]
 
-- 33 built-in metadata fields (technical/read-only from FFprobe, file info, collaboration fields)
-- 10 custom field types: text, textarea, number, date, single-select, multi-select, checkbox, user reference, URL, rating
-- Account-wide custom field library (define once, use across projects)
-- Per-project field visibility toggles
-- Field permissions: "Admins Only" vs "Admins and Full Access"
-- Metadata inspector panel (right sidebar) with inline editing
-- Bulk edit: select multiple assets, edit shared fields
-- Metadata badges on asset cards
-- Metadata persists on copy/move/duplicate
-- **Depends on**: 1.2 (Database), 2.1 (Upload), 2.2 (Processing -- auto-populated fields), 1.4 (Permissions)
-- **Blocks**: 2.12 (Search -- search by metadata), 3.2 (Collections -- filter by metadata)
-- **Timeline**: Week 4 or early Phase 3
+- 33 built-in fields, 10 custom field types
+- Account-wide library, per-project visibility, field permissions
+- Inspector panel (right sidebar), bulk edit, metadata badges
+- Persists on copy/move/duplicate
+- **Depends on**: 1.2, 2.1, 2.2, 1.4
+- **Blocks**: 2.12, 3.2
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 6.1-6.3
 
 ### 2.11 Notifications System [NOT STARTED]
 
-- Notification types: @mentions, comment replies, new uploads, status changes, share activity
-- In-app: real-time via WebSocket, bell icon with unread count, notification panel, mark as read
-- Email notifications: daily digest (9am user local time), immediate alerts (within 1 minute)
-- Per-project notification settings (enable/disable)
-- Per-asset subscription (follow for updates)
-- Email service integration (SendGrid or AWS SES)
-- Email templates for each notification type
-- Daily digest BullMQ scheduled job
-- Immediate alert job with debouncing
-- User notification preferences UI
-- **Depends on**: 2.9 (Comments), 1.4 (Permissions), R7 (Real-Time research), specs/14-realtime-collaboration.md
-- **Blocks**: 3.1 (Sharing -- share notifications)
-- **Timeline**: Phase 3
+- Types: @mentions, comment replies, uploads, status changes, share activity
+- In-app: real-time WebSocket, bell icon, unread count, mark as read
+- Email: daily digest (9am local), immediate alerts (<1 min)
+- Email service integration (per R9 research -- NEW dependency)
+- Email templates, BullMQ scheduled jobs, debouncing
+- Per-project settings, per-asset subscription, user preferences UI
+- **Depends on**: 2.9, 1.4, R7, R9, specs/14-realtime-collaboration.md
+- **Blocks**: 3.1
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 13.1-13.2
 
 ### 2.12 Basic Search [NOT STARTED]
 
-- SQLite FTS5 virtual table indexing: filename, metadata values, status, keywords, uploader name
-- Triggers to keep FTS index updated on insert/update/delete
-- Instant search: typeahead after 2+ characters, 300ms debounce
-- BM25 relevance ranking (built into FTS5)
-- Global search bar (Cmd+K / Ctrl+K), results dropdown (max 10), full results page
-- Thumbnail previews in search results
-- Filter refinement: file type, date range, project
-- In-project quick search (Cmd+F / Ctrl+F)
-- Search API endpoint with permission filtering
-- **Depends on**: 1.2 (Database), 2.10 (Metadata)
-- **Blocks**: 3.2 (Collections -- dynamic filtering uses search), 3.5 (Enhanced Search)
-- **Timeline**: Phase 3
+- SQLite FTS5, BM25 ranking, triggers for index sync
+- Typeahead (2+ chars, 300ms debounce), global search (Cmd+K), project search (Cmd+F)
+- Thumbnail previews, filter refinement (type, date, project)
+- Permission-filtered results
+- **Depends on**: 1.2, 2.10
+- **Blocks**: 3.2, 3.5
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 12.1, 12.3
 
 ---
@@ -959,103 +1111,71 @@ The following critical details are missing from existing specifications and must
 ## PHASE 3: ADVANCED FEATURES
 
 **Status**: NOT STARTED
-**Blocked by**: Phase 2 completion (MVP)
-**Goal**: External sharing, workflow tools, transcription, enhanced search, webhooks, lifecycle management.
+**Blocked by**: Phase 2 completion
+**Goal**: Sharing, workflow tools, transcription, search, webhooks, lifecycle.
 
 ### 3.1 Sharing and Presentations [NOT STARTED]
 
-- Share types: public (anyone with link) and secure (email invites only)
-- Share layouts: grid (thumbnail gallery), reel (sequential auto-advance), open-in-viewer (single asset direct)
-- Share settings: passphrase protection, expiration date, allow comments/downloads, show versions, display transcriptions
-- Featured field: default editable field for external reviewers (e.g., Status, Rating)
-- Custom branding: icon (emoji/image), header, background, description, light/dark mode, accent colors, thumbnail display
-- WYSIWYG share builder: drag-and-drop assets, reorder, live preview
-- Share operations: create, duplicate, delete, copy link, send via email
-- Share activity tracking: opened, viewed asset, commented, downloaded (with timestamp, IP, user agent)
-- External reviewer types: authenticated (Bush user), identified (email-verified), unidentified (public link)
-- Share notification emails: invite, comment replies, @mentions
-- **Depends on**: 2.9 (Comments), 2.6 (Video Player), 2.10 (Metadata), 2.11 (Notifications), 1.4 (Permissions)
-- **Blocks**: 3.2 (Collections -- can share entire Collection)
+- Types: public, secure (email invites)
+- Layouts: grid, reel, open-in-viewer
+- Settings: passphrase, expiration, permissions, featured field
+- Custom branding: icon, header, background, description, light/dark, accent colors
+- WYSIWYG share builder, share operations, activity tracking
+- External reviewer types: authenticated, identified, unidentified
+- Share notification emails
+- **Depends on**: 2.9, 2.6, 2.10, 2.11, 1.4
+- **Blocks**: 3.2
 - **Spec refs**: `specs/00-complete-support-documentation.md` Section 11, `specs/05-sharing-and-presentations.md`
 
 ### 3.2 Collections [NOT STARTED]
 
-- Collection types: team (visible to all project members) and private (creator only)
-- Dynamic filtering: save filter rules (AND/OR logic with field comparisons)
-- Filter rule builder UI: combine conditions for status, rating, assignee, keywords, file type, date, custom fields
-- Real-time sync: collections auto-update when source assets change
-- Manual asset addition: drag-to-add alongside filter rules
-- Custom sort: drag-to-reorder within collection
-- Grid/list view (same options as asset browser)
-- Share entire Collection via Share system
-- **Depends on**: 2.10 (Metadata), 2.12 (Search), 3.1 (Sharing)
-- **Blocks**: nothing
+- Types: team, private
+- Dynamic filtering (AND/OR logic), filter rule builder
+- Real-time sync, manual addition, custom sort
+- Share entire Collection
+- **Depends on**: 2.10, 2.12, 3.1
 - **Spec refs**: `specs/00-complete-support-documentation.md` Section 7, `specs/02-workflow-management.md`
 
 ### 3.3 Comparison Viewer [NOT STARTED]
 
-- Side-by-side display of two assets or versions
-- Linked mode (default): synchronized playback, scrubbing, zoom, and pan
-- Independent mode: separate controls for each side
-- Adjustable split divider (50/50 default)
-- Link/unlink toggle, swap sides button
-- Launch from: asset browser (select 2), version stack, collection
-- **Depends on**: 2.6 (Video Player), 2.7 (Image Viewer), 2.5 (Version Stacking)
-- **Blocks**: nothing
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 9.7
+- Side-by-side (video, image, or mixed)
+- Linked mode (synced playback/zoom/pan), independent mode
+- Adjustable split divider, swap sides
+- Launch from: browser (select 2), version stack, collection
+- **Depends on**: 2.6, 2.7, 2.5
 
 ### 3.4 Transcription and Captions [NOT STARTED]
 
-- Transcription provider integration (chosen per R6 research, abstracted interface)
-- 27-language support with auto-detection or manual selection
-- Speaker identification with labels (with consent modal -- Texas/Illinois legal restriction)
-- Editable transcripts (inline text editing)
-- Time-synced text highlighting during playback
-- Auto-scroll transcript with click-to-jump
-- Caption generation from transcript (VTT, SRT format)
-- Caption export: SRT, VTT, TXT
-- Caption ingest: upload SRT/VTT files, multiple language tracks
-- Transcript content searchable via global search
-- Transcription workflow: request > BullMQ job > extract audio (FFmpeg) > API call > parse + store > WebSocket notify
-- **Depends on**: 2.6 (Video Player), 2.2 (Processing), 2.12 (Search), R6 (Transcription research)
-- **Blocks**: 3.5 (Enhanced Search -- transcript content search)
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 10, `specs/06-transcription-and-captions.md`
+- Provider integration (per R6), 27 languages, speaker ID
+- Editable transcripts, time-synced highlighting, auto-scroll
+- Caption generation (VTT, SRT), export (SRT, VTT, TXT), ingest (upload SRT/VTT)
+- Transcript searchable via global search
+- Consent modal for speaker ID (Texas/Illinois legal)
+- **Depends on**: 2.6, 2.8a (for audio transcription), 2.2, 2.12, R6
 
 ### 3.5 Enhanced Search (Media Intelligence) [NOT STARTED]
 
-- Visual search via Vision API (AWS Rekognition or Google Vision): detect objects, scenes, faces, text
-- Transcript content search (search spoken words in videos)
-- Semantic search with embedding models (cosine similarity ranking)
-- Natural language query parsing: extract entities (dates, users, file types) from plain language queries
-- Store visual metadata and embeddings in database
-- Evaluate upgrade to dedicated search engine if FTS5 insufficient (per R8 research)
-- **Depends on**: 2.12 (Basic Search), 3.4 (Transcription), R8 (Search Scalability research)
-- **Blocks**: nothing
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 12.2
+- Visual search (Vision API), transcript search, semantic search
+- Natural language query parsing
+- Upgrade to dedicated search engine if needed (per R8)
+- **Depends on**: 2.12, 3.4, R8
 
 ### 3.6 Webhook System [NOT STARTED]
 
-- Webhook CRUD: register URL, select events, set secret
-- Supported events: asset.uploaded/deleted/updated, comment.created/updated/deleted, share.created/opened/commented, status.changed, transcription.completed
-- HMAC-SHA256 signature verification (X-Bush-Signature header)
-- Delivery via BullMQ: POST payload to URL, verify 2xx response
-- Retry: 3 attempts with exponential backoff (1min, 10min, 1hr)
-- Webhook delivery logs UI (success/failure, response codes)
-- **Depends on**: 1.5 (API Foundation), specs/17-api-complete.md
-- **Blocks**: Phase 4 integrations
-- **Spec refs**: `specs/00-atomic-features.md` Section 18.3
+- CRUD: URL, events, secret
+- Events: asset.*, comment.*, share.*, status.changed, transcription.completed
+- HMAC-SHA256 signature, BullMQ delivery, 3x retry
+- Delivery logs UI
+- **Depends on**: 1.5, specs/17-api-complete.md
+- **Blocks**: Phase 4
 
 ### 3.7 Asset Lifecycle Management [NOT STARTED]
 
-- Workspace-level default lifecycle: enable/disable, duration (30/60/90 days or custom)
-- Per-asset lifecycle override: toggle, custom duration, explicit expiration date
-- Expiration indicators: clock icon on expiring assets, hover tooltip with days remaining
-- Reset lifecycle: extend expiration to full duration from now
-- Daily expiration job (BullMQ scheduled): move expired assets to Recently Deleted
-- 30-day recovery period before permanent deletion
-- **Depends on**: 1.6 (Object Storage), 2.10 (Metadata), specs/13-billing-and-plans.md
-- **Blocks**: nothing
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 14
+- Workspace-level defaults (30/60/90 days or custom)
+- Per-asset override, expiration indicators
+- Reset lifecycle, daily BullMQ expiration job
+- 30-day recovery period
+- **Depends on**: 1.6, 2.10, specs/13-billing-and-plans.md
 
 ---
 
@@ -1063,51 +1183,43 @@ The following critical details are missing from existing specifications and must
 
 **Status**: NOT STARTED
 **Blocked by**: Phase 2 API completion, some Phase 3 features
-**Goal**: Native apps and third-party integrations to expand the platform beyond the web.
+**Goal**: Native apps and third-party integrations.
 
 ### 4.1 Storage Connect [NOT STARTED]
 
-- Customer-owned AWS S3 bucket integration (read/write to primary, read-only additional)
-- Bush proxies stored separately in Bush-managed storage
-- **Depends on**: 1.6 (Object Storage), 1.5 (API), specs/16-storage-and-data.md
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 14.2
+- Customer-owned AWS S3 bucket (read/write primary, read-only additional)
+- Bush proxies stored separately
+- **Depends on**: 1.6, 1.5, specs/16-storage-and-data.md
 
 ### 4.2 Bush Transfer Desktop App [NOT STARTED]
 
-- Technology: Tauri (per locked stack)
-- Desktop upload path with watch folders
-- **Depends on**: 1.5 (API), 2.1 (Upload), 2.9 (Comment Export)
+- Tauri, desktop upload with watch folders
+- **Depends on**: 1.5, 2.1
 - **Spec refs**: `specs/09-transfer-app.md`
 
 ### 4.3 iOS / iPadOS App [NOT STARTED]
 
-- Technology: Native Swift (iOS/iPadOS 17.0+)
-- Full platform feature parity on mobile
-- **Depends on**: Complete Phase 2 API, specs/18-mobile-complete.md
+- Native Swift (iOS/iPadOS 17.0+), full feature parity
+- **Depends on**: Phase 2 API, specs/18-mobile-complete.md
 - **Spec refs**: `specs/08-ios-ipad-apps.md`
 
 ### 4.4 Apple TV App [NOT STARTED]
 
-- Technology: Native Swift (tvOS)
-- Video playback and review focused
-- **Depends on**: 4.3 (iOS App -- shared Swift codebase)
-- **Spec refs**: `specs/00-complete-support-documentation.md` Section 18.2
+- Native Swift (tvOS), video playback focused
+- **Depends on**: 4.3 (shared Swift codebase)
 
 ### 4.5 Adobe Premiere Pro Integration [NOT STARTED]
 
-- Extension panel for Premiere Pro CC 2019+
-- Upload from timeline, import comments as markers
-- **Depends on**: 1.5 (API), 2.9 (Comments), 2.1 (Upload), 3.6 (Webhooks)
+- Extension panel (CC 2019+), upload, comment sync as markers
+- **Depends on**: 1.5, 2.9, 2.1, 3.6, R11
 - **Spec refs**: `specs/10-integrations.md`
 
 ### 4.6 Other Integrations [NOT STARTED]
 
-- Adobe Lightroom plugin
-- Final Cut Pro extension
-- DaVinci Resolve and Avid Media Composer extensions
-- Camera to Cloud (C2C) hardware/software partners
-- Automation platforms: Zapier, Make, n8n
-- **Depends on**: 1.5 (API), 3.6 (Webhooks)
+- Adobe Lightroom, Final Cut Pro, DaVinci Resolve, Avid
+- Camera to Cloud (C2C) partners
+- Automation: Zapier, Make, n8n
+- **Depends on**: 1.5, 3.6
 - **Spec refs**: `specs/07-camera-to-cloud.md`, `specs/10-integrations.md`
 
 ---
@@ -1116,233 +1228,169 @@ The following critical details are missing from existing specifications and must
 
 **Status**: NOT STARTED
 **Blocked by**: Production deployment and customer feedback
-**Goal**: Enterprise features, compliance, and optimization for large-scale usage.
 
 ### 5.1 Billing and Plan Management [NOT STARTED]
 
-- Plan tiers: Free (2GB), Pro (2TB + 2TB/member), Team (3TB + 2TB/member), Enterprise (custom)
-- Stripe integration for payment processing
-- Plan upgrade/downgrade flows
-- Storage overage handling
+- Tiers: Free (2GB), Pro (2TB+2TB/member), Team (3TB+2TB/member), Enterprise (custom)
+- Stripe integration, upgrade/downgrade, overage handling
 - **Depends on**: specs/13-billing-and-plans.md
 
 ### 5.2 Security Compliance [NOT STARTED]
 
-- SOC 2 Type 2 certification
-- TPN+ Gold Shield certification
-- ISO 27001 certification
-- Forensic watermarking
-- Audit log retention and export
-- **Depends on**: specs/11-security-features.md (NEEDS EXPANSION)
+- SOC 2 Type 2, TPN+ Gold Shield, ISO 27001
+- Forensic watermarking, audit log retention/export
+- **Depends on**: specs/11-security-features.md (expanded)
 
 ### 5.3 Enterprise Administration [NOT STARTED]
 
-- SAML/SSO authentication
-- Organization-wide security policies
-- Advanced audit logging
+- SAML/SSO, org-wide policies, advanced audit logging
 - IP allowlisting, geo-restrictions
 - **Depends on**: specs/12-authentication.md
 
 ### 5.4 Performance and Scale Optimization [NOT STARTED]
 
-- SQLite to PostgreSQL migration path (if needed per R1 research)
-- FTS5 to dedicated search engine migration (if needed per R8 research)
-- CDN optimization and multi-region deployment
-- Database sharding or read replicas (if needed)
+- SQLite to PostgreSQL migration (if R1 triggers)
+- FTS5 to dedicated search (if R8 triggers)
+- CDN optimization, multi-region
+- **Depends on**: Production metrics
 
 ### 5.5 SDK Publication [NOT STARTED]
 
-- Official TypeScript/JavaScript SDK
-- Python SDK
-- API client code generation from OpenAPI spec
+- TypeScript/JavaScript SDK, Python SDK
+- Code generation from OpenAPI spec
 
 ### 5.6 Internationalization [NOT STARTED]
 
-- i18n framework integration in Next.js and iOS apps
-- Translation for UI strings
-- RTL language support
+- i18n framework in Next.js and iOS
+- Translation, RTL support
 
 ---
 
 ## DEPENDENCY GRAPH
 
-This shows the critical path with corrected dependencies. Items on the left must be completed before items on the right.
-
 ```
 RESEARCH (prioritized by tier)
 ================================
-TIER 1 (Week 1):
-R2 (Deployment) ──> 1.1 (Project Bootstrap) [Days 1-2, BLOCKING]
-R1 (SQLite)     ──> 1.2 configuration [Days 1-6, informs config not design]
+TIER 1 (Week 1) -- CRITICAL:
+R2 (Deployment)   --> 1.1 (Bootstrap) [Days 1-2, BLOCKING]
+R1 (SQLite)       --> 1.2 config [Days 1-6, informs config not design]
 
-TIER 2 (Week 2-3):
-R4 (Transcoding)──> specs/15-media-processing.md ──> 2.2 (Media Processing) [Days 7-14]
-R5 (Upload)     ──> 2.1 optimization [Days 7-21, basic upload works without]
-R7 (Realtime)   ──> specs/14-realtime-collaboration.md ──> 2.9, 2.11 [Days 14-21]
+TIER 2 (Week 2-3) -- HIGH:
+R4 (Transcoding)  --> specs/15 --> 2.2 (Processing) [Days 7-14]
+R5 (Upload)       --> 2.1 optimization [Days 7-21, basic works without]
+R7 (Realtime)     --> specs/14 --> 2.9, 2.11 [Days 14-21]
 
-TIER 3 (Week 3-4):
-R3 (Video)      ──> 2.6 (Video Player) [Week 3]
+TIER 3 (Week 2) -- LOW, quick decisions:
+R9 (Email)        --> 2.11 (Notifications) [Days 8-9]     ** NEW **
+R10 (CDN)         --> 2.6 (Video streaming) [Days 10-11]  ** NEW **
+R11 (Adobe OAuth)  --> 1.3 (Auth, can stub) [Days 12-13]  ** NEW **
 
-TIER 4 (Phase 3+):
-R6 (Transcript) ──> 3.4 (Transcription) [Defer to Phase 3]
-R8 (Search)     ──> 3.5 (Enhanced Search) [Defer to Phase 3]
+TIER 4 (Week 3-4) -- MEDIUM:
+R3 (Video Player) --> 2.6 (Video Player) [Week 3-4]
 
-MISSING SPECS (must write before implementing)
+TIER 5 (Phase 3+) -- LOW:
+R6 (Transcription) --> 3.4 [Defer]
+R8 (Search)        --> 3.5 [Defer]
+
+SPECS (must write before implementing)
 ================================
-specs/12-authentication.md ──> 1.3 (Authentication) [Days 1-3]
-specs/19-accessibility.md ──> informs all UI work [Days 1-3]
-specs/11-security-features.md (expansion) ──> 1.4 (Permissions) [Days 4-7]
-specs/13-billing-and-plans.md ──> 3.7 (Lifecycle), 5.1 (Billing) [Days 4-7]
-specs/15-media-processing.md ──> 2.2 (Media Processing) [Week 2]
-specs/14-realtime-collaboration.md ──> 2.9 (Comments), 2.11 (Notifications) [Week 2]
-specs/17-api-complete.md ──> 3.6 (Webhooks), Phase 4 [Week 3]
-specs/16-storage-and-data.md ──> 4.1 (Storage Connect) [Defer]
-specs/18-mobile-complete.md ──> 4.3 (iOS App) [Defer]
+specs/12-authentication.md     --> 1.3 (Auth) [Days 1-3]
+specs/19-accessibility.md      --> informs all UI [Days 1-3]
+specs/11-security (expand)     --> 1.4 (Permissions) [Days 4-7]
+specs/13-billing-and-plans.md  --> 3.7, 5.1 [Days 4-7]
+specs/14-realtime-collab.md    --> 2.9, 2.11 [Days 11-14, START EARLY]  ** MOVED EARLIER **
+specs/15-media-processing.md   --> 2.2 (Processing) [Days 14-15]
+specs/17-api-complete.md       --> 3.6, Phase 4 [Week 3-4]
+specs/16-storage-and-data.md   --> 4.1 [Defer]
+specs/18-mobile-complete.md    --> 4.3 [Defer]
 
-PHASE 1 CRITICAL PATH (CORRECTED)
+QUICK WINS (built inline)
 ================================
-1.1 (Bootstrap) [DEPENDENCY CORRECTED: R2 informs, doesn't block]
- ├──> 1.6 (Object Storage) [DEPENDENCY REMOVED: no R1 or R5 needed for basic storage]
- └──> 1.2 (Database) [DEPENDENCY SOFTENED: R1 informs config, not design]
-       └──> 1.3 (Authentication)
-             └──> 1.4 (Permissions)
-                   └──> 1.5 (API Foundation) [DEPENDENCY REMOVED: no R2 needed]
-                         └──> 1.7 (Web App Shell) [can start earlier with static shell]
+QW1 (File Type Registry)   --> built with 1.1, used by 2.1, 2.2, 2.3
+QW2 (Seed Data)            --> built with 1.2, used by all testing
+QW3 (Component Library)    --> built with 1.7a, used by all frontend
+QW4 (Error Utilities)      --> built with 1.5, used by all API routes
 
-PHASE 2 CRITICAL PATH (CORRECTED)
+PHASE 1 CRITICAL PATH
 ================================
-1.6 (Storage) + 1.7 (Web Shell) + 1.5 (API)
- └──> 2.1 (Upload) [DEPENDENCY SOFTENED: basic upload works without R5 completion]
-       └──> 2.2 (Media Processing)
-             └──> 2.3 (Asset Browser)
-                   ├──> 2.4 (Asset Operations)
-                   ├──> 2.5 (Version Stacking)
-                   ├──> 2.6 (Video Player) + 2.7 (Image Viewer) + 2.8 (PDF Viewer)
-                   │     └──> 2.9 (Comments & Annotations)
-                   │           └──> 2.11 (Notifications)
-                   └──> 2.10 (Metadata)
-                         └──> 2.12 (Search)
+1.1 (Bootstrap + QW1)
+ |-- 1.6 (Object Storage) [Days 3-4]
+ |-- 1.7a (Web Shell static + QW3) [Days 3-10]
+ '-- 1.2 (Database + QW2) [Days 4-7]
+      '-- 1.3 (Auth) [Days 8-10]
+           '-- 1.4 (Permissions) [Days 11-12]
+                '-- 1.5 (API + QW4) [Days 11-14]
+                     '-- 1.7b (Web Shell connected) [Days 13-14]
+
+PHASE 2 CRITICAL PATH
+================================
+1.6 + 1.7b + 1.5
+ '-- 2.1 (Upload) [Week 3]
+      '-- 2.2 (Processing) [Week 3-4]
+           '-- 2.3 (Asset Browser) [Week 4]
+                |-- 2.4 (Asset Operations)
+                |-- 2.5 (Version Stacking)
+                |-- 2.6 (Video Player) + 2.7 (Image) + 2.8a (Audio) + 2.8b (PDF/Doc)
+                |    '-- 2.9 (Comments & Annotations)
+                |         '-- 2.11 (Notifications)
+                '-- 2.10 (Metadata)
+                     '-- 2.12 (Search)
 
 PHASE 3 DEPENDENCIES
 ================================
-2.9 + 2.6 + 2.10 + 2.11 ──> 3.1 (Sharing)
-2.10 + 2.12 + 3.1 ──> 3.2 (Collections)
-2.6 + 2.7 + 2.5 ──> 3.3 (Comparison Viewer)
-2.6 + 2.2 + 2.12 ──> 3.4 (Transcription)
-2.12 + 3.4 ──> 3.5 (Enhanced Search)
-1.5 ──> 3.6 (Webhooks)
-1.6 + 2.10 ──> 3.7 (Lifecycle)
+2.9 + 2.6 + 2.10 + 2.11     --> 3.1 (Sharing)
+2.10 + 2.12 + 3.1            --> 3.2 (Collections)
+2.6 + 2.7 + 2.5              --> 3.3 (Comparison)
+2.6 + 2.8a + 2.2 + 2.12     --> 3.4 (Transcription)  ** 2.8a ADDED **
+2.12 + 3.4                   --> 3.5 (Enhanced Search)
+1.5                          --> 3.6 (Webhooks)
+1.6 + 2.10                   --> 3.7 (Lifecycle)
 ```
-
-**Key Dependency Corrections**:
-
-1. **R2 no longer blocks 1.1 (Bootstrap)**: Deployment research informs project structure but doesn't prevent starting
-2. **R1 no longer blocks 1.2 (Schema) design**: SQLite research informs configuration (WAL mode, connection pooling), not initial schema design
-3. **R5 no longer blocks 2.1 (Upload)**: Basic upload works with 10MB chunks, 3-parallel; R5 optimizes for 5TB files
-4. **1.6 (Storage) no longer depends on R1 or R5**: Basic S3-compatible storage implementation doesn't require scale research
-5. **1.5 (API) no longer depends on R2**: Deployment architecture handled in Bootstrap phase
 
 ---
 
-## IMMEDIATE NEXT STEPS (Start Here)
+## CHANGE LOG FROM PREVIOUS PLAN
 
-**Updated**: 2026-02-16
-**Timeline**: Days 1-28 (4 weeks to Iteration 1)
+This section documents all material changes made in this update for traceability.
 
-This replaces the previous sequential 7-item list with a parallelized 18-item action plan organized by timeline. All items are NOT STARTED.
+### New Items Added
 
-### Days 1-3: Foundation Launch
+1. **2.8a Audio Player** -- Platform supports 8 audio formats and specifies waveform extraction, but previous plan had no audio viewer component. Added with full specification.
 
-1. **Complete R2 (Deployment without Containers)** [2 days, CRITICAL]
-   - Research Bun production deployment, evaluate hosting platforms
-   - Document deployment architecture, process supervision, zero-downtime strategy
-   - Deliverable: Deployment architecture document
+2. **2.8b expanded to include Document Viewer and Interactive ZIP** -- Previous 2.8 was "PDF Viewer" only. Specs list DOCX, PPTX, XLSX, and Interactive ZIP as supported formats but had no rendering plan.
 
-2. **Write specs/12-authentication.md** [1 day]
-   - Document SAML/SSO flows, session policies, MFA, token rotation
-   - Unblocks: Phase 1.3 (Authentication)
+3. **R9 (Email Service Provider Research)** -- Notifications spec references email delivery but no provider evaluation existed. Added as quick 1-day research.
 
-3. **Write specs/19-accessibility.md** [1 day]
-   - Define WCAG compliance target, keyboard navigation, screen reader support
-   - Informs: All UI work from Phase 1.7 onward
+4. **R10 (CDN Provider Selection)** -- CDN listed as "TBD" in tech stack with no research item. Added as quick 1-day research.
 
-4. **Start R1 (SQLite at Scale)** [3 days, completes Day 6]
-   - Benchmark concurrency, test WAL mode, evaluate connection pooling
-   - Findings incorporated into Database Schema configuration by Day 6
+5. **R11 (Adobe IMS / OAuth)** -- Authentication references Adobe ID but no research item existed. Added as quick 1-day research.
 
-5. **Bootstrap Project (1.1)** [1 day, starts Day 3 after R2]
-   - Initialize monorepo, TypeScript, linting, testing, CI/CD
-   - Blocks: Everything else
+6. **QW1-QW4 (Quick Wins)** -- Component library, seed data, error utilities, and file type registry added as early inline tasks to prevent inconsistency.
 
-### Days 3-7: Core Infrastructure
+7. **Risk 5 (Missing Audio/Document Viewer)** and **Risk 6 (CDN/Email lock-in)** added to risk register.
 
-6. **Set up Object Storage (1.6)** [1 day]
-   - Implement S3-compatible interface, choose provider (R2 or B2)
-   - No longer blocked by R1 or R5 -- basic storage works immediately
+### Items Modified
 
-7. **Design Database Schema (1.2)** [2 days, Days 4-7]
-   - Create SQLite schema, configure ORM, migrations, seed data
-   - R1 findings incorporated into configuration by Day 6
+8. **R4 (Media Transcoding)** expanded to include document rendering research (LibreOffice headless) and audio waveform tool comparison.
 
-8. **Expand specs/11-security-features.md** [1 day]
-   - Add forensic watermarking, audit logs, Access Groups, security policies
-   - Informs: Permission system (1.4)
+9. **2.2 (Media Processing Pipeline)** expanded to explicitly cover audio waveform generation and document conversion.
 
-9. **Write specs/13-billing-and-plans.md** [1 day]
-   - Define pricing, plan matrix, tier boundaries, quota enforcement
-   - Blocks: Phase 3.7, Phase 5.1
+10. **specs/14-realtime-collaboration.md** writing schedule moved earlier (Days 11-14 instead of "after R7") to prevent it from blocking Comments and Notifications.
 
-10. **Start Web App Shell (1.7)** [3 days, completes Week 2]
-    - Initialize Next.js, build auth flows UI, core pages, static shell
-    - Can start before API -- connect to API in Week 2
+11. **2.9 (Comments)** dependency list updated to include 2.8a (Audio Player) since comments need to work on audio waveforms.
 
-### Week 2 (Days 8-14): Auth, Permissions, API
+12. **3.4 (Transcription)** dependency updated to include 2.8a since audio files also need transcription.
 
-11. **Build Authentication System (1.3)** [3 days]
-    - Email/password, OAuth 2.0, 2FA, Redis sessions, JWT tokens
-    - Depends on: Database Schema (1.2), specs/12-authentication.md
+13. **Plan-gate middleware** added to 1.5 (API) to enforce tier-restricted features at runtime.
 
-12. **Build Permission System (1.4)** [2 days]
-    - Five permission levels, inheritance, middleware, edge-case tests
-    - Depends on: Database (1.2), Authentication (1.3)
+14. **specs/13-billing-and-plans.md** expanded to require explicit plan-gated feature matrix.
 
-13. **Build API Foundation (1.5)** [3 days]
-    - Bun HTTP server, OAuth middleware, rate limiting, CRUD routes, OpenAPI
-    - Depends on: Authentication (1.3), Permissions (1.4)
+### Structure Changes
 
-14. **Complete Web App Shell (1.7)** [2 days]
-    - Connect to API, multi-panel layout, navigation, responsive design
-    - Depends on: API (1.5), Authentication (1.3)
+15. **Quick Wins section** added as top-level section for visibility.
 
-15. **Start R4 (Media Transcoding Pipeline)** [started Day 7, completes Day 14]
-    - Benchmark FFmpeg, design worker architecture, test HDR/RAW/Adobe
-    - Blocks: specs/15-media-processing.md (Week 2), then Phase 2.2
+16. **Iteration 0 to 1 section** restructured with numbered items extending into post-Iteration 1 priorities (items 25-34).
 
-### Week 3-4 (Days 15-28): Upload, Processing, Browser
+17. **Email Service** added to locked technology stack table (was missing despite being required for notifications).
 
-16. **Write specs/15-media-processing.md** [1 day, after R4]
-    - Document FFmpeg parameters, timeouts, HDR/RAW/Adobe specs
-    - Blocks: Phase 2.2 implementation
-
-17. **Build File Upload System (2.1)** [3 days]
-    - Chunked upload, queue UI, folder preservation, constraints
-    - Basic implementation (10MB chunks, 3-parallel) works without R5
-    - Depends on: API (1.5), Storage (1.6), Web Shell (1.7)
-
-18. **Build Media Processing Pipeline (2.2)** [4 days]
-    - BullMQ, thumbnails, filmstrips, proxy transcoding, FFprobe metadata
-    - Depends on: Upload (2.1), Storage (1.6), specs/15-media-processing.md
-
-19. **Build Asset Browser (2.3)** [3 days]
-    - Grid/list views, sorting, filtering, multi-select, bulk actions
-    - Depends on: API (1.5), Upload (2.1), Processing (2.2)
-
-**By Day 28 (Week 4 End)**: Phase 1 complete + basic upload/processing/browsing = **Iteration 1 Achieved**
-
-### Next Priorities (Beyond Iteration 1)
-
-20. Complete Phase 2.4-2.12 (Asset Operations, Version Stacking, Viewers, Comments, Metadata, Search)
-21. Start Phase 3 (Sharing, Collections, Transcription, Webhooks)
-22. Defer Phase 4-5 until post-MVP feedback
-
-**All other work depends on the above 19 items being completed in order.**
+18. **Dependency graph** updated with new research items (R9, R10, R11), new viewers (2.8a, 2.8b), and quick wins.
