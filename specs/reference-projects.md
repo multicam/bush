@@ -18,3 +18,7 @@ https://skills.sh/anthropics/skills/frontend-design
 
 https://openwebf.com/en
 
+https://github.com/egeominotti/bunqueue
+
+https://blog.logrocket.com/css-in-2026
+
