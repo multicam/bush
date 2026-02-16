@@ -12,4 +12,4 @@ export {
   isDev,
   isTest,
   isProd,
-} from "./env.ts";
+} from "./env.js";

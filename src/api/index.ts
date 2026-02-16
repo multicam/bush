@@ -9,6 +9,8 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serve } from "@hono/node-server";
 import { config, scrubSecrets } from "../config/index.js";
+import { storage } from "../storage/index.js";
+import { sqlite } from "../db/index.js";
 
 const app = new Hono();
 
@@ -50,7 +52,8 @@ app.get("/health", async (c) => {
   // Check 3: Database connection
   try {
     const start = Date.now();
-    // TODO: Add database check when DB client is implemented
+    // Run a simple query to verify connection
+    sqlite.prepare("SELECT 1").get();
     checks.database = { status: "ok", latency: Date.now() - start };
   } catch (error) {
     checks.database = { status: "error", error: String(error) };
@@ -59,8 +62,11 @@ app.get("/health", async (c) => {
   // Check 4: Storage connection
   try {
     const start = Date.now();
-    // TODO: Add storage check when S3 client is implemented
-    checks.storage = { status: "ok", latency: Date.now() - start };
+    const isHealthy = await storage.healthCheck();
+    checks.storage = {
+      status: isHealthy ? "ok" : "error",
+      latency: Date.now() - start,
+    };
   } catch (error) {
     checks.storage = { status: "error", error: String(error) };
   }
