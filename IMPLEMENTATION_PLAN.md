@@ -2,6 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 0 -- Zero code exists. All items below are NOT STARTED.
+**Research confirms**: Zero code exists (no `src/` directory, no `package.json`, no dependencies). 5 git commits, all planning/specs. All items below remain NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ---
@@ -33,7 +34,8 @@ These choices are final. Any document stating otherwise must be corrected.
 | Frontend (Web) | Next.js + TypeScript | SSR, routing, API routes |
 | Frontend (Mobile) | Native Swift | iOS/iPadOS/Apple TV -- Phase 4 |
 | Desktop Transfer App | Tauri | Phase 4 -- webapp is standard upload path |
-| Backend API | Bun + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
+| Backend API | Bun + TypeScript | RESTful V4 API, WebSockets; OAuth 2.0 via WorkOS (not custom) |
+| **Authentication** | **WorkOS AuthKit** | **Email/password, social login, MFA, SSO -- all delegated. See `specs/12-authentication.md`** |
 | Database | SQLite | Primary relational store (NOT PostgreSQL) |
 | Cache / Realtime | Redis | Caching, sessions, rate limiting, pub/sub |
 | Search | SQLite FTS5 | Upgrade path to dedicated engine if needed |
@@ -88,12 +90,11 @@ This section is the single source of truth for what to do next. It lists every a
 
 **Spec Writing Stream:**
 
-4. **[S12] Write specs/12-authentication.md** [1 day] -- NOT STARTED
-   - Document SAML/SSO enterprise authentication flows
-   - Define session duration policies and token expiration times
-   - Specify refresh token rotation policy
-   - Detail IP allowlisting and geo-restrictions (enterprise tier)
-   - Define multi-factor authentication detailed flows (TOTP setup, recovery codes)
+4. **[S12] Review specs/12-authentication.md** [0.5 day] -- NOT STARTED
+   - **NOTE**: specs/12-authentication.md is COMPLETE (235 lines, 9.5K). It specifies WorkOS AuthKit integration, NOT custom auth.
+   - Review spec for completeness against implementation needs
+   - Confirm WorkOS AuthKit SDK setup steps, session cache design, role definitions
+   - Validate guest/reviewer access tier flows are implementation-ready
    - **Blocks**: Phase 1.3 (Authentication System)
    - **Parallel with**: R2, Bootstrap
 
@@ -153,13 +154,10 @@ This section is the single source of truth for what to do next. It lists every a
 
 **Spec Writing Stream (continued):**
 
-10. **[S11] Expand specs/11-security-features.md** [1 day] -- NOT STARTED
-    - Current file is only 38 lines -- needs major expansion
-    - Add forensic watermarking implementation details (visible/invisible, HLS integration)
-    - Specify audit log retention, format (structured JSON), and export (CSV/JSON)
-    - Define Access Groups detailed specification (CRUD, nesting, permission inheritance)
-    - Document organization-wide security policy configuration
-    - Add 2FA enforcement policies, session management, IP allowlisting
+10. **[S11] ~~Expand specs/11-security-features.md~~ -- REMOVED** [0 days]
+    - **CORRECTION**: specs/11-security-features.md is COMPLETE (400 lines, 16K). Previous plan incorrectly stated "only 38 lines".
+    - Spec already covers: Access Groups data model, audit logging, forensic watermarking (visible/invisible, HLS integration), 2FA enforcement, IP allowlisting, permission levels, and organization-wide security policies.
+    - **No action needed** -- spec is implementation-ready for Phase 1.4 (Permissions) and Phase 5.2 (Security Compliance).
     - **Informs**: Permission system (1.4) and audit logging
 
 11. **[S13] Write specs/13-billing-and-plans.md** [1 day] -- NOT STARTED
@@ -175,7 +173,7 @@ This section is the single source of truth for what to do next. It lists every a
 12. **[1.7a] Start Web App Shell (static)** [3 days, completes Week 2] -- NOT STARTED
     - Initialize Next.js 15+ with App Router and TypeScript
     - Build core page structure (login, signup, dashboard, workspaces, projects, settings)
-    - Implement authentication flows UI (email/password, OAuth buttons, 2FA, password reset)
+    - Implement authentication flows UI (WorkOS AuthKit hosted login, post-auth routing, account switcher, role indicators)
     - Set up state management (React Context for auth/workspace, TanStack Query for server state)
     - **Depends on**: 1.1 (Bootstrap)
     - **Can start before API (1.5)** -- build static shell first, connect to API in Week 2
@@ -192,20 +190,23 @@ This section is the single source of truth for what to do next. It lists every a
 
 ### Week 2 (Days 8-14): Authentication, Permissions, API
 
-14. **[1.3] Build Authentication System** [3 days] -- NOT STARTED
-    - Email/password authentication (bcrypt hashing, minimum 8 characters)
-    - OAuth 2.0 integration: Google Sign-In, Apple ID
-    - Adobe IMS integration (see R11 for OAuth details -- can stub initially)
-    - Two-factor authentication (TOTP with QR code generation)
-    - Redis-based session storage with TTL
-    - JWT access token (1hr) + refresh token (30 days)
-    - Secure cookie handling (httpOnly, secure, sameSite)
-    - Account switcher logic (multi-account support)
-    - Account roles: Owner, Content Admin, Member, Guest, Reviewer
-    - Authentication integration tests
-    - **Depends on**: 1.2 (Database Schema), specs/12-authentication.md
+14. **[1.3] Build Authentication System (WorkOS AuthKit)** [3 days] -- NOT STARTED
+    - **NOTE**: Authentication is delegated to WorkOS AuthKit per `specs/12-authentication.md`. Bush does NOT build custom email/password, OAuth, MFA, or JWT issuance.
+    - Install and configure `@workos-inc/authkit-nextjs` SDK
+    - Set up WorkOS organization and environment variables (API key, client ID, redirect URIs)
+    - Implement server-side session validation middleware (App Router middleware-based route protection)
+    - Build Redis session cache layer (key: `session:{user_id}:{session_id}`, TTL matches refresh token)
+    - Implement account role system (Owner, Content Admin, Member, Guest, Reviewer) -- Bush-managed, not WorkOS
+    - Build permission mapping for account roles (role assignment, role change with cache invalidation)
+    - Implement account switcher UI and logic (multi-account context switching without re-auth)
+    - Create guest/reviewer share-link access flows (3 tiers: authenticated, identified, unidentified)
+    - Secure cookie configuration (httpOnly, secure, sameSite=lax, domain=.bush.app)
+    - Adobe IMS OAuth stub (R11 informs details, full implementation Phase 4)
+    - Integration tests for WorkOS authentication flows
+    - **Depends on**: 1.2 (Database Schema), specs/12-authentication.md (COMPLETE)
     - **Blocks**: 1.4, 1.5
-    - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
+    - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
+    - **NOTE**: WorkOS handles identity verification, social auth, MFA, SSO, and token issuance. This may be faster than originally estimated (custom auth). Timeline kept at 3 days to account for role system, guest access, and account switcher complexity.
 
 15. **[1.4] Build Permission System** [2 days] -- NOT STARTED
     - Five permission levels: Full Access, Edit and Share, Edit, Comment Only, View Only
@@ -256,18 +257,18 @@ This section is the single source of truth for what to do next. It lists every a
 
 **Research (continuing in background):**
 
-19. **[R4] Start Media Transcoding Research** [Days 7-14] -- NOT STARTED
-    - Benchmark FFmpeg transcoding times: 1GB, 10GB, 100GB files across formats
-    - Design worker architecture: single vs distributed BullMQ workers, concurrency limits
-    - Test HDR tone mapping quality and performance (zscale + tonemap filters)
-    - Evaluate RAW image processing: libraw, dcraw for 15+ camera formats
-    - Test Adobe format rendering: ImageMagick for PSD/AI/EPS, server-side for INDD
-    - Test document rendering: LibreOffice headless for DOCX/PPTX/XLSX to PDF/image conversion
-    - Determine optimal proxy parameters: bitrate targets, CRF values, resolution ladder
-    - Test audio waveform generation: FFmpeg audiowaveform vs BBC audiowaveform tool
-    - Plan FFmpeg worker resource management: CPU/memory limits, tmpdir sizing
-    - **Blocks**: specs/15-media-processing.md, then Phase 2.2
-    - Deliverable: Processing pipeline design document with benchmarks and FFmpeg parameter matrix
+19. **[R4] Media Transcoding Validation and Benchmarking** [Days 7-14] -- NOT STARTED
+    - **NOTE**: specs/15-media-processing.md is COMPLETE (579 lines) with exact FFmpeg commands, CRF values, bitrate targets, resolution ladders, and timeout values. R4 scope reduced from "design pipeline" to "validate and benchmark spec parameters".
+    - Benchmark actual transcode times against spec-defined timeouts (1GB, 10GB, 100GB files across formats)
+    - Validate worker architecture: test BullMQ concurrency limits specified in spec (thumbnail=4, filmstrip=2, proxy=2, waveform=4, metadata=8)
+    - Test HDR tone mapping quality with spec-defined zscale + tonemap filter parameters
+    - Evaluate RAW image processing: validate libraw/dcraw for 15+ camera formats
+    - Test Adobe format rendering: validate ImageMagick for PSD/AI/EPS, server-side for INDD
+    - Test document rendering: LibreOffice headless for DOCX/PPTX/XLSX -- validate conversion quality and performance
+    - Validate audio waveform generation parameters from spec (FFmpeg audiowaveform vs BBC audiowaveform tool)
+    - Validate FFmpeg worker resource management: CPU/memory limits, tmpdir sizing under production-like load
+    - **Blocks**: S15 validation (spec amendments if needed), then Phase 2.2
+    - Deliverable: Validation report confirming or amending specs/15-media-processing.md parameters + benchmark data
 
 20. **[R9] Email Service Provider Research** [1 day, Week 2] -- NOT STARTED
     - Compare SendGrid vs AWS SES vs Postmark vs Resend
@@ -280,16 +281,14 @@ This section is the single source of truth for what to do next. It lists every a
 
 ### Week 3-4 (Days 15-28): Upload, Processing, Browser
 
-21. **[S15] Write specs/15-media-processing.md** [1 day, after R4] -- NOT STARTED
-    - Document exact FFmpeg transcoding parameters (bitrate targets, CRF values, codec choices per resolution)
-    - Specify processing timeouts and failure handling policies
-    - Define HDR tone mapping parameter specifications
-    - Detail RAW and Adobe format conversion parameters
-    - Specify audio waveform generation parameters (samples per second, output format)
-    - Define document conversion pipeline (DOCX/PPTX/XLSX to renderable format)
-    - Specify Interactive ZIP (HTML) rendering behavior and sandboxing
-    - **Depends on**: R4 completion
-    - **Blocks**: Phase 2.2 implementation
+21. **[S15] Review and validate specs/15-media-processing.md** [0.5 day, after R4] -- NOT STARTED
+    - **NOTE**: specs/15-media-processing.md is COMPLETE (579 lines, 21K). It already documents exact FFmpeg commands, CRF values, bitrate targets, resolution ladders, HDR tone mapping parameters, timeouts, and failure handling.
+    - Reduced scope: Review spec against R4 research findings and amend if needed
+    - Validate that specified FFmpeg parameters produce expected quality/performance
+    - Confirm timeout values are realistic based on R4 benchmarks
+    - Check document conversion parameters (LibreOffice headless) against R4 findings
+    - **Depends on**: R4 completion (for validation data)
+    - **Blocks**: Phase 2.2 implementation (spec itself is ready; R4 validates it)
 
 22. **[2.1] Build File Upload System** [3 days] -- NOT STARTED
     - Web browser drag-and-drop (files and folders)
@@ -433,7 +432,7 @@ Days 1-2:  R2 Research (Deployment)
 Day 3:     Bootstrap (1.1) + File Type Registry (QW1)
 Days 3-4:  Object Storage (1.6)
 Days 4-7:  Database Schema (1.2) + Seed Data (QW2) <-- R1 config incorporated Day 6
-Days 8-10: Authentication (1.3) + Error Utilities (QW4)
+Days 8-10: Authentication (1.3 -- WorkOS AuthKit) + Error Utilities (QW4)
 Days 11-14: Permissions (1.4) + API Foundation (1.5)
 ```
 
@@ -443,22 +442,29 @@ Days 11-14: Permissions (1.4) + API Foundation (1.5)
 - RESTful API with auth/permissions/rate-limiting
 - Shared utilities: file type registry, error handling
 
+**NOTE on Authentication (1.3)**: With WorkOS AuthKit handling identity verification, social auth, MFA, and token issuance, the authentication phase focuses on Bush-specific concerns: role system, session cache, account switcher, and guest/reviewer flows. This may complete faster than the 3-day estimate, creating slack for Permissions (1.4) to start earlier. Timeline kept conservative to account for WorkOS SDK integration learning curve and guest access complexity.
+
 ### Stream 2: Spec Writing
 **Owner**: Product owner / technical writer
 **Timeline**: Days 1-14
 
 ```
-Days 1-3:  specs/12-authentication.md + specs/19-accessibility.md
-Days 4-7:  specs/11-security-features.md (expansion) + specs/13-billing-and-plans.md
-Days 8-10: specs/15-media-processing.md (after R4 starts, can draft early sections)
-Days 11-14: specs/14-realtime-collaboration.md (start early, before R7 completes)
+Days 1-3:  Review specs/12-authentication.md (COMPLETE) + write specs/19-accessibility.md
+Days 4-7:  specs/13-billing-and-plans.md (specs/11-security-features.md is COMPLETE -- no expansion needed)
+Days 8-10: Review specs/15-media-processing.md (COMPLETE) against early R4 findings
+Days 11-14: Review specs/14-realtime-collaboration.md (COMPLETE) + validate against R7 early findings
 ```
 
 **Key outputs**:
-- 6 critical spec documents completed or substantially drafted
+- specs/19-accessibility.md and specs/13-billing-and-plans.md written (2 new specs)
+- specs/12-authentication.md, specs/11-security-features.md, specs/15-media-processing.md reviewed and confirmed implementation-ready (3 existing specs validated)
+- specs/14-realtime-collaboration.md (COMPLETE) reviewed and validated against R7 early findings
 - Unblocks Phase 1-3 implementation
+- **NOTE**: Stream 2 workload is lighter than originally estimated since 6 of 9 specs are already COMPLETE. Freed capacity can be redirected to specs/19-accessibility.md depth and specs/13-billing-and-plans.md completeness.
 
 **Change from previous plan**: specs/14-realtime-collaboration.md writing moved earlier (Days 11-14 instead of "after R7"). Rationale: the spec can be drafted based on requirements and standard WebSocket patterns; R7 research refines the scaling strategy but does not block the protocol design. This prevents the spec from becoming a bottleneck for Phase 2.9 (Comments) and 2.11 (Notifications).
+
+**UPDATE (2026-02-16)**: specs/14-realtime-collaboration.md is now COMPLETE (19K). Days 11-14 task is review/validation only, not writing from scratch.
 
 ### Stream 3: Research
 **Owner**: Senior engineer / architect
@@ -467,7 +473,7 @@ Days 11-14: specs/14-realtime-collaboration.md (start early, before R7 completes
 ```
 Days 1-2:   R2 (Deployment) [CRITICAL -- blocks Bootstrap]
 Days 1-6:   R1 (SQLite) [CRITICAL -- informs Schema config]
-Days 7-14:  R4 (Media Transcoding) [HIGH -- blocks Processing pipeline]
+Days 7-14:  R4 (Media Transcoding Validation) [HIGH -- validates spec, blocks Processing pipeline]
 Days 7-21:  R5 (Large File Upload) [MEDIUM -- basic upload works without]
 Days 8-9:   R9 (Email Service) [LOW -- 1 day, quick decision]
 Days 10-11: R10 (CDN Selection) [LOW -- 1 day, quick decision]
@@ -479,7 +485,7 @@ Week 4:     R3 (Video Player Architecture) [MEDIUM -- blocks Video Player]
 **Key outputs**:
 - Deployment architecture decision
 - SQLite configuration and backup strategy
-- FFmpeg parameter matrix
+- FFmpeg parameter validation report (confirming or amending specs/15-media-processing.md)
 - Upload protocol specification
 - Email provider, CDN provider, Adobe OAuth decisions
 
@@ -663,21 +669,22 @@ Research items organized by priority tier based on when they block implementatio
 
 ### TIER 2: Weeks 2-3 (HIGH -- Needed for Phase 2)
 
-#### R4. Media Transcoding Pipeline [HIGH] -- NOT STARTED
+#### R4. Media Transcoding Validation and Benchmarking [HIGH] -- NOT STARTED
 
-- **Blocks**: specs/15-media-processing.md, then 2.2
+- **NOTE**: specs/15-media-processing.md is COMPLETE (579 lines) with exact FFmpeg commands, CRF values, bitrate targets, resolution ladders, timeouts, and worker concurrency settings. R4 scope reduced from "design pipeline" to "validate and benchmark existing spec parameters".
+- **Blocks**: S15 validation (spec amendments if benchmarks contradict spec), then 2.2
 - **Timeline**: Days 7-14
-- **Research questions**:
-  - Benchmark FFmpeg transcoding times across formats and file sizes
-  - Worker architecture: single vs distributed BullMQ workers
-  - HDR tone mapping quality/performance (zscale + tonemap)
-  - RAW image processing: libraw, dcraw for 15+ formats
-  - Adobe format rendering: ImageMagick for PSD/AI/EPS, server-side for INDD
-  - **Document rendering: LibreOffice headless for DOCX/PPTX/XLSX** (NEW)
-  - **Audio waveform: FFmpeg audiowaveform vs BBC audiowaveform tool** (NEW)
-  - Optimal proxy parameters: bitrate targets, CRF values, resolution ladder
-  - FFmpeg worker resource management: CPU/memory limits, tmpdir sizing
-- **Deliverable**: Processing pipeline design document with FFmpeg parameter matrix
+- **Research questions (validation focus)**:
+  - Benchmark actual transcode times against spec-defined timeouts across formats and file sizes (1GB, 10GB, 100GB)
+  - Validate worker concurrency settings from spec (thumbnail=4, filmstrip=2, proxy=2, waveform=4, metadata=8)
+  - Validate HDR tone mapping quality/performance with spec-defined zscale + tonemap parameters
+  - RAW image processing: validate libraw/dcraw for 15+ formats
+  - Adobe format rendering: validate ImageMagick for PSD/AI/EPS, server-side for INDD
+  - **Document rendering: LibreOffice headless for DOCX/PPTX/XLSX** -- validate conversion quality and identify alternatives if needed
+  - **Audio waveform: FFmpeg audiowaveform vs BBC audiowaveform tool** -- validate against spec parameters
+  - Validate spec-defined proxy parameters (CRF values, bitrate targets, resolution ladder) produce expected quality
+  - Worker resource management validation: CPU/memory limits, tmpdir sizing under production-like load
+- **Deliverable**: Validation report confirming or amending specs/15-media-processing.md + benchmark data
 
 #### R5. Large File Upload Strategy [MEDIUM] -- NOT STARTED
 
@@ -694,15 +701,16 @@ Research items organized by priority tier based on when they block implementatio
 
 #### R7. Real-Time Infrastructure [MEDIUM] -- NOT STARTED
 
-- **Blocks**: 2.9 (Comments), 2.11 (Notifications), specs/14-realtime-collaboration.md
+- **NOTE**: specs/14-realtime-collaboration.md is COMPLETE (19K) with WebSocket protocol, presence system, and event types. R7 validates scaling strategy and Bun-specific implementation details.
+- **Blocks**: 2.9 (Comments), 2.11 (Notifications)
 - **Timeline**: Days 14-21
 - **Research questions**:
-  - WebSocket connection management for Bun server
+  - WebSocket connection management for Bun server (validate against spec protocol)
   - Horizontal scaling: Redis pub/sub for multi-instance broadcast
   - Optimistic UI update strategy
   - Connection limits per instance
   - Reconnection and message replay on disconnect
-- **Deliverable**: WebSocket protocol specification
+- **Deliverable**: Validation report for specs/14-realtime-collaboration.md + Bun-specific scaling recommendations
 
 ### TIER 3: Week 2 (LOW -- Quick Decisions)
 
@@ -828,24 +836,26 @@ Ordered by when they block implementation.
 
 | Spec | Status | Write By | Blocks |
 |------|--------|----------|--------|
-| specs/12-authentication.md | NOT STARTED | Days 1-3 | 1.3 (Auth) |
+| specs/12-authentication.md | **COMPLETE** (235 lines, WorkOS AuthKit) | Review Days 1-3 | 1.3 (Auth) |
 | specs/19-accessibility.md | NOT STARTED | Days 1-3 | Informs all UI |
-| specs/11-security-features.md (expand) | NOT STARTED | Days 4-7 | 1.4 (Permissions) |
+| specs/11-security-features.md | **COMPLETE** (400 lines) | ~~Days 4-7~~ No action needed | 1.4 (Permissions) |
 | specs/13-billing-and-plans.md | NOT STARTED | Days 4-7 | 3.7 (Lifecycle), 5.1 (Billing) |
+
+> **NOTE on specs/README.md deferral discrepancy**: `specs/README.md` (lines 43-45) incorrectly defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. This is inconsistent with IMPLEMENTATION_PLAN.md blocking dependencies: billing is needed by Days 4-7 (blocks plan gates in Phase 1.5), and accessibility is needed by Days 1-3 (informs all UI work from Phase 1.7 onward). The IMPLEMENTATION_PLAN.md timeline is correct per blocking dependencies. The README deferral labels should be updated when those specs are written.
 
 #### Blocks Phase 2
 
 | Spec | Status | Write By | Blocks |
 |------|--------|----------|--------|
-| specs/15-media-processing.md | NOT STARTED | Days 14-15 (after R4) | 2.2 (Processing) |
-| specs/14-realtime-collaboration.md | NOT STARTED | Days 11-14 (start early) | 2.9 (Comments), 2.11 (Notifications) |
+| specs/15-media-processing.md | **COMPLETE** (579 lines, exact FFmpeg commands) | Validate Days 14-15 (after R4) | 2.2 (Processing) |
+| specs/14-realtime-collaboration.md | **COMPLETE** (19K, WebSocket protocol) | Review Days 11-14 | 2.9 (Comments), 2.11 (Notifications) |
 
 #### Blocks Phase 3+
 
 | Spec | Status | Write By | Blocks |
 |------|--------|----------|--------|
-| specs/17-api-complete.md | NOT STARTED | Week 3-4 | 3.6 (Webhooks), Phase 4 |
-| specs/16-storage-and-data.md | NOT STARTED | After R1 | 4.1 (Storage Connect) |
+| specs/17-api-complete.md | **COMPLETE** (29K, full API spec) | Review Week 3-4 | 3.6 (Webhooks), Phase 4 |
+| specs/16-storage-and-data.md | **COMPLETE** (13K) | Review after R1 | 4.1 (Storage Connect) |
 | specs/18-mobile-complete.md | NOT STARTED | After Phase 2 | 4.3 (iOS App) |
 
 ---
@@ -884,18 +894,22 @@ Ordered by when they block implementation.
 - **Timeline**: Days 4-7
 - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
 
-### 1.3 Authentication System [NOT STARTED]
+### 1.3 Authentication System (WorkOS AuthKit) [NOT STARTED]
 
-- Email/password (bcrypt, min 8 chars)
-- OAuth 2.0: Google, Apple, Adobe IMS (R11 informs details, can stub)
-- 2FA (TOTP with QR), Redis sessions (TTL), JWT access (1hr) + refresh (30 days)
-- Secure cookies (httpOnly, secure, sameSite)
-- Account switcher, account roles
-- Integration tests
-- **Depends on**: 1.2, specs/12-authentication.md
+- **CORRECTED**: Authentication delegated to WorkOS AuthKit per `specs/12-authentication.md`. Bush does NOT build custom email/password, bcrypt, OAuth, TOTP/QR, or JWT issuance.
+- **WorkOS integration**: Install `@workos-inc/authkit-nextjs` SDK, configure organization, env vars
+- **Session middleware**: Server-side validation via App Router middleware, route protection
+- **Redis session cache**: Key `session:{user_id}:{session_id}`, TTL matches refresh token (7 days default), stores user ID, current account ID, account role, WorkOS org ID
+- **Account roles (Bush-managed)**: Owner, Content Admin, Member, Guest, Reviewer -- role assignment, change propagation, cache invalidation
+- **Account switcher**: Multi-account context switching without re-authentication
+- **Guest/reviewer access**: 3 tiers (authenticated, identified via email code, unidentified/anonymous) -- share-link-based, no WorkOS account required
+- **Cookie config**: httpOnly, secure, sameSite=lax, domain=.bush.app
+- **Adobe IMS**: Stub only (R11 informs details, full implementation Phase 4)
+- Integration tests for WorkOS flows, role assignment, guest access
+- **Depends on**: 1.2, specs/12-authentication.md (COMPLETE)
 - **Blocks**: 1.4, 1.5
-- **Timeline**: Days 8-10
-- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
+- **Timeline**: Days 8-10 (may complete faster than estimated due to WorkOS delegation)
+- **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
 
 ### 1.4 Permission System [NOT STARTED]
 
@@ -1239,7 +1253,7 @@ Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 
 - SOC 2 Type 2, TPN+ Gold Shield, ISO 27001
 - Forensic watermarking, audit log retention/export
-- **Depends on**: specs/11-security-features.md (expanded)
+- **Depends on**: specs/11-security-features.md (COMPLETE, 400 lines)
 
 ### 5.3 Enterprise Administration [NOT STARTED]
 
@@ -1276,7 +1290,7 @@ R2 (Deployment)   --> 1.1 (Bootstrap) [Days 1-2, BLOCKING]
 R1 (SQLite)       --> 1.2 config [Days 1-6, informs config not design]
 
 TIER 2 (Week 2-3) -- HIGH:
-R4 (Transcoding)  --> specs/15 --> 2.2 (Processing) [Days 7-14]
+R4 (Transcoding Validation) --> S15 validation --> 2.2 (Processing) [Days 7-14]
 R5 (Upload)       --> 2.1 optimization [Days 7-21, basic works without]
 R7 (Realtime)     --> specs/14 --> 2.9, 2.11 [Days 14-21]
 
@@ -1292,17 +1306,17 @@ TIER 5 (Phase 3+) -- LOW:
 R6 (Transcription) --> 3.4 [Defer]
 R8 (Search)        --> 3.5 [Defer]
 
-SPECS (must write before implementing)
+SPECS (must write or review before implementing)
 ================================
-specs/12-authentication.md     --> 1.3 (Auth) [Days 1-3]
-specs/19-accessibility.md      --> informs all UI [Days 1-3]
-specs/11-security (expand)     --> 1.4 (Permissions) [Days 4-7]
-specs/13-billing-and-plans.md  --> 3.7, 5.1 [Days 4-7]
-specs/14-realtime-collab.md    --> 2.9, 2.11 [Days 11-14, START EARLY]  ** MOVED EARLIER **
-specs/15-media-processing.md   --> 2.2 (Processing) [Days 14-15]
-specs/17-api-complete.md       --> 3.6, Phase 4 [Week 3-4]
-specs/16-storage-and-data.md   --> 4.1 [Defer]
-specs/18-mobile-complete.md    --> 4.3 [Defer]
+specs/12-authentication.md     --> 1.3 (Auth) [COMPLETE -- review Days 1-3]
+specs/19-accessibility.md      --> informs all UI [NOT STARTED -- write Days 1-3]
+specs/11-security-features.md  --> 1.4 (Permissions) [COMPLETE -- no action needed]
+specs/13-billing-and-plans.md  --> 3.7, 5.1 [NOT STARTED -- write Days 4-7]
+specs/14-realtime-collab.md    --> 2.9, 2.11 [COMPLETE -- review Days 11-14]  ** MOVED EARLIER **
+specs/15-media-processing.md   --> 2.2 (Processing) [COMPLETE -- validate Days 14-15 via R4]
+specs/17-api-complete.md       --> 3.6, Phase 4 [COMPLETE -- review Week 3-4]
+specs/16-storage-and-data.md   --> 4.1 [COMPLETE -- review after R1]
+specs/18-mobile-complete.md    --> 4.3 [NOT STARTED -- defer]
 
 QUICK WINS (built inline)
 ================================
@@ -1317,7 +1331,7 @@ PHASE 1 CRITICAL PATH
  |-- 1.6 (Object Storage) [Days 3-4]
  |-- 1.7a (Web Shell static + QW3) [Days 3-10]
  '-- 1.2 (Database + QW2) [Days 4-7]
-      '-- 1.3 (Auth) [Days 8-10]
+      '-- 1.3 (Auth -- WorkOS AuthKit) [Days 8-10]
            '-- 1.4 (Permissions) [Days 11-12]
                 '-- 1.5 (API + QW4) [Days 11-14]
                      '-- 1.7b (Web Shell connected) [Days 13-14]
@@ -1394,3 +1408,25 @@ This section documents all material changes made in this update for traceability
 17. **Email Service** added to locked technology stack table (was missing despite being required for notifications).
 
 18. **Dependency graph** updated with new research items (R9, R10, R11), new viewers (2.8a, 2.8b), and quick wins.
+
+### Corrections (2026-02-16 Research Validation)
+
+The following corrections were made after systematic research validation of all specs and project status.
+
+19. **Phase 1.3 Authentication System rewritten for WorkOS AuthKit** -- Previous plan described building custom auth (bcrypt, TOTP QR codes, JWT generation, OAuth 2.0 flows). `specs/12-authentication.md` specifies WorkOS AuthKit delegation for all identity verification, social auth, MFA, and SSO. Phase 1.3 now correctly reflects Bush building only: role system, session cache, account switcher, and guest/reviewer access flows. Custom bcrypt, TOTP, and JWT issuance removed.
+
+20. **WorkOS AuthKit added to tech stack table** -- `specs/README.md` line 69 lists WorkOS AuthKit as authentication provider. This was missing from IMPLEMENTATION_PLAN.md tech stack table. Added explicit row and clarified Backend API "OAuth 2.0" note to indicate it's via WorkOS, not custom.
+
+21. **S11 "Expand specs/11-security-features.md" removed** -- Previous plan stated spec was "only 38 lines -- needs major expansion". Actual file is 400 lines (16K) covering Access Groups, audit logging, forensic watermarking, permission levels, and 2FA enforcement. Task was unnecessary and has been struck through.
+
+22. **S12 task reduced to review** -- `specs/12-authentication.md` is complete (235 lines, 9.5K) specifying WorkOS AuthKit integration. Task changed from "Write" to "Review" with reduced effort estimate.
+
+23. **S15 and R4 scope reduced** -- `specs/15-media-processing.md` is complete (579 lines, 21K) with exact FFmpeg commands, CRF values, timeouts, and worker concurrency settings. S15 changed from "Write" to "Review and validate". R4 changed from "Design pipeline" to "Validate and benchmark spec parameters". Deliverable changed from design document to validation report.
+
+24. **Spec status table corrected** -- Updated "Specifications to Write" tables to reflect that specs/11, 12, 14, 15, 16, and 17 are COMPLETE. Only specs/13 (billing), specs/18 (mobile), and specs/19 (accessibility) remain NOT STARTED.
+
+25. **README deferral discrepancy noted** -- `specs/README.md` incorrectly defers `13-billing-and-plans.md` to Phase 5 and `19-accessibility.md` to Phase 3+. IMPLEMENTATION_PLAN.md timeline (billing by Days 4-7, accessibility by Days 1-3) is correct per blocking dependencies. Note added to spec status section.
+
+26. **Stream 1 (Backend) WorkOS note added** -- Authentication with WorkOS AuthKit may be faster than the 3-day estimate since identity verification is delegated. Timeline kept conservative; note added about potential schedule slack.
+
+27. **Frontend auth UI description updated** -- Item 12 (1.7a Web Shell) previously listed "email/password, OAuth buttons, 2FA, password reset" UI. Updated to reflect WorkOS AuthKit hosted login UI, post-auth routing, account switcher, and role indicators.
