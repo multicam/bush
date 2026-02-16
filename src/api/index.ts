@@ -3,6 +3,7 @@
  *
  * Node.js + Hono backend server with CORS, health checks, and API routes.
  * Uses @hono/node-server for Node.js compatibility.
+ * Reference: specs/17-api-complete.md
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -12,6 +13,17 @@ import { config, scrubSecrets } from "../config/index.js";
 import { storage } from "../storage/index.js";
 import { sqlite } from "../db/index.js";
 import { redisHealthCheck } from "../redis/index.js";
+import { errorHandler, notFoundHandler } from "./router.js";
+import { standardRateLimit } from "./rate-limit.js";
+
+// Import route modules
+import {
+  accountRoutes,
+  workspaceRoutes,
+  projectRoutes,
+  fileRoutes,
+  userRoutes,
+} from "./routes/index.js";
 
 const app = new Hono();
 
@@ -99,6 +111,29 @@ app.get("/", (c) => {
   });
 });
 
+// API V4 Routes
+// Reference: specs/17-api-complete.md
+const v4 = new Hono();
+
+// Apply rate limiting to all V4 routes
+v4.use("*", standardRateLimit);
+
+// Mount resource routes
+v4.route("/accounts", accountRoutes);
+v4.route("/workspaces", workspaceRoutes);
+v4.route("/projects", projectRoutes);
+v4.route("/users", userRoutes);
+
+// Nested file routes (under projects)
+v4.route("/projects/:projectId/files", fileRoutes);
+
+// Mount V4 routes under /v4 prefix
+app.route("/v4", v4);
+
+// Error handlers
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
+
 // Start server
 console.log(`\n🚀 Bush API Server starting...`);
 console.log(`   Environment: ${config.NODE_ENV}`);
@@ -113,3 +148,6 @@ serve({
 });
 
 console.log(`✅ Server listening on http://${config.HOST}:${config.PORT}`);
+
+// Export app for testing
+export { app };

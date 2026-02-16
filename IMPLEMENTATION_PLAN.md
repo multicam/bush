@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -992,21 +992,33 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 11-12
 - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 2.1-2.5, `specs/11-security-features.md`
 
-### 1.5 RESTful API Foundation (V4) [NOT STARTED]
+### 1.5 RESTful API Foundation (V4) [IN PROGRESS]
 
-- Bun HTTP server with Hono or Elysia
-- **CORS middleware** (required if API and Next.js are separate processes -- configure allowed origins, methods, headers, credentials)
-- Auth middleware, rate limiting (leaky bucket, per-endpoint, Redis-backed)
-- Cursor pagination (50 default, 100 max)
-- CRUD for all core resources
-- Plan-gate middleware for tier-restricted features
-- QW4 (Error Utilities) integrated
-- OpenAPI spec generation
-- Integration tests
+- Bun HTTP server with Hono -- DONE (src/api/index.ts, using @hono/node-server)
+- **CORS middleware** -- DONE (configured for APP_URL + localhost:3000)
+- **Auth middleware** -- DONE (src/api/auth-middleware.ts, session-based with cookie/bearer token support)
+- **Rate limiting** -- DONE (src/api/rate-limit.ts, Redis-backed sliding window, per-endpoint presets)
+- **Cursor pagination** -- DONE (src/api/response.ts, encodeCursor/decodeCursor, 50 default/100 max)
+- **JSON:API response format** -- DONE (src/api/response.ts, singleResponse/collectionResponse helpers)
+- **CRUD routes for core resources** -- PARTIAL (src/api/routes/):
+  - /v4/accounts -- DONE (list, get, create, update, switch)
+  - /v4/workspaces -- DONE (list, get, create, update, delete)
+  - /v4/projects -- DONE (list, get, create, update, archive)
+  - /v4/projects/:projectId/files -- DONE (list, get, create, update, delete, move)
+  - /v4/users -- DONE (me, get, update profile)
+  - /v4/folders -- NOT STARTED
+  - /v4/comments -- NOT STARTED (Phase 2.9)
+  - /v4/shares -- NOT STARTED (Phase 3.1)
+  - /v4/notifications -- NOT STARTED (Phase 2.11)
+- **Error handling** -- DONE (errorHandler in src/api/router.ts, uses QW4 error utilities)
+- **Permission middleware integration** -- DONE (src/permissions/middleware.ts integrated in routes)
+- Plan-gate middleware for tier-restricted features -- NOT STARTED (requires specs/13-billing-and-plans.md)
+- OpenAPI spec generation -- NOT STARTED
+- API integration tests -- PARTIAL (unit tests for response utilities and rate limiting)
 - **Depends on**: 1.3, 1.4 (permission middleware available by Day 12; full 1.4 edge-case testing completes in parallel)
 - **Blocks**: 1.7b, all Phase 2+
 - **Timeline**: Days 12-14 (starts once 1.4 permission middleware available)
-- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6
+- **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6, `specs/17-api-complete.md`
 
 ### 1.6 Object Storage Layer [COMPLETED]
 

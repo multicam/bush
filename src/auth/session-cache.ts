@@ -169,3 +169,38 @@ export async function generateSessionId(): Promise<string> {
   const crypto = await import("crypto");
   return crypto.randomBytes(32).toString("base64url");
 }
+
+/**
+ * Session cookie name
+ */
+export const SESSION_COOKIE_NAME = "bush_session";
+
+/**
+ * Parse session from cookie header
+ * Returns userId and sessionId if valid session cookie exists
+ */
+export function parseSessionCookie(cookieHeader: string): { userId: string; sessionId: string } | null {
+  // Parse cookies from header
+  const cookies = cookieHeader.split(";").map(c => c.trim());
+
+  for (const cookie of cookies) {
+    if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
+      const value = cookie.slice(SESSION_COOKIE_NAME.length + 1);
+
+      // Session cookie format: {userId}:{sessionId}
+      const parts = value.split(":");
+      if (parts.length === 2) {
+        return {
+          userId: parts[0],
+          sessionId: parts[1],
+        };
+      }
+
+      // Alternative format: just sessionId (userId stored separately)
+      // For now, we only support the combined format
+      break;
+    }
+  }
+
+  return null;
+}
