@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables), [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -1006,7 +1006,7 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
   - /v4/projects -- DONE (list, get, create, update, archive)
   - /v4/projects/:projectId/files -- DONE (list, get, create, update, delete, move)
   - /v4/users -- DONE (me, get, update profile)
-  - /v4/folders -- NOT STARTED
+  - /v4/folders -- DONE (list, get, children, create root/subfolder, update, delete, move, files in folder)
   - /v4/comments -- NOT STARTED (Phase 2.9)
   - /v4/shares -- NOT STARTED (Phase 3.1)
   - /v4/notifications -- NOT STARTED (Phase 2.11)

@@ -23,6 +23,7 @@ import {
   projectRoutes,
   fileRoutes,
   userRoutes,
+  folderRoutes,
 } from "./routes/index.js";
 
 const app = new Hono();
@@ -126,6 +127,12 @@ v4.route("/users", userRoutes);
 
 // Nested file routes (under projects)
 v4.route("/projects/:projectId/files", fileRoutes);
+
+// Nested folder routes (under projects)
+v4.route("/projects/:projectId/folders", folderRoutes);
+
+// Standalone folder routes
+v4.route("/folders", folderRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);
