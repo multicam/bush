@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
     // Allow imports from outside the src/web directory
     externalDir: true,
   },
+  // Proxy /v4 API requests to the Hono backend
+  // This avoids cross-origin cookie issues during development
+  async rewrites() {
+    return [
+      {
+        source: "/v4/:path*",
+        destination: `${process.env.API_URL || "http://localhost:3001"}/v4/:path*`,
+      },
+    ];
+  },
   // Handle .js extension imports for shared modules
   webpack: (config) => {
     config.resolve.extensionAlias = {

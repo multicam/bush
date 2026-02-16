@@ -42,6 +42,7 @@ export default authkitMiddleware({
       // Auth flows
       "/login",
       "/signup",
+      "/auth/callback", // Standard AuthKit callback
       "/api/auth/login",
       "/api/auth/callback",
       "/api/auth/session",

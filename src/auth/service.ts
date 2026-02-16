@@ -78,6 +78,25 @@ export const authService = {
       updatedAt: new Date(),
     });
 
+    // Auto-create a personal account for the new user
+    const accountId = generateId("acc");
+    const emailLocal = workosUser.email.split("@")[0] || "user";
+    const slug = emailLocal.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 30);
+
+    await db.insert(accounts).values({
+      id: accountId,
+      name: `${workosUser.firstName || emailLocal}'s Account`,
+      slug: `${slug}-${accountId.slice(-6)}`,
+      plan: "free",
+    });
+
+    await db.insert(accountMemberships).values({
+      id: generateId("mem"),
+      accountId,
+      userId: newUserId,
+      role: "owner",
+    });
+
     return { userId: newUserId, isNewUser: true };
   },
 

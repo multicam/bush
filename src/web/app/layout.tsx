@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { AuthProvider } from "@/web/context";
 
 export const metadata: Metadata = {
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AuthKitProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </AuthKitProvider>
       </body>
     </html>
   );

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run dev:api & npm run dev:web",
     "dev:api": "tsx watch --env-file=.env.local src/api/index.ts",
-    "dev:web": "next dev src/web",
+    "dev:web": "bash -c 'set -a; source .env.local; set +a; PORT=3000 exec next dev src/web'",
     "build": "next build src/web",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -28,7 +28,7 @@
     "drizzle-orm": "^0.29.0",
     "hono": "^4.0.0",
     "ioredis": "^5.3.0",
-    "next": "^15.0.0",
+    "next": "^15.5.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.22.0"

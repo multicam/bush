@@ -3,7 +3,7 @@
  *
  * Base utilities for creating API route handlers.
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import type { AppError } from "../errors/index.js";
 import { toErrorResponse, toAppError, generateRequestId } from "../errors/index.js";
 
@@ -18,7 +18,7 @@ export function createRouter(): Hono {
  * Global error handler for API routes
  * Converts errors to JSON:API format
  */
-export function errorHandler(error: Error, c: Parameters<Parameters<Hono["onError"]>[0]>[0]): Response {
+export function errorHandler(error: Error, c: Context): Response {
   // Generate request ID if not present
   const requestId = c.get("requestContext")?.requestId ?? generateRequestId();
 

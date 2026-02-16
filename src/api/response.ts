@@ -136,18 +136,18 @@ export function collectionResponse<T extends { id: string }>(
   items: T[],
   type: string,
   options: PaginationOptions & { totalCount?: number }
-): JsonApiCollectionResponse<T> {
+): JsonApiCollectionResponse<Omit<T, "id">> {
   const limit = Math.min(options.limit ?? 50, 100);
   const totalCount = options.totalCount ?? items.length;
   const hasMore = items.length > limit;
 
   // Only include items up to limit
-  const data = items.slice(0, limit).map((item) => {
+  const data: JsonApiResource<Omit<T, "id">>[] = items.slice(0, limit).map((item) => {
     const { id, ...attributes } = item;
     return {
       id,
       type,
-      attributes: attributes as unknown as typeof attributes,
+      attributes: attributes as Omit<T, "id">,
     };
   });
 
@@ -163,7 +163,7 @@ export function collectionResponse<T extends { id: string }>(
     links.next = buildUrl(options.basePath, { ...options.queryParams, cursor });
   }
 
-  const response: JsonApiCollectionResponse<T> = {
+  const response: JsonApiCollectionResponse<Omit<T, "id">> = {
     data,
     links,
     meta: {

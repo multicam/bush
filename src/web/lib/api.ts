@@ -139,16 +139,12 @@ export class ApiError extends Error {
  * Uses NEXT_PUBLIC_API_URL for client-side, falls back to relative path
  */
 function getApiBaseUrl(): string {
-  // In browser, use NEXT_PUBLIC_API_URL if available
+  // In browser, use same-origin /v4 path (proxied to Hono via Next.js rewrites)
+  // This ensures cookies are sent with every request
   if (typeof window !== "undefined") {
-    const publicApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (publicApiUrl) {
-      return publicApiUrl;
-    }
-    // Fall back to same origin with /v4 prefix (for proxy)
-    return `${window.location.origin}/v4`;
+    return "/v4";
   }
-  // Server-side fallback
+  // Server-side: call Hono directly
   return process.env.API_URL || "http://localhost:3001/v4";
 }
 

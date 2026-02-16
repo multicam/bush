@@ -187,7 +187,21 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
     if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
       const value = cookie.slice(SESSION_COOKIE_NAME.length + 1);
 
-      // Session cookie format: {userId}:{sessionId}
+      // Try base64-encoded JSON format (set by Next.js auth callback)
+      try {
+        const decoded = Buffer.from(value, "base64").toString();
+        const parsed = JSON.parse(decoded) as Record<string, unknown>;
+        if (parsed.userId && parsed.sessionId) {
+          return {
+            userId: parsed.userId as string,
+            sessionId: parsed.sessionId as string,
+          };
+        }
+      } catch {
+        // Not base64 JSON, try plain format below
+      }
+
+      // Plain format: {userId}:{sessionId}
       const parts = value.split(":");
       if (parts.length === 2) {
         return {
@@ -196,8 +210,6 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
         };
       }
 
-      // Alternative format: just sessionId (userId stored separately)
-      // For now, we only support the combined format
       break;
     }
   }

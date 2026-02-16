@@ -6,14 +6,13 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { accounts, accountMemberships, users, workspaces } from "../../db/schema.js";
+import { accounts, accountMemberships } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
-import { authMiddleware, requireAuth, getCurrentAccountId } from "../auth-middleware.js";
+import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { standardRateLimit } from "../rate-limit.js";
-import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
+import { sendSingle, sendCollection, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
-import type { SessionData } from "../../auth/types.js";
 
 const app = new Hono();
 
