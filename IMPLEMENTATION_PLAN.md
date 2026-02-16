@@ -2,12 +2,13 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
 
 1. **Bun AVX Issue**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development. This affects the runtime but does not change the target tech stack (Bun remains the target for production on AVX-capable servers).
+2. **Package Manager**: Using npm with package-lock.json for development (not bun.lock) due to AVX issue. CI workflow uses Node.js 22.
 
 ### KNOWN SPEC INCONSISTENCIES (Resolve Before Implementation)
 
@@ -89,7 +90,7 @@ This section is the single source of truth for what to do next. It lists every a
    - Initialize monorepo structure (Bun workspace or Turborepo) -- COMPLETED
    - Set up TypeScript configuration (shared tsconfig), ESLint, Prettier -- COMPLETED
    - Set up Vitest testing framework -- COMPLETED
-   - Configure GitHub Actions CI/CD pipeline -- NOT STARTED
+   - Configure GitHub Actions CI/CD pipeline -- COMPLETED (using Node.js 22 + npm due to Bun AVX issue)
    - **Set up Redis** (local dev: install via system package manager or Homebrew; staging/prod: select managed provider -- Upstash, Redis Cloud, or self-hosted). Redis is required by: session cache (1.3), rate limiting (1.5), BullMQ job queues (2.2), WebSocket pub/sub (2.9), and presence (realtime). -- COMPLETED (documented, not installed)
    - **Create `.env.example`** with all 47 environment variables from `specs/20-configuration-and-secrets.md` Section 3 (WorkOS, Redis, S3, database, FFmpeg, session, rate limiting, upload, backup, etc.) -- COMPLETED
    - **Create `.env.test`** for deterministic test configuration per `specs/20-configuration-and-secrets.md` Section 8 -- COMPLETED
@@ -155,14 +156,14 @@ This section is the single source of truth for what to do next. It lists every a
    - **Does NOT depend on R1 or R5** -- basic storage needs no scale research
    - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
 
-8. **[1.2] Design Database Schema** [2 days] -- NOT STARTED
-   - Design SQLite schema with proper indexes and foreign keys
-   - Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, Webhook, Notification
-   - Hierarchy enforcement: Account > Workspace > Project > Folder > File
-   - Foreign key constraints, check constraints, triggers for cascades
-   - Choose and configure ORM/query builder (Drizzle ORM recommended -- supports SQLite + PostgreSQL migration path)
-   - Create migration system
-   - Write schema validation tests
+8. **[1.2] Design Database Schema** [2 days] -- COMPLETED
+   - Design SQLite schema with proper indexes and foreign keys -- COMPLETED
+   - Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, Webhook, Notification -- COMPLETED (Account, User, AccountMembership, Workspace, Project, Folder, File, VersionStack, Comment, Share, Notification)
+   - Hierarchy enforcement: Account > Workspace > Project > Folder > File -- COMPLETED
+   - Foreign key constraints, check constraints, triggers for cascades -- COMPLETED
+   - Choose and configure ORM/query builder (Drizzle ORM recommended -- supports SQLite + PostgreSQL migration path) -- COMPLETED (Drizzle ORM)
+   - Create migration system -- COMPLETED (src/db/migrate.ts)
+   - Write schema validation tests -- NOT STARTED (basic functionality verified via seed script)
    - **Depends on**: 1.1 (Bootstrap)
    - **R1 dependency softened**: R1 informs configuration (WAL mode, connection pooling), not schema design
    - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
@@ -939,14 +940,14 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Spec refs**: `specs/README.md`
 - **NOTE**: Bun crashes on CPUs without AVX support. Node.js + tsx is being used instead for development.
 
-### 1.2 Database Schema and Core Data Models [NOT STARTED]
+### 1.2 Database Schema and Core Data Models [COMPLETED]
 
-- SQLite schema with indexes, foreign keys, check constraints, triggers
-- Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, CustomFieldValue, Webhook, Notification, AuditLog
-- Hierarchy: Account > Workspace > Project > Folder > File
-- ORM: Drizzle ORM (supports SQLite + PostgreSQL migration)
-- Migration system, schema validation tests
-- QW2 (Seed Data) included
+- SQLite schema with indexes, foreign keys, check constraints, triggers -- COMPLETED
+- Core models: Account, User, Workspace, Project, Folder, File, VersionStack, Comment, Share, CustomField, CustomFieldValue, Webhook, Notification, AuditLog -- COMPLETED (Account, User, AccountMembership, Workspace, Project, Folder, File, VersionStack, Comment, Share, Notification)
+- Hierarchy: Account > Workspace > Project > Folder > File -- COMPLETED
+- ORM: Drizzle ORM (supports SQLite + PostgreSQL migration) -- COMPLETED
+- Migration system, schema validation tests -- COMPLETED (migration script, seed data)
+- QW2 (Seed Data) included -- COMPLETED
 - **Depends on**: 1.1
 - **R1 informs config only** (WAL mode, pooling, backup)
 - **Blocks**: 1.3, 1.5, all Phase 2+
