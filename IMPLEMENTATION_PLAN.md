@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.6] Object Storage COMPLETED, [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation partially COMPLETED (CSS variables).
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -954,18 +954,18 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 4-7
 - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
 
-### 1.3 Authentication System (WorkOS AuthKit) [NOT STARTED]
+### 1.3 Authentication System (WorkOS AuthKit) [IN PROGRESS]
 
 - **CORRECTED**: Authentication delegated to WorkOS AuthKit per `specs/12-authentication.md`. Bush does NOT build custom email/password, bcrypt, OAuth, TOTP/QR, or JWT issuance.
-- **WorkOS integration**: Install `@workos-inc/authkit-nextjs` SDK, configure organization, env vars
-- **Session middleware**: Server-side validation via App Router middleware, route protection
-- **Redis session cache**: Key `session:{user_id}:{session_id}`, TTL matches refresh token (7 days default), stores user ID, current account ID, account role, WorkOS org ID
-- **Account roles (Bush-managed)**: Owner, Content Admin, Member, Guest, Reviewer -- role assignment, change propagation, cache invalidation
-- **Account switcher**: Multi-account context switching without re-authentication
-- **Guest/reviewer access**: 3 tiers (authenticated, identified via email code, unidentified/anonymous) -- share-link-based, no WorkOS account required
-- **Cookie config**: httpOnly, secure, sameSite=lax, domain=.bush.app
-- **Adobe IMS**: Stub only (R11 informs details, full implementation Phase 4)
-- Integration tests for WorkOS flows, role assignment, guest access
+- **WorkOS integration**: Install `@workos-inc/authkit-nextjs` SDK, configure organization, env vars -- COMPLETED (SDK installed)
+- **Session middleware**: Server-side validation via App Router middleware, route protection -- COMPLETED (src/web/middleware.ts)
+- **Redis session cache**: Key `session:{user_id}:{session_id}`, TTL matches refresh token (7 days default), stores user ID, current account ID, account role, WorkOS org ID -- COMPLETED (src/auth/session-cache.ts, src/redis/index.ts)
+- **Account roles (Bush-managed)**: Owner, Content Admin, Member, Guest, Reviewer -- role assignment, change propagation, cache invalidation -- COMPLETED (src/auth/types.ts, src/auth/service.ts)
+- **Account switcher**: Multi-account context switching without re-authentication -- IN PROGRESS (API route exists, UI pending)
+- **Guest/reviewer access**: 3 tiers (authenticated, identified via email code, unidentified/anonymous) -- share-link-based, no WorkOS account required -- NOT STARTED
+- **Cookie config**: httpOnly, secure, sameSite=lax, domain=.bush.app -- COMPLETED (in API routes)
+- **Adobe IMS**: Stub only (R11 informs details, full implementation Phase 4) -- NOT STARTED
+- Integration tests for WorkOS flows, role assignment, guest access -- NOT STARTED
 - **Depends on**: 1.2, specs/12-authentication.md (COMPLETE)
 - **Blocks**: 1.4, 1.5
 - **Timeline**: Days 8-10 (may complete faster than estimated due to WorkOS delegation)
