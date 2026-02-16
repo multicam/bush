@@ -12,6 +12,7 @@ import {
   workspacePermissions,
   projectPermissions,
   folderPermissions,
+  accountMemberships,
 } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import type { AccountRole } from "../auth/types.js";

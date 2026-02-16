@@ -6,7 +6,6 @@
 import { Hono, type Context } from "hono";
 import type { AppError } from "../errors/index.js";
 import { toErrorResponse, toAppError, generateRequestId } from "../errors/index.js";
-import { generateId } from "../shared/id.js";
 
 /**
  * Create a new Hono router with common configuration

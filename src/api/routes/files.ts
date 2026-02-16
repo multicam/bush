@@ -6,7 +6,7 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { files, folders } from "../../db/schema.js";
+import { files, folders, accounts } from "../../db/schema.js";
 import { eq, and, desc, isNull, lt } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, decodeCursor } from "../response.js";
@@ -14,6 +14,7 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { config } from "../../config/index.js";
 import { verifyProjectAccess } from "../access-control.js";
+import { storage, storageKeys } from "../../storage/index.js";
 
 /** Valid file statuses */
 const VALID_FILE_STATUSES = ["uploading", "processing", "ready", "processing_failed", "deleted"] as const;
@@ -162,6 +163,24 @@ app.post("/", async (c) => {
     );
   }
 
+  // Check storage quota
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, session.currentAccountId))
+    .limit(1);
+
+  if (!account) {
+    throw new NotFoundError("account", session.currentAccountId);
+  }
+
+  if (account.storageUsedBytes + body.file_size_bytes > account.storageQuotaBytes) {
+    throw new ValidationError(
+      `Insufficient storage quota. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Requested: ${body.file_size_bytes} bytes`,
+      { pointer: "/data/attributes/file_size_bytes" }
+    );
+  }
+
   // Verify folder if specified
   if (body.folder_id) {
     const [folder] = await db
@@ -201,15 +220,23 @@ app.post("/", async (c) => {
     updatedAt: now,
   });
 
-  // Fetch and return the created file
+  // Fetch the created file
   const [file] = await db
     .select()
     .from(files)
     .where(eq(files.id, fileId))
     .limit(1);
 
-  // Generate upload URL (would integrate with storage module)
-  const uploadUrl = `${config.API_URL}/v4/projects/${projectId}/files/${fileId}/upload`;
+  // Generate actual pre-signed upload URL from storage module
+  const storageKey = {
+    accountId: session.currentAccountId,
+    projectId,
+    assetId: fileId,
+    type: "original" as const,
+    filename: body.name,
+  };
+
+  const uploadResult = await storage.getUploadUrl(storageKey);
 
   return c.json({
     data: {
@@ -218,8 +245,10 @@ app.post("/", async (c) => {
       attributes: formatDates(file),
     },
     meta: {
-      upload_url: uploadUrl,
+      upload_url: uploadResult.url,
       upload_method: "presigned_url",
+      upload_expires_at: uploadResult.expiresAt.toISOString(),
+      storage_key: uploadResult.key,
       chunk_size: config.UPLOAD_MULTIPART_CHUNK_SIZE,
     },
   });
@@ -412,6 +441,434 @@ app.post("/:id/move", async (c) => {
     .limit(1);
 
   return sendSingle(c, formatDates(updatedFile), RESOURCE_TYPES.FILE);
+});
+
+/**
+ * GET /v4/projects/:projectId/files/:id/download - Get download URL for file
+ */
+app.get("/:id/download", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Only ready files can be downloaded
+  if (file.status !== "ready") {
+    throw new ValidationError(
+      `File is not ready for download. Current status: ${file.status}`,
+      { pointer: "/data/attributes/status" }
+    );
+  }
+
+  // Build storage key for original file
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+
+  // Generate pre-signed download URL
+  const downloadResult = await storage.getDownloadUrl(storageKey, 3600);
+
+  return c.json({
+    data: {
+      id: file.id,
+      type: "file",
+      attributes: formatDates(file),
+    },
+    meta: {
+      download_url: downloadResult.url,
+      download_expires_at: downloadResult.expiresAt.toISOString(),
+    },
+  });
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/multipart - Initialize multipart upload
+ */
+app.post("/:id/multipart", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Validate chunk count
+  const chunkCount = body.chunk_count;
+  if (!chunkCount || typeof chunkCount !== "number" || chunkCount < 1 || chunkCount > 10000) {
+    throw new ValidationError("chunk_count must be a number between 1 and 10000", {
+      pointer: "/data/attributes/chunk_count",
+    });
+  }
+
+  // Build storage key
+  const storageKey = {
+    accountId: session.currentAccountId,
+    projectId,
+    assetId: fileId,
+    type: "original" as const,
+    filename: file.name,
+  };
+
+  // Initialize multipart upload
+  const multipartInit = await storage.initChunkedUpload(storageKey);
+
+  return c.json({
+    data: {
+      id: file.id,
+      type: "file",
+      attributes: formatDates(file),
+    },
+    meta: {
+      upload_id: multipartInit.uploadId,
+      storage_key: multipartInit.key,
+    },
+  });
+});
+
+/**
+ * GET /v4/projects/:projectId/files/:id/multipart/parts - Get URLs for upload parts
+ */
+app.get("/:id/multipart/parts", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const uploadId = c.req.query("upload_id");
+  const chunkCount = parseInt(c.req.query("chunk_count") || "0", 10);
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  if (!uploadId) {
+    throw new ValidationError("upload_id is required", { pointer: "/query/upload_id" });
+  }
+
+  if (!chunkCount || chunkCount < 1 || chunkCount > 10000) {
+    throw new ValidationError("chunk_count must be between 1 and 10000", {
+      pointer: "/query/chunk_count",
+    });
+  }
+
+  // Build storage key
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+
+  // Get part upload URLs
+  const partUrls = await storage.getChunkUrls(storageKey, uploadId, chunkCount);
+
+  return c.json({
+    data: {
+      id: file.id,
+      type: "file",
+      attributes: formatDates(file),
+    },
+    meta: {
+      parts: partUrls.map((p) => ({
+        part_number: p.partNumber,
+        upload_url: p.url,
+      })),
+    },
+  });
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/multipart/complete - Complete multipart upload
+ */
+app.post("/:id/multipart/complete", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  const uploadId = body.upload_id;
+  const parts = body.parts;
+
+  if (!uploadId || typeof uploadId !== "string") {
+    throw new ValidationError("upload_id is required", { pointer: "/data/attributes/upload_id" });
+  }
+
+  if (!Array.isArray(parts) || parts.length === 0) {
+    throw new ValidationError("parts array is required", { pointer: "/data/attributes/parts" });
+  }
+
+  // Validate parts format
+  for (const part of parts) {
+    if (typeof part.part_number !== "number" || typeof part.etag !== "string") {
+      throw new ValidationError("Each part must have part_number and etag", {
+        pointer: "/data/attributes/parts",
+      });
+    }
+  }
+
+  // Build storage key
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+
+  // Complete multipart upload
+  await storage.completeChunkedUpload(storageKey, uploadId, parts);
+
+  // Update file status to processing (media pipeline will set to ready)
+  await db
+    .update(files)
+    .set({
+      status: "processing",
+      updatedAt: new Date(),
+    })
+    .where(eq(files.id, fileId));
+
+  // Update storage used bytes on account - add file size to current usage
+  const [currentAccount] = await db
+    .select({ storageUsedBytes: accounts.storageUsedBytes })
+    .from(accounts)
+    .where(eq(accounts.id, session.currentAccountId))
+    .limit(1);
+
+  if (currentAccount) {
+    await db
+      .update(accounts)
+      .set({
+        storageUsedBytes: currentAccount.storageUsedBytes + file.fileSizeBytes,
+        updatedAt: new Date(),
+      })
+      .where(eq(accounts.id, session.currentAccountId));
+  }
+
+  // Fetch updated file
+  const [updatedFile] = await db
+    .select()
+    .from(files)
+    .where(eq(files.id, fileId))
+    .limit(1);
+
+  return c.json({
+    data: {
+      id: updatedFile.id,
+      type: "file",
+      attributes: formatDates(updatedFile),
+    },
+    meta: {
+      message: "Upload completed successfully",
+    },
+  });
+});
+
+/**
+ * DELETE /v4/projects/:projectId/files/:id/multipart - Abort multipart upload
+ */
+app.delete("/:id/multipart", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const uploadId = c.req.query("upload_id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  if (!uploadId) {
+    throw new ValidationError("upload_id is required", { pointer: "/query/upload_id" });
+  }
+
+  // Build storage key
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+
+  // Abort multipart upload
+  await storage.abortChunkedUpload(storageKey, uploadId);
+
+  return sendNoContent(c);
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/confirm - Confirm simple upload completion
+ */
+app.post("/:id/confirm", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Verify file is in uploading status
+  if (file.status !== "uploading") {
+    throw new ValidationError(
+      `File is not in uploading status. Current status: ${file.status}`,
+      { pointer: "/data/attributes/status" }
+    );
+  }
+
+  // Build storage key
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+
+  // Verify file exists in storage
+  const storageObject = await storage.headObject(storageKey);
+  if (!storageObject) {
+    throw new ValidationError("File has not been uploaded to storage yet", {
+      pointer: "/data/attributes/status",
+    });
+  }
+
+  // Update file status to processing
+  await db
+    .update(files)
+    .set({
+      status: "processing",
+      updatedAt: new Date(),
+    })
+    .where(eq(files.id, fileId));
+
+  // Fetch updated file
+  const [updatedFile] = await db
+    .select()
+    .from(files)
+    .where(eq(files.id, fileId))
+    .limit(1);
+
+  return c.json({
+    data: {
+      id: updatedFile.id,
+      type: "file",
+      attributes: formatDates(updatedFile),
+    },
+    meta: {
+      message: "Upload confirmed, processing started",
+    },
+  });
 });
 
 export default app;

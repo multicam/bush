@@ -18,7 +18,6 @@ vi.mock("../auth/service.js", () => ({
 }));
 
 import { verifyAccountMembership } from "./access-control.js";
-import { authService } from "../auth/service.js";
 
 describe("verifyAccountMembership", () => {
   beforeEach(() => {

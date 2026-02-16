@@ -6,8 +6,8 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { projects, workspaces, projectPermissions, folders } from "../../db/schema.js";
-import { eq, and, desc } from "drizzle-orm";
+import { projects, projectPermissions, folders } from "../../db/schema.js";
+import { eq, desc } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";

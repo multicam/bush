@@ -3,6 +3,7 @@
  *
  * Integration tests for the permission service with database.
  * Uses an in-memory SQLite database for isolation.
+ * Environment variables are set in vitest.setup.ts
  */
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import Database from "better-sqlite3";

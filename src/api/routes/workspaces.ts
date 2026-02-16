@@ -11,7 +11,7 @@ import { eq, and, desc, lt } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, decodeCursor } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, AuthorizationError } from "../../errors/index.js";
+import { NotFoundError, AuthorizationError, ValidationError } from "../../errors/index.js";
 import { verifyWorkspaceAccess, verifyAccountMembership } from "../access-control.js";
 
 const app = new Hono();
