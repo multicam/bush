@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Asset Browser Grid + List Views)
+**Last updated**: 2026-02-17 (Folder Navigation + Build Error Fixes)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List Views COMPLETED). Code refactoring pass COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation COMPLETED). Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -286,11 +286,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: None
   - **Implementation**: `src/web/components/asset-browser/asset-list.tsx`
 
-- **[P1] Folder Navigation** [4h] -- NOT STARTED
+- **[P1] Folder Navigation** [4h] -- COMPLETED
   - Tree view component
   - Breadcrumbs
   - Flatten folders option
   - **Dependencies**: None
+  - **Implementation**: `src/web/components/folder-navigation/`
 
 - **[P1] Multi-Select and Bulk Actions** [4h] -- PARTIAL
   - Shift-click range, Cmd/Ctrl toggle - PARTIAL (Ctrl/Cmd click works)
@@ -819,6 +820,49 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Folder Navigation Implementation
+
+**Completed Work:**
+1. **Folder Navigation Components COMPLETED** - `src/web/components/folder-navigation/`
+   - `Breadcrumbs` component for folder hierarchy navigation with truncation support
+   - `FolderTree` component with expandable tree view and lazy loading
+   - Keyboard accessible with proper ARIA attributes
+   - Path mapping added to tsconfig.json
+
+2. **Folders API Client COMPLETED** - `src/web/lib/api.ts`
+   - Added `FolderAttributes` interface
+   - Added `foldersApi` with CRUD operations:
+     - `listRoot()` - List root-level folders in a project
+     - `get()` - Get a single folder
+     - `getChildren()` - Get folder children (files and subfolders)
+     - `create()` - Create a folder at project root
+     - `createSubfolder()` - Create a subfolder
+     - `update()` - Update a folder
+     - `delete()` - Delete a folder
+     - `getFiles()` - Get files in a folder
+
+3. **Build Error Fixes COMPLETED**
+   - Fixed module resolution for upload and asset-browser components in tsconfig.json
+   - Fixed Next.js 15 params Promise type in project detail page
+   - Fixed React hooks dependencies and variable declaration order
+   - Fixed Badge variant types (danger -> error) across all components
+   - Added 'deleted' status to AssetFile type
+
+**New Files Created:**
+- `src/web/components/folder-navigation/breadcrumbs.tsx` - Breadcrumb navigation
+- `src/web/components/folder-navigation/folder-tree.tsx` - Folder tree view
+- `src/web/components/folder-navigation/folder-navigation.module.css` - Styles
+- `src/web/components/folder-navigation/index.ts` - Exports
+
+**Updated Files:**
+- `src/web/lib/api.ts` - Added foldersApi
+- `src/web/tsconfig.json` - Added folder-navigation path mapping
+- `src/web/app/projects/[id]/page.tsx` - Fixed Next.js 15 params type
+- `src/web/components/asset-browser/` - Fixed badge variant types
+- `src/web/components/upload/` - Fixed badge variant types
+
+**Tags:** v0.0.20, v0.0.21
 
 ### 2026-02-17 Asset Browser Implementation (Grid + List Views)
 
