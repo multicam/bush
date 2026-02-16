@@ -7,14 +7,6 @@ Bush provides industry-leading security, scalability, and admin controls for con
 - **SOC Type 2 Compliant**
 - **TPN+ Gold Shield Accredited**
 
-## Content Security Features
-
-### Digital Rights Management (DRM)
-- Prevent unauthorized viewing
-- Block screenshots
-- Block screen recordings
-- Full content protection
-
 
 ## Access Control
 

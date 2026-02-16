@@ -2,9 +2,16 @@
 
 ---
 
+Important note: some features are marked "Phase 2". They have to be implemented in Phase 2. The IMPLEMENTATION_PLAN.md should be updated accordingly. However, if one or several of these features are blocking for implementation, they should loose their Phase 2 labelling.
+---
+
 ## Specification Files
 
 ### Master Reference Documents
+
+Those 2 files need to be critiqued and updated, according the planning process.
+In a broader extend, all files need to be critiqued and updated, according the planning process.
+
 | File | Description |
 |------|-------------|
 | [00-complete-support-documentation.md](./00-complete-support-documentation.md) | **COMPREHENSIVE support documentation (23 sections)** |
@@ -12,7 +19,7 @@
 
 ### Category Summaries
 | File | Description |
-|------|-------------|
+|------|-----------|
 | [01-overview.md](./01-overview.md) | Platform overview, value propositions |
 | [02-workflow-management.md](./02-workflow-management.md) | Workspaces, projects, folders |
 | [03-file-management.md](./03-file-management.md) | Upload, transfer, organization |
@@ -23,7 +30,31 @@
 | [08-ios-ipad-apps.md](./08-ios-ipad-apps.md) | iOS, iPadOS, Apple TV apps |
 | [09-transfer-app.md](./09-transfer-app.md) | Desktop transfer app |
 | [10-integrations.md](./10-integrations.md) | Adobe, NLE, automation integrations |
-| [11-security-features.md](./11-security-features.md) | Security, DRM |
+| [11-security-features.md](./11-security-features.md) | Security |
+
+---
+
+## Technology Stack Choices
+
+These are source of truth -- documentation stating otherwise need to be updated accordingly.
+
+| Category | Choice | Notes |
+|----------|--------|-------|
+| **Frontend (Web)** | Next.js + TypeScript | SSR, routing, API routes |
+| **Frontend (Mobile)** | Native Swift | iOS/iPadOS/Apple TV (Phase 2) |
+| **Desktop Transfer App** | Tauri | Phase 2 — webapp is standard upload path |
+| **Backend API** | Bun + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
+| **Database** | SQLite | Primary relational store |
+| **Cache / Realtime** | Redis | Caching, sessions, rate limiting, pub/sub |
+| **Search** | SQLite FTS5 | Upgrade path to dedicated engine if needed |
+| **Object Storage** | S3-compatible API | Provider-agnostic (AWS S3, R2, MinIO, B2) |
+| **CDN** | TBD (preference: Bunny CDN) | CDN-agnostic abstraction |
+| **Media Processing** | FFmpeg | Transcoding, thumbnails, filmstrips, waveforms |
+| **Message Queue** | BullMQ + Redis | Async jobs: transcoding, transcription, notifications |
+| **Transcription** | TBD (abstracted interface) | 27 languages, speaker ID — provider chosen later |
+| **AI/ML (Vision)** | TBD | Visual search / Media Intelligence |
+| **Deployment** | TBD | No Docker, no Kubernetes |
+| **CI/CD** | GitHub Actions | |
 
 ---
 

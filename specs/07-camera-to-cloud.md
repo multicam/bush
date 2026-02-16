@@ -1,5 +1,7 @@
 # Bush - Camera to Cloud (C2C)
 
+Phase 2 feature.
+
 ## Summary
 Camera to Cloud enables instant upload of media from the set the moment recording stops. The rest of the team doesn't have to be at the shoot to be part of it.
 

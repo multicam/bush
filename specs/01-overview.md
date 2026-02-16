@@ -19,6 +19,8 @@ Showcase work with custom-branded shares and presentations in crystal-clear high
 
 ## Platform Availability
 - Web application 
+
+### Phase 2
 - iOS & iPad apps (native Swift)
 - Apple TV app (4K HDR viewing)
 - Bush Transfer app (macOS/Windows)

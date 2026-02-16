@@ -1,5 +1,7 @@
 # Bush - iOS & iPad Apps
 
+Phase 2 Feature.
+
 ## Summary
 Built natively in Swift, the award-winning Bush iOS and iPadOS apps bring all the tools teams need for untethered creative management.
 
@@ -45,9 +47,6 @@ Built natively in Swift, the award-winning Bush iOS and iPadOS apps bring all th
 - High-resolution 4K 10-bit HDR viewing
 - Customizable resolution controls
 - Adjustable playback speed
-
-## Download
-- App Store: https://apps.apple.com/us/app/frame-io/id1056295002
 
 ## Technical Details
 - Native Swift development

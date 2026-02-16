@@ -62,6 +62,7 @@ Bush provides a central, secure place to upload, organize, and store all work-in
 - Nearly any creative file type
 
 ## Transfer App Performance
-> "Left a 36GB file uploading using a file transfer service last night because it was moving slow as molasses. Woke up. Upload failed. Uploaded to Bush in 10 minutes." - Jon Connor, Filmmaker & Editor
+
+- Target upload time: 10 minutes for 30GB file.
 
 
