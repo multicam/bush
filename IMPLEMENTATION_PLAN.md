@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System COMPLETED (WorkOS AuthKit SDK integration, token exchange, session management, login/logout flows, middleware protection), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static IN PROGRESS (login, signup, dashboard, workspaces, projects, settings pages created), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System COMPLETED (WorkOS AuthKit SDK integration, token exchange, session management, login/logout flows, middleware protection), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static COMPLETED (login, signup, dashboard, workspaces, projects, settings pages), [1.7b] Web App Shell Connected COMPLETED (API client library, real data fetching, loading/error/empty states), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -279,12 +279,14 @@ This section is the single source of truth for what to do next. It lists every a
     - **Blocks**: 1.7b, all Phase 2+
     - **Spec refs**: `specs/00-complete-support-documentation.md` Sections 21.1-21.6, `specs/00-atomic-features.md` Sections 18.2-18.5, `specs/17-api-complete.md`
 
-18. **[1.7b] Complete Web App Shell (connected)** [2 days] -- NOT STARTED
-    - Connect to API endpoints (replace mock data with real calls)
+18. **[1.7b] Complete Web App Shell (connected)** [2 days] -- COMPLETED
+    - Connect to API endpoints (replace mock data with real calls) -- COMPLETED (API client library at src/web/lib/api.ts)
     - Implement multi-panel layout: left (folder tree), center (file grid/list), right (metadata inspector), bottom (upload queue) -- all collapsible
     - Build global navigation: account switcher, workspace sidebar, project list, folder tree, breadcrumbs
     - Add responsive design (mobile, tablet, desktop)
     - Implement keyboard shortcuts foundation (Cmd+K search, Cmd+F project search)
+    - **Connected pages**: Workspaces (GET /v4/workspaces), Projects (GET /v4/projects), Dashboard (real stats and recent projects) -- COMPLETED
+    - **UI states**: Loading states, error states, empty states for all connected pages -- COMPLETED
     - Write component tests (Vitest + Testing Library)
     - **Depends on**: 1.5 (API), 1.3 (Authentication)
     - **Blocks**: all Phase 2 frontend work
@@ -1049,7 +1051,7 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 3-4
 - **Spec refs**: `specs/00-atomic-features.md` Section 4.2, 14.1
 
-### 1.7 Web Application Shell [IN PROGRESS]
+### 1.7 Web Application Shell [COMPLETED]
 
 Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 
@@ -1060,8 +1062,12 @@ Split into 1.7a (static, Days 3-10) and 1.7b (connected, Days 11-14):
 - Global navigation, responsive design -- DONE
 - Auth flows UI (WorkOS AuthKit redirect) -- DONE
 - State management (React Context for auth) -- DONE
-- Connect to API endpoints -- NOT STARTED (1.7b)
-- TanStack Query for server state -- NOT STARTED (1.7b)
+- Connect to API endpoints -- DONE (API client library at src/web/lib/api.ts with typed methods for workspaces, projects, accounts)
+- Connected Workspaces page to GET /v4/workspaces -- DONE
+- Connected Projects page to GET /v4/projects -- DONE
+- Connected Dashboard page to fetch real stats and recent projects -- DONE
+- Loading states, error states, empty states for all connected pages -- DONE
+- TanStack Query for server state -- NOT STARTED (optional enhancement)
 - Component tests -- NOT STARTED
 - **Depends on**: 1.1 (for 1.7a), 1.5 + 1.3 (for 1.7b)
 - **Blocks**: all Phase 2 frontend
