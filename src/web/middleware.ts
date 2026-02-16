@@ -5,8 +5,7 @@
  * Uses WorkOS AuthKit for session validation.
  * Reference: specs/12-authentication.md
  */
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
 
 /**
  * Public paths that don't require authentication
@@ -17,68 +16,46 @@ const PUBLIC_PATHS = [
   "/signup",
   "/api/auth/callback",
   "/api/auth/login",
+  "/api/auth/session",
   "/api/auth/logout",
-  "/share", // Share links have their own auth
 ];
 
 /**
- * Static asset patterns that don't require auth
+ * Paths that allow sign-up (not just sign-in)
  */
-const STATIC_PATTERNS = [
-  /^\/_next\//,
-  /^\/favicon/,
-  /\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2)$/i,
-];
+const SIGN_UP_PATHS = ["/signup"];
 
 /**
- * Check if path is public (no auth required)
+ * Configure AuthKit middleware with route protection
+ *
+ * Using middlewareAuth mode to protect routes by default.
+ * Unauthenticated paths are explicitly listed.
  */
-function isPublicPath(pathname: string): boolean {
-  // Check exact matches
-  if (PUBLIC_PATHS.includes(pathname)) {
-    return true;
-  }
+export default authkitMiddleware({
+  debug: process.env.NODE_ENV === "development",
 
-  // Check share links (public access)
-  if (pathname.startsWith("/share/")) {
-    return true;
-  }
+  middlewareAuth: {
+    enabled: true,
+    unauthenticatedPaths: [
+      // Home page
+      "/",
+      // Auth flows
+      "/login",
+      "/signup",
+      "/api/auth/login",
+      "/api/auth/callback",
+      "/api/auth/session",
+      "/api/auth/logout",
+      // Share links (public access)
+      "/share/:path*",
+      // API health check
+      "/api/health",
+    ],
+  },
 
-  // Check static patterns
-  for (const pattern of STATIC_PATTERNS) {
-    if (pattern.test(pathname)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Main middleware function
- */
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Allow public paths
-  if (isPublicPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Check for session cookie
-  const sessionCookie = request.cookies.get("bush_session");
-
-  if (!sessionCookie) {
-    // Redirect to login, preserving the intended destination
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Session exists, allow request to proceed
-  // Note: Actual session validation happens in API routes and server components
-  return NextResponse.next();
-}
+  // Sign up paths allow new user registration
+  signUpPaths: SIGN_UP_PATHS,
+});
 
 /**
  * Configure which paths the middleware runs on
@@ -91,7 +68,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
+     * - Static assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|public/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2)$).*)",
   ],
 };

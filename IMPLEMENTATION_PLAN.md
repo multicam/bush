@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-02-16
 **Project status**: Iteration 1 in progress
-**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System IN PROGRESS (WorkOS integration, session cache, middleware done), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static IN PROGRESS (login, signup, dashboard, workspaces, projects, settings pages created), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
+**Implementation progress**: [1.1] Bootstrap Project COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication System COMPLETED (WorkOS AuthKit SDK integration, token exchange, session management, login/logout flows, middleware protection), [1.4] Permission System COMPLETED, [1.5] RESTful API Foundation IN PROGRESS (Hono server, CORS, auth/rate limiting middleware, CRUD routes for accounts/workspaces/projects/files/users/folders), [1.6] Object Storage COMPLETED, [1.7a] Web App Shell Static IN PROGRESS (login, signup, dashboard, workspaces, projects, settings pages created), [QW1] File Type Registry COMPLETED, [QW2] Seed Data COMPLETED, [QW3] Component Library Foundation COMPLETED, [QW4] Error Handling Utilities COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 37-58)
 
 ### KNOWN IMPLEMENTATION NOTES
@@ -215,19 +215,26 @@ This section is the single source of truth for what to do next. It lists every a
 
 ### Week 2 (Days 8-14): Authentication, Permissions, API
 
-14. **[1.3] Build Authentication System (WorkOS AuthKit)** [3 days] -- NOT STARTED
+14. **[1.3] Build Authentication System (WorkOS AuthKit)** [3 days] -- COMPLETED
     - **NOTE**: Authentication is delegated to WorkOS AuthKit per `specs/12-authentication.md`. Bush does NOT build custom email/password, OAuth, MFA, or JWT issuance.
-    - Install and configure `@workos-inc/authkit-nextjs` SDK
-    - Set up WorkOS organization and environment variables (API key, client ID, redirect URIs)
-    - Implement server-side session validation middleware (App Router middleware-based route protection)
-    - Build Redis session cache layer (key: `session:{user_id}:{session_id}`, TTL matches refresh token)
-    - Implement account role system (Owner, Content Admin, Member, Guest, Reviewer) -- Bush-managed, not WorkOS
-    - Build permission mapping for account roles (role assignment, role change with cache invalidation)
-    - Implement account switcher UI and logic (multi-account context switching without re-auth)
-    - Create guest/reviewer share-link access flows (3 tiers: authenticated, identified, unidentified)
-    - Secure cookie configuration (httpOnly, secure, sameSite=lax, domain=.bush.app)
-    - Adobe IMS OAuth stub (R11 informs details, full implementation Phase 4)
-    - Integration tests for WorkOS authentication flows
+    - Install and configure `@workos-inc/authkit-nextjs` SDK -- DONE
+    - Set up WorkOS organization and environment variables (API key, client ID, redirect URIs) -- DONE
+    - Implement server-side session validation middleware (App Router middleware-based route protection) -- DONE (authkitMiddleware in src/web/middleware.ts)
+    - Auth callback handler with token exchange using `getWorkOS().userManagement.authenticateWithCode()` -- DONE (src/web/app/api/auth/[...action]/route.ts)
+    - Session saving using AuthKit's `saveSession()` function -- DONE
+    - Login redirect using AuthKit's `getSignInUrl()` -- DONE
+    - Bush session cookie creation after WorkOS authentication -- DONE
+    - Logout properly signs out from both WorkOS and Bush sessions -- DONE
+    - Build Redis session cache layer (key: `session:{user_id}:{session_id}`, TTL matches refresh token) -- DONE
+    - Implement account role system (Owner, Content Admin, Member, Guest, Reviewer) -- Bush-managed, not WorkOS -- DONE
+    - Build permission mapping for account roles (role assignment, role change with cache invalidation) -- DONE
+    - Implement account switcher UI and logic (multi-account context switching without re-auth) -- IN PROGRESS (API exists, UI pending)
+    - Create guest/reviewer share-link access flows (3 tiers: authenticated, identified, unidentified) -- NOT STARTED
+    - Secure cookie configuration (httpOnly, secure, sameSite=lax, domain=.bush.app) -- DONE
+    - Support for new user onboarding flow (redirects to /onboarding/create-account) -- DONE
+    - OAuth error handling with proper error responses -- DONE
+    - Adobe IMS OAuth stub (R11 informs details, full implementation Phase 4) -- NOT STARTED
+    - Integration tests for WorkOS authentication flows -- NOT STARTED
     - **Depends on**: 1.2 (Database Schema), specs/12-authentication.md (COMPLETE)
     - **Blocks**: 1.4, 1.5
     - **Spec refs**: `specs/12-authentication.md`, `specs/00-complete-support-documentation.md` Sections 1.2, 1.3
@@ -956,16 +963,24 @@ These specs exist but are brief (<100 lines) and will need expansion before thei
 - **Timeline**: Days 4-7
 - **Spec refs**: `specs/00-atomic-features.md` Section 2, `specs/00-complete-support-documentation.md` Section 3.1
 
-### 1.3 Authentication System (WorkOS AuthKit) [IN PROGRESS]
+### 1.3 Authentication System (WorkOS AuthKit) [COMPLETED]
 
 - **CORRECTED**: Authentication delegated to WorkOS AuthKit per `specs/12-authentication.md`. Bush does NOT build custom email/password, bcrypt, OAuth, TOTP/QR, or JWT issuance.
 - **WorkOS integration**: Install `@workos-inc/authkit-nextjs` SDK, configure organization, env vars -- COMPLETED (SDK installed)
-- **Session middleware**: Server-side validation via App Router middleware, route protection -- COMPLETED (src/web/middleware.ts)
+- **Auth callback handler**: Token exchange using `getWorkOS().userManagement.authenticateWithCode()` -- COMPLETED (src/web/app/api/auth/[...action]/route.ts)
+- **Session management**: AuthKit's `saveSession()` for WorkOS sessions -- COMPLETED
+- **Login flow**: Redirect using AuthKit's `getSignInUrl()` -- COMPLETED
+- **Bush session cookie**: Created after successful WorkOS authentication -- COMPLETED
+- **Logout flow**: Signs out from both WorkOS and Bush sessions -- COMPLETED
+- **Session middleware**: Server-side validation via App Router middleware using AuthKit's `authkitMiddleware` -- COMPLETED (src/web/middleware.ts)
 - **Redis session cache**: Key `session:{user_id}:{session_id}`, TTL matches refresh token (7 days default), stores user ID, current account ID, account role, WorkOS org ID -- COMPLETED (src/auth/session-cache.ts, src/redis/index.ts)
 - **Account roles (Bush-managed)**: Owner, Content Admin, Member, Guest, Reviewer -- role assignment, change propagation, cache invalidation -- COMPLETED (src/auth/types.ts, src/auth/service.ts)
 - **Account switcher**: Multi-account context switching without re-authentication -- IN PROGRESS (API route exists, UI pending)
 - **Guest/reviewer access**: 3 tiers (authenticated, identified via email code, unidentified/anonymous) -- share-link-based, no WorkOS account required -- NOT STARTED
 - **Cookie config**: httpOnly, secure, sameSite=lax, domain=.bush.app -- COMPLETED (in API routes)
+- **Onboarding flow**: Redirects new users to /onboarding/create-account -- COMPLETED
+- **Error handling**: Proper OAuth error responses, removed placeholder TODOs -- COMPLETED
+- **Environment config**: Added WORKOS_COOKIE_PASSWORD for AuthKit SDK -- COMPLETED (src/config/env.ts, .env.example)
 - **Adobe IMS**: Stub only (R11 informs details, full implementation Phase 4) -- NOT STARTED
 - Integration tests for WorkOS flows, role assignment, guest access -- NOT STARTED
 - **Depends on**: 1.2, specs/12-authentication.md (COMPLETE)

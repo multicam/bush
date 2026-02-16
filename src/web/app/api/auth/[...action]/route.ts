@@ -2,19 +2,53 @@
  * Bush Platform - Auth API Routes
  *
  * API routes for authentication operations in the Next.js app.
- * Handles login, logout, callback, and session management.
+ * Uses WorkOS AuthKit for authentication with Bush-specific session management.
+ * Reference: specs/12-authentication.md
  */
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getSignInUrl,
+  signOut as workosSignOut,
+  withAuth,
+  saveSession,
+  getWorkOS,
+} from "@workos-inc/authkit-nextjs";
 import { config } from "@/config";
 import { authService } from "@/auth";
+import type { SessionData } from "@/auth/types";
+
+/**
+ * Cookie name for Bush session data
+ */
+const BUSH_SESSION_COOKIE = "bush_session";
+
+/**
+ * Set the Bush session cookie on a response
+ */
+function setBushSessionCookie(response: NextResponse, session: SessionData): void {
+  response.cookies.set(
+    BUSH_SESSION_COOKIE,
+    Buffer.from(JSON.stringify(session)).toString("base64"),
+    {
+      httpOnly: true,
+      secure: config.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: config.SESSION_MAX_AGE,
+      path: "/",
+    }
+  );
+}
 
 /**
  * GET /api/auth/session - Get current session state
+ *
+ * Returns both WorkOS session (from AuthKit) and Bush session (from Redis).
  */
-async function getSession(request: NextRequest) {
-  const sessionCookie = request.cookies.get("bush_session");
+async function getSession(_request: NextRequest) {
+  // Use withAuth to get the WorkOS session info
+  const authInfo = await withAuth();
 
-  if (!sessionCookie) {
+  if (!authInfo.user) {
     return NextResponse.json({
       isAuthenticated: false,
       isLoading: false,
@@ -24,26 +58,54 @@ async function getSession(request: NextRequest) {
     });
   }
 
+  // Get Bush session from our cookie
+  const bushSessionCookie = _request.cookies.get(BUSH_SESSION_COOKIE);
+
+  if (!bushSessionCookie) {
+    // WorkOS session exists but no Bush session - need to create one
+    // This can happen if the callback didn't complete Bush session creation
+    return NextResponse.json({
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        id: authInfo.user.id,
+        email: authInfo.user.email,
+        firstName: authInfo.user.firstName ?? null,
+        lastName: authInfo.user.lastName ?? null,
+        displayName: [authInfo.user.firstName, authInfo.user.lastName]
+          .filter(Boolean)
+          .join(" ") || null,
+        avatarUrl: authInfo.user.profilePictureUrl ?? null,
+      },
+      currentAccount: null,
+      accounts: [],
+      requiresAccountSetup: true,
+    });
+  }
+
   try {
-    // Parse session from cookie
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString());
+    const bushSession = JSON.parse(
+      Buffer.from(bushSessionCookie.value, "base64").toString()
+    ) as SessionData;
 
     // Get user's accounts
-    const accounts = await authService.getUserAccounts(sessionData.userId);
+    const accounts = await authService.getUserAccounts(bushSession.userId);
 
     // Find current account
-    const currentAccount = accounts.find((a) => a.accountId === sessionData.currentAccountId);
+    const currentAccount = accounts.find(
+      (a) => a.accountId === bushSession.currentAccountId
+    );
 
     return NextResponse.json({
       isAuthenticated: true,
       isLoading: false,
       user: {
-        id: sessionData.userId,
-        email: sessionData.email,
-        firstName: sessionData.firstName || null,
-        lastName: sessionData.lastName || null,
-        displayName: sessionData.displayName,
-        avatarUrl: sessionData.avatarUrl,
+        id: bushSession.userId,
+        email: bushSession.email,
+        displayName: bushSession.displayName,
+        avatarUrl: bushSession.avatarUrl,
+        firstName: null,
+        lastName: null,
       },
       currentAccount: currentAccount
         ? {
@@ -62,11 +124,21 @@ async function getSession(request: NextRequest) {
     });
   } catch {
     return NextResponse.json({
-      isAuthenticated: false,
+      isAuthenticated: true,
       isLoading: false,
-      user: null,
+      user: {
+        id: authInfo.user.id,
+        email: authInfo.user.email,
+        firstName: authInfo.user.firstName ?? null,
+        lastName: authInfo.user.lastName ?? null,
+        displayName: [authInfo.user.firstName, authInfo.user.lastName]
+          .filter(Boolean)
+          .join(" ") || null,
+        avatarUrl: authInfo.user.profilePictureUrl ?? null,
+      },
       currentAccount: null,
       accounts: [],
+      requiresAccountSetup: true,
     });
   }
 }
@@ -77,33 +149,61 @@ async function getSession(request: NextRequest) {
 async function login(request: NextRequest) {
   const redirect = request.nextUrl.searchParams.get("redirect") || "/dashboard";
 
-  // Build WorkOS AuthKit authorization URL
-  // In production, this would use the @workos-inc/authkit-nextjs SDK
-  const authUrl = new URL("https://auth.workos.com/authorize");
-  authUrl.searchParams.set("response_type", "code");
-  authUrl.searchParams.set("client_id", config.WORKOS_CLIENT_ID);
-  authUrl.searchParams.set("redirect_uri", config.WORKOS_REDIRECT_URI);
-  authUrl.searchParams.set("state", Buffer.from(JSON.stringify({ redirect })).toString("base64"));
+  // Use WorkOS AuthKit's getSignInUrl for proper URL generation
+  const signInUrl = await getSignInUrl();
 
-  return NextResponse.redirect(authUrl.toString());
+  // Add state for redirect after auth
+  const url = new URL(signInUrl);
+  url.searchParams.set(
+    "state",
+    Buffer.from(JSON.stringify({ redirect })).toString("base64")
+  );
+
+  return NextResponse.redirect(url.toString());
 }
 
 /**
  * GET /api/auth/callback - Handle WorkOS callback
+ *
+ * This handles the OAuth callback from WorkOS AuthKit:
+ * 1. Exchange authorization code for tokens
+ * 2. Create or find Bush user
+ * 3. Create Bush session
+ * 4. Set both WorkOS and Bush session cookies
  */
 async function callback(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
+  const error = request.nextUrl.searchParams.get("error");
+  const errorDescription = request.nextUrl.searchParams.get("error_description");
+
+  // Handle OAuth errors
+  if (error) {
+    console.error("WorkOS auth error:", error, errorDescription);
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(errorDescription || error)}`, request.url)
+    );
+  }
 
   if (!code) {
     return NextResponse.redirect(new URL("/login?error=no_code", request.url));
   }
 
   try {
-    // In production, this would exchange the code for tokens via WorkOS SDK
-    // For now, create a placeholder session
-    let redirectPath = "/dashboard";
+    // Exchange code for tokens using WorkOS SDK
+    const authResponse = await getWorkOS().userManagement.authenticateWithCode({
+      clientId: config.WORKOS_CLIENT_ID,
+      code,
+    });
 
+    // Save WorkOS session to cookie (using AuthKit's saveSession)
+    await saveSession(authResponse, request);
+
+    // Extract user info
+    const { user, organizationId } = authResponse;
+
+    // Parse state to get redirect path
+    let redirectPath = "/dashboard";
     if (state) {
       try {
         const stateData = JSON.parse(Buffer.from(state, "base64").toString());
@@ -113,16 +213,74 @@ async function callback(request: NextRequest) {
       }
     }
 
-    // TODO: Implement actual WorkOS token exchange
-    // This is a placeholder that would be replaced with:
-    // const { accessToken, refreshToken } = await workos.exchangeCode(code);
-    // const claims = await workOS.validateAccessToken(accessToken);
-    // const session = await authService.createSession(...);
+    // Create or find Bush user
+    const { userId } = await authService.findOrCreateUser({
+      workosUserId: user.id,
+      email: user.email,
+      firstName: user.firstName ?? undefined,
+      lastName: user.lastName ?? undefined,
+      avatarUrl: user.profilePictureUrl ?? undefined,
+      organizationId: organizationId || "",
+    });
 
-    return NextResponse.redirect(new URL(redirectPath, request.url));
-  } catch (error) {
-    console.error("Auth callback error:", error);
-    return NextResponse.redirect(new URL("/login?error=callback_failed", request.url));
+    // Get user's accounts
+    const accounts = await authService.getUserAccounts(userId);
+
+    // If new user with no accounts, redirect to onboarding
+    if (accounts.length === 0) {
+      // Redirect to account creation page
+      const response = NextResponse.redirect(
+        new URL("/onboarding/create-account", request.url)
+      );
+
+      // Set a minimal session cookie so onboarding knows who the user is
+      const minimalSession: Partial<SessionData> = {
+        userId,
+        email: user.email,
+        displayName: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
+        avatarUrl: user.profilePictureUrl,
+        workosUserId: user.id,
+        workosOrganizationId: organizationId || "",
+      };
+
+      response.cookies.set(
+        BUSH_SESSION_COOKIE,
+        Buffer.from(JSON.stringify(minimalSession)).toString("base64"),
+        {
+          httpOnly: true,
+          secure: config.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 3600, // 1 hour for onboarding
+          path: "/",
+        }
+      );
+
+      return response;
+    }
+
+    // Use first account as default
+    const defaultAccount = accounts[0];
+
+    // Create Bush session in Redis
+    const bushSession = await authService.createSession(
+      userId,
+      defaultAccount.accountId,
+      organizationId || "",
+      user.id
+    );
+
+    // Redirect to the intended destination
+    const response = NextResponse.redirect(new URL(redirectPath, request.url));
+
+    // Set Bush session cookie
+    setBushSessionCookie(response, bushSession);
+
+    return response;
+  } catch (err) {
+    console.error("Auth callback error:", err);
+    return NextResponse.redirect(
+      new URL("/login?error=callback_failed", request.url)
+    );
   }
 }
 
@@ -130,19 +288,29 @@ async function callback(request: NextRequest) {
  * POST /api/auth/logout - Clear session
  */
 async function logout(request: NextRequest) {
-  const sessionCookie = request.cookies.get("bush_session");
+  const bushSessionCookie = request.cookies.get(BUSH_SESSION_COOKIE);
 
-  if (sessionCookie) {
+  if (bushSessionCookie) {
     try {
-      const sessionData = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString());
-      await authService.invalidateSession(sessionData.userId, sessionData.sessionId);
+      const sessionData = JSON.parse(
+        Buffer.from(bushSessionCookie.value, "base64").toString()
+      );
+      if (sessionData.userId && sessionData.sessionId) {
+        await authService.invalidateSession(
+          sessionData.userId,
+          sessionData.sessionId
+        );
+      }
     } catch {
       // Session already invalid
     }
   }
 
+  // Sign out from WorkOS
+  await workosSignOut();
+
   const response = NextResponse.json({ success: true });
-  response.cookies.delete("bush_session");
+  response.cookies.delete(BUSH_SESSION_COOKIE);
   return response;
 }
 
@@ -150,9 +318,9 @@ async function logout(request: NextRequest) {
  * POST /api/auth/switch-account - Switch active account
  */
 async function switchAccount(request: NextRequest) {
-  const sessionCookie = request.cookies.get("bush_session");
+  const bushSessionCookie = request.cookies.get(BUSH_SESSION_COOKIE);
 
-  if (!sessionCookie) {
+  if (!bushSessionCookie) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
@@ -161,10 +329,20 @@ async function switchAccount(request: NextRequest) {
     const { accountId } = body;
 
     if (!accountId) {
-      return NextResponse.json({ error: "Account ID required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Account ID required" },
+        { status: 400 }
+      );
     }
 
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString());
+    const sessionData = JSON.parse(
+      Buffer.from(bushSessionCookie.value, "base64").toString()
+    );
+
+    if (!sessionData.userId || !sessionData.sessionId) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     const updatedSession = await authService.switchAccount(
       sessionData.userId,
       sessionData.sessionId,
@@ -172,30 +350,33 @@ async function switchAccount(request: NextRequest) {
     );
 
     if (!updatedSession) {
-      return NextResponse.json({ error: "Failed to switch account" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to switch account" },
+        { status: 500 }
+      );
     }
 
     // Update cookie
     const response = NextResponse.json({ success: true });
-    response.cookies.set("bush_session", Buffer.from(JSON.stringify(updatedSession)).toString("base64"), {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: config.SESSION_MAX_AGE,
-      path: "/",
-    });
+    setBushSessionCookie(response, updatedSession);
 
     return response;
   } catch (error) {
     console.error("Switch account error:", error);
-    return NextResponse.json({ error: "Failed to switch account" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to switch account" },
+      { status: 500 }
+    );
   }
 }
 
 /**
  * Route handler for auth operations
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ action: string[] }> }
+) {
   const { action } = await params;
   const actionPath = action?.join("/") || "";
 
@@ -213,7 +394,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ action: string[] }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ action: string[] }> }
+) {
   const { action } = await params;
   const actionPath = action?.join("/") || "";
 

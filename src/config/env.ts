@@ -46,6 +46,7 @@ const envSchema = z.object({
   WORKOS_CLIENT_ID: z.string().min(1),
   WORKOS_REDIRECT_URI: z.string().url(),
   WORKOS_WEBHOOK_SECRET: z.string().min(1),
+  WORKOS_COOKIE_PASSWORD: z.string().min(32).optional(), // For AuthKit SDK encryption
 
   // Storage
   STORAGE_PROVIDER: z.enum(["minio", "s3", "r2", "b2"]).default("minio"),
@@ -127,6 +128,7 @@ function loadConfig(): Env {
       WORKOS_CLIENT_ID: "placeholder",
       WORKOS_REDIRECT_URI: "https://build.placeholder/callback",
       WORKOS_WEBHOOK_SECRET: "placeholder",
+      WORKOS_COOKIE_PASSWORD: "placeholder-cookie-password-for-build-32c",
       STORAGE_PROVIDER: "minio",
       STORAGE_ENDPOINT: "placeholder",
       STORAGE_REGION: "us-east-1",
