@@ -3,6 +3,7 @@
  *
  * Shows project details with file browser and upload functionality.
  * Reference: IMPLEMENTATION_PLAN.md 2.1 [P1] Drag-and-Drop UI, Upload Queue UI
+ * Reference: IMPLEMENTATION_PLAN.md 2.3 [P1] Asset Browser Grid View
  */
 "use client";
 
@@ -10,6 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { Button, Badge } from "@/web/components/ui";
 import { Dropzone, UploadQueue, type DroppedFile, type QueuedFile } from "@/web/components/upload";
+import { AssetBrowser, type AssetFile } from "@/web/components/asset-browser";
 import { useAuth } from "@/web/context";
 import {
   projectsApi,
@@ -20,8 +22,7 @@ import {
   type ProjectAttributes,
   type FileAttributes,
 } from "@/web/lib/api";
-import { UploadClient, getUploadClient, type UploadProgress } from "@/web/lib/upload-client";
-import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
+import { getUploadClient, type UploadProgress } from "@/web/lib/upload-client";
 import styles from "./project.module.css";
 
 interface Project extends ProjectAttributes {
@@ -43,7 +44,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showDropzone, setShowDropzone] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<QueuedFile[]>([]);
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const uploadClient = getUploadClient();
+
+  // Convert FileItem to AssetFile format for AssetBrowser
+  const assetFiles: AssetFile[] = files.map((f) => ({
+    id: f.id,
+    name: f.name,
+    mimeType: f.mimeType,
+    fileSizeBytes: f.fileSizeBytes,
+    status: f.status,
+    thumbnailUrl: f.thumbnailUrl,
+    createdAt: f.createdAt,
+    updatedAt: f.updatedAt,
+  }));
 
   // Fetch project and files
   useEffect(() => {
@@ -210,42 +224,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     setUploadQueue((prev) => prev.filter((f) => f.id !== fileId));
   }, [uploadClient]);
 
-  // Get status badge variant
-  const getStatusBadgeVariant = (status: FileAttributes["status"]): "default" | "success" | "warning" | "danger" => {
-    switch (status) {
-      case "ready":
-        return "success";
-      case "processing":
-        return "warning";
-      case "uploading":
-        return "default";
-      case "processing_failed":
-        return "danger";
-      default:
-        return "default";
-    }
-  };
+  // Handle file click in asset browser
+  const handleFileClick = useCallback((file: AssetFile) => {
+    // TODO: Open file viewer/preview
+    console.log("File clicked:", file);
+  }, []);
 
-  // Format relative time
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    }
-    if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    }
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
+  // Handle selection change
+  const handleSelectionChange = useCallback((ids: string[]) => {
+    setSelectedFileIds(ids);
+  }, []);
 
   // Loading state
   if (authLoading || loadingState === "loading") {
@@ -340,41 +328,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
         )}
 
-        {/* Files List */}
-        <section className={styles.filesSection}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Files ({files.length})</h2>
-          </div>
-
-          {files.length > 0 ? (
-            <div className={styles.fileList}>
-              {files.map((file) => (
-                <div key={file.id} className={styles.fileItem}>
-                  <div className={styles.fileIcon} data-category={getFileCategory(file.mimeType)}>
-                    {getFileIcon(file.mimeType)}
-                  </div>
-                  <div className={styles.fileInfo}>
-                    <span className={styles.fileName}>{file.name}</span>
-                    <div className={styles.fileMeta}>
-                      <span>{formatFileSize(file.fileSizeBytes)}</span>
-                      <span className={styles.separator}>•</span>
-                      <span>{formatRelativeTime(file.createdAt)}</span>
-                    </div>
-                  </div>
-                  <Badge variant={getStatusBadgeVariant(file.status)} size="sm">
-                    {file.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <p>No files yet</p>
-              <Button variant="primary" onClick={() => setShowDropzone(true)}>
-                Upload your first file
-              </Button>
-            </div>
-          )}
+        {/* Asset Browser */}
+        <section className={styles.browserSection}>
+          <AssetBrowser
+            projectId={projectId}
+            files={assetFiles}
+            selectedIds={selectedFileIds}
+            onSelectionChange={handleSelectionChange}
+            onFileClick={handleFileClick}
+            defaultViewMode="grid"
+            defaultCardSize="medium"
+          />
         </section>
       </div>
     </AppLayout>

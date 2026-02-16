@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-16 (Auth Endpoints + Workspace Context + Database Indexes)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Asset Browser Grid + List Views)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List Views COMPLETED). Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -270,33 +270,35 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.3 Asset Browser and Navigation [P1] - 3 days
 
-**NOT STARTED** -- Core user interface
+**IN PROGRESS** -- Core user interface
 
-- **[P1] Grid View** [4h]
+- **[P1] Grid View** [4h] -- COMPLETED
   - Adjustable card sizes (small/medium/large)
   - Thumbnail display with aspect ratio options
   - File type icons from QW1 for missing thumbnails
   - **Dependencies**: 2.2 (thumbnails)
+  - **Implementation**: `src/web/components/asset-browser/asset-grid.tsx`, `asset-card.tsx`
 
-- **[P1] List View** [4h]
+- **[P1] List View** [4h] -- COMPLETED
   - Sortable metadata columns
   - Multi-column layout
   - Row actions
   - **Dependencies**: None
+  - **Implementation**: `src/web/components/asset-browser/asset-list.tsx`
 
-- **[P1] Folder Navigation** [4h]
+- **[P1] Folder Navigation** [4h] -- NOT STARTED
   - Tree view component
   - Breadcrumbs
   - Flatten folders option
   - **Dependencies**: None
 
-- **[P1] Multi-Select and Bulk Actions** [4h]
-  - Shift-click range, Cmd/Ctrl toggle
-  - Select all (max 200)
-  - Bulk move/copy/delete/download
+- **[P1] Multi-Select and Bulk Actions** [4h] -- PARTIAL
+  - Shift-click range, Cmd/Ctrl toggle - PARTIAL (Ctrl/Cmd click works)
+  - Select all (max 200) - COMPLETED (list view)
+  - Bulk move/copy/delete/download - NOT STARTED
   - **Dependencies**: None
 
-- **[P2] Virtualized Lists** [4h]
+- **[P2] Virtualized Lists** [4h] -- NOT STARTED
   - react-window or similar
   - Lazy thumbnail loading
   - Infinite scroll with cursor pagination
@@ -817,6 +819,61 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Asset Browser Implementation (Grid + List Views)
+
+**Completed Work:**
+1. **Asset Browser Grid View COMPLETED** - `src/web/components/asset-browser/`
+   - `AssetGrid` component with adjustable card sizes (small/medium/large)
+   - `AssetCard` component with thumbnail display, status badges, selection checkbox
+   - `FolderCard` component for folder navigation
+   - File type icons from QW1 file type registry for missing thumbnails
+   - Category-colored thumbnail backgrounds (video/audio/image/document)
+
+2. **Asset Browser List View COMPLETED** - `src/web/components/asset-browser/asset-list.tsx`
+   - Sortable metadata columns (name, size, status, created)
+   - Multi-column layout with responsive hiding on mobile
+   - Row actions with file/folder click handling
+   - Select all checkbox
+
+3. **View Controls COMPLETED** - `src/web/components/asset-browser/view-controls.tsx`
+   - Grid/List view mode toggle with icons
+   - Card size selector (S/M/L) for grid view
+   - Accessible with keyboard navigation
+
+4. **Main AssetBrowser Component COMPLETED** - `src/web/components/asset-browser/asset-browser.tsx`
+   - Combines grid/list views with view controls toolbar
+   - Built-in sorting (name, size, status, date)
+   - Selection state management
+   - Loading state
+   - Item count display
+
+5. **TypeScript Fixes in auth.ts** - Fixed unused imports and duplicate property errors
+   - Removed unused imports: `sendSingle`, `RESOURCE_TYPES`, `authService`, `and`
+   - Fixed duplicate `email` property in `formatDates` spread
+
+**New Files Created:**
+- `src/web/components/asset-browser/types.ts` - Shared types for asset browser
+- `src/web/components/asset-browser/asset-browser.tsx` - Main browser component
+- `src/web/components/asset-browser/asset-browser.module.css` - Browser styles
+- `src/web/components/asset-browser/asset-grid.tsx` - Grid view component
+- `src/web/components/asset-browser/asset-grid.module.css` - Grid styles
+- `src/web/components/asset-browser/asset-list.tsx` - List view component
+- `src/web/components/asset-browser/asset-list.module.css` - List styles
+- `src/web/components/asset-browser/asset-card.tsx` - File card component
+- `src/web/components/asset-browser/asset-card.module.css` - Card styles
+- `src/web/components/asset-browser/folder-card.tsx` - Folder card component
+- `src/web/components/asset-browser/folder-card.module.css` - Folder card styles
+- `src/web/components/asset-browser/view-controls.tsx` - View controls component
+- `src/web/components/asset-browser/view-controls.module.css` - View controls styles
+- `src/web/components/asset-browser/index.ts` - Component exports
+
+**Updated Files:**
+- `src/api/routes/auth.ts` - Fixed TypeScript errors
+- `src/web/app/projects/[id]/page.tsx` - Integrated AssetBrowser component
+- `src/web/app/projects/[id]/project.module.css` - Added browserSection style
+
+**Test Count:** 249 tests (no new tests - UI components tested via integration)
 
 ### 2026-02-16 Auth Endpoints + Workspace Context + Database Indexes
 

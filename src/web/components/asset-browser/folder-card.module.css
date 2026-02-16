@@ -1,0 +1,56 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 2px solid transparent;
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.card:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Icon Container */
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(251, 191, 36, 0.1);
+}
+
+.folderIcon {
+  font-size: 3rem;
+  opacity: 0.8;
+}
+
+.card:hover .folderIcon {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Info */
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  min-height: 0;
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

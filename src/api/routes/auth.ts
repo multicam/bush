@@ -6,12 +6,11 @@
  */
 import { Hono } from "hono";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
-import { sendSingle, RESOURCE_TYPES, formatDates } from "../response.js";
-import { authService } from "../../auth/service.js";
+import { formatDates } from "../response.js";
 import { sessionCache } from "../../auth/session-cache.js";
 import { db } from "../../db/index.js";
 import { users, accounts, accountMemberships, workspaces } from "../../db/schema.js";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ValidationError, AuthenticationError } from "../../errors/index.js";
 
 const app = new Hono();
@@ -212,12 +211,15 @@ app.get("/me", async (c) => {
       id: user.id,
       type: "user",
       attributes: {
-        email: user.email,
-        display_name: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
-        first_name: user.firstName,
-        last_name: user.lastName,
-        avatar_url: user.avatarUrl,
-        ...formatDates(user),
+        ...formatDates({
+          email: user.email,
+          display_name: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          avatar_url: user.avatarUrl,
+          created_at: user.createdAt,
+          updated_at: user.updatedAt,
+        }),
       },
       relationships: {
         current_account: {
@@ -239,13 +241,16 @@ app.get("/me", async (c) => {
               id: account.id,
               type: "account",
               attributes: {
-                name: account.name,
-                slug: account.slug,
-                plan: account.plan,
-                storage_used_bytes: account.storageUsedBytes,
-                storage_quota_bytes: account.storageQuotaBytes,
-                role: allAccounts.find((a) => a.id === account.id)?.role || "member",
-                ...formatDates(account),
+                ...formatDates({
+                  name: account.name,
+                  slug: account.slug,
+                  plan: account.plan,
+                  storage_used_bytes: account.storageUsedBytes,
+                  storage_quota_bytes: account.storageQuotaBytes,
+                  role: allAccounts.find((a) => a.id === account.id)?.role || "member",
+                  created_at: account.createdAt,
+                  updated_at: account.updatedAt,
+                }),
               },
             },
           ]

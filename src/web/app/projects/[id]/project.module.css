@@ -44,7 +44,16 @@
   margin-bottom: 2rem;
 }
 
-/* Files Section */
+/* Browser Section */
+.browserSection {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* Files Section (deprecated - use browserSection) */
 .filesSection {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
