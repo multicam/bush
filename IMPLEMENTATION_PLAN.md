@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-16 (Deep Research Update)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED. Code refactoring pass COMPLETED.
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - Upload Backend Handler COMPLETED
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 33/110+ (30%) | 6 route modules implemented |
+| **API Endpoints** | 39/110+ (35%) | 6 route modules implemented, multipart upload + download added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 19 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -79,10 +79,10 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - Calculate from files table or cache in accounts
   - **Dependencies**: None
 
-- **[P1] File Download/Access Endpoints** [4h] -- NOT STARTED **(NEW)**
-  - `GET /v4/files/:id/download` - Pre-signed download URL for original
-  - `GET /v4/files/:id/thumbnail` - Thumbnail URL
-  - `GET /v4/files/:id/proxy` - Proxy video URL
+- **[P1] File Download/Access Endpoints** [4h] -- COMPLETED
+  - `GET /v4/projects/:projectId/files/:id/download` - Pre-signed download URL for original
+  - `GET /v4/files/:id/thumbnail` - Thumbnail URL (pending 2.2)
+  - `GET /v4/files/:id/proxy` - Proxy video URL (pending 2.2)
   - **Dependencies**: 2.2 (Media Processing for thumbnails/proxies)
   - **Critical for**: Asset viewing and downloading
 
@@ -182,15 +182,14 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.1 File Upload System [P0] - 3 days
 
-**NOT STARTED** -- Highest priority, blocks all Phase 2
+**IN PROGRESS** -- Upload Backend Handler COMPLETED
 
-**IMPORTANT**: Current `POST /v4/projects/:id/files` creates a file record but returns a placeholder upload URL that doesn't work. The actual storage upload handler is missing.
-
-- **[P0] Upload Backend Handler** [4h] -- CRITICAL GAP
+- **[P0] Upload Backend Handler** [4h] -- COMPLETED
   - Wire `POST /v4/projects/:id/files` to actual storage upload
   - Return pre-signed URL from storage module (already implemented)
   - File record creation with status tracking
   - Multipart completion notification endpoint
+  - Storage quota validation added
   - **Dependencies**: 1.6 (Storage) - DONE
 
 - **[P0] Chunked Upload Client** [1d]
@@ -810,7 +809,26 @@ All quick wins are COMPLETED:
 
 ## CHANGE LOG
 
-### 2026-02-16 Deep Research Update (This Update)
+### 2026-02-16 Iteration 1 Progress Update
+
+**Completed Work:**
+1. **Upload Backend Handler COMPLETED** - Wired to storage module with actual pre-signed URLs
+2. **Storage quota validation** added to file upload endpoint
+3. **File download endpoint** added: `GET /v4/projects/:projectId/files/:id/download`
+4. **Multipart/chunked upload endpoints** added for large file support:
+   - `POST /v4/projects/:projectId/files/:id/multipart`
+   - `GET /v4/projects/:projectId/files/:id/multipart/parts`
+   - `POST /v4/projects/:projectId/files/:id/multipart/complete`
+   - `DELETE /v4/projects/:projectId/files/:id/multipart`
+   - `POST /v4/projects/:projectId/files/:id/confirm`
+5. **Test infrastructure fixes**:
+   - Added `vitest.setup.ts` for environment variables
+   - Fixed missing imports (`accountMemberships`, `ValidationError`)
+6. **Tag v0.0.12 created**
+
+**API Endpoints Added:** 6 new endpoints (33 → 39, 30% → 35%)
+
+### 2026-02-16 Deep Research Update
 
 This update incorporates comprehensive research findings using 8 parallel Sonnet agents + 1 Opus analysis agent:
 
