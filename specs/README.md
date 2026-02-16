@@ -31,6 +31,18 @@ In a broader extend, all files need to be critiqued and updated, according the p
 | [09-transfer-app.md](./09-transfer-app.md) | Desktop transfer app |
 | [10-integrations.md](./10-integrations.md) | Adobe, NLE, automation integrations |
 | [11-security-features.md](./11-security-features.md) | Security |
+| [12-authentication.md](./12-authentication.md) | Authentication (WorkOS AuthKit) |
+| [14-realtime-collaboration.md](./14-realtime-collaboration.md) | Real-time collaboration (WebSocket, presence, events) |
+| [15-media-processing.md](./15-media-processing.md) | FFmpeg pipeline, transcoding, thumbnails |
+| [16-storage-and-data.md](./16-storage-and-data.md) | Storage and data |
+| [17-api-complete.md](./17-api-complete.md) | Complete API reference (V4) |
+
+### Deferred Specifications
+| File | Description | Phase |
+|------|-----------|-------|
+| 13-billing-and-plans.md | Pricing, plan tiers, feature gating | Phase 5 |
+| 18-mobile-complete.md | iOS/Android detailed specs | Phase 4 |
+| 19-accessibility.md | WCAG compliance, keyboard nav, screen readers | Phase 3+ |
 
 ---
 
@@ -54,6 +66,7 @@ These are source of truth -- documentation stating otherwise need to be updated 
 | **Transcription** | TBD (abstracted interface) | 27 languages, speaker ID — provider chosen later |
 | **AI/ML (Vision)** | TBD | Visual search / Media Intelligence |
 | **Deployment** | TBD | No Docker, no Kubernetes |
+| **Authentication** | WorkOS AuthKit | Email/password, social login, MFA, SSO-ready |
 | **CI/CD** | GitHub Actions | |
 
 ---
