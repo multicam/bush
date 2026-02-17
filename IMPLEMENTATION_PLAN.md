@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Basic Search - In Progress)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Basic Search (in progress)
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.12] Basic Search IN PROGRESS (FTS5 + API + UI COMPLETED). Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Version Stack UI - Completed)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed)
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -334,7 +334,7 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.5 Version Stacking [P1] - 2 days
 
-**IN PROGRESS** -- Version Stack API COMPLETED
+**COMPLETED** (2026-02-17)
 
 - **[P1] Version Stack API** [4h] -- COMPLETED (2026-02-17)
   - `POST /v4/version-stacks` - create stack (with optional file_ids)
@@ -348,11 +348,14 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: 2.1 (Upload) - DONE
   - **Implementation**: `src/api/routes/version-stacks.ts`, `src/web/lib/api.ts` (versionStacksApi)
 
-- **[P1] Version Stack UI** [4h]
-  - Drag-to-stack interaction
-  - Version list with thumbnails
-  - Compare versions side-by-side
+- **[P1] Version Stack UI** [4h] -- COMPLETED (2026-02-17)
+  - Drag-to-stack interaction with `useVersionStackDnd` hook
+  - Version list with thumbnails in `VersionStackList` component
+  - Compare versions side-by-side in `VersionStackCompare` component
+  - `VersionStackCard` component for asset browser display
+  - `CreateVersionStackModal` and `AddToStackModal` components
   - **Dependencies**: 2.3 (Asset Browser) - DONE
+  - **Implementation**: `src/web/components/version-stacks/`
 
 - **[P2] Comments on Version Stacks** [2h]
   - Comments linked to stack, not individual files
@@ -838,6 +841,43 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Version Stack UI Implementation
+
+**Completed Work:**
+1. **Version Stack UI Components COMPLETED** - `src/web/components/version-stacks/`
+   - `VersionStackList` - List of versions with thumbnails, set current, remove actions
+   - `VersionStackCard` - Card for displaying stacks in asset browser with stacked effect
+   - `VersionStackCompare` - Side-by-side comparison view for two versions
+   - `CreateVersionStackModal` - Modal for creating stacks from selected files
+   - `AddToStackModal` - Modal for adding files to existing stacks
+   - `useVersionStackDnd` - Hook for drag-to-stack interaction
+
+2. **Drag-to-Stack Interaction** - `useVersionStackDnd` hook
+   - Handles drag start, drag over, drop, and drag end events
+   - Validates drop targets (can't drop on self)
+   - Automatically creates stacks from dragged files
+   - Supports adding to existing stacks
+
+3. **Bug Fix COMPLETED** - `src/web/context/auth-context.tsx`
+   - Removed unused `WorkspaceAttributes` import to fix TypeScript error
+
+**New Files Created:**
+- `src/web/components/version-stacks/types.ts` - Type definitions
+- `src/web/components/version-stacks/version-stack-list.tsx` - Version list component
+- `src/web/components/version-stacks/version-stack-card.tsx` - Stack card component
+- `src/web/components/version-stacks/version-stack-compare.tsx` - Compare view component
+- `src/web/components/version-stacks/create-version-stack-modal.tsx` - Create modal
+- `src/web/components/version-stacks/add-to-stack-modal.tsx` - Add to stack modal
+- `src/web/components/version-stacks/use-version-stack-dnd.ts` - DnD hook
+- `src/web/components/version-stacks/version-stack.module.css` - Component styles
+- `src/web/components/version-stacks/index.ts` - Component exports
+
+**Updated Files:**
+- `src/web/context/auth-context.tsx` - Fixed unused import
+
+**Test Count:** 249 tests (all pass)
+**Lint:** 0 errors, 85 warnings
 
 ### 2026-02-17 Version Stack API Implementation
 

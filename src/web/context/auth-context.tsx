@@ -18,7 +18,7 @@ import {
 import type { AuthState, AccountRole } from "@/auth";
 import { isRoleAtLeast } from "@/auth/types";
 import { getAuthState, login as authLogin, logout as authLogout, switchAccount as authSwitchAccount } from "@/web/lib/auth";
-import { workspacesApi, type WorkspaceAttributes } from "@/web/lib/api";
+import { workspacesApi } from "@/web/lib/api";
 
 interface AuthContextValue extends AuthState {
   isLoading: boolean;

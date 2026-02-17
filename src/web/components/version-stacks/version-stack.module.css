@@ -1,0 +1,736 @@
+/**
+ * Bush Platform - Version Stack Component Styles
+ *
+ * Styles for version stack UI components.
+ * Reference: IMPLEMENTATION_PLAN.md 2.5 [P1] Version Stack UI
+ */
+
+/* ============================================================================
+   Shared Styles
+   ============================================================================ */
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-border, #e5e7eb);
+  border-top-color: var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   Version Stack List
+   ============================================================================ */
+
+.versionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--color-surface, #ffffff);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.stackName {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionItems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.versionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.versionItem:hover {
+  background-color: var(--color-hover, #f3f4f6);
+}
+
+.versionItem.current {
+  background-color: var(--color-success-bg, #ecfdf5);
+  border: 1px solid var(--color-success-border, #10b981);
+}
+
+.versionThumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: var(--color-muted, #f3f4f6);
+}
+
+.versionThumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.versionThumbnail[data-category="video"] {
+  background-color: var(--color-video-bg, #fef3c7);
+}
+
+.versionThumbnail[data-category="audio"] {
+  background-color: var(--color-audio-bg, #dbeafe);
+}
+
+.versionThumbnail[data-category="image"] {
+  background-color: var(--color-image-bg, #fce7f3);
+}
+
+.versionThumbnail[data-category="document"] {
+  background-color: var(--color-document-bg, #e0e7ff);
+}
+
+.versionIcon {
+  font-size: 1.25rem;
+}
+
+.versionInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.versionName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.versionActions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.versionItem:hover .versionActions {
+  opacity: 1;
+}
+
+.listLoading,
+.listError,
+.listEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* ============================================================================
+   Version Stack Card
+   ============================================================================ */
+
+.stackCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #ffffff);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.stackCard:hover {
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stackCard.selected {
+  border-color: var(--color-primary, #3b82f6);
+  background-color: var(--color-primary-bg, #eff6ff);
+}
+
+.stackCard:focus {
+  outline: none;
+  border-color: var(--color-primary, #3b82f6);
+  box-shadow: 0 0 0 2px var(--color-primary-focus, rgba(59, 130, 246, 0.3));
+}
+
+.stackThumbnail {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-muted, #f3f4f6);
+}
+
+.stackThumbnail[data-category="video"] {
+  background-color: var(--color-video-bg, #fef3c7);
+}
+
+.stackThumbnail[data-category="audio"] {
+  background-color: var(--color-audio-bg, #dbeafe);
+}
+
+.stackThumbnail[data-category="image"] {
+  background-color: var(--color-image-bg, #fce7f3);
+}
+
+/* Stacked card effect */
+.stackLayer2,
+.stackLayer3 {
+  position: absolute;
+  background: var(--color-surface, #ffffff);
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.stackLayer3 {
+  bottom: 12px;
+  left: 8px;
+  right: 8px;
+  height: calc(100% - 16px);
+  z-index: 1;
+}
+
+.stackLayer2 {
+  bottom: 6px;
+  left: 4px;
+  right: 4px;
+  height: calc(100% - 8px);
+  z-index: 2;
+}
+
+.stackMainImage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3;
+  border-radius: 0.25rem;
+}
+
+.stackPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
+}
+
+.stackIcon {
+  font-size: 2rem;
+}
+
+.stackCheckbox {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+  background: var(--color-surface, #ffffff);
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.stackCard:hover .stackCheckbox,
+.stackCard.selected .stackCheckbox {
+  opacity: 1;
+}
+
+.stackCheckbox input {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.stackCount {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+}
+
+.stackIndicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background: var(--color-surface, #ffffff);
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.stackInfo {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.stackCard .stackName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* ============================================================================
+   Version Stack Compare
+   ============================================================================ */
+
+.compareContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface, #ffffff);
+}
+
+.compareHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.compareHeader h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.compareActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.syncToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.comparePanels {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+}
+
+.comparePanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.comparePanelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-muted, #f9fafb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.compareFileName {
+  flex: 1;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comparePanelContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background, #111827);
+  min-height: 0;
+}
+
+.compareViewer {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.comparePanelFooter {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+  background: var(--color-muted, #f9fafb);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.compareDivider {
+  width: 2px;
+  background: var(--color-border, #e5e7eb);
+  position: relative;
+}
+
+.compareDividerLine {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  background: var(--color-surface, #ffffff);
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-radius: 50%;
+}
+
+.comparePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, #9ca3af);
+}
+
+.compareFallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-secondary, #9ca3af);
+}
+
+.compareMeta {
+  font-size: 0.875rem;
+}
+
+.compareNote {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.compareLoading,
+.compareError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  padding: 2rem;
+}
+
+/* ============================================================================
+   Modals
+   ============================================================================ */
+
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: var(--color-surface, #ffffff);
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.modalClose:hover {
+  color: var(--color-text, #1f2937);
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #1f2937);
+}
+
+.filesSection {
+  margin-bottom: 1rem;
+}
+
+.filesSection label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #1f2937);
+  margin-bottom: 0.5rem;
+}
+
+.filesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.filesListItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.filesListItem:last-child {
+  border-bottom: none;
+}
+
+.filesListIndex {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-muted, #f3f4f6);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.filesListName {
+  flex: 1;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filesListSize {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.modalError {
+  padding: 0.75rem;
+  background-color: var(--color-error-bg, #fef2f2);
+  border: 1px solid var(--color-error-border, #fca5a5);
+  border-radius: 0.375rem;
+  color: var(--color-error, #dc2626);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.modalInfo {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+/* Add to Stack Modal specific styles */
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-muted, #f9fafb);
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.fileInfoLabel {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.fileInfoName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modeTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.modeTab {
+  flex: 1;
+  padding: 0.75rem;
+  background: var(--color-surface, #ffffff);
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modeTab:not(:last-child) {
+  border-right: 1px solid var(--color-border, #e5e7eb);
+}
+
+.modeTab:hover {
+  background: var(--color-muted, #f9fafb);
+}
+
+.modeTab.active {
+  background: var(--color-primary, #3b82f6);
+  color: #ffffff;
+}
+
+.stacksList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.stackOption {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.stackOption:hover {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--color-primary-bg, #eff6ff);
+}
+
+.stackOption.selected {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--color-primary-bg, #eff6ff);
+}
+
+.stackOptionName {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.emptyMessage {
+  text-align: center;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 1rem;
+  font-size: 0.875rem;
+}
