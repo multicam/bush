@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Audio Player - Completed)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed)
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Basic Search - In Progress)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Basic Search (in progress)
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.12] Basic Search IN PROGRESS (FTS5 + API + UI COMPLETED). Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 51/110+ (46%) | 7 route modules implemented, auth + storage + asset operations + bulk endpoints added |
+| **API Endpoints** | 53/110+ (48%) | 8 route modules implemented, auth + storage + asset operations + bulk + search endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -542,26 +542,29 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.12 Basic Search [P1] - 2 days
 
-**NOT STARTED**
+**IN PROGRESS** -- FTS5 + Search API + Search UI COMPLETED
 
-- **[P1] FTS5 Setup** [4h]
+- **[P1] FTS5 Setup** [4h] -- COMPLETED
   - Create FTS5 virtual table
   - Triggers for index sync on file changes
   - BM25 ranking
   - **Dependencies**: 1.2 (Database) - DONE
+  - **Implementation**: `src/db/migrate.ts`
 
-- **[P1] Search API** [4h]
+- **[P1] Search API** [4h] -- COMPLETED
   - `GET /v4/search?q=query`
   - Typeahead (2+ chars, 300ms debounce)
   - Filter refinement (type, date, project)
   - Permission-filtered results
   - **Dependencies**: FTS5 setup
+  - **Implementation**: `src/api/routes/search.ts`
 
-- **[P1] Search UI** [4h]
+- **[P1] Search UI** [4h] -- COMPLETED
   - Global search bar (Cmd+K)
   - Project search (Cmd+F)
   - Thumbnail previews in results
   - **Dependencies**: Search API
+  - **Implementation**: `src/web/components/search/global-search.tsx`
 
 ---
 
@@ -830,6 +833,51 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Basic Search Implementation
+
+**Completed Work:**
+1. **FTS5 Setup COMPLETED** - `src/db/migrate.ts`
+   - Created FTS5 virtual table `files_fts` for full-text search
+   - Indexes file name, original name, and MIME type
+   - Uses porter + unicode61 tokenizer for better search
+   - Added triggers for automatic index sync (insert, update, delete)
+   - BM25 ranking for relevance scoring
+
+2. **Search API COMPLETED** - `src/api/routes/search.ts`
+   - `GET /v4/search?q=query` - Full-text search across accessible files
+   - `GET /v4/search/suggestions?q=query` - Typeahead suggestions
+   - Permission-filtered results (only files in accessible projects)
+   - File type filter support (video, audio, image, document)
+   - Project-scoped search via `project_id` parameter
+   - Minimum 2 characters for search, max 100 results
+
+3. **Search API Client COMPLETED** - `src/web/lib/api.ts`
+   - `searchApi.search()` - Execute search with filters
+   - `searchApi.suggestions()` - Get typeahead suggestions
+
+4. **Global Search UI COMPLETED** - `src/web/components/search/global-search.tsx`
+   - Cmd+K / Ctrl+K keyboard shortcut to open
+   - Debounced search (300ms)
+   - Suggestions section with type icons
+   - Results section with file metadata
+   - Keyboard navigation (↑↓, Enter, Esc)
+   - Click outside to close
+   - Responsive design
+
+**New Files Created:**
+- `src/api/routes/search.ts` - Search API endpoints
+- `src/web/components/search/global-search.tsx` - Global search component
+- `src/web/components/search/global-search.module.css` - Search component styles
+- `src/web/components/search/index.ts` - Component exports
+
+**Updated Files:**
+- `src/db/migrate.ts` - Added FTS5 virtual table and triggers
+- `src/api/routes/index.ts` - Export search routes
+- `src/api/index.ts` - Mount search routes at /v4/search
+- `src/web/lib/api.ts` - Added searchApi
+
+**API Endpoints:** 51 → 53 (+2 new search endpoints)
 
 ### 2026-02-17 Audio Player Verified as Complete + Bug Fix
 

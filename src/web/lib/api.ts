@@ -739,6 +739,81 @@ export const bulkApi = {
 };
 
 // ============================================================================
+// Search API
+// ============================================================================
+
+/**
+ * Search result attributes from API
+ */
+export interface SearchResultAttributes {
+  name: string;
+  originalName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  status: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/**
+ * Search suggestion attributes from API
+ */
+export interface SearchSuggestionAttributes {
+  name: string;
+  type: string;
+}
+
+/**
+ * Search API response meta
+ */
+export interface SearchMeta {
+  total: number;
+  query: string;
+  has_more: boolean;
+}
+
+/**
+ * Search API
+ */
+export const searchApi = {
+  /**
+   * Search files across accessible projects
+   */
+  search: async (options: {
+    query: string;
+    projectId?: string;
+    type?: "video" | "audio" | "image" | "document";
+    limit?: number;
+  }) => {
+    const params = new URLSearchParams();
+    params.set("q", options.query);
+    if (options.projectId) {
+      params.set("project_id", options.projectId);
+    }
+    if (options.type) {
+      params.set("type", options.type);
+    }
+    if (options.limit) {
+      params.set("limit", String(options.limit));
+    }
+    return apiFetch<{
+      data: JsonApiResource<SearchResultAttributes>[];
+      meta: SearchMeta;
+    }>(`/search?${params.toString()}`);
+  },
+
+  /**
+   * Get search suggestions (typeahead)
+   */
+  suggestions: async (query: string, limit = 10) => {
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("limit", String(limit));
+    return apiFetch<{ data: SearchSuggestionAttributes[] }>(`/search/suggestions?${params.toString()}`);
+  },
+};
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

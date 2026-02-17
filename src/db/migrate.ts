@@ -186,6 +186,35 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS files_status_idx ON files(status);
   CREATE INDEX IF NOT EXISTS comments_file_id_idx ON comments(file_id);
   CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications(user_id);
+
+  -- FTS5 virtual table for file search
+  CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
+    id UNINDEXED,
+    name,
+    original_name,
+    mime_type,
+    content='files',
+    content_rowid='rowid',
+    tokenize='porter unicode61'
+  );
+
+  -- Triggers to keep FTS index in sync with files table
+  CREATE TRIGGER IF NOT EXISTS files_fts_insert AFTER INSERT ON files BEGIN
+    INSERT INTO files_fts(rowid, id, name, original_name, mime_type)
+    VALUES (NEW.rowid, NEW.id, NEW.name, NEW.original_name, NEW.mime_type);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS files_fts_update AFTER UPDATE ON files BEGIN
+    UPDATE files_fts SET
+      name = NEW.name,
+      original_name = NEW.original_name,
+      mime_type = NEW.mime_type
+    WHERE rowid = NEW.rowid;
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS files_fts_delete AFTER DELETE ON files BEGIN
+    DELETE FROM files_fts WHERE rowid = OLD.rowid;
+  END;
 `);
 
 console.log("✅ Migrations completed successfully");

@@ -26,6 +26,7 @@ import {
   userRoutes,
   folderRoutes,
   bulkRoutes,
+  searchRoutes,
 } from "./routes/index.js";
 
 const app = new Hono();
@@ -139,6 +140,9 @@ v4.route("/folders", folderRoutes);
 
 // Bulk operations
 v4.route("/bulk", bulkRoutes);
+
+// Search
+v4.route("/search", searchRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);
