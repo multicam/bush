@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 43/110+ (39%) | 7 route modules implemented, auth + storage endpoints added |
+| **API Endpoints** | 45/110+ (41%) | 7 route modules implemented, auth + storage + asset operations endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -308,18 +308,19 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.4 Asset Operations [P1] - 2 days
 
-**NOT STARTED**
+**COMPLETED** (2026-02-17)
 
-- **[P1] Copy/Move/Delete/Recover** [4h]
+- **[P1] Copy/Move/Delete/Recover** [4h] -- COMPLETED
   - API endpoints: `POST /v4/files/:id/copy`, `/move`, `/delete`
   - Soft delete with 30-day retention
   - Recovery endpoint
-  - **Dependencies**: 2.3 (Asset Browser)
+  - **Dependencies**: 2.3 (Asset Browser) - DONE
+  - **Implementation**: `src/api/routes/files.ts`, `src/web/lib/api.ts`
 
-- **[P1] Download Endpoints** [4h]
+- **[P1] Download Endpoints** [4h] -- COMPLETED
   - `GET /v4/files/:id/download` - original via pre-signed URL
   - `GET /v4/files/:id/download?proxy=720p` - proxy version
-  - **Dependencies**: 2.2 (proxies)
+  - **Dependencies**: 2.2 (proxies) - DONE
 
 - **[P2] Custom Thumbnail** [2h]
   - Upload custom image or select video frame
@@ -821,6 +822,27 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Asset Operations Implementation
+
+**Completed Work:**
+1. **Copy File Endpoint COMPLETED** - `src/api/routes/files.ts`
+   - `POST /v4/projects/:projectId/files/:id/copy` - Copy file to folder
+   - Cross-project copy support
+   - Preserves metadata and creates new file record
+
+2. **Restore File Endpoint COMPLETED** - `src/api/routes/files.ts`
+   - `POST /v4/projects/:projectId/files/:id/restore` - Restore soft-deleted file
+   - 30-day recovery window for deleted files
+
+3. **Frontend API Methods COMPLETED** - `src/web/lib/api.ts`
+   - `filesApi.move()` - Move file to new folder/project
+   - `filesApi.copy()` - Copy file with cross-project support
+   - `filesApi.restore()` - Restore soft-deleted file
+
+**Note:** Move and download endpoints already existed from previous implementation.
+
+**API Endpoints:** 43 → 45 (+2 new endpoints: copy, restore)
 
 ### 2026-02-16 Storage Usage Endpoint
 

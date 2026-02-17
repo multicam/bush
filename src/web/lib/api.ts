@@ -417,6 +417,39 @@ export const filesApi = {
       `/projects/${projectId}/files/${fileId}/download`
     );
   },
+
+  /**
+   * Move a file to a different folder
+   */
+  move: async (projectId: string, fileId: string, data: { folder_id?: string | null }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}/move`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Copy a file to a folder (optionally in a different project)
+   */
+  copy: async (projectId: string, fileId: string, data?: {
+    name?: string;
+    folder_id?: string | null;
+    project_id?: string;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}/copy`, {
+      method: "POST",
+      body: JSON.stringify(data || {}),
+    });
+  },
+
+  /**
+   * Restore a soft-deleted file
+   */
+  restore: async (projectId: string, fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}/restore`, {
+      method: "POST",
+    });
+  },
 };
 
 /**

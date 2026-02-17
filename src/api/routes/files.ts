@@ -376,6 +376,210 @@ app.delete("/:id", async (c) => {
 });
 
 /**
+ * POST /v4/projects/:projectId/files/:id/copy - Copy file to folder
+ */
+app.post("/:id/copy", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get source file
+  const [sourceFile] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!sourceFile) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Check storage quota for copy
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, session.currentAccountId))
+    .limit(1);
+
+  if (!account) {
+    throw new NotFoundError("account", session.currentAccountId);
+  }
+
+  if (account.storageUsedBytes + sourceFile.fileSizeBytes > account.storageQuotaBytes) {
+    throw new ValidationError(
+      `Insufficient storage quota to copy file. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Required: ${sourceFile.fileSizeBytes} bytes`,
+      { pointer: "/data/attributes/file_size_bytes" }
+    );
+  }
+
+  // Determine destination project/folder
+  const destProjectId = body.project_id || projectId;
+  const destFolderId = body.folder_id !== undefined ? body.folder_id : sourceFile.folderId;
+
+  // Verify destination project access if different
+  if (destProjectId !== projectId) {
+    const destAccess = await verifyProjectAccess(destProjectId, session.currentAccountId);
+    if (!destAccess) {
+      throw new NotFoundError("project", destProjectId);
+    }
+  }
+
+  // Verify destination folder if specified
+  if (destFolderId) {
+    const [destFolder] = await db
+      .select()
+      .from(folders)
+      .where(
+        and(
+          eq(folders.id, destFolderId),
+          eq(folders.projectId, destProjectId)
+        )
+      )
+      .limit(1);
+
+    if (!destFolder) {
+      throw new NotFoundError("folder", destFolderId);
+    }
+  }
+
+  // Create new file record for the copy
+  const newFileId = generateId("file");
+  const now = new Date();
+  const copyName = body.name || `Copy of ${sourceFile.name}`;
+
+  await db.insert(files).values({
+    id: newFileId,
+    projectId: destProjectId,
+    folderId: destFolderId,
+    versionStackId: null, // Don't copy version stack membership
+    name: copyName,
+    originalName: sourceFile.originalName,
+    mimeType: sourceFile.mimeType,
+    fileSizeBytes: sourceFile.fileSizeBytes,
+    checksum: sourceFile.checksum,
+    status: sourceFile.status,
+    deletedAt: null,
+    expiresAt: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Update storage usage
+  await db
+    .update(accounts)
+    .set({
+      storageUsedBytes: account.storageUsedBytes + sourceFile.fileSizeBytes,
+      updatedAt: now,
+    })
+    .where(eq(accounts.id, session.currentAccountId));
+
+  // Copy file in storage
+  if (sourceFile.status === "ready") {
+    const sourceKey = storageKeys.original(
+      { accountId: session.currentAccountId, projectId, assetId: fileId },
+      sourceFile.name
+    );
+    const destKey = storageKeys.original(
+      { accountId: session.currentAccountId, projectId: destProjectId, assetId: newFileId },
+      copyName
+    );
+
+    try {
+      await storage.copyObject(sourceKey, destKey);
+    } catch (error) {
+      console.error(`Failed to copy file ${fileId} to ${newFileId}:`, error);
+      // Don't fail - the file record exists, storage can be fixed later
+    }
+  }
+
+  // Fetch and return the new file
+  const [newFile] = await db
+    .select()
+    .from(files)
+    .where(eq(files.id, newFileId))
+    .limit(1);
+
+  return sendSingle(c, formatDates(newFile), RESOURCE_TYPES.FILE);
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/restore - Restore soft-deleted file
+ */
+app.post("/:id/restore", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get soft-deleted file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  if (!file.deletedAt) {
+    throw new ValidationError("File is not deleted and cannot be restored", {
+      pointer: "/data/attributes/deleted_at",
+    });
+  }
+
+  // Check 30-day recovery period
+  const deletedAt = new Date(file.deletedAt);
+  const recoveryDeadline = new Date(deletedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+  if (new Date() > recoveryDeadline) {
+    throw new ValidationError("File recovery period (30 days) has expired", {
+      pointer: "/data/attributes/deleted_at",
+    });
+  }
+
+  // Restore file
+  await db
+    .update(files)
+    .set({
+      deletedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(files.id, fileId));
+
+  // Fetch and return restored file
+  const [restoredFile] = await db
+    .select()
+    .from(files)
+    .where(eq(files.id, fileId))
+    .limit(1);
+
+  return sendSingle(c, formatDates(restoredFile), RESOURCE_TYPES.FILE);
+});
+
+/**
  * POST /v4/projects/:projectId/files/:id/move - Move file to folder
  */
 app.post("/:id/move", async (c) => {
