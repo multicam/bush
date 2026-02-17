@@ -1,0 +1,345 @@
+/**
+ * Audio Viewer Component Styles
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1a1a;
+  user-select: none;
+}
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #333;
+  border-top-color: #888;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  gap: 24px;
+}
+
+/* Album art / file icon */
+.artwork {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.artworkIcon {
+  width: 80px;
+  height: 80px;
+  color: #666;
+}
+
+.fileInfo {
+  text-align: center;
+}
+
+.fileName {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  color: #888;
+  font-size: 13px;
+}
+
+/* Waveform container */
+.waveformSection {
+  width: 100%;
+  max-width: 800px;
+}
+
+.waveformContainer {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  background: #222;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.waveformCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Progress overlay on waveform */
+.waveformProgress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(59, 130, 246, 0.15);
+  pointer-events: none;
+}
+
+/* Playhead indicator */
+.playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #3b82f6;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.playhead::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+
+/* Comment markers */
+.commentMarker {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #fbbf24;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s ease;
+}
+
+.commentMarker:hover {
+  background: #f59e0b;
+}
+
+.commentMarker::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  border-radius: 50%;
+}
+
+/* Time display */
+.timeDisplay {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Controls section at bottom */
+.controlsSection {
+  padding: 16px 24px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid #333;
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Main controls */
+.mainControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.controlButton:hover {
+  background: #333;
+  border-color: #666;
+}
+
+.controlButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.playButton {
+  width: 48px;
+  height: 48px;
+  background: #3b82f6;
+  border: none;
+}
+
+.playButton:hover {
+  background: #2563eb;
+}
+
+.playButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Volume control */
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.volumeSlider {
+  width: 80px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Speed control */
+.speedControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speedSelect {
+  padding: 6px 10px;
+  background: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  appearance: none;
+  min-width: 60px;
+}
+
+.speedSelect:hover {
+  border-color: #666;
+}
+
+.speedSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Divider */
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #444;
+}
+
+/* Hidden audio element */
+.hiddenAudio {
+  display: none;
+}
+
+/* Keyboard shortcut hint */
+.shortcutHint {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  font-size: 11px;
+  color: #666;
+}
+
+/* Error state */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #888;
+}
+
+.errorIcon {
+  width: 48px;
+  height: 48px;
+  color: #dc2626;
+}
+
+.errorMessage {
+  font-size: 14px;
+}
