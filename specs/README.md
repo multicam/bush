@@ -117,7 +117,7 @@ Single-line text, Multi-line text, Number, Date, Single-select, Multi-select, Ch
 **Video**: 3GPP, AVI, FLV, MKV, MOV, MP4, MXF, WebM, WMV
 **Audio**: AAC, AIFF, FLAC, M4A, MP3, OGG, WAV, WMA
 **Image**: RAW (15+ formats), BMP, EXR, GIF, HEIC, JPG, PNG, TIFF, WebP
-**Document**: PDF, DOCX, PPTX, XLSX, Interactive ZIP
+**Document**: PDF, Markdown, DOCX, PPTX, XLSX, Interactive ZIP *(ZIP deferred to future release)*
 
 
 ### C2C Hardware Partners

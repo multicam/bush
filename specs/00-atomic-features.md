@@ -139,10 +139,11 @@ Account → Workspace → Project → Folder → [File | Version Stack | Folder]
 
 #### Documents
 - PDF (multi-page)
+- Markdown (.md, .markdown)
 - DOCX/DOC (MS Word)
 - PPTX/PPT (MS PowerPoint)
 - XLSX/XLS (MS Excel)
-- Interactive ZIP (HTML)
+- Interactive ZIP (HTML) *(future release)*
 
 ### 4.4 Asset Conversion
 - Automatic proxy generation
@@ -375,7 +376,12 @@ Account → Workspace → Project → Folder → [File | Version Stack | Folder]
 - Zoom controls
 - Page jump
 
-### 9.6 Comparison Viewer
+### 9.6 Markdown Viewer
+- Rendered Markdown with GFM support (tables, task lists, strikethrough)
+- Syntax-highlighted code blocks
+- Dark theme matching other viewers
+
+### 9.7 Comparison Viewer
 - Side-by-side asset comparison
 - Linked zoom/playback
 - Version comparison

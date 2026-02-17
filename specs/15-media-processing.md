@@ -433,7 +433,12 @@ Determined from FFprobe stream properties:
   {account_id}/{project_id}/{asset_id}/pages/page_002.jpg
   ```
 
-### Interactive ZIP (HTML)
+### Markdown (.md, .markdown)
+- Pipeline: none (rendered client-side)
+- No server processing required -- fetched as text, rendered in browser
+- Thumbnail: use static document icon
+
+### Interactive ZIP (HTML) *(future release)*
 - No processing -- serve extracted content directly
 - ZIP extracted to storage, served via CDN
 - Security: sanitize HTML, block external scripts (CSP headers)

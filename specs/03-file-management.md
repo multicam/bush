@@ -57,7 +57,7 @@ Bush provides a central, secure place to upload, organize, and store all work-in
 - Video files
 - Photos/images
 - Audio files
-- Documents
+- Documents (PDF, Markdown)
 - Adobe suite formats
 - Nearly any creative file type
 

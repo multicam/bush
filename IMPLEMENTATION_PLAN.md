@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-17 (PDF Viewer - Completed)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (partial)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer PARTIAL (PDF Viewer COMPLETED), [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
@@ -247,10 +247,10 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - HDR tone mapping (hable algorithm)
   - **Dependencies**: Worker process
 
-- **[P1] Image Processing** [4h] -- PARTIAL
+- **[P1] Image Processing** [4h] -- PARTIAL (RAW/Adobe deferred to future release)
   - Thumbnail generation - COMPLETED
-  - RAW format proxy (via libraw) - NOT STARTED
-  - Adobe format proxy (via ImageMagick) - NOT STARTED
+  - RAW format proxy (via libraw) - DEFERRED to future release
+  - Adobe format proxy (via ImageMagick) - DEFERRED to future release
   - **Dependencies**: Worker process
 
 - **[P1] Audio Processing** [4h] -- COMPLETED
@@ -258,7 +258,7 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - Client-side rendering from JSON
   - **Dependencies**: Worker process
 
-- **[P2] Document Processing** [4h] -- NOT STARTED
+- **[P3] Document Processing** [4h] -- DEFERRED to future release
   - PDF thumbnail/previews
   - DOCX/PPTX/XLSX conversion (LibreOffice headless)
   - **Dependencies**: Worker process, R4 research
@@ -406,11 +406,11 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: 2.3 (Asset Browser)
   - **Implementation**: `src/web/components/viewers/image-viewer.tsx`
 
-- **[P1] Format Support** [4h] -- NOT STARTED
-  - Standard images (JPEG, PNG, GIF, WebP, etc.)
-  - RAW via proxy (use processed thumbnail)
-  - Adobe via proxy (use processed thumbnail)
-  - HDR via tone-mapped proxy
+- **[P2] Format Support** [4h] -- PARTIAL (RAW/Adobe/HDR deferred to future release)
+  - Standard images (JPEG, PNG, GIF, WebP, etc.) - supported natively by browsers
+  - RAW via proxy (use processed thumbnail) - DEFERRED to future release
+  - Adobe via proxy (use processed thumbnail) - DEFERRED to future release
+  - HDR via tone-mapped proxy - DEFERRED to future release
   - **Dependencies**: 2.2 (image processing)
 
 - **[P2] Mini-Map for Large Images** [2h] -- COMPLETED
@@ -450,7 +450,7 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.8b PDF and Document Viewer [P1] - 3 days
 
-**PARTIAL** -- PDF Viewer COMPLETED
+**COMPLETED** -- PDF Viewer COMPLETED, Document/ZIP viewers DEFERRED
 
 - **[P1] PDF Viewer** [1d] -- COMPLETED (2026-02-17)
   - PDF.js integration
@@ -460,12 +460,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: 2.3 (Asset Browser)
   - **Implementation**: `src/web/components/viewers/pdf-viewer.tsx`
 
-- **[P1] Document Viewer (DOCX/PPTX/XLSX)** [4h]
+- **[P3] Document Viewer (DOCX/PPTX/XLSX)** [4h] -- DEFERRED to future release
   - Render server-generated PDF preview from 2.2
   - Page navigation, zoom
   - **Dependencies**: 2.2 (document conversion)
 
-- **[P2] Interactive ZIP Viewer** [4h]
+- **[P3] Interactive ZIP Viewer** [4h] -- DEFERRED to future release
   - Sandboxed iframe rendering
   - Security constraints (no external network, no localStorage)
   - **Dependencies**: 2.2 (processing)

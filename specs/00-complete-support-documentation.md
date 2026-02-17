@@ -197,7 +197,7 @@ Account
 - DOCX/DOC (MS Word)
 - PPTX/PPT (MS PowerPoint)
 - XLSX/XLS (MS Excel)
-- Interactive ZIP (HTML)
+- Interactive ZIP (HTML) *(future release)*
 
 ## 4.4 Asset Conversion
 
