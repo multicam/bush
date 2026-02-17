@@ -13,3 +13,8 @@ export { default as folderRoutes } from "./folders.js";
 export { default as bulkRoutes } from "./bulk.js";
 export { default as searchRoutes } from "./search.js";
 export { default as versionStackRoutes } from "./version-stacks.js";
+export { default as commentRoutes } from "./comments.js";
+export {
+  getVersionStackComments,
+  createVersionStackComment,
+} from "./comments.js";

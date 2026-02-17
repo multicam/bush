@@ -13,6 +13,10 @@ import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates 
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess } from "../access-control.js";
+import {
+  getVersionStackComments,
+  createVersionStackComment,
+} from "./comments.js";
 
 const app = new Hono();
 
@@ -627,5 +631,15 @@ app.post("/", async (c) => {
     })),
   });
 });
+
+/**
+ * GET /v4/version-stacks/:id/comments - List comments on a version stack
+ */
+app.get("/:id/comments", getVersionStackComments);
+
+/**
+ * POST /v4/version-stacks/:id/comments - Create comment on a version stack
+ */
+app.post("/:id/comments", createVersionStackComment);
 
 export default app;

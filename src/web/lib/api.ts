@@ -992,3 +992,232 @@ export function getErrorMessage(error: unknown): string {
   }
   return "An unexpected error occurred";
 }
+
+// ============================================================================
+// Comment Types
+// ============================================================================
+
+/**
+ * User attributes embedded in comment responses
+ */
+export interface CommentUserAttributes {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Comment attributes from API
+ */
+export interface CommentAttributes {
+  fileId: string | null;
+  versionStackId: string | null;
+  userId: string;
+  parentId: string | null;
+  text: string;
+  timestamp: number | null;
+  duration: number | null;
+  page: number | null;
+  annotation: CommentAnnotation | null;
+  isInternal: boolean;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // Embedded user info
+  user?: CommentUserAttributes;
+}
+
+/**
+ * Annotation data structure
+ */
+export interface CommentAnnotation {
+  type: "rectangle" | "ellipse" | "arrow" | "line" | "freehand" | "text";
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  points?: Array<{ x: number; y: number }>;
+  text?: string;
+  color?: string;
+  strokeWidth?: number;
+}
+
+/**
+ * Comment with user response type
+ */
+export interface CommentWithUserResponse extends JsonApiSingleResponse<CommentAttributes> {
+  data: JsonApiResource<CommentAttributes> & {
+    attributes: CommentAttributes & { user: CommentUserAttributes };
+  };
+}
+
+/**
+ * Comment collection with users response type
+ */
+export interface CommentCollectionWithUsersResponse extends JsonApiCollectionResponse<CommentAttributes> {
+  data: Array<JsonApiResource<CommentAttributes> & {
+    attributes: CommentAttributes & { user: CommentUserAttributes };
+  }>;
+}
+
+// ============================================================================
+// Comments API
+// ============================================================================
+
+/**
+ * Comments API
+ */
+export const commentsApi = {
+  /**
+   * List comments on a file
+   */
+  listByFile: async (fileId: string, options?: {
+    include_replies?: boolean;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.include_replies !== undefined) {
+      params.set("include_replies", String(options.include_replies));
+    }
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    if (options?.cursor) {
+      params.set("cursor", options.cursor);
+    }
+    const queryString = params.toString();
+    const path = `/files/${fileId}/comments${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<CommentCollectionWithUsersResponse>(path);
+  },
+
+  /**
+   * List comments on a version stack
+   */
+  listByVersionStack: async (stackId: string, options?: {
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    if (options?.cursor) {
+      params.set("cursor", options.cursor);
+    }
+    const queryString = params.toString();
+    const path = `/version-stacks/${stackId}/comments${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<CommentCollectionWithUsersResponse>(path);
+  },
+
+  /**
+   * Get a single comment by ID
+   */
+  get: async (commentId: string) => {
+    return apiFetch<CommentWithUserResponse>(`/comments/${commentId}`);
+  },
+
+  /**
+   * Create a comment on a file
+   */
+  createOnFile: async (fileId: string, data: {
+    text: string;
+    timestamp?: number;
+    duration?: number;
+    page?: number;
+    annotation?: CommentAnnotation;
+    is_internal?: boolean;
+    parent_id?: string;
+  }) => {
+    return apiFetch<CommentWithUserResponse>(`/files/${fileId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Create a comment on a version stack
+   */
+  createOnVersionStack: async (stackId: string, data: {
+    text: string;
+    annotation?: CommentAnnotation;
+    is_internal?: boolean;
+  }) => {
+    return apiFetch<CommentWithUserResponse>(`/version-stacks/${stackId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a comment (own only)
+   */
+  update: async (commentId: string, data: {
+    text?: string;
+    timestamp?: number;
+    duration?: number;
+    page?: number;
+    annotation?: CommentAnnotation;
+    is_internal?: boolean;
+  }) => {
+    return apiFetch<CommentWithUserResponse>(`/comments/${commentId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a comment (own or admin)
+   */
+  delete: async (commentId: string) => {
+    return apiFetch<void>(`/comments/${commentId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Reply to a comment
+   */
+  reply: async (commentId: string, data: {
+    text: string;
+    is_internal?: boolean;
+  }) => {
+    return apiFetch<CommentWithUserResponse>(`/comments/${commentId}/replies`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * List replies to a comment
+   */
+  listReplies: async (commentId: string, options?: {
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    if (options?.cursor) {
+      params.set("cursor", options.cursor);
+    }
+    const queryString = params.toString();
+    const path = `/comments/${commentId}/replies${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<CommentCollectionWithUsersResponse>(path);
+  },
+
+  /**
+   * Mark comment as complete (or uncomplete)
+   */
+  setComplete: async (commentId: string, complete: boolean = true) => {
+    return apiFetch<CommentWithUserResponse>(`/comments/${commentId}/complete`, {
+      method: "PUT",
+      body: JSON.stringify({ complete }),
+    });
+  },
+};

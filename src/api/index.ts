@@ -28,6 +28,7 @@ import {
   bulkRoutes,
   searchRoutes,
   versionStackRoutes,
+  commentRoutes,
 } from "./routes/index.js";
 
 const app = new Hono();
@@ -147,6 +148,15 @@ v4.route("/search", searchRoutes);
 
 // Version Stacks
 v4.route("/version-stacks", versionStackRoutes);
+
+// Comments (standalone routes for updating/deleting comments)
+v4.route("/comments", commentRoutes);
+
+// File comments (nested under files)
+v4.route("/files/:fileId/comments", commentRoutes);
+
+// Version stack comments (using exported handlers)
+// Note: These are added to version-stacks route separately
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);

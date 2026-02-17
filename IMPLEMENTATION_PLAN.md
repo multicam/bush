@@ -25,10 +25,11 @@
 - Notifications API: NOT IMPLEMENTED
 - Transcription API: NOT IMPLEMENTED
 - Custom Fields API: NOT IMPLEMENTED
+- Comments API: COMPLETED (10 endpoints)
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 61/110+ (55%) | 10 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(8) |
+| **API Endpoints** | 71/110+ (65%) | 11 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10) |
 | **Database Tables** | 14/26 (54%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, notifications, workspacePermissions, projectPermissions, folderPermissions |
 | **Test Files** | 20 | 249 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -489,22 +490,35 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.9 Comments and Annotations [P1] - 4 days
 
-**NOT STARTED**
+**IN PROGRESS** -- Comment API COMPLETED, Frontend API Client COMPLETED
 
-- **[P1] Comment API** [1d]
+- **[P1] Comment API** [1d] -- COMPLETED (2026-02-17)
   - CRUD for comments
   - Types: single-frame, range-based, anchored, internal, public
   - Threaded replies, @mentions
   - **Dependencies**: 2.6, 2.7, 2.8a, 2.8b (viewers)
+  - **Implementation**: `src/api/routes/comments.ts`
+  - **Endpoints**:
+    - `GET /v4/files/:fileId/comments` - List comments on a file
+    - `POST /v4/files/:fileId/comments` - Create comment on file
+    - `GET /v4/comments/:id` - Get comment details
+    - `PUT /v4/comments/:id` - Update comment (own only)
+    - `DELETE /v4/comments/:id` - Delete comment (own or admin)
+    - `POST /v4/comments/:id/replies` - Reply to comment
+    - `GET /v4/comments/:id/replies` - List replies to a comment
+    - `PUT /v4/comments/:id/complete` - Mark comment as complete
+    - `GET /v4/version-stacks/:stackId/comments` - List comments on version stack
+    - `POST /v4/version-stacks/:stackId/comments` - Create comment on version stack
+  - **Frontend Client**: `src/web/lib/api.ts` (commentsApi)
 
-- **[P1] Comment Panel UI** [1d]
+- **[P1] Comment Panel UI** [1d] -- NOT STARTED
   - Thread view with replies
   - Filter/sort by type, user, status
   - Quick actions (resolve, reply, delete)
   - Export (CSV, plain text, EDL)
   - **Dependencies**: Comment API
 
-- **[P1] Annotation Tools** [1d]
+- **[P1] Annotation Tools** [1d] -- NOT STARTED
   - Canvas overlay on all viewer types
   - Free draw, line, arrow, rectangle
   - Color picker, undo/redo
@@ -859,6 +873,52 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Comments API Implementation
+
+**Completed Work:**
+1. **Comments API COMPLETED** - `src/api/routes/comments.ts`
+   - `GET /v4/files/:fileId/comments` - List comments on a file with user info
+   - `POST /v4/files/:fileId/comments` - Create comment on file with annotation support
+   - `GET /v4/comments/:id` - Get comment details with user info
+   - `PUT /v4/comments/:id` - Update comment (own only)
+   - `DELETE /v4/comments/:id` - Delete comment (own or admin)
+   - `POST /v4/comments/:id/replies` - Reply to comment (threaded)
+   - `GET /v4/comments/:id/replies` - List replies to a comment
+   - `PUT /v4/comments/:id/complete` - Mark comment as complete/incomplete
+   - `GET /v4/version-stacks/:stackId/comments` - List comments on version stack
+   - `POST /v4/version-stacks/:stackId/comments` - Create comment on version stack
+
+2. **Comments Frontend API Client COMPLETED** - `src/web/lib/api.ts`
+   - `commentsApi.listByFile()` - List comments on a file
+   - `commentsApi.listByVersionStack()` - List comments on a version stack
+   - `commentsApi.get()` - Get a single comment
+   - `commentsApi.createOnFile()` - Create comment on file
+   - `commentsApi.createOnVersionStack()` - Create comment on version stack
+   - `commentsApi.update()` - Update comment
+   - `commentsApi.delete()` - Delete comment
+   - `commentsApi.reply()` - Reply to comment
+   - `commentsApi.listReplies()` - List replies
+   - `commentsApi.setComplete()` - Mark comment complete/incomplete
+
+3. **Types Added:**
+   - `CommentAttributes` - Comment data structure
+   - `CommentUserAttributes` - Embedded user info in comments
+   - `CommentAnnotation` - Annotation data structure (rectangle, ellipse, arrow, line, freehand, text)
+   - `CommentWithUserResponse` - Single comment response with user
+   - `CommentCollectionWithUsersResponse` - Collection response with users
+
+**New Files Created:**
+- `src/api/routes/comments.ts` - Comments API endpoints
+
+**Updated Files:**
+- `src/api/routes/index.ts` - Export comments routes
+- `src/api/routes/version-stacks.ts` - Import and use comments handlers
+- `src/api/index.ts` - Mount comments routes
+- `src/web/lib/api.ts` - Added commentsApi client with types
+
+**API Endpoints:** 61 → 71 (+10 new comment endpoints)
+**Route Modules:** 10 → 11 (+comments)
 
 ### 2026-02-17 Comprehensive Verification
 
