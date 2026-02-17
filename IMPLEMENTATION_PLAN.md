@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Folder Navigation + Build Error Fixes)
+**Last updated**: 2026-02-17 (Multi-Select and Bulk Actions)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation COMPLETED). Code refactoring pass COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED). Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 45/110+ (41%) | 7 route modules implemented, auth + storage + asset operations endpoints added |
+| **API Endpoints** | 51/110+ (46%) | 7 route modules implemented, auth + storage + asset operations + bulk endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -294,11 +294,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: None
   - **Implementation**: `src/web/components/folder-navigation/`
 
-- **[P1] Multi-Select and Bulk Actions** [4h] -- PARTIAL
-  - Shift-click range, Cmd/Ctrl toggle - PARTIAL (Ctrl/Cmd click works)
-  - Select all (max 200) - COMPLETED (list view)
-  - Bulk move/copy/delete/download - NOT STARTED
+- **[P1] Multi-Select and Bulk Actions** [4h] -- COMPLETED
+  - Shift-click range, Cmd/Ctrl toggle - COMPLETED
+  - Select all (max 200) - COMPLETED
+  - Bulk move/copy/delete/download - COMPLETED
   - **Dependencies**: None
+  - **Implementation**: `src/api/routes/bulk.ts`, `src/web/lib/api.ts` (bulkApi)
 
 - **[P2] Virtualized Lists** [4h] -- NOT STARTED
   - react-window or similar
@@ -822,6 +823,34 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Multi-Select and Bulk Actions Implementation
+
+**Completed Work:**
+1. **Bulk File Operations API COMPLETED** - `src/api/routes/bulk.ts`
+   - `POST /v4/bulk/files/move` - Move multiple files to a folder
+   - `POST /v4/bulk/files/copy` - Copy multiple files to a folder
+   - `POST /v4/bulk/files/delete` - Soft delete multiple files
+   - `POST /v4/bulk/files/download` - Get download URLs for multiple files
+
+2. **Bulk Folder Operations API COMPLETED** - `src/api/routes/bulk.ts`
+   - `POST /v4/bulk/folders/move` - Move multiple folders to a parent folder
+   - `POST /v4/bulk/folders/delete` - Delete multiple folders
+
+3. **Frontend Bulk API Client COMPLETED** - `src/web/lib/api.ts`
+   - `bulkApi.moveFiles()` - Move multiple files
+   - `bulkApi.copyFiles()` - Copy multiple files
+   - `bulkApi.deleteFiles()` - Delete multiple files (soft delete)
+   - `bulkApi.downloadFiles()` - Get download URLs for multiple files
+   - `bulkApi.moveFolders()` - Move multiple folders
+   - `bulkApi.deleteFolders()` - Delete multiple folders
+
+4. **Multi-Select UI COMPLETED**
+   - Shift-click range selection - COMPLETED
+   - Cmd/Ctrl toggle selection - COMPLETED
+   - Select all (max 200) - COMPLETED
+
+**API Endpoints:** 45 → 51 (+6 new bulk endpoints)
 
 ### 2026-02-17 Asset Operations Implementation
 

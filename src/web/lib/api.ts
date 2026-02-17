@@ -624,6 +624,118 @@ export const accountsApi = {
       { method: "POST" }
     );
   },
+
+  /**
+   * Get storage usage for account
+   */
+  getStorage: async (id: string) => {
+    return apiFetch<{ data: { id: string; type: "storage"; attributes: {
+      used_bytes: number;
+      quota_bytes: number;
+      available_bytes: number;
+      usage_percent: number;
+    }}}>(`/accounts/${id}/storage`);
+  },
+};
+
+/**
+ * Bulk operation result type
+ */
+export interface BulkOperationResult {
+  succeeded: string[];
+  failed: { id: string; error: string }[];
+}
+
+/**
+ * Bulk copy result type
+ */
+export interface BulkCopyResult extends BulkOperationResult {
+  copies: { original: string; copy: string }[];
+}
+
+/**
+ * Bulk download result type
+ */
+export interface BulkDownloadResult {
+  succeeded: { id: string; download_url: string; expires_at: string }[];
+  failed: { id: string; error: string }[];
+}
+
+/**
+ * Bulk Operations API
+ */
+export const bulkApi = {
+  /**
+   * Move multiple files to a folder/project
+   */
+  moveFiles: async (fileIds: string[], destination: {
+    type: "folder" | "project" | "root";
+    id?: string;
+    project_id?: string;
+  }) => {
+    return apiFetch<{ data: BulkOperationResult }>("/bulk/files/move", {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds, destination }),
+    });
+  },
+
+  /**
+   * Copy multiple files to a folder/project
+   */
+  copyFiles: async (fileIds: string[], destination: {
+    type: "folder" | "project" | "root";
+    id?: string;
+    project_id?: string;
+  }) => {
+    return apiFetch<{ data: BulkCopyResult }>("/bulk/files/copy", {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds, destination }),
+    });
+  },
+
+  /**
+   * Delete multiple files (soft delete)
+   */
+  deleteFiles: async (fileIds: string[]) => {
+    return apiFetch<{ data: BulkOperationResult }>("/bulk/files/delete", {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds }),
+    });
+  },
+
+  /**
+   * Get download URLs for multiple files
+   */
+  downloadFiles: async (fileIds: string[]) => {
+    return apiFetch<{ data: BulkDownloadResult }>("/bulk/files/download", {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds }),
+    });
+  },
+
+  /**
+   * Move multiple folders
+   */
+  moveFolders: async (folderIds: string[], destination: {
+    type: "folder" | "root";
+    id?: string;
+    project_id?: string;
+  }) => {
+    return apiFetch<{ data: BulkOperationResult }>("/bulk/folders/move", {
+      method: "POST",
+      body: JSON.stringify({ folder_ids: folderIds, destination }),
+    });
+  },
+
+  /**
+   * Delete multiple folders
+   */
+  deleteFolders: async (folderIds: string[]) => {
+    return apiFetch<{ data: BulkOperationResult }>("/bulk/folders/delete", {
+      method: "POST",
+      body: JSON.stringify({ folder_ids: folderIds }),
+    });
+  },
 };
 
 // ============================================================================

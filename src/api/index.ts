@@ -25,6 +25,7 @@ import {
   fileRoutes,
   userRoutes,
   folderRoutes,
+  bulkRoutes,
 } from "./routes/index.js";
 
 const app = new Hono();
@@ -135,6 +136,9 @@ v4.route("/projects/:projectId/folders", folderRoutes);
 
 // Standalone folder routes
 v4.route("/folders", folderRoutes);
+
+// Bulk operations
+v4.route("/bulk", bulkRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);
