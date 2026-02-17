@@ -1,44 +1,47 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Bun Runtime Migration + R2/R7 Research)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS - Sharing and Presentations API COMPLETED, Share UI NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed) + Comments/Annotations (completed) + Metadata System (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (94/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.12] Basic Search COMPLETED, [3.1] Sharing and Presentations API COMPLETED. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-18 (Comprehensive Verification)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI NOT STARTED. Realtime Infrastructure DECIDED but NOT IMPLEMENTED (0%). Notifications/Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (94/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications NOT STARTED, [2.12] Basic Search COMPLETED, [3.1] Sharing API COMPLETED, [3.1-UI] Share UI NOT STARTED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
 
 ## IMPLEMENTATION STATISTICS
 
-### Verification (2026-02-17)
+### Verification (2026-02-18)
 
-**Verified via code analysis:**
+**Verified via comprehensive code analysis:**
 - All 258 tests pass (21 test files)
-- API endpoints counted from route files: 82 total
+- API endpoints counted from route files: 94 total (see breakdown below)
 - Database schema reviewed: 18 tables with proper indexes
 - Media processing: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
 - Frontend viewers: 4 implemented (video, audio, image, pdf)
 - Annotation tools: COMPLETED (canvas, toolbar, overlay)
-- WebSocket/Realtime: NOT IMPLEMENTED (0%)
-- Comments API: COMPLETED
-- Shares API: COMPLETED
-- Collections API: NOT IMPLEMENTED
-- Webhooks API: NOT IMPLEMENTED
-- Notifications API: NOT IMPLEMENTED
-- Transcription API: NOT IMPLEMENTED
+- Comments API: COMPLETED (10 endpoints)
+- Shares API: COMPLETED (11 endpoints)
+- **CRITICAL GAP**: Realtime Infrastructure - specs say DECIDED but NO CODE EXISTS (0%)
+- Collections API: NOT IMPLEMENTED (0%)
+- Webhooks API: NOT IMPLEMENTED (0%)
+- Notifications API: NOT IMPLEMENTED (0%) - table exists, no routes
+- Transcription API: NOT IMPLEMENTED (0%)
 - Custom Fields API: COMPLETED
+- Email Service: NOT IMPLEMENTED (0%) - spec says hollow impl needed
+- Member Management: NOT IMPLEMENTED (0%) - no /accounts/:id/members endpoints
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 94/110+ (85%) | 14 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11) |
-| **Database Tables** | 18/26 (69%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, custom_fields, custom_field_visibility |
+| **API Endpoints** | 94/118 (80%) | 14 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11) |
+| **Database Tables** | 18/20+ (90%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility |
 | **Test Files** | 21 | 258 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
-| **TODO Comments** | 0 | All resolved |
+| **TODO Comments** | 3 | Minor items remaining |
 | **Media Processing** | 75% | BullMQ + Worker infrastructure, metadata extraction (now persisted to DB), thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
-| **Real-time (WebSocket)** | 0% | Not implemented |
+| **Real-time (WebSocket)** | 0% | **CRITICAL**: Decided in specs but NO CODE EXISTS |
 | **Upload Client** | 100% | Chunked upload with resumable support |
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
 | **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
+| **Share UI** | 0% | API complete, no frontend pages/components |
 
 ---
 
@@ -53,6 +56,69 @@ This section lists all remaining implementation tasks, prioritized by impact and
 - **P3**: Low - nice-to-have, deferrable
 - **Effort**: Estimated time (h = hours, d = days)
 - **Dependencies**: What must complete first
+
+---
+
+## CRITICAL INFRASTRUCTURE GAPS (Must Complete Before Phase 3)
+
+These items are required for core platform functionality but are missing from the codebase despite being documented in specs.
+
+### Realtime Infrastructure (0% - NO CODE EXISTS)
+
+- **[P0] WebSocket Server + Event Bus** [3d] -- NOT STARTED **(CRITICAL)**
+  - Despite specs/README.md documenting this as "DECIDED", NO implementation exists
+  - **Required files**:
+    - `src/realtime/event-bus.ts` - In-process EventEmitter with typed events
+    - `src/realtime/emit.ts` - `emitEvent()` helper for route handlers
+    - `src/realtime/ws-manager.ts` - WebSocket connection manager (auth, rooms, broadcast)
+    - `src/web/lib/ws-client.ts` - Browser WebSocket client with reconnection
+    - `src/web/hooks/use-realtime.ts` - `useRealtime(projectId, callback)` React hook
+  - **WebSocket upgrade**: Add to `src/api/index.ts` at `/ws`
+  - **Event types**: comment.created/updated/deleted, file.upload_complete/processing_complete, share.activity
+  - **Blocks**: Comments real-time sync, Notifications, Share activity updates
+  - **Spec refs**: `specs/README.md` "Realtime Architecture" section, `specs/14-realtime-collaboration.md`
+
+### Email Service (0% - NO CODE EXISTS)
+
+- **[P0] Email Service Interface** [0.5d] -- NOT STARTED **(CRITICAL)**
+  - Spec says "Generic interface with hollow implementation" but no code exists
+  - **Required files**:
+    - `src/lib/email.ts` - `EmailService` interface with `send()` method
+    - `src/lib/email/console.ts` - Console logger for development
+    - `src/lib/email/index.ts` - Provider factory based on config
+  - **Blocks**: Member invitations, Notifications email digests, Password reset
+  - **Spec refs**: `specs/README.md` Tech Stack - Email row
+
+### Member Management API (0% - NO CODE EXISTS)
+
+- **[P1] Account Member Endpoints** [1d] -- NOT STARTED
+  - `GET /v4/accounts/:id/members` - List account members
+  - `POST /v4/accounts/:id/members` - Invite new member
+  - `PATCH /v4/accounts/:id/members/:memberId` - Update member role
+  - `DELETE /v4/accounts/:id/members/:memberId` - Remove member
+  - **Dependencies**: Email Service (for invitations)
+  - **Implementation**: Add to `src/api/routes/accounts.ts`
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.1
+
+### Notifications System (0% - Table exists, no API)
+
+- **[P1] Notifications API** [1d] -- NOT STARTED
+  - `notifications` table exists in schema but no routes
+  - **Endpoints needed**:
+    - `GET /v4/users/me/notifications` - List notifications
+    - `PATCH /v4/users/me/notifications/:id` - Mark as read
+    - `POST /v4/users/me/notifications/read-all` - Mark all read
+    - `GET /v4/users/me/notifications/unread-count` - Get unread count
+  - **Dependencies**: Realtime Infrastructure (for push)
+  - **Implementation**: `src/api/routes/notifications.ts`
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.15
+
+- **[P1] Notifications UI** [1d] -- NOT STARTED
+  - Bell icon with unread badge in header
+  - Notification dropdown panel
+  - Full notifications page `/notifications`
+  - **Dependencies**: Notifications API
+  - **Implementation**: `src/web/components/notifications/`
 
 ---
 
@@ -668,12 +734,17 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Implementation**: `src/api/routes/shares.ts`, `src/web/lib/api.ts` (sharesApi)
   - **Schema**: `shares`, `shareAssets`, `shareActivity` tables added
 
-- **[P1] Share UI** [2d] -- NOT STARTED
-  - Share builder component
-  - WYSIWYG editor for branding
-  - Share preview
-  - Asset selection interface
-  - **Dependencies**: Shares API - DONE
+- **[P1] Share UI** [5d] -- NOT STARTED **(HIGH PRIORITY - API COMPLETE)**
+  - **Required pages/components**:
+    - `src/web/app/shares/page.tsx` - Share list page
+    - `src/web/app/shares/[id]/page.tsx` - Share detail/edit page
+    - `src/web/app/s/[slug]/page.tsx` - Public share viewing page (no auth)
+    - `src/web/components/shares/share-builder.tsx` - Create/edit share wizard
+    - `src/web/components/shares/share-preview.tsx` - Preview share as recipient
+    - `src/web/components/shares/branding-editor.tsx` - WYSIWYG branding editor
+    - `src/web/components/shares/share-asset-picker.tsx` - Select files for share
+    - `src/web/components/shares/share-activity-feed.tsx` - View/comment/download activity
+  - **Dependencies**: Shares API - DONE, Realtime Infrastructure (for activity updates)
 
 - **[P2] External Reviewer Access** [1d] -- NOT STARTED
   - Guest flows with share links
@@ -774,14 +845,20 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - 5TB upload testing
   - **Enhances**: 2.1 (Upload)
 
-- **[P1] R7: Real-Time Infrastructure** [1w] -- COMPLETED (2026-02-18)
+- **[P1] R7: Real-Time Infrastructure** [1w] -- DECIDED (2026-02-18) BUT NOT IMPLEMENTED
   - **Decision**: Bun native WebSocket + in-process EventEmitter for MVP
   - **Scope**: Events-only (no presence, no live cursors)
   - **Auth**: Cookie-based (browser sends cookies on WS upgrade)
   - **Channel scoping**: Per-project subscription
   - **Scaling path**: EventEmitter → Redis pub/sub (50+ users) → dedicated WS service (500+ users)
   - **Details**: `specs/README.md` "Realtime Architecture" section
-  - **Implementation**: 5 new files in `src/realtime/` + `src/web/lib/ws-client.ts` + `src/web/hooks/use-realtime.ts`
+  - **CRITICAL**: NO CODE EXISTS. Need to implement:
+    - `src/realtime/event-bus.ts` - In-process EventEmitter
+    - `src/realtime/emit.ts` - emitEvent() helper
+    - `src/realtime/ws-manager.ts` - WebSocket connection manager
+    - `src/web/lib/ws-client.ts` - Browser WebSocket client
+    - `src/web/hooks/use-realtime.ts` - React hook
+  - **Blocks**: Comments real-time sync, Notifications, Share activity updates
 
 ### TIER 3: Week 2 (QUICK DECISIONS)
 
@@ -947,6 +1024,39 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Comprehensive Verification
+
+**Critical Findings:**
+- **R7 Realtime Infrastructure**: Marked as "COMPLETED" in previous plan but NO CODE EXISTS (0%). Specs document the architecture decision but implementation never happened.
+- **Email Service**: Spec says "hollow implementation" but no code exists.
+- **Member Management API**: No `/v4/accounts/:id/members` endpoints exist.
+- **Notifications API**: `notifications` table exists in schema but no API routes.
+- **Share UI**: API is complete (11 endpoints) but NO frontend pages/components exist.
+
+**Verified Implementation Status:**
+- API Endpoints: 94 total across 14 route modules (80% of spec)
+- Database Tables: 18 tables (90% of core)
+- Test Files: 21 files, 258 tests
+- TODO Comments: 3 remaining (minor items)
+- Media Processors: 5 (metadata, thumbnail, proxy, waveform, filmstrip) - 75%
+- Frontend Components: 38 components across viewers, asset-browser, upload, comments, annotations, metadata, version-stacks, search, folder-navigation
+
+**New Section Added:**
+- "CRITICAL INFRASTRUCTURE GAPS" - Documents P0 items that block other work
+
+**TODO Items Found:**
+1. `src/web/app/projects/[id]/page.tsx:66` - thumbnailUrl from API
+2. `src/web/app/projects/[id]/page.tsx:244` - Open file viewer
+3. `src/api/routes/comments.ts:393` - Check full_access+ permission
+
+**Recommended Priority Order:**
+1. Realtime Infrastructure (3-4 days) - Blocks notifications, share activity
+2. Email Service Interface (0.5 days) - Blocks member invitations
+3. Share UI (5 days) - API complete, frontend needed
+4. Notifications API + UI (2-3 days)
+5. Member Management API (1 day)
+6. Collections/Webhooks/Transcription as needed
 
 ### 2026-02-18 R6 Transcription Research + Decision Updates
 
