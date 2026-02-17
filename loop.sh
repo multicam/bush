@@ -53,12 +53,14 @@ while true; do
     # --model opus: Primary agent uses Opus for complex reasoning (task selection, prioritization)
     #               Can use 'sonnet' in build mode for speed if plan is clear and tasks well-defined
     # --verbose: Detailed execution logging
+    LOG_FILE="/tmp/ralph/${MODE}-$(date +%Y%m%d-%H%M%S)-iter${ITERATION}.jsonl"
+    mkdir -p /tmp/ralph
     cat "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
         --model sonnet \
-        --verbose
-#        --model opus \
+        --verbose \
+        2>&1 | tee "$LOG_FILE"
 
     # Commit and push changes after each iteration
     if [ -n "$(git status --porcelain)" ]; then
