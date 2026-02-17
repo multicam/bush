@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Multi-Select and Bulk Actions)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED). Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Image Viewer - Partial)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial)
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED). Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -385,27 +385,29 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.7 Image Viewer [P1] - 2 days
 
-**NOT STARTED**
+**PARTIAL** -- Zoom and Pan COMPLETED
 
-- **[P1] Zoom and Pan** [4h]
+- **[P1] Zoom and Pan** [4h] -- COMPLETED
   - Zoom 25%-400% via mouse wheel, buttons, slider
   - Zoom to cursor point
   - Pan via drag
   - Fit-to-screen, 1:1 pixel view
   - **Dependencies**: 2.3 (Asset Browser)
+  - **Implementation**: `src/web/components/viewers/image-viewer.tsx`
 
-- **[P1] Format Support** [4h]
+- **[P1] Format Support** [4h] -- NOT STARTED
   - Standard images (JPEG, PNG, GIF, WebP, etc.)
   - RAW via proxy (use processed thumbnail)
   - Adobe via proxy (use processed thumbnail)
   - HDR via tone-mapped proxy
   - **Dependencies**: 2.2 (image processing)
 
-- **[P2] Mini-Map for Large Images** [2h]
+- **[P2] Mini-Map for Large Images** [2h] -- COMPLETED
   - Show for images >2000px
   - Click to navigate
   - Viewport indicator
   - **Dependencies**: Zoom/pan
+  - **Implementation**: `src/web/components/viewers/image-viewer.tsx`
 
 ### 2.8a Audio Player [P1] - 2 days
 
@@ -823,6 +825,25 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Image Viewer Implementation (Partial)
+
+**Completed Work:**
+1. **ImageViewer Component COMPLETED** - `src/web/components/viewers/image-viewer.tsx`
+   - Zoom (25% - 400%) via mouse wheel, buttons, and keyboard shortcuts (+/-)
+   - Pan via mouse drag
+   - Fit to screen (keyboard: 0)
+   - 1:1 pixel view (keyboard: 1)
+   - Mini-map navigation for images > 2000px
+   - Mini-map shows viewport indicator and supports click-to-navigate
+   - Full keyboard shortcuts: +/- for zoom, 0 for fit, 1 for 1:1
+
+**Remaining Work:**
+- Format Support (RAW/Adobe via proxy) - NOT STARTED
+- Requires image processing pipeline work for RAW/Adobe format proxies
+
+**New Files Created:**
+- `src/web/components/viewers/image-viewer.tsx` - Image viewer with zoom/pan/mini-map
 
 ### 2026-02-17 Multi-Select and Bulk Actions Implementation
 
