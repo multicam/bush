@@ -814,6 +814,142 @@ export const searchApi = {
 };
 
 // ============================================================================
+// Version Stack Types
+// ============================================================================
+
+/**
+ * Version Stack attributes from API
+ */
+export interface VersionStackAttributes {
+  name: string;
+  projectId: string;
+  currentFileId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Version Stack response with included files
+ */
+export interface VersionStackWithFilesResponse {
+  data: JsonApiResource<VersionStackAttributes> & {
+    relationships: {
+      files: { data: Array<{ id: string; type: "file" }> };
+      current_file: { data: { id: string; type: "file" } | null };
+    };
+  };
+  included: JsonApiResource<FileAttributes>[];
+}
+
+// ============================================================================
+// Version Stack API
+// ============================================================================
+
+/**
+ * Version Stack API
+ */
+export const versionStacksApi = {
+  /**
+   * Get a version stack by ID with all files
+   */
+  get: async (stackId: string) => {
+    return apiFetch<VersionStackWithFilesResponse>(`/version-stacks/${stackId}`);
+  },
+
+  /**
+   * Create a new version stack
+   */
+  create: async (data: {
+    project_id: string;
+    name: string;
+    file_ids?: string[];
+  }) => {
+    return apiFetch<VersionStackWithFilesResponse>("/version-stacks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a version stack
+   */
+  update: async (stackId: string, data: {
+    name?: string;
+    current_file_id?: string | null;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<VersionStackAttributes>>(`/version-stacks/${stackId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a version stack (files are unstacked but not deleted)
+   */
+  delete: async (stackId: string) => {
+    return apiFetch<void>(`/version-stacks/${stackId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * List files in a version stack
+   */
+  listFiles: async (stackId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/version-stacks/${stackId}/files${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<FileAttributes>>(path);
+  },
+
+  /**
+   * Add a file to a version stack
+   */
+  addFile: async (stackId: string, fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/version-stacks/${stackId}/files`, {
+      method: "POST",
+      body: JSON.stringify({ file_id: fileId }),
+    });
+  },
+
+  /**
+   * Remove a file from a version stack
+   */
+  removeFile: async (stackId: string, fileId: string) => {
+    return apiFetch<void>(`/version-stacks/${stackId}/files/${fileId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Set the current version of a stack
+   */
+  setCurrent: async (stackId: string, fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<VersionStackAttributes>>(`/version-stacks/${stackId}/set-current`, {
+      method: "POST",
+      body: JSON.stringify({ file_id: fileId }),
+    });
+  },
+
+  /**
+   * Create a version stack from multiple files
+   */
+  stackFiles: async (data: {
+    project_id: string;
+    name: string;
+    file_ids: string[];
+  }) => {
+    return apiFetch<VersionStackWithFilesResponse>("/version-stacks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

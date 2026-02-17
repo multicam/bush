@@ -12,3 +12,4 @@ export { default as userRoutes } from "./users.js";
 export { default as folderRoutes } from "./folders.js";
 export { default as bulkRoutes } from "./bulk.js";
 export { default as searchRoutes } from "./search.js";
+export { default as versionStackRoutes } from "./version-stacks.js";

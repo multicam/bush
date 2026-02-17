@@ -11,7 +11,7 @@
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 53/110+ (48%) | 8 route modules implemented, auth + storage + asset operations + bulk + search endpoints added |
+| **API Endpoints** | 61/110+ (55%) | 9 route modules implemented, auth + storage + asset operations + bulk + search + version stacks endpoints added |
 | **Database Tables** | 14/26 (54%) | Core tables complete, feature tables missing |
 | **Test Files** | 20 | Good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
@@ -334,20 +334,25 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.5 Version Stacking [P1] - 2 days
 
-**NOT STARTED**
+**IN PROGRESS** -- Version Stack API COMPLETED
 
-- **[P1] Version Stack API** [4h]
-  - `POST /v4/version-stacks` - create stack
-  - `POST /v4/version-stacks/:id/files` - add version
-  - `DELETE /v4/version-stacks/:id/files/:fileId` - remove
-  - `PATCH /v4/version-stacks/:id/current` - set current
-  - **Dependencies**: 2.1 (Upload)
+- **[P1] Version Stack API** [4h] -- COMPLETED (2026-02-17)
+  - `POST /v4/version-stacks` - create stack (with optional file_ids)
+  - `GET /v4/version-stacks/:id` - get stack with all version files
+  - `PATCH /v4/version-stacks/:id` - update stack (name, current_file_id)
+  - `DELETE /v4/version-stacks/:id` - delete stack (files are unstacked)
+  - `GET /v4/version-stacks/:id/files` - list files in stack
+  - `POST /v4/version-stacks/:id/files` - add file to stack
+  - `DELETE /v4/version-stacks/:id/files/:fileId` - remove file from stack
+  - `POST /v4/version-stacks/:id/set-current` - set current version
+  - **Dependencies**: 2.1 (Upload) - DONE
+  - **Implementation**: `src/api/routes/version-stacks.ts`, `src/web/lib/api.ts` (versionStacksApi)
 
 - **[P1] Version Stack UI** [4h]
   - Drag-to-stack interaction
   - Version list with thumbnails
   - Compare versions side-by-side
-  - **Dependencies**: 2.3 (Asset Browser)
+  - **Dependencies**: 2.3 (Asset Browser) - DONE
 
 - **[P2] Comments on Version Stacks** [2h]
   - Comments linked to stack, not individual files
@@ -833,6 +838,40 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Version Stack API Implementation
+
+**Completed Work:**
+1. **Version Stack API COMPLETED** - `src/api/routes/version-stacks.ts`
+   - `POST /v4/version-stacks` - Create stack (with optional file_ids)
+   - `GET /v4/version-stacks/:id` - Get stack with all version files
+   - `PATCH /v4/version-stacks/:id` - Update stack (name, current_file_id)
+   - `DELETE /v4/version-stacks/:id` - Delete stack (files are unstacked, not deleted)
+   - `GET /v4/version-stacks/:id/files` - List files in stack
+   - `POST /v4/version-stacks/:id/files` - Add file to stack
+   - `DELETE /v4/version-stacks/:id/files/:fileId` - Remove file from stack
+   - `POST /v4/version-stacks/:id/set-current` - Set current version
+
+2. **Version Stack API Client COMPLETED** - `src/web/lib/api.ts`
+   - `versionStacksApi.get()` - Get stack with files
+   - `versionStacksApi.create()` - Create new stack
+   - `versionStacksApi.update()` - Update stack metadata
+   - `versionStacksApi.delete()` - Delete stack
+   - `versionStacksApi.listFiles()` - List files in stack
+   - `versionStacksApi.addFile()` - Add file to stack
+   - `versionStacksApi.removeFile()` - Remove file from stack
+   - `versionStacksApi.setCurrent()` - Set current version
+   - `versionStacksApi.stackFiles()` - Create stack from multiple files
+
+**New Files Created:**
+- `src/api/routes/version-stacks.ts` - Version stack API endpoints
+
+**Updated Files:**
+- `src/api/routes/index.ts` - Export version stack routes
+- `src/api/index.ts` - Mount version stack routes at /v4/version-stacks
+- `src/web/lib/api.ts` - Added versionStacksApi with VersionStackAttributes and VersionStackWithFilesResponse types
+
+**API Endpoints:** 53 → 61 (+8 new version stack endpoints)
 
 ### 2026-02-17 Basic Search Implementation
 
