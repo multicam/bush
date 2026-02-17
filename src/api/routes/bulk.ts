@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { files, folders, accounts } from "../../db/schema.js";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { generateId } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
