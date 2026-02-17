@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Shares API Implementation)
+**Last updated**: 2026-02-18 (Bun Runtime Migration + R2/R7 Research)
 **Project status**: Phase 1 substantially COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS - Sharing and Presentations API COMPLETED, Share UI NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed) + Comments/Annotations (completed) + Metadata System (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (94/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.12] Basic Search COMPLETED, [3.1] Sharing and Presentations API COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
@@ -700,15 +700,16 @@ This section lists all remaining implementation tasks, prioritized by impact and
 - Adjustable split divider
 - **Dependencies**: 2.6 (Video Player), 2.7 (Image Viewer), 2.5 (Version Stacks)
 
-### 3.4 Transcription and Captions [P2] - 4 days
+### 3.4 Transcription and Captions [P1] - 4 days **(PROMOTED to current release)**
 
-**NOT STARTED**
+**NOT STARTED** — Pending R6 (Transcription Service) research
 
-- Provider integration (R6 decision)
-- 27 languages, speaker ID
+- Provider integration (R6 decision — research needed)
+- 27 languages, speaker diarization
 - Editable transcripts, time-synced highlighting
 - Caption generation/export (VTT, SRT)
-- **Dependencies**: 2.6 (Video), 2.8a (Audio), R6 (Transcription research)
+- Transcript search integration
+- **Dependencies**: 2.6 (Video) - DONE, 2.8a (Audio) - DONE, R6 (Transcription research) - NOT STARTED
 
 ### 3.5 Enhanced Search [P2] - 3 days
 
@@ -746,17 +747,18 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### TIER 1: Week 1 (CRITICAL)
 
-- **[P0] R2: Deployment Architecture** [2d] -- NOT STARTED
-  - Determine Next.js + Bun topology (single process vs separate)
-  - Process supervision, crash recovery
-  - Zero-downtime deployment strategy
-  - **Blocks**: 1.1 final decisions
+- **[P0] R2: Deployment Architecture** [2d] -- COMPLETED (2026-02-18)
+  - **Decision**: Hetzner VPS (CX32, 4 vCPU/8GB, ~EUR 7/mo) + systemd + Caddy
+  - **Topology**: 3 separate processes (Next.js, Hono API, BullMQ Worker), single domain with path-based routing
+  - **SQLite backup**: Litestream to Cloudflare R2 (1s sync, 4-week retention)
+  - **Total cost**: ~$10-13/mo
+  - **Details**: `specs/README.md` "Deployment Architecture" section
 
-- **[P0] R1: SQLite at Scale** [3d] -- NOT STARTED
-  - Benchmark concurrent read/write
-  - WAL mode, connection pooling
-  - Backup strategy (Litestream)
-  - **Informs**: 1.2 database config
+- **[P0] R1: SQLite at Scale** [3d] -- COMPLETED (2026-02-18, resolved as part of R2)
+  - **Decision**: SQLite with WAL mode is sufficient for <50 users
+  - **Config**: WAL, busy_timeout=5000, synchronous=NORMAL, cache_size=-64000
+  - **Backup**: Litestream to R2 (<1s RPO, <5min RTO)
+  - **Migration trigger**: >100 writes/sec or multi-server needed → PostgreSQL
 
 ### TIER 2: Weeks 2-3 (HIGH)
 
@@ -772,54 +774,66 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - 5TB upload testing
   - **Enhances**: 2.1 (Upload)
 
-- **[P1] R7: Real-Time Infrastructure** [1w] -- NOT STARTED
-  - WebSocket server for Bun
-  - Redis pub/sub scaling
-  - Connection management
-  - **Blocks**: 2.9 (Comments), 2.11 (Notifications)
+- **[P1] R7: Real-Time Infrastructure** [1w] -- COMPLETED (2026-02-18)
+  - **Decision**: Bun native WebSocket + in-process EventEmitter for MVP
+  - **Scope**: Events-only (no presence, no live cursors)
+  - **Auth**: Cookie-based (browser sends cookies on WS upgrade)
+  - **Channel scoping**: Per-project subscription
+  - **Scaling path**: EventEmitter → Redis pub/sub (50+ users) → dedicated WS service (500+ users)
+  - **Details**: `specs/README.md` "Realtime Architecture" section
+  - **Implementation**: 5 new files in `src/realtime/` + `src/web/lib/ws-client.ts` + `src/web/hooks/use-realtime.ts`
 
 ### TIER 3: Week 2 (QUICK DECISIONS)
 
-- **[P2] R9: Email Service Provider** [1d] -- NOT STARTED
-  - Compare SendGrid, AWS SES, Postmark, Resend
-  - Deliverability, cost, template support
-  - **Blocks**: 2.11 (Notifications email)
+- **[P2] R9: Email Service Provider** [1d] -- DECIDED (2026-02-18)
+  - **Decision**: Generic email interface with hollow implementation. Provider chosen later.
+  - Abstracted `EmailService` interface: `sendEmail(to, template, data)`.
+  - Swap in SendGrid/SES/Postmark/Resend when ready — no code changes needed beyond the adapter.
+  - **No longer blocks**: 2.11 can proceed with the interface; emails just won't send until a provider is wired in.
 
-- **[P2] R10: CDN Provider Selection** [1d] -- NOT STARTED
-  - Compare Bunny CDN, CloudFront, Fastly
-  - HLS streaming, token auth
-  - **Blocks**: 2.6 (Video streaming)
+- **[P2] R10: CDN Provider Selection** [1d] -- DECIDED (2026-02-18)
+  - **Decision**: Bunny CDN. Other CDNs (CloudFront, Fastly) deferred to future release.
+  - HLS streaming, token auth, pull zones from R2 origin.
+  - CDN-agnostic abstraction layer for future provider swaps.
+  - **No longer blocks**: 2.6 (Video streaming via Bunny CDN)
 
-- **[P2] R11: Adobe IMS / OAuth** [1d] -- NOT STARTED
+- **[P3] R11: Adobe IMS / OAuth** [1d] -- DEFERRED TO FUTURE RELEASE
   - Adobe OAuth flow documentation
   - Developer console setup
-  - **Blocks**: 1.3 Adobe login (can stub)
+  - Not needed for current release
 
-### TIER 4: Week 3-4 (MEDIUM)
+### TIER 4: RESOLVED
 
-- **[P2] R3: Video Player Architecture** [2d] -- NOT STARTED
-  - Compare Video.js, Shaka Player, custom
-  - Frame-accurate seeking, annotation overlays
-  - **Blocks**: 2.6 (Video Player)
+- **[P2] R3: Video Player Architecture** [2d] -- RESOLVED (2026-02-18)
+  - **Decision**: Custom HTML5 player (already built). No external library needed.
+  - Custom player supports: JKL shuttle, frame-accurate seeking, filmstrip previews, annotation overlays, in/out points, resolution switching.
+  - No longer blocking anything.
 
-### TIER 5: Phase 3+ (DEFER)
+### TIER 5: Phase 3+ (RESEARCH)
 
-- **[P3] R6: Transcription Service** [1d] -- DEFER
+- **[P1] R6: Transcription Service** [1d] -- COMPLETED (2026-02-18)
+  - **Decision**: Deepgram Nova-2 (primary), faster-whisper small INT8 (self-hosted fallback)
+  - **Deepgram**: $0.47/hr with diarization, $200 free credits (~427 hours, 8-42 months runway)
+  - **Self-hosted**: faster-whisper small INT8, ~1.5 GB RAM, ~40-60 min per hour of audio on CX22 (EUR 3.29/mo)
+  - **Architecture**: Abstracted `TranscriptionProvider` interface, swap providers without code changes
+  - **Diarization MVP**: None — add later via cloud API or SpeechBrain CPU pipeline
+  - **Not viable**: Ollama (LLM-only), Whisper large-v3 on VPS (too heavy), pyannote on CPU (too slow), SenseVoice/Moonshine (too few languages)
+  - **Details**: `specs/06-transcription-and-captions.md`
 - **[P3] R8: Search Scalability** [1d] -- DEFER
 
 ---
 
 ## SPEC WRITING (Blocking Implementation)
 
-- **[P1] specs/19-accessibility.md** [1d] -- NOT STARTED
-  - WCAG AA compliance target
-  - Keyboard navigation, screen reader support
-  - **Informs**: All UI work
+- **[P3] specs/19-accessibility.md** -- MINIMAL **(DEPRIORITIZED from P1)**
+  - Keep it minimal: semantic HTML, keyboard navigation on interactive elements, ARIA labels on icons/buttons.
+  - No full WCAG spec document. Apply best practices inline as components are built.
+  - Full accessibility audit deferred to future release.
 
-- **[P2] specs/13-billing-and-plans.md** [1d] -- NOT STARTED
-  - Pricing tiers, feature matrix
-  - Plan-gated feature definitions
-  - **Blocks**: Plan-gate middleware, 5.1 (Billing)
+- **[P3] specs/13-billing-and-plans.md** -- DEFERRED TO FUTURE RELEASE
+  - Pricing tiers, feature matrix, plan-gated feature definitions.
+  - Not needed until paid users exist. Everything is free tier for now.
+  - Plan-gate middleware, access groups, per-account rate limits all deferred with it.
 
 ---
 
@@ -933,6 +947,71 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 R6 Transcription Research + Decision Updates
+
+**R6 Transcription Service — DECIDED:**
+- Primary: Deepgram Nova-2 ($200 free credits, 36 languages, diarization, word timestamps)
+- Self-hosted fallback: faster-whisper small INT8 (EUR 0-3.29/mo, 100+ languages, no diarization)
+- Abstracted `TranscriptionProvider` interface for provider swapping
+- Diarization deferred from MVP — add later via cloud API or SpeechBrain
+- Not viable: Ollama (LLM-only), Whisper large-v3 on VPS, pyannote on CPU, SenseVoice/Moonshine (too few languages)
+
+**Other Decisions Recorded:**
+- R3 (Video player): Marked RESOLVED — custom player already built
+- R9 (Email): Generic `EmailService` interface, hollow impl, provider later
+- R10 (CDN): Bunny CDN selected, CDN-agnostic abstraction
+- R11 (Adobe OAuth): Deferred to future release
+- Spec 13 (Billing): Deferred to future release
+- Spec 19 (Accessibility): Minimal — semantic HTML, keyboard nav, ARIA inline
+
+**Updated Files:**
+- `specs/06-transcription-and-captions.md` — Complete rewrite with provider architecture, DB schema, API endpoints, pipeline, config
+- `specs/README.md` — Tech stack: transcription, CDN, email rows updated; deferred specs updated
+- `IMPLEMENTATION_PLAN.md` — R3/R6/R9/R10/R11 marked decided, spec 13/19 deprioritized, 3.4 promoted to P1
+
+### 2026-02-18 Bun Runtime Migration + R2/R7 Research
+
+**Bun Migration Completed:**
+1. **Server runtime**: `@hono/node-server` → `Bun.serve()` in `src/api/index.ts`
+2. **SQLite driver**: `better-sqlite3` → `bun:sqlite` in `src/db/index.ts`, `src/db/migrate.ts`, `src/db/seed.ts`
+3. **Drizzle adapter**: `drizzle-orm/better-sqlite3` → `drizzle-orm/bun-sqlite`
+4. **Pragma API**: `.pragma("...")` → `.exec("PRAGMA ...")`  (bun:sqlite API difference)
+5. **Scripts**: All `tsx` commands replaced with `bun` in `package.json`
+6. **Types**: Added `bun-types` to devDependencies and tsconfig.json
+7. **Removed deps**: `@hono/node-server` (production), `tsx` (dev)
+8. **Test note**: Integration tests keep `better-sqlite3` as devDependency (Vitest runs on Vite/Node, can't resolve `bun:sqlite`)
+
+**Dependencies Changed:**
+- Removed from dependencies: `@hono/node-server`, `better-sqlite3`
+- Added to devDependencies: `bun-types`
+- Removed from devDependencies: `tsx`
+- Kept in devDependencies: `better-sqlite3`, `@types/better-sqlite3` (for Vitest integration tests)
+
+**R2 Deployment Architecture — DECIDED:**
+- Hetzner VPS (CX32) + systemd + Caddy
+- Single domain, path-based routing (no CORS)
+- Litestream → Cloudflare R2 for SQLite backups
+- ~$10-13/mo total
+
+**R7 Realtime Infrastructure — DECIDED:**
+- Bun native WebSocket + in-process EventEmitter
+- Events-only MVP (no presence/cursors)
+- Cookie-based WebSocket auth
+- Per-project channel scoping
+- Scaling: EventEmitter → Redis pub/sub → dedicated WS service
+
+**Updated Files:**
+- `src/api/index.ts` — Bun.serve() migration
+- `src/db/index.ts` — bun:sqlite migration
+- `src/db/migrate.ts` — bun:sqlite migration
+- `src/db/seed.ts` — bun:sqlite migration
+- `package.json` — deps and scripts updated
+- `tsconfig.json` — added bun-types
+- `specs/README.md` — tech stack, deployment architecture, realtime architecture sections added
+
+**Test Count:** 258 tests (all pass)
+**Typecheck:** Clean (0 errors)
 
 ### 2026-02-17 Shares API Implementation
 

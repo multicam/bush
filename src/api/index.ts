@@ -2,13 +2,12 @@
  * Bush Platform - API Server Entry Point
  *
  * Node.js + Hono backend server with CORS, health checks, and API routes.
- * Uses @hono/node-server for Node.js compatibility.
+ * Uses Bun.serve() for native performance.
  * Reference: specs/17-api-complete.md
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { serve } from "@hono/node-server";
 import { config, scrubSecrets } from "../config/index.js";
 import { storage } from "../storage/index.js";
 import { sqlite } from "../db/index.js";
@@ -197,7 +196,7 @@ console.log(`   Port: ${config.PORT}`);
 console.log(`   API URL: ${config.API_URL}`);
 console.log(`   App URL: ${config.APP_URL}\n`);
 
-serve({
+Bun.serve({
   fetch: app.fetch,
   port: config.PORT,
   hostname: config.HOST,

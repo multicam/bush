@@ -45,9 +45,9 @@ In a broader extend, all files need to be critiqued and updated, according the p
 ### Deferred Specifications
 | File | Description | Phase |
 |------|-----------|-------|
-| 13-billing-and-plans.md | Pricing, plan tiers, feature gating | Phase 5 |
-| 18-mobile-complete.md | iOS/Android detailed specs | Phase 4 |
-| 19-accessibility.md | WCAG compliance, keyboard nav, screen readers | Phase 3+ |
+| 13-billing-and-plans.md | Pricing, plan tiers, feature gating | Future release |
+| 18-mobile-complete.md | iOS/Android detailed specs | Future release |
+| 19-accessibility.md | Minimal: semantic HTML, keyboard nav, ARIA labels. No full spec — apply inline | Ongoing |
 
 ---
 
@@ -60,17 +60,19 @@ These are source of truth -- documentation stating otherwise need to be updated 
 | **Frontend (Web)** | Next.js + TypeScript | SSR, routing, API routes |
 | **Frontend (Mobile)** | Native Swift | iOS/iPadOS/Apple TV (Phase 2) |
 | **Desktop Transfer App** | Tauri | Phase 2 — webapp is standard upload path |
-| **Backend API** | Bun + Hono + TypeScript | RESTful V4 API, WebSockets, OAuth 2.0 |
-| **Database** | SQLite + Drizzle ORM | Primary relational store, type-safe schema-as-code |
-| **Cache / Realtime** | Redis | Caching, sessions, rate limiting, pub/sub |
+| **Backend API** | Bun + Hono + TypeScript | Bun.serve() runtime, RESTful V4 API, native WebSocket, OAuth 2.0 |
+| **Database** | SQLite (`bun:sqlite`) + Drizzle ORM | Primary relational store, type-safe schema-as-code, WAL mode |
+| **Cache / Realtime** | Redis | Caching, sessions, rate limiting. Realtime MVP uses in-process EventEmitter; Redis pub/sub at scale |
+| **Realtime** | Bun native WebSocket + EventEmitter | Events-only MVP (comments, files, shares, metadata). Scaling path: EventEmitter → Redis pub/sub → dedicated WS service |
 | **Search** | SQLite FTS5 | Upgrade path to dedicated engine if needed |
-| **Object Storage** | S3-compatible API | Provider-agnostic; MinIO for dev, R2/B2/S3 for prod |
-| **CDN** | TBD (preference: Bunny CDN) | CDN-agnostic abstraction |
+| **Object Storage** | S3-compatible API | Provider-agnostic; MinIO for dev, Cloudflare R2 for prod (free egress) |
+| **CDN** | Bunny CDN | CDN-agnostic abstraction; other providers (CloudFront, Fastly) for future release |
 | **Media Processing** | FFmpeg | Transcoding, thumbnails, filmstrips, waveforms |
 | **Message Queue** | BullMQ + Redis | Async jobs: transcoding, transcription, notifications |
-| **Transcription** | TBD (abstracted interface) | 27 languages, speaker ID — provider chosen later |
+| **Transcription** | Deepgram Nova-2 (primary) + faster-whisper (fallback) | Abstracted provider interface. 36 languages, word timestamps, diarization (Phase 2). $200 free credits |
+| **Email** | Generic interface (hollow) | Provider (SendGrid/SES/Postmark/Resend) chosen later; abstracted `EmailService` |
 | **AI/ML (Vision)** | TBD | Visual search / Media Intelligence |
-| **Deployment** | TBD | No Docker, no Kubernetes |
+| **Deployment** | Hetzner VPS + systemd + Caddy | Single server, ~$10-13/mo. Litestream for SQLite backups to R2 |
 | **Authentication** | WorkOS AuthKit | Email/password, social login, MFA, SSO-ready |
 | **CI/CD** | GitHub Actions | |
 
@@ -222,6 +224,99 @@ When refactoring existing code, follow this pattern:
 6. **Verify no regressions** — `bun run typecheck && bun run lint`
 
 **Decision framework**: Extract only when 2+ locations duplicate the same logic. Three similar lines of code is better than a premature abstraction. Route handlers intentionally vary (file status transitions, folder hierarchy, project archival) — do NOT create generic CRUD helpers.
+
+---
+
+## Deployment Architecture (R2)
+
+Single Hetzner VPS (CX32: 4 vCPU, 8GB RAM, ~EUR 7/mo) running 5 systemd-managed processes:
+
+```
+                    Internet
+                       |
+                   [Caddy] :443
+                       |
+                   bush.io
+                   /       \
+            /v4/*          everything else
+              |                  |
+       [Hono API] :3001   [Next.js] :3000
+              |
+           [Redis] :6379
+           /       \
+     [BullMQ]    [Sessions]
+        |
+   [Worker] (FFmpeg)
+        |
+   [S3 / R2 Storage]
+
+   [SQLite] /var/data/bush.db
+   (accessed by API + Worker)
+       |
+  [Litestream] → R2 backup
+```
+
+**Process topology**: 3 app processes (Next.js, Hono API, BullMQ Worker) + Caddy + Litestream. All on one machine.
+
+**Routing**: Single domain, path-based. Caddy routes `/v4/*` to Hono API, everything else to Next.js. No CORS needed.
+
+**SQLite production config**: WAL mode, `busy_timeout = 5000`, `synchronous = NORMAL`, `cache_size = -64000`. Litestream replicates to R2 with 1s sync interval.
+
+**Scaling path**:
+1. Move worker to separate VPS when CPU-bound
+2. Migrate SQLite → PostgreSQL when >100 writes/sec or multi-server needed
+3. Each step is incremental, not a rewrite
+
+**Estimated monthly cost**: ~$10-13/mo (VPS + R2 storage + Litestream backups)
+
+---
+
+## Realtime Architecture (R7)
+
+Events-only MVP using Bun native WebSocket + in-process EventEmitter.
+
+### Event Flow
+```
+API Route Handler
+  → emitEvent("comment.created", projectId, userId, payload)
+    → EventEmitter("bush:event")
+      → WebSocket Manager
+        → broadcast to subscribed clients (skip actor)
+```
+
+### Channel Scoping
+- Clients subscribe per-project: `{ type: "subscribe", projectId: "prj_xxx" }`
+- Events include `projectId` and optional `fileId` for routing
+- Unsubscribe on navigation away
+
+### Auth
+- WebSocket upgrade at `/ws` on the Hono server
+- Browser sends cookies automatically (same origin)
+- Server extracts session from cookies using existing auth logic
+- No tokens in query strings
+
+### Event Types
+- **Comments**: created, updated, deleted, completed, reply_added
+- **Files**: upload_complete, processing_complete, processing_failed, renamed, moved, deleted
+- **Shares**: created, updated, activity
+- **Metadata**: status_changed, rating_changed, field_updated
+- **Version Stacks**: version_added, current_changed
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `src/realtime/event-bus.ts` | In-process EventEmitter, event types |
+| `src/realtime/emit.ts` | `emitEvent()` helper for route handlers |
+| `src/realtime/ws-manager.ts` | WebSocket connection manager (auth, rooms, broadcast) |
+| `src/web/lib/ws-client.ts` | Browser WebSocket client with reconnection |
+| `src/web/hooks/use-realtime.ts` | `useRealtime(projectId, callback)` React hook |
+
+### Scaling Path
+| Users | Architecture | Change |
+|-------|-------------|--------|
+| <50 | EventEmitter (in-process) | Current MVP |
+| 50-500 | Redis pub/sub | Swap EventEmitter for Redis (~20 lines) |
+| 500+ | Dedicated WebSocket service | Extract WS into separate process |
 
 ---
 

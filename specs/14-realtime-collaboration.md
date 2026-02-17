@@ -1,5 +1,24 @@
 # Bush - Real-Time Collaboration
 
+## Implementation Phases
+
+> **R7 Decision (2026-02-18)**: MVP is events-only on a single server. Presence, live cursors, and multi-instance fan-out are deferred to later phases. The architecture below describes the full vision; the MVP subset is implemented first.
+
+| Phase | Scope | Architecture |
+|-------|-------|-------------|
+| **MVP** (current) | Events only: comments, files, shares, metadata, version stacks | In-process EventEmitter + Bun native WebSocket on Hono server |
+| **Phase 2** | + Presence (who's viewing what) | + Redis pub/sub for multi-process support |
+| **Phase 3** | + Live cursors, typing indicators | + Dedicated WebSocket service |
+
+**MVP simplifications vs full spec below:**
+- No separate WebSocket subdomain — `/ws` endpoint on same Hono server
+- Cookie-based auth (no token in query string) — browser sends cookies automatically on same-origin upgrade
+- In-process EventEmitter instead of Redis pub/sub (single server, <50 users)
+- No presence, no live cursors, no typing indicators
+- No polling fallback (WebSocket-only for MVP)
+
+---
+
 ## Summary
 Bush uses WebSockets to deliver real-time updates across the platform -- comments, upload progress, processing status, presence, and notifications. The server runs on Bun's native WebSocket API with Redis pub/sub for horizontal scaling across multiple Bun instances. Clients connect via a single persistent WebSocket, subscribe to channels, and receive events as they happen. When WebSocket connectivity fails, the client falls back to polling.
 
@@ -8,6 +27,16 @@ Bush uses WebSockets to deliver real-time updates across the platform -- comment
 ## 1. WebSocket Architecture
 
 ### 1.1 Server Stack
+
+**MVP:**
+
+| Layer | Technology | Role |
+|-------|-----------|------|
+| WebSocket server | Hono + `upgradeWebSocket()` on Bun.serve() | Connection handling, message routing |
+| Event bus | In-process EventEmitter | Route handler → WebSocket delivery |
+| Auth | Cookie-based session extraction | Same auth as HTTP requests |
+
+**Full (Phase 2+):**
 
 | Layer | Technology | Role |
 |-------|-----------|------|
@@ -18,6 +47,15 @@ Bush uses WebSockets to deliver real-time updates across the platform -- comment
 
 ### 1.2 Connection Endpoint
 
+**MVP:**
+```
+wss://bush.io/ws
+```
+- WebSocket endpoint on the same Hono server
+- Cookie-based auth (browser sends cookies automatically)
+- Caddy proxies WebSocket upgrade transparently
+
+**Full:**
 ```
 wss://ws.bush.io/v4/cable?token=bush_tok_...
 ```
@@ -26,7 +64,7 @@ wss://ws.bush.io/v4/cable?token=bush_tok_...
 - Bun handles upgrade via `server.upgrade()` -- no external proxy needed
 - TLS termination at load balancer or Bun directly depending on deployment
 
-### 1.3 Multi-Instance Fan-Out
+### 1.3 Multi-Instance Fan-Out (Phase 2+)
 
 ```
 Client A ──► Bun Instance 1 ──► Redis pub/sub ──► Bun Instance 2 ──► Client B
@@ -53,10 +91,13 @@ Client A ──► Bun Instance 1 ──► Redis pub/sub ──► Bun Instance
 
 ### 2.1 Connect
 
-1. Client opens WebSocket to `wss://ws.bush.io/v4/cable?token=bush_tok_...`
-2. Server validates token on upgrade -- rejects with `4001` close code if invalid
-3. Server associates connection with authenticated user
-4. Server responds with connection confirmation:
+**MVP:** Client opens WebSocket to `wss://bush.io/ws`. Browser sends session cookies automatically. Server extracts session from cookies using existing auth middleware logic. Rejects with `4001` close code if no valid session.
+
+**Full:** Client opens WebSocket to `wss://ws.bush.io/v4/cable?token=bush_tok_...`
+
+1. Server validates auth on upgrade -- rejects with `4001` close code if invalid
+2. Server associates connection with authenticated user
+3. Server responds with connection confirmation:
 
 ```json
 {

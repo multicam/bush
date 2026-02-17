@@ -3,7 +3,7 @@
  *
  * Run with: bun run db:migrate
  */
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import { config } from "../config/index.js";
 import * as fs from "fs";
 import * as path from "path";
@@ -23,7 +23,7 @@ if (dbPath !== ":memory:") {
 const sqlite = new Database(config.DATABASE_URL);
 
 if (config.DATABASE_WAL_MODE && config.DATABASE_URL !== ":memory:") {
-  sqlite.pragma("journal_mode = WAL");
+  sqlite.exec("PRAGMA journal_mode = WAL");
 }
 
 // Create tables directly for initial setup

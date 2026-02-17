@@ -5,7 +5,7 @@
  * Run with: bun run db:seed
  * Reset with: bun run db:seed:reset (if you add it)
  */
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import { config } from "../config/index.js";
 import * as crypto from "crypto";
 
