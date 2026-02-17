@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Version Stack UI - Completed)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed)
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (PDF Viewer - Completed)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (partial)
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS, [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System IN PROGRESS (Backend + Client + UI COMPLETED), [2.2] Media Processing IN PROGRESS, [2.3] Asset Browser IN PROGRESS (Grid + List + Folder Navigation + Multi-Select and Bulk Actions COMPLETED), [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom and Pan COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer PARTIAL (PDF Viewer COMPLETED), [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -450,14 +450,15 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.8b PDF and Document Viewer [P1] - 3 days
 
-**NOT STARTED** -- Expanded from PDF-only
+**PARTIAL** -- PDF Viewer COMPLETED
 
-- **[P1] PDF Viewer** [1d]
+- **[P1] PDF Viewer** [1d] -- COMPLETED (2026-02-17)
   - PDF.js integration
   - Multi-page navigation (thumbnails sidebar, prev/next)
   - Zoom (fit width, fit page, actual size)
   - Text selection/copy, search within PDF
   - **Dependencies**: 2.3 (Asset Browser)
+  - **Implementation**: `src/web/components/viewers/pdf-viewer.tsx`
 
 - **[P1] Document Viewer (DOCX/PPTX/XLSX)** [4h]
   - Render server-generated PDF preview from 2.2
@@ -841,6 +842,38 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 PDF Viewer Implementation
+
+**Completed Work:**
+1. **PDF Viewer Component COMPLETED** - `src/web/components/viewers/pdf-viewer.tsx`
+   - PDF.js integration with CDN worker
+   - Multi-page navigation (thumbnails sidebar, prev/next buttons, page input)
+   - Zoom controls (fit width, fit page, actual size, percentage zoom)
+   - Text selection/copy support via PDF.js text layer
+   - Search within PDF functionality (Ctrl+F)
+   - Comment markers support on pages
+   - Keyboard shortcuts (←→: page, +/-: zoom, T: thumbnails, Ctrl+F: search, 0: fit page)
+
+2. **PDF Viewer Styles COMPLETED** - `src/web/components/viewers/pdf-viewer.module.css`
+   - Dark theme matching other viewers
+   - Thumbnail sidebar with lazy loading
+   - Responsive design
+   - Fullscreen mode support
+
+3. **Dependencies Added:**
+   - `pdfjs-dist` - PDF rendering library
+
+**New Files Created:**
+- `src/web/components/viewers/pdf-viewer.tsx` - PDF viewer component
+- `src/web/components/viewers/pdf-viewer.module.css` - PDF viewer styles
+
+**Updated Files:**
+- `src/web/components/viewers/index.ts` - Added PdfViewer exports
+- `package.json` - Added pdfjs-dist dependency
+
+**Test Count:** 249 tests (all pass)
+**Lint:** 0 errors, 85 warnings
 
 ### 2026-02-17 Version Stack UI Implementation
 
