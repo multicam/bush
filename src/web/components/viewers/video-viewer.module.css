@@ -1,0 +1,586 @@
+/**
+ * Video Viewer Component Styles
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #000;
+  user-select: none;
+  overflow: hidden;
+}
+
+.container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+/* Video element */
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+/* Loading state */
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #888;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #333;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Buffering indicator */
+.buffering {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+}
+
+.buffering .spinner {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+/* Play/Pause overlay */
+.playOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.playButtonLarge {
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.playButtonLarge:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.playButtonLarge svg {
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  margin-left: 4px;
+}
+
+/* Controls overlay */
+.controlsOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.controlsOverlay.visible {
+  opacity: 1;
+}
+
+/* Top bar */
+.topBar {
+  padding: 16px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileName {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  max-width: 600px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  color: #888;
+  font-size: 12px;
+}
+
+/* Timeline container */
+.timelineContainer {
+  padding: 8px 24px 12px;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.timeline:hover {
+  height: 10px;
+}
+
+/* Timeline progress */
+.timelineProgress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+}
+
+/* Timeline buffer */
+.timelineBuffer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #555;
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+}
+
+/* In/Out range indicator */
+.inOutRange {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(59, 130, 246, 0.3);
+  pointer-events: none;
+}
+
+/* Playhead */
+.playhead {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: transform 0.05s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.timeline:hover .playhead {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Comment markers */
+.commentMarker {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: #fbbf24;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s ease;
+}
+
+.commentMarker:hover {
+  background: #f59e0b;
+}
+
+.commentMarker::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  width: 7px;
+  height: 7px;
+  background: inherit;
+  border-radius: 50%;
+}
+
+/* In/Out markers */
+.inOutMarker {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 24px;
+  background: #3b82f6;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 6;
+}
+
+.inOutMarker span {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Filmstrip preview */
+.filmstripPreview {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 8px;
+  background-color: #000;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.filmstripTime {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* Time display */
+.timeDisplay {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.inOutTime {
+  color: #3b82f6;
+  font-size: 11px;
+}
+
+/* Control bar */
+.controlsBar {
+  padding: 8px 24px 16px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Main controls */
+.mainControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.controlButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.controlButton:active {
+  transform: scale(0.95);
+}
+
+.controlButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.controlButton.active {
+  background: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.playButton {
+  width: 44px;
+  height: 44px;
+  background: #3b82f6;
+}
+
+.playButton:hover {
+  background: #2563eb;
+}
+
+.playButton svg {
+  width: 24px;
+  height: 24px;
+}
+
+.inOutLabel {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Volume control */
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.volumeSlider {
+  width: 60px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Speed control */
+.speedControl {
+  display: flex;
+  align-items: center;
+}
+
+.speedSelect {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  appearance: none;
+  min-width: 60px;
+}
+
+.speedSelect:hover {
+  border-color: #666;
+}
+
+.speedSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Resolution control */
+.resolutionControl {
+  display: flex;
+  align-items: center;
+}
+
+.resolutionSelect {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  appearance: none;
+  min-width: 70px;
+}
+
+.resolutionSelect:hover {
+  border-color: #666;
+}
+
+.resolutionSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* In/Out controls */
+.inOutControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Divider */
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #444;
+}
+
+/* Keyboard shortcut hint */
+.shortcutHint {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  font-size: 10px;
+  color: #555;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.container:hover .shortcutHint {
+  opacity: 1;
+}
+
+/* Error state */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #888;
+}
+
+.errorIcon {
+  width: 48px;
+  height: 48px;
+  color: #dc2626;
+}
+
+.errorMessage {
+  font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .controlsRow {
+    gap: 8px;
+  }
+
+  .controlButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .controlButton svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .playButton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .volumeSlider {
+    width: 50px;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .shortcutHint {
+    display: none;
+  }
+
+  .topBar {
+    padding: 12px 16px 6px;
+  }
+
+  .fileName {
+    font-size: 14px;
+  }
+
+  .timelineContainer {
+    padding: 6px 16px 10px;
+  }
+
+  .controlsBar {
+    padding: 6px 16px 12px;
+  }
+}
+
+/* Fullscreen mode adjustments */
+.fullscreen .topBar {
+  padding: 24px 32px 12px;
+}
+
+.fullscreen .fileName {
+  font-size: 18px;
+}
+
+.fullscreen .controlsBar {
+  padding: 12px 32px 24px;
+}

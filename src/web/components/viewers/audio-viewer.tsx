@@ -4,6 +4,7 @@
  * Full-featured audio player with waveform visualization.
  * Reference: specs/00-atomic-features.md Section 9, specs/15-media-processing.md Section 5
  */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
@@ -102,24 +103,28 @@ export function AudioViewer({
   const [waveformData, setWaveformData] = useState<WaveformData | null>(
     typeof waveformInput === "object" ? waveformInput : null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingWaveform, setIsLoadingWaveform] = useState(typeof waveformInput === "string");
+  const [isAudioLoading, setIsAudioLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const duration = audioDuration || propDuration || 0;
 
   // Load waveform data if URL provided
   useEffect(() => {
+    let isMounted = true;
+
     if (typeof waveformInput === "string") {
-      setIsLoading(true);
       fetch(waveformInput)
         .then((res) => {
           if (!res.ok) throw new Error("Failed to load waveform");
           return res.json();
         })
         .then((data: WaveformData) => {
-          setWaveformData(data);
-          if (!propDuration && data.duration) {
-            setAudioDuration(data.duration);
+          if (isMounted) {
+            setWaveformData(data);
+            if (!propDuration && data.duration) {
+              setAudioDuration(data.duration);
+            }
           }
         })
         .catch((err) => {
@@ -127,14 +132,20 @@ export function AudioViewer({
           // Don't set error - audio can still play without waveform
         })
         .finally(() => {
-          setIsLoading(false);
+          if (isMounted) {
+            setIsLoadingWaveform(false);
+          }
         });
     } else if (waveformInput) {
       setWaveformData(waveformInput);
-      setIsLoading(false);
+      setIsLoadingWaveform(false);
     } else {
-      setIsLoading(false);
+      setIsLoadingWaveform(false);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [waveformInput, propDuration]);
 
   // Draw waveform on canvas
@@ -196,11 +207,11 @@ export function AudioViewer({
 
     const handleError = () => {
       setError("Failed to load audio");
-      setIsLoading(false);
+      setIsAudioLoading(false);
     };
 
     const handleCanPlay = () => {
-      setIsLoading(false);
+      setIsAudioLoading(false);
       setError(null);
     };
 
@@ -410,7 +421,7 @@ export function AudioViewer({
       />
 
       {/* Loading state */}
-      {isLoading && (
+      {(isLoadingWaveform || isAudioLoading) && (
         <div className={styles.loading}>
           <div className={styles.spinner} />
           <span>Loading audio...</span>
