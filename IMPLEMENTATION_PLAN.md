@@ -490,7 +490,7 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.9 Comments and Annotations [P1] - 4 days
 
-**IN PROGRESS** -- Comment API COMPLETED, Frontend API Client COMPLETED
+**IN PROGRESS** -- Comment API COMPLETED, Frontend API Client COMPLETED, Comment Panel UI COMPLETED
 
 - **[P1] Comment API** [1d] -- COMPLETED (2026-02-17)
   - CRUD for comments
@@ -511,12 +511,27 @@ This section lists all remaining implementation tasks, prioritized by impact and
     - `POST /v4/version-stacks/:stackId/comments` - Create comment on version stack
   - **Frontend Client**: `src/web/lib/api.ts` (commentsApi)
 
-- **[P1] Comment Panel UI** [1d] -- NOT STARTED
+- **[P1] Comment Panel UI** [1d] -- COMPLETED (2026-02-17)
   - Thread view with replies
   - Filter/sort by type, user, status
   - Quick actions (resolve, reply, delete)
   - Export (CSV, plain text, EDL)
   - **Dependencies**: Comment API
+  - **Implementation**: `src/web/components/comments/`
+  - **Components**:
+    - `CommentPanel` - Sidebar panel with filter/sort/export controls
+    - `CommentThread` - Parent comment with expandable replies
+    - `CommentItem` - Individual comment with avatar, actions, timestamps
+    - `CommentForm` - Create/edit form with internal toggle
+  - **Features**:
+    - Status filtering (all, open, completed)
+    - Type filtering (timestamped, annotated, internal)
+    - Sort by newest, oldest, or timestamp
+    - Export to CSV, plain text, or EDL format
+    - Inline edit and delete for comment owners
+    - Threaded reply support
+    - Timestamp click-to-seek for video/audio
+    - Completion status toggle
 
 - **[P1] Annotation Tools** [1d] -- NOT STARTED
   - Canvas overlay on all viewer types
@@ -873,6 +888,45 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Comment Panel UI Implementation
+
+**Completed Work:**
+1. **Comment Panel UI COMPLETED** - `src/web/components/comments/`
+   - `CommentPanel` - Main sidebar panel with stats, filters, sort, and export controls
+   - `CommentThread` - Thread view with parent comment and expandable replies
+   - `CommentItem` - Individual comment display with avatar, badges, actions
+   - `CommentForm` - Create/edit form with auto-resize and internal toggle
+   - `types.ts` - Type definitions for all comment components
+
+2. **Features Implemented:**
+   - Thread view with collapsible replies
+   - Filter by status (all, open, completed)
+   - Filter by type (all, timestamped, annotated, internal)
+   - Filter by author (dynamic dropdown)
+   - Sort by newest, oldest, or timestamp order
+   - Export to CSV, plain text, or EDL format
+   - Inline edit for comment owners
+   - Delete with confirmation
+   - Mark complete/reopen toggle
+   - Timestamp click-to-seek for video/audio
+   - Page badge for PDF comments
+   - Annotation type badges
+   - Relative time display (e.g., "5m ago", "2d ago")
+   - Keyboard shortcuts (Cmd+Enter to submit, Esc to cancel)
+   - Loading and error states
+
+**New Files Created:**
+- `src/web/components/comments/types.ts` - Type definitions
+- `src/web/components/comments/comment-item.tsx` - Individual comment component
+- `src/web/components/comments/comment-form.tsx` - Comment input form
+- `src/web/components/comments/comment-thread.tsx` - Thread view component
+- `src/web/components/comments/comment-panel.tsx` - Main panel component
+- `src/web/components/comments/comments.module.css` - Component styles
+- `src/web/components/comments/index.ts` - Component exports
+
+**Test Count:** 249 tests (all pass)
+**Lint:** 0 errors in new code
 
 ### 2026-02-17 Comments API Implementation
 
