@@ -127,3 +127,15 @@ export async function verifyAccountMembership(
 
   return role;
 }
+
+/**
+ * Verify that the current account ID has access to a specific account.
+ * This checks that the user's current session account matches the requested account.
+ * For more granular role checks, use verifyAccountMembership.
+ */
+export async function verifyAccountAccess(
+  targetAccountId: string,
+  currentAccountId: string
+): Promise<boolean> {
+  return targetAccountId === currentAccountId;
+}

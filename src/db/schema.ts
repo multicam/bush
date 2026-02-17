@@ -288,6 +288,18 @@ export const comments = sqliteTable("comments", {
 }));
 
 /**
+ * Share branding configuration
+ */
+export interface ShareBranding {
+  logoUrl?: string;
+  backgroundColor?: string;
+  accentColor?: string;
+  headerSize?: "small" | "medium" | "large";
+  description?: string;
+  darkMode?: boolean;
+}
+
+/**
  * Shares - Share links for external review
  */
 export const shares = sqliteTable("shares", {
@@ -302,13 +314,49 @@ export const shares = sqliteTable("shares", {
   layout: text("layout", { enum: ["grid", "reel", "viewer"] }).notNull().default("grid"),
   allowComments: integer("allow_comments", { mode: "boolean" }).notNull().default(true),
   allowDownloads: integer("allow_downloads", { mode: "boolean" }).notNull().default(false),
-  branding: text("branding", { mode: "json" }),
+  showAllVersions: integer("show_all_versions", { mode: "boolean" }).notNull().default(false),
+  showTranscription: integer("show_transcription", { mode: "boolean" }).notNull().default(false),
+  featuredField: text("featured_field"),
+  branding: text("branding", { mode: "json" }).$type<ShareBranding>(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
   slugIdx: uniqueIndex("shares_slug_idx").on(table.slug),
   accountIdx: index("shares_account_id_idx").on(table.accountId),
   projectIdx: index("shares_project_id_idx").on(table.projectId),
+}));
+
+/**
+ * Share Assets - Assets included in a share
+ */
+export const shareAssets = sqliteTable("share_assets", {
+  id: text("id").primaryKey(),
+  shareId: text("share_id").notNull().references(() => shares.id, { onDelete: "cascade" }),
+  fileId: text("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  shareIdx: index("share_assets_share_id_idx").on(table.shareId),
+  fileIdx: index("share_assets_file_id_idx").on(table.fileId),
+  shareFileIdx: uniqueIndex("share_assets_share_file_idx").on(table.shareId, table.fileId),
+}));
+
+/**
+ * Share Activity - Track views, comments, and downloads on shares
+ */
+export const shareActivity = sqliteTable("share_activity", {
+  id: text("id").primaryKey(),
+  shareId: text("share_id").notNull().references(() => shares.id, { onDelete: "cascade" }),
+  fileId: text("file_id").references(() => files.id, { onDelete: "cascade" }),
+  type: text("type", { enum: ["view", "comment", "download"] }).notNull(),
+  viewerEmail: text("viewer_email"),
+  viewerIp: text("viewer_ip"),
+  userAgent: text("user_agent"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  shareIdx: index("share_activity_share_id_idx").on(table.shareId),
+  typeIdx: index("share_activity_type_idx").on(table.type),
+  createdIdx: index("share_activity_created_at_idx").on(table.createdAt),
 }));
 
 /**

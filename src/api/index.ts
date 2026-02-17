@@ -31,7 +31,9 @@ import {
   commentRoutes,
   customFieldRoutes,
   metadataRoutes,
+  shareRoutes,
 } from "./routes/index.js";
+import { getShareBySlug } from "./routes/index.js";
 
 const app = new Hono();
 
@@ -165,6 +167,21 @@ v4.route("/", customFieldRoutes);
 
 // Metadata (file metadata - built-in and custom fields)
 v4.route("/", metadataRoutes);
+
+// Shares (share links for external review)
+v4.route("/shares", shareRoutes);
+
+// Share assets (nested under shares)
+v4.route("/shares/:id/assets", shareRoutes);
+
+// Share activity (nested under shares)
+v4.route("/shares/:id/activity", shareRoutes);
+
+// Account shares (nested under accounts)
+v4.route("/accounts/:accountId/shares", shareRoutes);
+
+// Public share access by slug (no auth required)
+v4.get("/shares/slug/:slug", getShareBySlug);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);

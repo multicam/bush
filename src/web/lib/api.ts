@@ -1444,3 +1444,224 @@ export const metadataApi = {
     });
   },
 };
+
+// ============================================================================
+// Shares API
+// ============================================================================
+
+/**
+ * Share layout types
+ */
+export type ShareLayout = "grid" | "reel" | "viewer";
+
+/**
+ * Share activity types
+ */
+export type ShareActivityType = "view" | "comment" | "download";
+
+/**
+ * Share branding configuration
+ */
+export interface ShareBranding {
+  logo_url?: string;
+  background_color?: string;
+  accent_color?: string;
+  header_size?: "small" | "medium" | "large";
+  description?: string;
+  dark_mode?: boolean;
+}
+
+/**
+ * Share attributes from API
+ */
+export interface ShareAttributes {
+  accountId: string;
+  projectId: string | null;
+  createdByUserId: string;
+  name: string;
+  slug: string;
+  passphrase: string | null;
+  expiresAt: string | null;
+  layout: ShareLayout;
+  allowComments: boolean;
+  allowDownloads: boolean;
+  showAllVersions: boolean;
+  showTranscription: boolean;
+  featuredField: string | null;
+  branding: ShareBranding | null;
+  createdAt: string;
+  updatedAt: string;
+  asset_count?: number;
+  created_by?: UserAttributes;
+}
+
+/**
+ * Share asset attributes
+ */
+export interface ShareAssetAttributes {
+  shareId: string;
+  fileId: string;
+  sortOrder: number;
+  createdAt: string;
+  file?: FileAttributes;
+}
+
+/**
+ * Share activity attributes
+ */
+export interface ShareActivityAttributes {
+  shareId: string;
+  fileId: string | null;
+  type: ShareActivityType;
+  viewerEmail: string | null;
+  viewerIp: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+/**
+ * Shares API
+ */
+export const sharesApi = {
+  /**
+   * List shares for an account
+   */
+  list: async (accountId: string, options?: {
+    limit?: number;
+    project_id?: string;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.project_id) params.set("project_id", options.project_id);
+    if (options?.cursor) params.set("cursor", options.cursor);
+    const queryString = params.toString();
+    const path = `/accounts/${accountId}/shares${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<ShareAttributes>>(path);
+  },
+
+  /**
+   * Get a share by ID
+   */
+  get: async (shareId: string) => {
+    return apiFetch<JsonApiSingleResponse<ShareAttributes>>(`/shares/${shareId}`);
+  },
+
+  /**
+   * Get a share by slug (public access)
+   */
+  getBySlug: async (slug: string) => {
+    return apiFetch<JsonApiSingleResponse<ShareAttributes & { assets: FileAttributes[] }>>(
+      `/shares/slug/${slug}`
+    );
+  },
+
+  /**
+   * Create a new share
+   */
+  create: async (accountId: string, data: {
+    name: string;
+    project_id?: string;
+    file_ids?: string[];
+    passphrase?: string;
+    expires_at?: string;
+    layout?: ShareLayout;
+    allow_comments?: boolean;
+    allow_downloads?: boolean;
+    show_all_versions?: boolean;
+    show_transcription?: boolean;
+    featured_field?: string;
+    branding?: ShareBranding;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<ShareAttributes>>(`/accounts/${accountId}/shares`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a share
+   */
+  update: async (shareId: string, data: {
+    name?: string;
+    passphrase?: string | null;
+    expires_at?: string | null;
+    layout?: ShareLayout;
+    allow_comments?: boolean;
+    allow_downloads?: boolean;
+    show_all_versions?: boolean;
+    show_transcription?: boolean;
+    featured_field?: string | null;
+    branding?: ShareBranding;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<ShareAttributes>>(`/shares/${shareId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a share
+   */
+  delete: async (shareId: string) => {
+    return apiFetch<void>(`/shares/${shareId}`, { method: "DELETE" });
+  },
+
+  /**
+   * Duplicate a share
+   */
+  duplicate: async (shareId: string) => {
+    return apiFetch<JsonApiSingleResponse<ShareAttributes>>(`/shares/${shareId}/duplicate`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * List assets in a share
+   */
+  listAssets: async (shareId: string, options?: {
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.cursor) params.set("cursor", options.cursor);
+    const queryString = params.toString();
+    const path = `/shares/${shareId}/assets${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<ShareAssetAttributes>>(path);
+  },
+
+  /**
+   * Add assets to a share
+   */
+  addAssets: async (shareId: string, fileIds: string[]) => {
+    return apiFetch<void>(`/shares/${shareId}/assets`, {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds }),
+    });
+  },
+
+  /**
+   * Remove an asset from a share
+   */
+  removeAsset: async (shareId: string, assetId: string) => {
+    return apiFetch<void>(`/shares/${shareId}/assets/${assetId}`, { method: "DELETE" });
+  },
+
+  /**
+   * Get share activity
+   */
+  getActivity: async (shareId: string, options?: {
+    limit?: number;
+    cursor?: string;
+    type?: ShareActivityType;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.cursor) params.set("cursor", options.cursor);
+    if (options?.type) params.set("type", options.type);
+    const queryString = params.toString();
+    const path = `/shares/${shareId}/activity${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<ShareActivityAttributes>>(path);
+  },
+};
