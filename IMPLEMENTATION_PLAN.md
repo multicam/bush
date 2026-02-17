@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Comprehensive Verification)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (61/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~70% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Annotation Tools Implementation)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed) + Comments/Annotations (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (71/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~70% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -12,32 +12,33 @@
 ### Verification (2026-02-17)
 
 **Verified via code analysis:**
-- All 249 tests pass (20 test files)
-- API endpoints counted from route files: 61 total
+- All 258 tests pass (21 test files)
+- API endpoints counted from route files: 71 total
 - Database schema reviewed: 14 tables with proper indexes
 - Media processing: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
 - Frontend viewers: 4 implemented (video, audio, image, pdf)
+- Annotation tools: COMPLETED (canvas, toolbar, overlay)
 - WebSocket/Realtime: NOT IMPLEMENTED (0%)
-- Comments API: NOT IMPLEMENTED
+- Comments API: COMPLETED
 - Shares API: NOT IMPLEMENTED
 - Collections API: NOT IMPLEMENTED
 - Webhooks API: NOT IMPLEMENTED
 - Notifications API: NOT IMPLEMENTED
 - Transcription API: NOT IMPLEMENTED
 - Custom Fields API: NOT IMPLEMENTED
-- Comments API: COMPLETED (10 endpoints)
 
 | Metric | Status | Notes |
 |--------|--------|-------|
 | **API Endpoints** | 71/110+ (65%) | 11 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10) |
 | **Database Tables** | 14/26 (54%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, notifications, workspacePermissions, projectPermissions, folderPermissions |
-| **Test Files** | 20 | 249 tests passing, good coverage on core modules |
+| **Test Files** | 21 | 258 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 0 | All resolved |
 | **Media Processing** | 70% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 0% | Not implemented |
 | **Upload Client** | 100% | Chunked upload with resumable support |
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
+| **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
 
 ---
 
@@ -533,11 +534,29 @@ This section lists all remaining implementation tasks, prioritized by impact and
     - Timestamp click-to-seek for video/audio
     - Completion status toggle
 
-- **[P1] Annotation Tools** [1d] -- NOT STARTED
+- **[P1] Annotation Tools** [1d] -- COMPLETED (2026-02-17)
   - Canvas overlay on all viewer types
-  - Free draw, line, arrow, rectangle
-  - Color picker, undo/redo
-  - **Dependencies**: Viewers
+  - Free draw, line, arrow, rectangle, ellipse
+  - Color picker (9 preset colors), stroke width picker
+  - Undo/redo with history
+  - Tool selection (select, rectangle, ellipse, arrow, line, freehand)
+  - Integration with comment creation flow
+  - **Dependencies**: Viewers - DONE
+  - **Implementation**: `src/web/components/annotations/`
+  - **Components**:
+    - `AnnotationCanvas` - Canvas overlay for drawing annotations
+    - `AnnotationToolbar` - Tool, color, and stroke width selection
+    - `AnnotationOverlay` - Complete annotation system with canvas + toolbar
+  - **Features**:
+    - Drawing tools: select, rectangle, ellipse, arrow, line, freehand
+    - Normalized coordinates (0-1) for resolution independence
+    - 9 preset colors with dropdown picker
+    - 5 stroke widths (2, 3, 4, 6, 8 pixels)
+    - Undo/redo with 50-state history
+    - Keyboard shortcuts (V, R, E, A, L, D for tools)
+    - Toggle annotation mode with Annotate button
+    - Delete selected annotation
+    - Conversion utilities (toCommentAnnotation, fromCommentAnnotation)
 
 - **[P2] Real-Time Sync** [4h]
   - WebSocket broadcast on new comment
@@ -888,6 +907,51 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-17 Annotation Tools Implementation
+
+**Completed Work:**
+1. **Annotation Tools COMPLETED** - `src/web/components/annotations/`
+   - `AnnotationCanvas` - Canvas overlay for drawing annotations on any viewer
+   - `AnnotationToolbar` - Tool selection, color picker, stroke width picker, undo/redo
+   - `AnnotationOverlay` - Complete annotation system combining canvas + toolbar
+   - `types.ts` - Type definitions for annotation shapes and tools
+   - `annotations.module.css` - Styles for all annotation components
+   - `annotations.test.ts` - Unit tests for annotation utilities
+
+2. **Features Implemented:**
+   - Drawing tools: select, rectangle, ellipse, arrow, line, freehand
+   - Normalized coordinates (0-1) for resolution independence
+   - 9 preset colors with dropdown picker (red, orange, yellow, green, blue, purple, pink, white, black)
+   - 5 stroke widths (2, 3, 4, 6, 8 pixels)
+   - Undo/redo with 50-state history
+   - Keyboard shortcuts (V, R, E, A, L, D for tools; Ctrl+Z/Y for undo/redo)
+   - Toggle annotation mode with Annotate button
+   - Delete selected annotation
+   - Select tool for clicking on existing annotations
+   - Conversion utilities (toCommentAnnotation, fromCommentAnnotation) for API integration
+
+3. **Utility Functions Added:**
+   - `generateId()` - Generate unique IDs using crypto.randomUUID or fallback
+   - `debounce()`, `throttle()` - Function utilities
+   - `formatBytes()`, `formatDuration()` - Formatting utilities
+   - `cn()` - Classnames utility
+
+**New Files Created:**
+- `src/web/components/annotations/types.ts` - Type definitions
+- `src/web/components/annotations/annotation-canvas.tsx` - Canvas overlay component
+- `src/web/components/annotations/annotation-toolbar.tsx` - Toolbar component
+- `src/web/components/annotations/annotation-overlay.tsx` - Complete annotation system
+- `src/web/components/annotations/annotations.module.css` - Component styles
+- `src/web/components/annotations/index.ts` - Component exports
+- `src/web/components/annotations/annotations.test.ts` - Unit tests
+- `src/web/lib/utils.ts` - Common utility functions
+
+**Updated Files:**
+- `src/web/components/viewers/index.ts` - Re-export annotation components for convenience
+
+**Test Count:** 249 → 258 tests (+9)
+**Lint:** 0 errors, existing warnings only
 
 ### 2026-02-17 Comment Panel UI Implementation
 

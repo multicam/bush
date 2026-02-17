@@ -14,3 +14,24 @@ export type { AudioViewerProps, CommentMarker as AudioCommentMarker, WaveformDat
 
 export { PdfViewer } from "./pdf-viewer.js";
 export type { PdfViewerProps, CommentMarker as PdfCommentMarker } from "./pdf-viewer.js";
+
+// Re-export annotation components for convenience
+export {
+  AnnotationCanvas,
+  AnnotationToolbar,
+  AnnotationOverlay,
+  toCommentAnnotation,
+  fromCommentAnnotation,
+  DEFAULT_COLORS,
+  STROKE_WIDTHS,
+  TOOL_CONFIG,
+} from "../annotations/index.js";
+export type {
+  AnnotationTool,
+  Point,
+  DrawingState,
+  AnnotationShape,
+  AnnotationCanvasProps,
+  AnnotationToolbarProps,
+  AnnotationOverlayProps,
+} from "../annotations/index.js";
