@@ -1221,3 +1221,226 @@ export const commentsApi = {
     });
   },
 };
+
+// ============================================================================
+// Custom Fields Types
+// ============================================================================
+
+/**
+ * Custom field types
+ */
+export type CustomFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "date"
+  | "single_select"
+  | "multi_select"
+  | "checkbox"
+  | "user"
+  | "url"
+  | "rating";
+
+/**
+ * Custom field attributes from API
+ */
+export interface CustomFieldAttributes {
+  accountId: string;
+  name: string;
+  slug: string;
+  type: CustomFieldType;
+  description: string | null;
+  options: string[] | null;
+  isVisibleByDefault: boolean;
+  editableBy: "admin" | "full_access";
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Technical metadata extracted from media files
+ */
+export interface TechnicalMetadata {
+  duration: number | null;
+  width: number | null;
+  height: number | null;
+  frameRate: number | null;
+  videoCodec: string | null;
+  audioCodec: string | null;
+  bitRate: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+  isHDR: boolean;
+  hdrType: string | null;
+  colorSpace: string | null;
+  audioBitDepth: number | null;
+  format: string | null;
+  hasAlpha: boolean;
+}
+
+/**
+ * Custom field value (can be various types)
+ */
+export type CustomFieldValue = string | number | boolean | string[] | null;
+
+/**
+ * File metadata response
+ */
+export interface FileMetadataAttributes {
+  technical: TechnicalMetadata | null;
+  builtin: {
+    rating: number | null;
+    status: string | null;
+    keywords: string[];
+    notes: string | null;
+    assignee: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string;
+    } | null;
+  };
+  custom: Record<string, {
+    field: CustomFieldAttributes;
+    value: CustomFieldValue;
+  }>;
+  file: {
+    id: string;
+    name: string;
+    original_name: string;
+    mime_type: string;
+    file_size_bytes: number;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+// ============================================================================
+// Custom Fields API
+// ============================================================================
+
+/**
+ * Custom Fields API
+ */
+export const customFieldsApi = {
+  /**
+   * List custom field definitions for an account
+   */
+  list: async (accountId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/accounts/${accountId}/custom_fields${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<CustomFieldAttributes>>(path);
+  },
+
+  /**
+   * Get a custom field definition
+   */
+  get: async (fieldId: string) => {
+    return apiFetch<JsonApiSingleResponse<CustomFieldAttributes>>(`/custom_fields/${fieldId}`);
+  },
+
+  /**
+   * Create a custom field definition
+   */
+  create: async (accountId: string, data: {
+    name: string;
+    type: CustomFieldType;
+    slug?: string;
+    description?: string;
+    options?: string[];
+    is_visible_by_default?: boolean;
+    editable_by?: "admin" | "full_access";
+  }) => {
+    return apiFetch<JsonApiSingleResponse<CustomFieldAttributes>>(`/accounts/${accountId}/custom_fields`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a custom field definition
+   */
+  update: async (fieldId: string, data: {
+    name?: string;
+    description?: string;
+    options?: string[];
+    is_visible_by_default?: boolean;
+    editable_by?: "admin" | "full_access";
+    sort_order?: number;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<CustomFieldAttributes>>(`/custom_fields/${fieldId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a custom field definition
+   */
+  delete: async (fieldId: string) => {
+    return apiFetch<void>(`/custom_fields/${fieldId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Set field visibility for a project
+   */
+  setVisibility: async (fieldId: string, projectId: string, isVisible: boolean) => {
+    return apiFetch<JsonApiSingleResponse<{ project_id: string; is_visible: boolean }>>(
+      `/custom_fields/${fieldId}/visibility/${projectId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ is_visible: isVisible }),
+      }
+    );
+  },
+};
+
+// ============================================================================
+// Metadata API
+// ============================================================================
+
+/**
+ * Metadata API
+ */
+export const metadataApi = {
+  /**
+   * Get all metadata for a file
+   */
+  get: async (fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<FileMetadataAttributes>>(`/files/${fileId}/metadata`);
+  },
+
+  /**
+   * Update all metadata for a file
+   */
+  update: async (fileId: string, data: {
+    rating?: number;
+    status?: string;
+    keywords?: string[];
+    notes?: string;
+    assignee_id?: string | null;
+    custom?: Record<string, CustomFieldValue>;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/files/${fileId}/metadata`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update a single metadata field
+   */
+  updateField: async (fileId: string, fieldId: string, value: CustomFieldValue) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/files/${fileId}/metadata/${fieldId}`, {
+      method: "PUT",
+      body: JSON.stringify({ value }),
+    });
+  },
+};

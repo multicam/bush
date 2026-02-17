@@ -106,6 +106,49 @@ export const folders = sqliteTable("folders", {
 }));
 
 /**
+ * Technical metadata structure extracted from media files
+ * Stored as JSON in the files table
+ */
+export interface TechnicalMetadata {
+  duration: number | null;
+  width: number | null;
+  height: number | null;
+  frameRate: number | null;
+  videoCodec: string | null;
+  audioCodec: string | null;
+  bitRate: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+  isHDR: boolean;
+  hdrType: string | null;
+  colorSpace: string | null;
+  audioBitDepth: number | null;
+  format: string | null;
+  hasAlpha: boolean;
+}
+
+/**
+ * Built-in editable metadata fields
+ */
+export interface BuiltInMetadata {
+  rating: number | null; // 1-5
+  status: string | null; // Custom status value
+  keywords: string[]; // Array of tags/keywords
+  notes: string | null; // User notes
+  assigneeId: string | null; // User ID of assignee
+}
+
+/**
+ * Custom field value types
+ */
+export type CustomFieldValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | null;
+
+/**
  * Files - Assets stored in the system
  */
 export const files = sqliteTable("files", {
@@ -121,6 +164,16 @@ export const files = sqliteTable("files", {
   status: text("status", {
     enum: ["uploading", "processing", "ready", "processing_failed", "deleted"]
   }).notNull().default("uploading"),
+  // Technical metadata extracted from file (read-only)
+  technicalMetadata: text("technical_metadata", { mode: "json" }).$type<TechnicalMetadata>(),
+  // Built-in editable metadata
+  rating: integer("rating"), // 1-5
+  assetStatus: text("asset_status"), // Custom status (renamed to avoid conflict with file status)
+  keywords: text("keywords", { mode: "json" }).$type<string[]>().default([]),
+  notes: text("notes"),
+  assigneeId: text("assignee_id").references(() => users.id, { onDelete: "set null" }),
+  // Custom metadata values (field_id -> value)
+  customMetadata: text("custom_metadata", { mode: "json" }).$type<Record<string, CustomFieldValue>>(),
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
   expiresAt: integer("expires_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
@@ -132,6 +185,67 @@ export const files = sqliteTable("files", {
   versionStackIdx: index("files_version_stack_id_idx").on(table.versionStackId),
   mimeTypeIdx: index("files_mime_type_idx").on(table.mimeType),
   expiresAtIdx: index("files_expires_at_idx").on(table.expiresAt),
+  assigneeIdx: index("files_assignee_id_idx").on(table.assigneeId),
+}));
+
+/**
+ * Custom field types supported by the system
+ */
+export type CustomFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "date"
+  | "single_select"
+  | "multi_select"
+  | "checkbox"
+  | "user"
+  | "url"
+  | "rating";
+
+/**
+ * Custom Fields - Account-wide custom metadata field definitions
+ */
+export const customFields = sqliteTable("custom_fields", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(), // URL-safe identifier
+  type: text("type", {
+    enum: ["text", "textarea", "number", "date", "single_select", "multi_select", "checkbox", "user", "url", "rating"]
+  }).notNull(),
+  description: text("description"),
+  // For select fields: array of options
+  options: text("options", { mode: "json" }).$type<string[]>(),
+  // Whether this field is visible by default
+  isVisibleByDefault: integer("is_visible_by_default", { mode: "boolean" }).notNull().default(true),
+  // Who can edit this field's values
+  editableBy: text("editable_by", {
+    enum: ["admin", "full_access"]
+  }).notNull().default("full_access"),
+  // Sort order for display
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  accountIdx: index("custom_fields_account_id_idx").on(table.accountId),
+  accountSlugIdx: uniqueIndex("custom_fields_account_slug_idx").on(table.accountId, table.slug),
+}));
+
+/**
+ * Custom Field Visibility - Per-project visibility settings for custom fields
+ */
+export const customFieldVisibility = sqliteTable("custom_field_visibility", {
+  id: text("id").primaryKey(),
+  customFieldId: text("custom_field_id").notNull().references(() => customFields.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  isVisible: integer("is_visible", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  customFieldIdx: index("custom_field_visibility_custom_field_id_idx").on(table.customFieldId),
+  projectIdx: index("custom_field_visibility_project_id_idx").on(table.projectId),
+  fieldProjectIdx: uniqueIndex("custom_field_visibility_field_project_idx").on(table.customFieldId, table.projectId),
 }));
 
 /**

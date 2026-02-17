@@ -1,0 +1,284 @@
+/**
+ * Bush Platform - Metadata Inspector Styles
+ */
+
+.panel {
+  width: 320px;
+  background: var(--color-bg-secondary);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.section {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionHeader {
+  padding: 12px 16px;
+  background: var(--color-bg-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sectionHeader:hover {
+  background: var(--color-bg-hover);
+}
+
+.sectionChevron {
+  transition: transform 0.2s;
+}
+
+.sectionChevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.sectionContent {
+  padding: 0;
+}
+
+.sectionContent.collapsed {
+  display: none;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.fieldRow:last-child {
+  border-bottom: none;
+}
+
+.fieldRow:hover {
+  background: var(--color-bg-hover);
+}
+
+.fieldName {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  width: 100px;
+}
+
+.fieldValue {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  text-align: right;
+  word-break: break-word;
+  max-width: 180px;
+}
+
+.fieldValue.editable {
+  cursor: pointer;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.fieldValue.editable:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.fieldValueInput {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-focus);
+  border-radius: 4px;
+  padding: 4px 8px;
+  width: 180px;
+  text-align: right;
+  outline: none;
+}
+
+.fieldValueInput:focus {
+  border-color: var(--color-primary);
+}
+
+/* Rating input */
+.ratingInput {
+  display: flex;
+  gap: 2px;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.ratingStar {
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: color 0.15s;
+}
+
+.ratingStar:hover,
+.ratingStar:hover ~ .ratingStar,
+.ratingStar.active {
+  color: var(--color-warning);
+}
+
+.ratingStar.disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Keywords input */
+.keywordsInput {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 180px;
+}
+
+.keywordTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--color-text-primary);
+}
+
+.keywordRemove {
+  cursor: pointer;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keywordRemove:hover {
+  opacity: 1;
+}
+
+.keywordInput {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  outline: none;
+  width: 60px;
+  min-width: 60px;
+}
+
+.keywordInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Loading and error states */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.error {
+  padding: 16px;
+  color: var(--color-error);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Empty state */
+.empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+/* File info section */
+.fileInfo {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.fileMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileMetaItem {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+/* Custom field badge */
+.customBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+/* Textarea for notes */
+.notesTextarea {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-focus);
+  border-radius: 4px;
+  padding: 8px;
+  width: 180px;
+  min-height: 60px;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+
+.notesTextarea:focus {
+  border-color: var(--color-primary);
+}

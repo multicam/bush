@@ -14,6 +14,8 @@ export { default as bulkRoutes } from "./bulk.js";
 export { default as searchRoutes } from "./search.js";
 export { default as versionStackRoutes } from "./version-stacks.js";
 export { default as commentRoutes } from "./comments.js";
+export { default as customFieldRoutes } from "./custom-fields.js";
+export { default as metadataRoutes } from "./metadata.js";
 export {
   getVersionStackComments,
   createVersionStackComment,

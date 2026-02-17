@@ -9,6 +9,7 @@ import { files } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
 import { storage } from "../../storage/index.js";
 import type { MetadataJobData, MetadataJobResult } from "../types.js";
+import type { TechnicalMetadata } from "../../db/schema.js";
 import {
   runFFprobe,
   extractMetadata,
@@ -127,15 +128,32 @@ function getExtensionFromMimeType(mimeType: string): string {
  */
 async function updateFileMetadata(
   assetId: string,
-  _metadata: MetadataJobResult
+  metadata: MetadataJobResult
 ): Promise<void> {
-  // Store metadata as JSON in a separate column or update individual columns
-  // For now, we'll update the status and store technical metadata
+  // Convert MetadataJobResult to TechnicalMetadata format for storage
+  const technicalMetadata: TechnicalMetadata = {
+    duration: metadata.duration,
+    width: metadata.width,
+    height: metadata.height,
+    frameRate: metadata.frameRate,
+    videoCodec: metadata.videoCodec,
+    audioCodec: metadata.audioCodec,
+    bitRate: metadata.bitRate,
+    sampleRate: metadata.sampleRate,
+    channels: metadata.channels,
+    isHDR: metadata.isHDR,
+    hdrType: metadata.hdrType,
+    colorSpace: metadata.colorSpace,
+    audioBitDepth: metadata.audioBitDepth,
+    format: metadata.format,
+    hasAlpha: false, // Will be detected separately if needed
+  };
+
+  // Update the file record with technical metadata
   await db
     .update(files)
     .set({
-      // Store metadata in a JSON format - we may need to add this column
-      // For now, just update the status
+      technicalMetadata,
       updatedAt: new Date(),
     })
     .where(eq(files.id, assetId));

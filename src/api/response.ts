@@ -269,4 +269,5 @@ export const RESOURCE_TYPES = {
   COMMENT: "comment",
   SHARE: "share",
   NOTIFICATION: "notification",
+  CUSTOM_FIELD: "custom_field",
 } as const;

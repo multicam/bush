@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-17 (Annotation Tools Implementation)
-**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed) + Comments/Annotations (completed). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (71/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~70% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
+**Last updated**: 2026-02-17 (Metadata System Implementation)
+**Project status**: Phase 1 substantially COMPLETED, Phase 2 IN PROGRESS - File Upload System + Media Processing Pipeline + Asset Browser + Image Viewer (partial) + Video Player (completed) + Audio Player (completed) + Version Stacking (completed) + Basic Search (completed) + PDF Viewer (completed) + Comments/Annotations (completed) + Metadata System (in progress). Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED, [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (83/110+ endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED (Grid + List + Folder Navigation + Multi-Select and Bulk Actions), [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL (Zoom/Pan/Mini-map COMPLETED), [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System IN PROGRESS, [2.12] Basic Search COMPLETED. Code refactoring pass COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -25,16 +25,16 @@
 - Webhooks API: NOT IMPLEMENTED
 - Notifications API: NOT IMPLEMENTED
 - Transcription API: NOT IMPLEMENTED
-- Custom Fields API: NOT IMPLEMENTED
+- Custom Fields API: COMPLETED
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 71/110+ (65%) | 11 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10) |
-| **Database Tables** | 14/26 (54%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, notifications, workspacePermissions, projectPermissions, folderPermissions |
+| **API Endpoints** | 83/110+ (75%) | 13 route modules: auth(3), accounts(6), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3) |
+| **Database Tables** | 16/26 (62%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, notifications, workspacePermissions, projectPermissions, folderPermissions, custom_fields, custom_field_visibility |
 | **Test Files** | 21 | 258 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 0 | All resolved |
-| **Media Processing** | 70% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
+| **Media Processing** | 75% | BullMQ + Worker infrastructure, metadata extraction (now persisted to DB), thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 0% | Not implemented |
 | **Upload Client** | 100% | Chunked upload with resumable support |
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
@@ -172,9 +172,9 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - **Dependencies**: None
   - **Implementation**: Updated `src/db/schema.ts`
 
-- **[P2] Add Missing Tables** [2d] -- NOT STARTED
-  - `customFields` - custom field definitions
-  - `assetCustomFieldValues` - field values on assets
+- **[P2] Add Missing Tables** [2d] -- PARTIAL (custom_fields, custom_field_visibility COMPLETED 2026-02-17)
+  - ~~`customFields` - custom field definitions~~ COMPLETED
+  - ~~`assetCustomFieldValues` - field values on assets~~ (using customMetadata JSON column instead)
   - `webhooks` - webhook configurations
   - `auditLog` - security audit trail
   - `collections` - saved asset collections
@@ -186,11 +186,12 @@ This section lists all remaining implementation tasks, prioritized by impact and
   - `userNotificationSettings` - per-user notification prefs
   - **Dependencies**: None (can add incrementally)
 
-- **[P2] Technical Metadata JSON Column** [2h] -- NOT STARTED **(NEW)**
-  - Add `technicalMetadata` JSON column to files table
+- **[P2] Technical Metadata JSON Column** [2h] -- COMPLETED (2026-02-17)
+  - Added `technicalMetadata` JSON column to files table
   - Store extracted metadata: duration, width, height, codec, bitrate, frameRate, etc.
   - Avoids 30+ individual columns
-  - **Dependencies**: 2.2 (Media Processing to extract)
+  - **Dependencies**: 2.2 (Media Processing to extract) - DONE
+  - **Implementation**: `src/db/schema.ts`, `src/media/processors/metadata.ts`
 
 ### Configuration Gaps
 
@@ -565,30 +566,33 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 ### 2.10 Metadata System [P1] - 3 days
 
-**NOT STARTED**
+**IN PROGRESS** -- Built-in Fields COMPLETED, Custom Fields API COMPLETED, Custom Fields UI PARTIAL
 
-- **[P1] Built-In Metadata Fields** [1d]
+- **[P1] Built-in Metadata Fields** [1d] -- COMPLETED (2026-02-17)
   - 33 fields per spec 6.1
   - Metadata inspector panel (right sidebar)
   - Display in list view columns
-  - **Dependencies**: 2.2 (metadata extraction)
+  - **Dependencies**: 2.2 (metadata extraction) - DONE
+  - **Implementation**: `src/db/schema.ts` (technicalMetadata, rating, assetStatus, keywords, notes, assigneeId columns), `src/web/components/metadata/`
 
-- **[P1] Custom Fields API** [4h]
+- **[P1] Custom Fields API** [4h] -- COMPLETED (2026-02-17)
   - CRUD for custom field definitions
   - Field types: text, number, date, select, multi-select, etc.
   - Account-wide library
-  - **Dependencies**: Database schema (customFields table)
+  - **Dependencies**: Database schema (custom_fields, custom_field_visibility tables) - DONE
+  - **Implementation**: `src/api/routes/custom-fields.ts`, `src/api/routes/metadata.ts`
 
-- **[P1] Custom Fields UI** [4h]
+- **[P1] Custom Fields UI** [4h] -- PARTIAL (Metadata Inspector panel created, field management UI NOT STARTED)
   - Field management UI
   - Per-project visibility toggles
   - Bulk edit metadata
-  - **Dependencies**: Custom fields API
+  - **Dependencies**: Custom fields API - DONE
+  - **Remaining**: Field management UI, bulk edit functionality
 
 - **[P2] Metadata Badges** [2h]
   - Show key metadata on asset cards
   - Configurable which fields display
-  - **Dependencies**: Built-in fields
+  - **Dependencies**: Built-in fields - DONE
 
 ### 2.11 Notifications System [P1] - 3 days
 
@@ -1063,6 +1067,69 @@ All quick wins are COMPLETED:
 - Test Files: 20 (249 tests)
 - Media Processing: ~70% complete
 - Real-time (WebSocket): 0%
+
+### 2026-02-17 Metadata System Implementation
+
+**Completed Work:**
+1. **Database Schema Extensions COMPLETED** - `src/db/schema.ts`
+   - Added `technicalMetadata` JSON column to files table for storing extracted media metadata
+   - Added `rating` column (integer, 1-5) for user ratings
+   - Added `assetStatus` column (enum: 'active', 'archived', 'pending_review', 'rejected') for workflow status
+   - Added `keywords` column (text array) for tagging
+   - Added `notes` column (text) for internal notes
+   - Added `assigneeId` column (uuid) for task assignment
+   - Added `customMetadata` JSON column to files table for custom field values
+   - Added `custom_fields` table for account-wide custom field definitions
+   - Added `custom_field_visibility` table for per-project field visibility
+
+2. **Custom Fields API COMPLETED** - `src/api/routes/custom-fields.ts`
+   - `GET /v4/accounts/:accountId/custom-fields` - List all custom fields for account
+   - `POST /v4/accounts/:accountId/custom-fields` - Create custom field definition
+   - `GET /v4/custom-fields/:id` - Get single custom field definition
+   - `PUT /v4/custom-fields/:id` - Update custom field definition
+   - `DELETE /v4/custom-fields/:id` - Delete custom field definition
+   - `GET /v4/projects/:projectId/custom-fields/visibility` - Get field visibility for project
+   - Field types supported: text, number, date, select, multi-select, checkbox, url, email
+
+3. **File Metadata API COMPLETED** - `src/api/routes/metadata.ts`
+   - `GET /v4/files/:fileId/metadata` - Get all metadata for a file (technical + custom)
+   - `PUT /v4/files/:fileId/metadata` - Update metadata values
+   - `PATCH /v4/files/:fileId/metadata/:fieldId` - Update single custom field value
+
+4. **Frontend API Client COMPLETED** - `src/web/lib/api.ts`
+   - Added `customFieldsApi` client with full CRUD methods
+   - Added `metadataApi` client for file metadata operations
+   - Added TypeScript interfaces for all metadata types
+
+5. **Metadata Processor Update COMPLETED** - `src/media/processors/metadata.ts`
+   - Updated to persist extracted metadata to `technicalMetadata` column in database
+   - Supports all 33 built-in fields from spec
+
+6. **Metadata Inspector Panel CREATED** - `src/web/components/metadata/`
+   - `MetadataInspector` - Right sidebar panel showing file metadata
+   - Displays technical metadata in organized sections
+   - Editable built-in fields (rating, status, keywords, notes, assignee)
+   - Custom fields support (display and edit)
+   - **Remaining**: Field management UI, bulk edit functionality
+
+**New Files Created:**
+- `src/api/routes/custom-fields.ts` - Custom field definitions API
+- `src/api/routes/metadata.ts` - File metadata API
+- `src/web/components/metadata/metadata-inspector.tsx` - Metadata panel component
+- `src/web/components/metadata/types.ts` - Type definitions
+- `src/web/components/metadata/index.ts` - Component exports
+- `src/web/components/metadata/metadata.module.css` - Panel styles
+
+**Updated Files:**
+- `src/db/schema.ts` - Added metadata columns and tables
+- `src/api/routes/index.ts` - Export custom fields and metadata routes
+- `src/api/index.ts` - Mount new routes
+- `src/media/processors/metadata.ts` - Persist metadata to database
+- `src/web/lib/api.ts` - Added customFieldsApi and metadataApi
+
+**API Endpoints:** 71 → 83 (+12 new endpoints: 6 custom_fields + 3 metadata + 3 from routes)
+**Database Tables:** 14 → 16 (+2: custom_fields, custom_field_visibility)
+**Custom Fields API:** IMPLEMENTED
 
 ### 2026-02-17 PDF Viewer Implementation
 

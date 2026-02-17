@@ -29,6 +29,8 @@ import {
   searchRoutes,
   versionStackRoutes,
   commentRoutes,
+  customFieldRoutes,
+  metadataRoutes,
 } from "./routes/index.js";
 
 const app = new Hono();
@@ -157,6 +159,12 @@ v4.route("/files/:fileId/comments", commentRoutes);
 
 // Version stack comments (using exported handlers)
 // Note: These are added to version-stacks route separately
+
+// Custom Fields (account-wide field definitions)
+v4.route("/", customFieldRoutes);
+
+// Metadata (file metadata - built-in and custom fields)
+v4.route("/", metadataRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);
