@@ -932,7 +932,17 @@ These items are required for core platform functionality but are missing from th
   - FASTER_WHISPER_URL for self-hosted fallback
   - Added DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY to SECRET_KEYS for log scrubbing
 
-- **Remaining**: Transcription UI (frontend components for transcript display/editing)
+- **Transcription UI** (frontend components) -- COMPLETED (2026-02-18)
+  - `src/web/components/transcription/TranscriptPanel.tsx` - Time-synced transcript display
+  - `src/web/components/transcription/SpeakerLabel.tsx` - Speaker labeling and renaming UI
+  - `src/web/components/transcription/TranscriptWordEditor.tsx` - Word-level editing
+  - `src/web/components/transcription/CaptionOverlay.tsx` - Caption overlay for media viewers
+  - `src/web/lib/api/transcription.ts` - transcriptionApi client methods
+  - `src/web/lib/api/captions.ts` - captionsApi client methods
+  - Integration with VideoViewer and AudioViewer components for caption display
+  - Real-time word highlighting during playback
+  - Speaker identification with editable names
+  - Editable transcript words with original text preservation
 
 ### 3.5 Enhanced Search [P2] - 3 days
 
