@@ -1367,6 +1367,28 @@ All quick wins are COMPLETED:
 
 ## CHANGE LOG
 
+### 2026-02-18 Next.js Build Fix for bun:sqlite
+
+**Problem:**
+- Next.js build failed with "Cannot find module 'bun:sqlite'" error
+- Next.js uses Node.js for builds, but `bun:sqlite` only exists in Bun runtime
+- The auth API routes in Next.js directly imported `authService` which depends on the database
+
+**Solution:**
+- Used dynamic imports (`await import("@/auth")`) for database-dependent modules in Next.js API routes
+- This defers loading of `bun:sqlite` to runtime (when the code runs in Bun), not build time (when Next.js runs in Node.js)
+- Updated `next.config.ts` to mark `bun:sqlite` as external in webpack config (additional safety)
+
+**Files Modified:**
+- `src/web/app/api/auth/[...action]/route.ts` - Dynamic import for authService
+- `src/web/app/auth/callback/route.ts` - Dynamic import for authService
+- `src/web/next.config.ts` - Added webpack externals for bun:sqlite
+
+**Test Count:** 291 tests (all pass)
+**Build:** Success (with ESLint warnings only)
+
+**Git Tag:** v0.0.46
+
 ### 2026-02-18 Comprehensive Verification - MVP COMPLETE
 
 **Verification Performed:**
