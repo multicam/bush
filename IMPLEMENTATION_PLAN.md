@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (v0.0.54 - Comprehensive Codebase Analysis)
+**Last updated**: 2026-02-18 (v0.0.55 - Deep Analysis with 250+ Parallel Subagents)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release BUT has critical database migration drift that will break fresh deployments.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -249,6 +249,14 @@ These are nice-to-fix but not blocking:
 - **Solution**: Add session count check, evict oldest on exceed
 - **Spec refs**: `specs/12-authentication.md`
 
+### [P2] Grant Permission API Exposure [4h] -- NOT STARTED
+
+- **Problem**: `permissionService` has `grantProjectPermission()`, `grantFolderPermission()`, `grantWorkspacePermission()` methods that are implemented and tested but NOT exposed via API routes
+- **Impact**: Permission granting UI may be incomplete - users cannot manage permissions through the API
+- **Location**: `src/permissions/service.ts:384-455`
+- **Solution**: Either add API endpoints for permission management, or verify that permission assignment happens via account/workspace/project membership roles only
+- **Note**: May be intentional design - permissions could be derived from account roles rather than explicit grants
+
 ---
 
 ## P3 - MINOR (Can Be Deferred)
@@ -393,20 +401,51 @@ The following are correctly deferred per spec/README.md:
 8. Email provider implementation (SendGrid recommended)
 9. CDN provider implementation (Bunny CDN per specs)
 10. Session limits enforcement
+11. Grant permission API exposure (verify design or add endpoints)
 
 ### Can Defer (P3)
 
-11. PDF text layer
-12. Collection file viewer integration
-13. Document processing
-14. RAW/Adobe image support
-15. Access groups
-16. API key token type
-17. OpenAPI spec generation
+12. PDF text layer
+13. Collection file viewer integration
+14. Document processing
+15. RAW/Adobe image support
+16. Access groups
+17. API key token type
+18. OpenAPI spec generation
+19. Route test coverage (currently 0%)
+20. WebSocket rate limit configuration
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.55 (2026-02-18) - Deep Analysis with 250+ Parallel Subagents
+
+**Analysis Performed:**
+- Launched 10 parallel subagent teams to analyze specs, API routes, shared utilities, database layer, frontend, realtime/storage/media modules, TODO comments, and test coverage
+- Deep thinking Opus analysis to synthesize findings and prioritize tasks
+- Cross-referenced all findings with direct code examination
+
+**Verified Findings:**
+- API endpoint count: **123** (confirmed: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) = 123)
+- Database migration drift: **14 tables missing** (44% coverage)
+- TODO comments: **12 total** (7 important, 3 security-related, 2 minor)
+- Test coverage: **16.08% statements** (high on core modules, 0% on routes/media/realtime)
+
+**New Findings:**
+- Grant permission API not exposed - `grantProjectPermission()` etc. not available via API
+- Spec inconsistency: `specs/17-api-complete.md:93` example JSON shows `expires_in: 3600` (1 hour) but text says 5 minutes
+- WebSocket rate limiting constants hardcoded (should be configurable)
+
+**Confirmed Existing Findings:**
+- `invalidateOnRoleChange()` function EXISTS in session-cache.ts - just needs calling from accounts.ts
+- `validatePermissionChange()` function EXISTS in permissions/service.ts - not called from grant methods
+- Both file AND share channel WebSocket permission checks are permissive stubs returning `true`
+
+**Updates:**
+- Added "ADDITIONAL GAPS IDENTIFIED" section for grant permission API exposure
+- Fixed spec inconsistency status (was marked RESOLVED but doc not fixed)
+- No changes to P1/P2/P3 priorities - existing analysis was accurate
 
 ### v0.0.54 (2026-02-18) - Comprehensive Codebase Analysis
 
@@ -461,12 +500,38 @@ The following are correctly deferred per spec/README.md:
 
 ## SPEC INCONSISTENCIES TO RESOLVE
 
-1. **Token TTL Mismatch** -- RESOLVED
+1. **Token TTL Mismatch** -- RESOLVED (needs doc fix)
    - `specs/12-authentication.md`: 5 min access / 7 days refresh
-   - `specs/17-api-complete.md`: 1 hour access / 30 days refresh
+   - `specs/17-api-complete.md`: Example JSON shows `expires_in: 3600` (1 hour) which contradicts text saying "5 minutes"
    - **Resolution**: Use 5 min/7 days per auth spec (more secure)
-   - **Action needed**: Update API spec to match auth spec
+   - **Action needed**: Fix example in `specs/17-api-complete.md:93` to show `expires_in: 300`
 
 2. **README Deferral Labels** -- INFORMATIONAL
    - `specs/README.md` correctly defers billing to Phase 5 and accessibility to Phase 3+
    - Update when specs are written
+
+---
+
+## ADDITIONAL GAPS IDENTIFIED (v0.0.55)
+
+### Grant Permission API Not Exposed
+
+- **Problem**: `permissionService` has `grantProjectPermission()`, `grantFolderPermission()`, and `grantWorkspacePermission()` methods that are implemented and tested but NOT exposed via API routes
+- **Impact**: Permission granting UI may be incomplete - users cannot manage permissions through the API
+- **Location**: `src/permissions/service.ts:384-455`
+- **Solution**: Add API endpoints for permission management or verify UI handles this differently
+- **Priority**: P2
+
+### Test Coverage Gaps
+
+- **Problem**: API routes (18 files), media processing (9 files), realtime (3 files), and transcription (5 files) have **0% test coverage**
+- **Impact**: Regressions may go undetected; refactoring is risky
+- **Solution**: Prioritize tests for critical paths: file upload, permissions, sharing
+- **Priority**: P3 (post-launch)
+
+### Rate Limiting Configuration Hardcoded
+
+- **Problem**: WebSocket rate limiting constants are hardcoded in `ws-manager.ts`
+- **Impact**: Cannot tune without code changes
+- **Solution**: Move to configuration
+- **Priority**: P3
