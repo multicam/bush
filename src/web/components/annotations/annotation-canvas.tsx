@@ -457,6 +457,126 @@ export function AnnotationCanvas({
     drawAnnotations,
   ]);
 
+  // Get point from touch event
+  const getTouchPoint = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>): Point => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+    },
+    []
+  );
+
+  // Handle touch start - start drawing (mobile support)
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (readOnly || !isActive || e.touches.length !== 1) return;
+
+      // Prevent default to avoid scrolling while drawing
+      e.preventDefault();
+
+      const point = getTouchPoint(e);
+
+      if (tool === "select") {
+        const clicked = findAnnotationAtPoint(point, annotations, width, height);
+        if (clicked) {
+          setSelectedId(clicked.id);
+          onAnnotationSelect?.(clicked.id);
+        } else {
+          setSelectedId(null);
+        }
+        return;
+      }
+
+      setIsDrawing(true);
+      setStartPoint(point);
+      setCurrentPoint(point);
+
+      if (tool === "freehand") {
+        setFreehandPoints([normalizePoint(point, width, height)]);
+      }
+    },
+    [readOnly, isActive, tool, annotations, width, height, onAnnotationSelect, getTouchPoint]
+  );
+
+  // Handle touch move - continue drawing (mobile support)
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!isDrawing || !startPoint || readOnly || !isActive || e.touches.length !== 1) return;
+
+      e.preventDefault();
+
+      const point = getTouchPoint(e);
+      setCurrentPoint(point);
+
+      if (tool === "freehand") {
+        setFreehandPoints((prev) => [...prev, normalizePoint(point, width, height)]);
+      }
+
+      // Calculate shape for preview
+      let previewShape: Partial<AnnotationShape> | undefined;
+
+      if (tool !== "freehand" && startPoint) {
+        const normalizedStart = normalizePoint(startPoint, width, height);
+        const normalizedCurrent = normalizePoint(point, width, height);
+
+        previewShape = {
+          type: tool as AnnotationShape["type"],
+          x: Math.min(normalizedStart.x, normalizedCurrent.x),
+          y: Math.min(normalizedStart.y, normalizedCurrent.y),
+          width: Math.abs(normalizedCurrent.x - normalizedStart.x),
+          height: Math.abs(normalizedCurrent.y - normalizedStart.y),
+          color,
+          strokeWidth,
+        };
+      } else if (tool === "freehand" && freehandPoints.length > 0) {
+        previewShape = {
+          type: "freehand",
+          points: freehandPoints,
+          color,
+          strokeWidth,
+        };
+      }
+
+      // Redraw with preview
+      const ctx = getContext();
+      if (ctx && previewShape) {
+        drawAnnotations(ctx, previewShape);
+      }
+    },
+    [
+      isDrawing,
+      startPoint,
+      readOnly,
+      isActive,
+      tool,
+      freehandPoints,
+      color,
+      strokeWidth,
+      width,
+      height,
+      getContext,
+      drawAnnotations,
+      getTouchPoint,
+    ]
+  );
+
+  // Handle touch end - finish drawing (mobile support)
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!isDrawing || !startPoint || !currentPoint || readOnly || !isActive) return;
+
+      e.preventDefault();
+      handleMouseUp();
+    },
+    [isDrawing, startPoint, currentPoint, readOnly, isActive, handleMouseUp]
+  );
+
   if (!isActive && annotations.length === 0) {
     return null;
   }
@@ -471,6 +591,9 @@ export function AnnotationCanvas({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     />
   );
 }

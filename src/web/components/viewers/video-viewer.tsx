@@ -326,7 +326,15 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
     if (isPlaying) {
       video.pause();
     } else {
-      video.play().catch(console.error);
+      video.play().catch((error) => {
+        // Autoplay blocked by browser - this is expected behavior
+        // User needs to interact with the page first
+        if (error instanceof Error && error.name === "NotAllowedError") {
+          console.warn("Autoplay blocked by browser - user interaction required");
+        } else {
+          console.error("Video playback error:", error);
+        }
+      });
     }
   }, [isPlaying]);
 
@@ -394,7 +402,15 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       seekTo: (time: number) => seek(time),
       play: () => {
         const video = videoRef.current;
-        if (video) video.play().catch(console.error);
+        if (video) {
+          video.play().catch((error) => {
+            if (error instanceof Error && error.name === "NotAllowedError") {
+              console.warn("Autoplay blocked by browser - user interaction required");
+            } else {
+              console.error("Video playback error:", error);
+            }
+          });
+        }
       },
       pause: () => {
         const video = videoRef.current;

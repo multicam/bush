@@ -53,6 +53,24 @@ function verifyCookieSignature(data: string, signature: string): boolean {
 }
 
 /**
+ * Scan keys matching a pattern using SCAN instead of KEYS
+ * KEYS can block Redis for long periods on large datasets
+ */
+async function scanKeys(pattern: string): Promise<string[]> {
+  const redis = getRedis();
+  const keys: string[] = [];
+  let cursor = "0";
+
+  do {
+    const [nextCursor, batch] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+    cursor = nextCursor;
+    keys.push(...batch);
+  } while (cursor !== "0");
+
+  return keys;
+}
+
+/**
  * Session cache operations
  */
 export const sessionCache = {
@@ -107,35 +125,57 @@ export const sessionCache = {
   },
 
   /**
-   * Update session data (preserves TTL)
+   * Update session data using atomic WATCH/MULTI to prevent TOCTOU race conditions
+   * Also implements sliding expiration by refreshing TTL on activity
    */
   async update(userId: string, sessionId: string, updates: Partial<SessionData>): Promise<boolean> {
     const redis = getRedis();
     const key = getSessionCacheKey(userId, sessionId);
 
-    // Get existing session
-    const existing = await this.get(userId, sessionId);
-    if (!existing) {
-      return false;
+    // Use WATCH for optimistic locking to prevent race conditions
+    // If the key changes between WATCH and EXEC, the transaction fails
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        // Watch the key for changes
+        await redis.watch(key);
+
+        // Get existing session
+        const existing = await this.get(userId, sessionId);
+        if (!existing) {
+          await redis.unwatch();
+          return false;
+        }
+
+        // Merge updates
+        const updated: SessionData = {
+          ...existing,
+          ...updates,
+          lastActivityAt: Date.now(),
+        };
+
+        // Execute atomic update with sliding expiration
+        const multi = redis.multi();
+        multi.setex(key, DEFAULT_SESSION_TTL, JSON.stringify(updated));
+        const results = await multi.exec();
+
+        // If exec returns null, the transaction was aborted due to concurrent modification
+        if (!results) {
+          retries--;
+          continue;
+        }
+
+        return true;
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          console.error("[session-cache] Update failed after retries:", error);
+          return false;
+        }
+      }
     }
 
-    // Merge updates
-    const updated: SessionData = {
-      ...existing,
-      ...updates,
-      lastActivityAt: Date.now(),
-    };
-
-    // Get remaining TTL and update
-    const ttl = await redis.ttl(key);
-    if (ttl > 0) {
-      await redis.setex(key, ttl, JSON.stringify(updated));
-    } else {
-      // TTL expired or key doesn't exist, use default TTL
-      await redis.setex(key, DEFAULT_SESSION_TTL, JSON.stringify(updated));
-    }
-
-    return true;
+    return false;
   },
 
   /**
@@ -165,12 +205,12 @@ export const sessionCache = {
    * Delete all sessions for a user
    */
   async deleteAllForUser(userId: string): Promise<number> {
-    const redis = getRedis();
     const pattern = `session:${userId}:*`;
-    const keys = await redis.keys(pattern);
+    const keys = await scanKeys(pattern);
     if (keys.length === 0) {
       return 0;
     }
+    const redis = getRedis();
     await redis.del(...keys);
     return keys.length;
   },
@@ -179,11 +219,10 @@ export const sessionCache = {
    * Get all session IDs for a user
    */
   async getSessionIds(userId: string): Promise<string[]> {
-    const redis = getRedis();
     const pattern = `session:${userId}:*`;
-    const keys = await redis.keys(pattern);
+    const keys = await scanKeys(pattern);
     // Extract session IDs from keys
-    return keys.map((key) => {
+    return keys.map((key: string) => {
       const parts = key.split(":");
       return parts[2] || "";
     }).filter(Boolean);
@@ -211,7 +250,7 @@ export const sessionCache = {
   async invalidateOnRoleChange(userId: string, accountId: string): Promise<number> {
     const redis = getRedis();
     const pattern = `session:${userId}:*`;
-    const keys = await redis.keys(pattern);
+    const keys = await scanKeys(pattern);
     let invalidated = 0;
 
     for (const key of keys) {

@@ -772,15 +772,26 @@ app.get("/:id/activity", async (c) => {
  * This endpoint is for viewing shared content without authentication
  *
  * Query parameters:
- * - passphrase: Required if share has passphrase protection
+ * - passphrase: Required if share has passphrase protection (prefer body over query param)
  *
- * Security: The passphrase is never returned in the response. If the share
- * has passphrase protection, the response includes `passphrase_required: true`
- * and the client must submit the passphrase to access the content.
+ * Security: The passphrase should be sent in the request body to avoid URL logging.
+ * Query param is supported for backward compatibility but deprecated.
+ * The passphrase is never returned in the response.
  */
 export async function getShareBySlug(c: any) {
   const slug = c.req.param("slug");
-  const providedPassphrase = c.req.query("passphrase");
+  // Accept passphrase from body (preferred) or query param (deprecated, may be logged)
+  let providedPassphrase: string | undefined;
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    providedPassphrase = body.passphrase;
+  } catch {
+    // No JSON body, try query param
+  }
+  // Fallback to query param for backward compatibility (deprecated)
+  if (!providedPassphrase) {
+    providedPassphrase = c.req.query("passphrase");
+  }
 
   // Get share
   const [share] = await db

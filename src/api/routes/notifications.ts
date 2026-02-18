@@ -46,22 +46,17 @@ app.get("/", async (c) => {
     conditions.push(eq(notifications.type, filterType));
   }
 
-  // Get total count for meta
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
+  // Get total and unread counts in single query
+  const [counts] = await db
+    .select({
+      count: sql<number>`count(*)`,
+      unreadCount: sql<number>`sum(case when ${notifications.readAt} is null then 1 else 0 end)`,
+    })
     .from(notifications)
     .where(and(...conditions));
 
-  // Get unread count
-  const [{ unreadCount }] = await db
-    .select({ unreadCount: sql<number>`count(*)` })
-    .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, session.userId),
-        isNull(notifications.readAt)
-      )
-    );
+  const count = counts?.count ?? 0;
+  const unreadCount = counts?.unreadCount ?? 0;
 
   // Get notifications
   const items = await db

@@ -9,6 +9,8 @@ import { z } from "zod";
 
 /**
  * Secret keys that must be scrubbed from logs
+ * IMPORTANT: When adding a new secret environment variable to envSchema,
+ * also add it to this list to prevent accidental logging.
  */
 export const SECRET_KEYS = [
   "WORKOS_API_KEY",

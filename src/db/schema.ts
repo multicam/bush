@@ -188,6 +188,10 @@ export const files = sqliteTable("files", {
   mimeTypeIdx: index("files_mime_type_idx").on(table.mimeType),
   expiresAtIdx: index("files_expires_at_idx").on(table.expiresAt),
   assigneeIdx: index("files_assignee_id_idx").on(table.assigneeId),
+  // Composite index for listing non-deleted files in a project (most common query pattern)
+  projectDeletedIdx: index("files_project_deleted_idx").on(table.projectId, table.deletedAt),
+  // Composite index for listing files in a folder (including deleted status filtering)
+  projectFolderDeletedIdx: index("files_project_folder_deleted_idx").on(table.projectId, table.folderId, table.deletedAt),
 }));
 
 /**

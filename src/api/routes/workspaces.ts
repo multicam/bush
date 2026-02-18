@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { workspaces, workspacePermissions } from "../../db/schema.js";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates, decodeCursor } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
@@ -53,8 +53,8 @@ app.get("/", async (c) => {
     .limit(limit + 1);
 
   // Get total count
-  const countResult = await db
-    .select({ count: workspaces.id })
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
     .from(workspaces)
     .where(eq(workspaces.accountId, session.currentAccountId));
 
@@ -63,7 +63,7 @@ app.get("/", async (c) => {
   return sendCollection(c, items, RESOURCE_TYPES.WORKSPACE, {
     basePath: "/v4/workspaces",
     limit,
-    totalCount: countResult.length,
+    totalCount: count,
   });
 });
 

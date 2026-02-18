@@ -14,7 +14,7 @@ import { storage } from "../storage/index.js";
 import { sqlite } from "../db/index.js";
 import { redisHealthCheck } from "../redis/index.js";
 import { errorHandler, notFoundHandler } from "./router.js";
-import { standardRateLimit } from "./rate-limit.js";
+import { standardRateLimit, rateLimit } from "./rate-limit.js";
 import { wsManager, type WebSocketData } from "../realtime/index.js";
 import type { ServerWebSocket } from "bun";
 
@@ -199,8 +199,8 @@ v4.route("/shares/:id/activity", shareRoutes);
 // Account shares (nested under accounts)
 v4.route("/accounts/:accountId/shares", shareRoutes);
 
-// Public share access by slug (no auth required)
-v4.get("/shares/slug/:slug", getShareBySlug);
+// Public share access by slug (no auth required, rate limited to prevent brute force)
+v4.get("/shares/slug/:slug", rateLimit({ preset: "auth", keyPrefix: "rl:public-share" }), getShareBySlug);
 
 // Notifications (for current user)
 v4.route("/users/me/notifications", notificationRoutes);
