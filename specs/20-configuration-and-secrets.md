@@ -1,17 +1,28 @@
 # Bush - Configuration & Secrets Management
 
-## Summary
-All configuration via environment variables (12-factor app). Type-safe validation at startup with Zod. No secrets in code or git. Single `.env.example` as schema documentation. Fail fast on missing or invalid config.
+## Central Source of Truth
+
+All configuration flows from **one chain**:
+
+```
+src/config/env.ts          → Zod schema: defines, validates, types every variable
+  ↓
+.env.example               → Documents all variables with defaults (mirrors env.ts)
+  ↓
+.env.local                 → Developer overrides (not in git)
+```
+
+**Rule**: When adding a new env var, update `src/config/env.ts` first, then `.env.example`. The spec below is reference documentation — the code is authoritative.
 
 ---
 
 ## 1. Configuration Philosophy
 
-- **Environment variables only** -- no config files, no hardcoded values, no feature flags in code
-- **No secrets in git** -- ever. `.env.example` has placeholders only
-- **Fail fast** -- validate all config at startup; crash with clear error messages before accepting traffic
-- **Single source of truth** -- Zod schema defines every variable, its type, whether it's required, and its default
-- **Type-safe access** -- all config accessed through a typed `config` object, never raw `process.env`
+- **Environment variables only** — no config files, no hardcoded values, no feature flags in code
+- **No secrets in git** — ever. `.env.example` has placeholders only
+- **Fail fast** — validate all config at startup; crash with clear error messages before accepting traffic
+- **Single source of truth** — `src/config/env.ts` Zod schema defines every variable, its type, whether it's required, and its default
+- **Type-safe access** — all config accessed through a typed `config` object, never raw `process.env`
 
 ---
 
@@ -34,282 +45,231 @@ All configuration via environment variables (12-factor app). Type-safe validatio
 
 ## 3. Complete Environment Variables
 
-### `.env.example`
+### App & Core
 
-```bash
-# =============================================================================
-# Bush Platform - Environment Variables
-# =============================================================================
-# Copy to .env.local and fill in real values.
-# Variables marked [REQUIRED] have no defaults and must be set.
-# Variables marked [SECRET] must never be committed to git.
-# =============================================================================
+| Variable | Type | Default | Required | Description |
+|----------|------|---------|----------|-------------|
+| `NODE_ENV` | enum | `development` | No | `development` \| `test` \| `production` |
+| `PORT` | number | `3001` | No | API server port |
+| `HOST` | string | `0.0.0.0` | No | Bind address |
+| `LOG_LEVEL` | enum | `info` | No | `debug` \| `info` \| `warn` \| `error` |
+| `APP_URL` | url | — | Yes | Next.js frontend URL |
+| `API_URL` | url | — | Yes | Hono backend URL |
 
-# -- App --
-NODE_ENV=development
-PORT=3001
-HOST=0.0.0.0
-LOG_LEVEL=debug                          # debug | info | warn | error
-APP_URL=http://localhost:3000            # Next.js frontend URL
-API_URL=http://localhost:3001            # Hono backend URL
+### Database (SQLite)
 
-# -- Database (SQLite) --
-DATABASE_URL=./data/bush.db              # Relative to project root
-DATABASE_WAL_MODE=true
-DATABASE_BUSY_TIMEOUT=5000
+| Variable | Type | Default | Required | Description |
+|----------|------|---------|----------|-------------|
+| `DATABASE_URL` | string | — | Yes | SQLite path (e.g., `./data/bush.db`) |
+| `DATABASE_WAL_MODE` | boolean | `true` | No | Enable WAL mode |
+| `DATABASE_BUSY_TIMEOUT` | number | `5000` | No | Busy timeout in ms |
 
-# -- Redis --
-REDIS_URL=redis://localhost:6379
-REDIS_KEY_PREFIX=bush:
+### Redis
 
-# -- WorkOS AuthKit [REQUIRED] [SECRET] --
-WORKOS_API_KEY=sk_test_...               # [SECRET] WorkOS API key
-WORKOS_CLIENT_ID=client_...              # [REQUIRED] WorkOS client ID
-NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
-WORKOS_WEBHOOK_SECRET=whsec_...          # [SECRET] WorkOS webhook signing secret
-WORKOS_COOKIE_PASSWORD=                   # [SECRET] Cookie encryption password (min 32 chars). Uses SESSION_SECRET if not set.
+| Variable | Type | Default | Required | Description |
+|----------|------|---------|----------|-------------|
+| `REDIS_URL` | string | — | Yes | Redis connection string |
+| `REDIS_KEY_PREFIX` | string | `bush:` | No | Key namespace |
 
-# -- Object Storage (S3-compatible) --
-STORAGE_PROVIDER=minio                   # minio | s3 | r2 | b2
-STORAGE_ENDPOINT=http://localhost:9000
-STORAGE_REGION=us-east-1
-STORAGE_ACCESS_KEY=minioadmin            # [SECRET] S3 access key
-STORAGE_SECRET_KEY=minioadmin            # [SECRET] S3 secret key
-STORAGE_BUCKET=bush-primary
-STORAGE_BUCKET_DERIVATIVES=              # Optional, defaults to primary bucket
+### Authentication (WorkOS AuthKit)
 
-# -- CDN --
-CDN_PROVIDER=none                        # none | bunny | cloudfront | fastly
-CDN_BASE_URL=                            # Empty for dev (serves from storage direct)
-CDN_SIGNING_KEY=                         # [SECRET] CDN signing key
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `WORKOS_API_KEY` | string | — | Yes | Yes | WorkOS API key (`sk_test_...`) |
+| `WORKOS_CLIENT_ID` | string | — | Yes | No | WorkOS client ID (`client_...`) |
+| `WORKOS_REDIRECT_URI` | url | — | No | No | Override redirect URI |
+| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | url | — | Yes | No | AuthKit SDK redirect (must match dashboard) |
+| `WORKOS_WEBHOOK_SECRET` | string | — | Yes | Yes | Webhook signing secret (`whsec_...`) |
+| `WORKOS_COOKIE_PASSWORD` | string | — | No | Yes | Cookie encryption (min 32 chars, falls back to `SESSION_SECRET`) |
 
-# -- Media Processing --
-FFMPEG_PATH=/usr/bin/ffmpeg              # Path to ffmpeg binary
-FFPROBE_PATH=/usr/bin/ffprobe            # Path to ffprobe binary
-MEDIA_TEMP_DIR=./data/tmp                # Temp directory for processing
-MEDIA_MAX_CONCURRENT_JOBS=2              # Concurrent FFmpeg processes
+### Object Storage (S3-compatible)
 
-# -- Email (SMTP) --
-SMTP_HOST=localhost
-SMTP_PORT=1025                           # Mailpit default port
-SMTP_USER=
-SMTP_PASS=                               # [SECRET]
-SMTP_FROM=noreply@bush.local
-SMTP_SECURE=false                        # true for TLS in production
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `STORAGE_PROVIDER` | enum | `minio` | No | No | `minio` \| `s3` \| `r2` \| `b2` |
+| `STORAGE_ENDPOINT` | string | — | Yes | No | Provider endpoint URL |
+| `STORAGE_REGION` | string | `us-east-1` | No | No | AWS region |
+| `STORAGE_ACCESS_KEY` | string | — | Yes | Yes | S3 access key |
+| `STORAGE_SECRET_KEY` | string | — | Yes | Yes | S3 secret key |
+| `STORAGE_BUCKET` | string | — | Yes | No | Primary bucket name |
+| `STORAGE_BUCKET_DERIVATIVES` | string | — | No | No | Separate bucket for derivatives |
 
-# -- Next.js Public Variables --
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_WS_URL=ws://localhost:3001
-NEXT_PUBLIC_APP_NAME=Bush
+### CDN
 
-# -- Session --
-SESSION_SECRET=change-me-in-production   # [SECRET] Session encryption key
-SESSION_MAX_AGE=604800                   # 7 days in seconds
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `CDN_PROVIDER` | enum | `none` | No | No | `none` \| `bunny` \| `cloudfront` \| `fastly` |
+| `CDN_BASE_URL` | url | — | No | No | CDN URL (empty for dev) |
+| `CDN_SIGNING_KEY` | string | — | No | Yes | CDN signing key |
 
-# -- Rate Limiting --
-RATE_LIMIT_WINDOW_MS=60000               # 1 minute
-RATE_LIMIT_MAX_REQUESTS=100              # Per window per IP
+### Media Processing: Binaries
 
-# -- Upload --
-UPLOAD_MAX_FILE_SIZE=10737418240         # 10 GB in bytes
-UPLOAD_PRESIGNED_URL_EXPIRY=3600         # 1 hour in seconds
-UPLOAD_MULTIPART_CHUNK_SIZE=10485760     # 10 MB
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `FFMPEG_PATH` | string | `/usr/bin/ffmpeg` | FFmpeg binary |
+| `FFPROBE_PATH` | string | `/usr/bin/ffprobe` | FFprobe binary |
+| `IMAGEMAGICK_PATH` | string | `/usr/bin/convert` | ImageMagick convert |
+| `IDENTIFY_PATH` | string | `/usr/bin/identify` | ImageMagick identify |
+| `DCRAW_PATH` | string | `/usr/bin/dcraw` | RAW processor (deferred) |
+| `LIBREOFFICE_PATH` | string | `/usr/bin/libreoffice` | Doc conversion (deferred) |
 
-# -- Backup --
-BACKUP_STORAGE_BUCKET=bush-backups
-LITESTREAM_ENABLED=false                 # Enable SQLite streaming backup
-```
+### Media Processing: Behavior
 
----
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `MEDIA_TEMP_DIR` | string | `/tmp/bush-processing` | Temp directory |
+| `THUMBNAIL_FORMAT` | enum | `webp` | `webp` \| `jpeg` |
+| `THUMBNAIL_QUALITY` | number | `80` | 1-100 |
+| `THUMBNAIL_POSITION` | number | `0.5` | 0-1, video frame extraction point |
+| `HLS_SEGMENT_DURATION` | number | `6` | HLS segment seconds |
+| `PROXY_PRESET` | string | `medium` | FFmpeg encoding preset |
 
-## 4. Config Validation Schema
+### Media Processing: Worker Concurrency
 
-Zod schema at `src/config/env.ts` -- imported by both backend and frontend server code.
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `WORKER_THUMBNAIL_CONCURRENCY` | number | `4` | Concurrent thumbnail jobs |
+| `WORKER_FILMSTRIP_CONCURRENCY` | number | `2` | Concurrent filmstrip jobs |
+| `WORKER_PROXY_CONCURRENCY` | number | `2` | Concurrent proxy transcode jobs |
+| `WORKER_WAVEFORM_CONCURRENCY` | number | `4` | Concurrent waveform jobs |
+| `WORKER_METADATA_CONCURRENCY` | number | `8` | Concurrent metadata jobs |
 
-```typescript
-import { z } from "zod";
+### Transcription
 
-const envSchema = z.object({
-  // App
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().int().positive().default(3001),
-  HOST: z.string().default("0.0.0.0"),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  APP_URL: z.string().url(),
-  API_URL: z.string().url(),
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `TRANSCRIPTION_PROVIDER` | enum | `deepgram` | No | No | `faster-whisper` (dev) \| `deepgram` (prod) \| `assemblyai` |
+| `TRANSCRIPTION_MAX_DURATION` | number | `7200` | No | No | Max audio duration in seconds |
+| `DEEPGRAM_API_KEY` | string | — | When provider=deepgram | Yes | Deepgram API key |
+| `ASSEMBLYAI_API_KEY` | string | — | When provider=assemblyai | Yes | AssemblyAI API key |
+| `FASTER_WHISPER_URL` | string | — | When provider=faster-whisper | No | Server URL (e.g., `http://localhost:8080`) |
 
-  // Database
-  DATABASE_URL: z.string().min(1),
-  DATABASE_WAL_MODE: z.coerce.boolean().default(true),
-  DATABASE_BUSY_TIMEOUT: z.coerce.number().int().positive().default(5000),
+### Email (SMTP)
 
-  // Redis
-  REDIS_URL: z.string().min(1),
-  REDIS_KEY_PREFIX: z.string().default("bush:"),
+| Variable | Type | Default | Secret | Description |
+|----------|------|---------|--------|-------------|
+| `SMTP_HOST` | string | `localhost` | No | SMTP server |
+| `SMTP_PORT` | number | `1025` | No | SMTP port (Mailpit default for dev) |
+| `SMTP_USER` | string | `""` | No | SMTP username |
+| `SMTP_PASS` | string | `""` | Yes | SMTP password |
+| `SMTP_FROM` | email | `noreply@bush.local` | No | From address |
+| `SMTP_SECURE` | boolean | `false` | No | TLS (`true` in production) |
 
-  // WorkOS
-  WORKOS_API_KEY: z.string().min(1),
-  WORKOS_CLIENT_ID: z.string().min(1),
-  WORKOS_REDIRECT_URI: z.string().url().optional(),
-  NEXT_PUBLIC_WORKOS_REDIRECT_URI: z.string().url(),
-  WORKOS_WEBHOOK_SECRET: z.string().min(1),
-  WORKOS_COOKIE_PASSWORD: z.string().min(32).optional(), // For AuthKit SDK encryption
+### Session & Security
 
-  // Storage
-  STORAGE_PROVIDER: z.enum(["minio", "s3", "r2", "b2"]).default("minio"),
-  STORAGE_ENDPOINT: z.string().min(1),
-  STORAGE_REGION: z.string().default("us-east-1"),
-  STORAGE_ACCESS_KEY: z.string().min(1),
-  STORAGE_SECRET_KEY: z.string().min(1),
-  STORAGE_BUCKET: z.string().min(1),
-  STORAGE_BUCKET_DERIVATIVES: z.string().optional(),
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `SESSION_SECRET` | string | — | Yes | Yes | Session encryption key (min 32 chars) |
+| `SESSION_MAX_AGE` | number | `604800` | No | No | Session TTL in seconds (7 days) |
+| `TRUST_PROXY` | boolean | `false` | No | No | Trust X-Forwarded-For (behind Caddy) |
 
-  // CDN
-  CDN_PROVIDER: z.enum(["none", "bunny", "cloudfront", "fastly"]).default("none"),
-  CDN_BASE_URL: z.string().url().optional().or(z.literal("")),
-  CDN_SIGNING_KEY: z.string().optional(),
+### Rate Limiting
 
-  // Media
-  FFMPEG_PATH: z.string().default("/usr/bin/ffmpeg"),
-  FFPROBE_PATH: z.string().default("/usr/bin/ffprobe"),
-  MEDIA_TEMP_DIR: z.string().default("./data/tmp"),
-  MEDIA_MAX_CONCURRENT_JOBS: z.coerce.number().int().positive().default(2),
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `RATE_LIMIT_WINDOW_MS` | number | `60000` | Window in ms (1 minute) |
+| `RATE_LIMIT_MAX_REQUESTS` | number | `100` | Requests per window per IP |
 
-  // Email
-  SMTP_HOST: z.string().default("localhost"),
-  SMTP_PORT: z.coerce.number().int().positive().default(1025),
-  SMTP_USER: z.string().optional().default(""),
-  SMTP_PASS: z.string().optional().default(""),
-  SMTP_FROM: z.string().email().default("noreply@bush.local"),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+### Upload
 
-  // Session
-  SESSION_SECRET: z.string().min(32),
-  SESSION_MAX_AGE: z.coerce.number().int().positive().default(604800),
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `UPLOAD_MAX_FILE_SIZE` | number | `10737418240` | Max file size (10 GB) |
+| `UPLOAD_PRESIGNED_URL_EXPIRY` | number | `3600` | Pre-signed URL TTL (1 hour) |
+| `UPLOAD_MULTIPART_CHUNK_SIZE` | number | `10485760` | Chunk size (10 MB) |
 
-  // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
-  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+### Backup
 
-  // Upload
-  UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(10737418240),
-  UPLOAD_PRESIGNED_URL_EXPIRY: z.coerce.number().int().positive().default(3600),
-  UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `BACKUP_STORAGE_BUCKET` | string | `bush-backups` | Backup bucket name |
+| `LITESTREAM_ENABLED` | boolean | `false` | Enable SQLite streaming backup |
 
-  // Backup
-  BACKUP_STORAGE_BUCKET: z.string().default("bush-backups"),
-  LITESTREAM_ENABLED: z.coerce.boolean().default(false),
-});
+### Next.js Public Variables
 
-export type Env = z.infer<typeof envSchema>;
+These are embedded in the browser bundle — **NOT secrets**.
 
-function loadConfig(): Env {
-  const result = envSchema.safeParse(process.env);
-  if (!result.success) {
-    console.error("Invalid environment configuration:");
-    for (const issue of result.error.issues) {
-      console.error(`  ${issue.path.join(".")}: ${issue.message}`);
-    }
-    process.exit(1);
-  }
-  return result.data;
-}
-
-export const config = loadConfig();
-```
-
-### Key Design Decisions
-- **`z.coerce`** handles string-to-number/boolean conversion (all env vars are strings)
-- **`.default()`** for optional vars with sensible defaults
-- **No `.optional()`** on secrets -- forces explicit configuration
-- **`safeParse`** gives all errors at once, not just the first one
-- **`process.exit(1)`** on failure -- never start with bad config
-- **Build phase bypass**: During `NEXT_PHASE=phase-production-build`, config validation is skipped and placeholder values are used (Next.js builds don't have runtime secrets)
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | url | — | API base URL (optional, browser uses proxy) |
+| `NEXT_PUBLIC_WS_URL` | string | — | WebSocket URL |
+| `NEXT_PUBLIC_APP_NAME` | string | `Bush` | Display name |
 
 ---
 
-## 5. Production Configuration
+## 4. Secrets Management
 
-### What Changes Between Dev and Prod
+### Secret Keys (scrubbed from logs)
 
-| Variable | Dev Value | Prod Value |
-|----------|-----------|------------|
+Defined in `src/config/env.ts` → `SECRET_KEYS` array:
+
+1. `WORKOS_API_KEY`
+2. `WORKOS_WEBHOOK_SECRET`
+3. `WORKOS_COOKIE_PASSWORD`
+4. `STORAGE_ACCESS_KEY`
+5. `STORAGE_SECRET_KEY`
+6. `CDN_SIGNING_KEY`
+7. `SMTP_PASS`
+8. `SESSION_SECRET`
+9. `DEEPGRAM_API_KEY`
+10. `ASSEMBLYAI_API_KEY`
+
+### Principles
+- **No secrets manager initially** — environment variables on host, sourced from GitHub Secrets via CI/CD
+- **Upgrade path**: migrate to HashiCorp Vault or AWS Secrets Manager when needed
+- **Never log secrets** — `scrubSecrets()` in `src/config/env.ts` replaces values with `[REDACTED:KEY_NAME]`
+- **Never return secrets in API responses**
+- **Rotate without downtime** — secrets are read at startup; rotation requires restart
+
+### Secret Rotation
+
+| Secret | Rotation | Procedure |
+|--------|----------|-----------|
+| `WORKOS_API_KEY` | On compromise or annually | Rotate in WorkOS dashboard, update GitHub Secret, redeploy |
+| `STORAGE_ACCESS_KEY/SECRET_KEY` | On compromise or annually | Create new key pair, update, redeploy, delete old key |
+| `CDN_SIGNING_KEY` | On compromise | Rotate in CDN dashboard, update, redeploy |
+| `SESSION_SECRET` | On compromise | Update (invalidates all sessions), redeploy |
+| `DEEPGRAM_API_KEY` | On compromise | Rotate in Deepgram dashboard |
+
+### Production Secret Sourcing
+All secrets stored in GitHub repository → Secrets and variables → Actions. CI/CD injects them as environment variables during deployment. Secrets are masked in GitHub Actions logs automatically.
+
+---
+
+## 5. Dev vs Production
+
+| Variable | Dev | Production |
+|----------|-----|------------|
 | `NODE_ENV` | `development` | `production` |
 | `LOG_LEVEL` | `debug` | `info` or `warn` |
 | `APP_URL` | `http://localhost:3000` | `https://app.bush.com` |
 | `API_URL` | `http://localhost:3001` | `https://api.bush.com` |
 | `DATABASE_URL` | `./data/bush.db` | `/var/data/bush.db` |
-| `STORAGE_PROVIDER` | `minio` | `r2` / `s3` / `b2` |
+| `STORAGE_PROVIDER` | `minio` | `r2` / `s3` |
 | `STORAGE_ENDPOINT` | `http://localhost:9000` | Provider endpoint |
 | `CDN_PROVIDER` | `none` | `bunny` |
-| `CDN_BASE_URL` | (empty) | `https://cdn.bush.com` |
-| `SMTP_HOST` | `localhost` (Mailpit) | Production SMTP provider |
+| `TRANSCRIPTION_PROVIDER` | `faster-whisper` | `deepgram` |
+| `FASTER_WHISPER_URL` | `http://localhost:8080` | — |
+| `SMTP_HOST` | `localhost` (Mailpit) | Production SMTP |
 | `SMTP_SECURE` | `false` | `true` |
+| `TRUST_PROXY` | `false` | `true` |
 | `LITESTREAM_ENABLED` | `false` | `true` |
-| `SESSION_SECRET` | dev placeholder | 64+ char random string |
-| All `[SECRET]` vars | Dev/test credentials | Production credentials |
-
-### Secret Sourcing in Production
-
-| Secret | Source |
-|--------|--------|
-| `WORKOS_API_KEY` | GitHub Secrets -> deployment env |
-| `WORKOS_CLIENT_ID` | GitHub Secrets -> deployment env |
-| `WORKOS_WEBHOOK_SECRET` | GitHub Secrets -> deployment env |
-| `WORKOS_COOKIE_PASSWORD` | GitHub Secrets -> deployment env |
-| `STORAGE_ACCESS_KEY` | GitHub Secrets -> deployment env |
-| `STORAGE_SECRET_KEY` | GitHub Secrets -> deployment env |
-| `CDN_SIGNING_KEY` | GitHub Secrets -> deployment env |
-| `SMTP_PASS` | GitHub Secrets -> deployment env |
-| `SESSION_SECRET` | GitHub Secrets -> deployment env |
 
 ---
 
-## 6. Secrets Management
+## 6. Services & Endpoints (Dev)
 
-### Principles
-- **No secrets manager initially** -- environment variables on host, sourced from GitHub Secrets via CI/CD
-- **Upgrade path**: migrate to HashiCorp Vault or AWS Secrets Manager when needed (abstraction layer in place)
-- **Never log secrets** -- scrub from all log output (see below)
-- **Never return secrets in API responses**
-- **Rotate without downtime** -- secrets are read at startup; rotation requires restart (acceptable for initial deployment)
-
-### Secret Scrubbing
-
-```typescript
-// Middleware: scrub secrets from log output
-const SECRET_KEYS = [
-  "WORKOS_API_KEY", "WORKOS_WEBHOOK_SECRET", "WORKOS_COOKIE_PASSWORD",
-  "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY",
-  "CDN_SIGNING_KEY", "SMTP_PASS", "SESSION_SECRET",
-];
-
-function scrubSecrets(message: string): string {
-  for (const key of SECRET_KEYS) {
-    const value = process.env[key];
-    if (value && value.length > 4) {
-      message = message.replaceAll(value, `[REDACTED:${key}]`);
-    }
-  }
-  return message;
-}
-```
-
-### Secret Rotation Strategy
-
-| Secret | Rotation Frequency | Procedure |
-|--------|-------------------|-----------|
-| `WORKOS_API_KEY` | On compromise or annually | Generate new key in WorkOS dashboard, update GitHub Secret, redeploy |
-| `STORAGE_ACCESS_KEY/SECRET_KEY` | On compromise or annually | Create new key pair in provider, update GitHub Secret, redeploy, delete old key |
-| `CDN_SIGNING_KEY` | On compromise | Rotate in CDN dashboard, update GitHub Secret, redeploy |
-| `SESSION_SECRET` | On compromise | Update secret, redeploy (all active sessions invalidated) |
-| `WORKOS_WEBHOOK_SECRET` | On compromise | Rotate in WorkOS dashboard, update GitHub Secret, redeploy |
-
-### GitHub Secrets Setup
-- All secrets stored in GitHub repository settings -> Secrets and variables -> Actions
-- Environment-specific secrets: `production` and `staging` environments in GitHub
-- CI/CD workflow injects secrets as environment variables during deployment
-- Secrets are masked in GitHub Actions logs automatically
+| Service | Port | URL | Purpose |
+|---------|------|-----|---------|
+| **Next.js** | 3000 | `http://localhost:3000` | Frontend + API proxy |
+| **Hono API** | 3001 | `http://localhost:3001` | Backend API + WebSocket |
+| **Redis** | 6379 | `redis://localhost:6379` | Cache, sessions, BullMQ |
+| **MinIO** | 9000 | `http://localhost:9000` | S3-compatible storage |
+| **MinIO Console** | 9001 | `http://localhost:9001` | MinIO admin UI |
+| **Mailpit SMTP** | 1025 | `localhost:1025` | Dev email capture |
+| **Mailpit UI** | 8025 | `http://localhost:8025` | Email viewer |
+| **faster-whisper** | 8080 | `http://localhost:8080` | GPU transcription server |
+| **BullMQ Worker** | — | — | Media processing (separate process) |
 
 ---
 
@@ -320,100 +280,108 @@ function scrubSecrets(message: string): string {
 | Tool | Version | Install |
 |------|---------|---------|
 | Bun | >= 1.0 | `curl -fsSL https://bun.sh/install \| bash` |
-| Node.js | >= 22 | Required for Next.js (tsx uses Node runtime) |
-| Redis | >= 7.0 | `brew install redis` or `apt install redis-server` |
-| FFmpeg | >= 6.0 | `brew install ffmpeg` or `apt install ffmpeg` |
-| MinIO | latest | `brew install minio/stable/minio` or binary download |
-| Mailpit | latest | `brew install mailpit` or binary download |
+| Node.js | >= 22 | Required for Next.js |
+| Redis | >= 7.0 | `apt install redis-server` |
+| FFmpeg | >= 6.0 | `apt install ffmpeg` |
+| MinIO | latest | Binary download |
+| Mailpit | latest | Binary download |
+
+#### Optional (for transcription dev)
+
+| Tool | Version | Install |
+|------|---------|---------|
+| NVIDIA Driver | >= 535 | System package |
+| CUDA | >= 12.2 | System package |
+| uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| faster-whisper-server | latest | See transcription setup below |
 
 ### Step-by-Step
 
 ```bash
-# 1. Clone and install dependencies
-git clone git@github.com:org/bush.git
-cd bush
+# 1. Clone and install
+git clone git@github.com:multicam/bush.git && cd bush
 bun install
 
-# 2. Create local env file
+# 2. Create local env
 cp .env.example .env.local
+# Edit .env.local: set WORKOS_API_KEY, WORKOS_CLIENT_ID, SESSION_SECRET
 
-# 3. Start Redis
+# 3. Start services
 redis-server --daemonize yes
 
-# 4. Start MinIO (local S3)
+# MinIO
 mkdir -p ./data/minio
 minio server ./data/minio --console-address ":9001"
-# Default credentials: minioadmin / minioadmin
-# Console: http://localhost:9001
-# API: http://localhost:9000
-
-# 5. Create MinIO bucket
-# Via console UI at http://localhost:9001 or:
 mc alias set local http://localhost:9000 minioadmin minioadmin
 mc mb local/bush-primary
 
-# 6. Start Mailpit (local email)
-mailpit
-# SMTP: localhost:1025
-# Web UI: http://localhost:8025
+# Mailpit
+mailpit  # SMTP :1025, UI :8025
 
-# 7. Edit .env.local with your values
-# - Set WORKOS_API_KEY and WORKOS_CLIENT_ID from your WorkOS dev account
-# - Set SESSION_SECRET to any 32+ char string for dev
-# - Other defaults should work as-is
-
-# 8. Initialize database
+# 4. Database
 bun run db:migrate
 
-# 9. Start development servers
-bun run dev          # Starts both backend and frontend
-# Or separately:
-bun run dev:api      # Hono API on port 3001
-bun run dev:web      # Next.js on port 3000
+# 5. Run
+bun run dev          # API (3001) + web (3000)
+bun run dev:worker   # Media processing worker (separate terminal)
 ```
 
-### Dev Server Architecture
+### Transcription Setup (GPU)
 
-The platform runs two development servers:
+```bash
+# Create venv
+uv venv ~/.venvs/whisper-server
+source ~/.venvs/whisper-server/bin/activate
 
-- **API server** (`:3001`): Hono + tsx, loaded via `tsx watch --env-file=.env.local src/api/index.ts`
-- **Web server** (`:3000`): Next.js, loaded via `bash -c 'set -a; source .env.local; set +a; PORT=3000 exec next dev src/web'`
+# Install and run
+uv pip install faster-whisper-server
+faster-whisper-server --model large-v3-turbo --device cuda --port 8080
+```
 
-**Why the `dev:web` workaround?** Next.js looks for `.env.local` relative to the app root (`src/web/`), but the project's `.env.local` is at the repository root. The script sources `.env.local` into the shell environment so Next.js gets all the env vars (WorkOS keys, Redis URL, etc.). `PORT=3000` overrides the `PORT=3001` value from `.env.local` (which is the API port) to prevent the two servers from colliding.
-
-Next.js also proxies `/v4/*` requests to the Hono API via rewrites in `next.config.ts`, so browser requests don't cross origins and cookies are forwarded transparently. See `specs/12-authentication.md` "Next.js → Hono API Proxy" for details.
+Ensure `.env.local` has:
+```bash
+TRANSCRIPTION_PROVIDER=faster-whisper
+FASTER_WHISPER_URL=http://localhost:8080
+```
 
 ### WorkOS Dev Account Setup
 1. Create a free account at [workos.com](https://workos.com)
-2. Create an environment (Development)
-3. Enable AuthKit in the WorkOS dashboard
-4. Configure redirect URI: `http://localhost:3000/auth/callback`
-5. Copy API Key (`sk_test_...`) and Client ID (`client_...`) to `.env.local`
-6. Set `WORKOS_COOKIE_PASSWORD` to a random 32+ character string (or leave blank to use `SESSION_SECRET`)
-7. Set up a webhook endpoint (use a tunnel like `ngrok` or WorkOS CLI for local testing)
+2. Create a Development environment
+3. Enable AuthKit, configure redirect URI: `http://localhost:3000/auth/callback`
+4. Copy API Key and Client ID to `.env.local`
+5. Set `SESSION_SECRET` to any 32+ char string
 
-**Important:** The redirect URI in the WorkOS dashboard must match `NEXT_PUBLIC_WORKOS_REDIRECT_URI` in `.env.local` exactly. The AuthKit SDK reads this variable (the `NEXT_PUBLIC_` prefix is required).
-
-### Verifying Local Setup
+### Verify Setup
 ```bash
-# Check Redis
-redis-cli ping                    # Should return PONG
-
-# Check MinIO
-curl http://localhost:9000/minio/health/live   # Should return 200
-
-# Check FFmpeg
-ffmpeg -version                   # Should show version info
-
-# Check Mailpit
-curl http://localhost:8025/api/v1/messages     # Should return empty array
+redis-cli ping                                    # PONG
+curl http://localhost:9000/minio/health/live       # 200
+ffmpeg -version                                    # version info
+curl http://localhost:8025/api/v1/messages          # []
+curl http://localhost:8080/health                   # faster-whisper (if running)
 ```
 
 ---
 
-## 8. Test Environment
+## 8. Dev Server Architecture
 
-`.env.test` provides deterministic, isolated configuration:
+The platform runs as separate processes:
+
+| Process | Command | Port | Description |
+|---------|---------|------|-------------|
+| API | `bun run dev:api` | 3001 | Hono server + WebSocket (`/ws`) |
+| Web | `bun run dev:web` | 3000 | Next.js (proxies `/v4/*` to API) |
+| Worker | `bun run dev:worker` | — | BullMQ media processing |
+| Transcription | `faster-whisper-server` | 8080 | GPU transcription (optional) |
+
+**Why the `dev:web` workaround?** Next.js looks for `.env.local` relative to the app root (`src/web/`), but the project's `.env.local` is at the repo root. The script sources `.env.local` into the shell so Next.js gets all env vars. `PORT=3000` overrides `PORT=3001` to prevent collision.
+
+Next.js proxies `/v4/*` requests to Hono via rewrites in `next.config.ts`, so browser requests don't cross origins and cookies forward transparently.
+
+---
+
+## 9. Test Environment
+
+`.env.test` provides deterministic, isolated config:
 
 ```bash
 NODE_ENV=test
@@ -437,112 +405,71 @@ CDN_PROVIDER=none
 SMTP_HOST=localhost
 SMTP_PORT=1025
 SESSION_SECRET=test-session-secret-at-least-32-chars-long
+TRANSCRIPTION_PROVIDER=faster-whisper
+FASTER_WHISPER_URL=http://localhost:8080
 ```
 
-- Uses in-memory SQLite for speed and isolation
-- Separate Redis key prefix to avoid collision with dev data
+- In-memory SQLite for speed
+- Separate Redis key prefix (`bush:test:`)
 - Separate MinIO bucket (`bush-test`)
-- WorkOS calls mocked in tests (no real API calls)
+- WorkOS calls mocked in tests
 
 ---
 
-## 9. gitignore Rules
-
-```gitignore
-# Environment files
-.env.local
-.env.production
-.env.*.local
-
-# Database
-data/
-*.db
-*.db-wal
-*.db-shm
-
-# MinIO data
-data/minio/
-
-# Media temp files
-data/tmp/
-
-# Dependencies
-node_modules/
-
-# Build output
-.next/
-dist/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor
-.vscode/settings.json
-.idea/
-
-# Logs
-*.log
-```
-
-**Committed files:**
-- `.env.example` -- variable documentation with placeholders
-- `.env.test` -- deterministic test configuration
-- `.gitignore`
-
----
-
-## 10. Next.js Public Variables
-
-Next.js requires `NEXT_PUBLIC_` prefix for client-side variables. These are **not secrets** -- they are embedded in the JavaScript bundle sent to browsers.
-
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL (optional — web client uses Next.js proxy in browser) |
-| `NEXT_PUBLIC_WS_URL` | WebSocket connection URL |
-| `NEXT_PUBLIC_APP_NAME` | Application display name |
-| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | WorkOS AuthKit redirect URI (required by AuthKit SDK) |
-
-- Never prefix a secret with `NEXT_PUBLIC_` -- it will be exposed to all users
-- Server-side Next.js code (API routes, Server Components) can access all env vars without the prefix
-- The `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is an exception: it's not a secret (it's a URL), but the `NEXT_PUBLIC_` prefix is required by the AuthKit SDK internals
-- In the browser, API calls use relative `/v4` paths (routed through Next.js rewrite proxy to the Hono backend), so `NEXT_PUBLIC_API_URL` is not used for browser requests
-
----
-
-## 11. Config Access Patterns
+## 10. Config Access in Code
 
 ### Backend (Hono)
 ```typescript
 import { config } from "../config/index.js";
 
-// Type-safe, validated at startup
-const port = config.PORT;           // number
-const redisUrl = config.REDIS_URL;  // string
+const port = config.PORT;           // number, validated
+const redisUrl = config.REDIS_URL;  // string, validated
 ```
 
-### Frontend Server (Next.js Server Components / API Routes)
+### Frontend Server (Next.js Server Components)
 ```typescript
 import { config } from "../config/index.js";
-
-// Same validated config object
-const apiKey = config.WORKOS_API_KEY;
+const apiKey = config.WORKOS_API_KEY;  // same validated config
 ```
 
-### Frontend Client (Next.js Client Components)
+### Frontend Client (Browser)
 ```typescript
 // Only NEXT_PUBLIC_ vars available
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
 ```
+
+### Build Phase
+During `NEXT_PHASE=phase-production-build`, validation is skipped and placeholder values are used. Runtime config validated on server start.
 
 ---
 
-## 12. Health Check Endpoint
+## 11. Health Check
 
-The backend exposes `GET /health` which verifies:
-- Config loaded successfully (implicit -- server wouldn't start otherwise)
-- Database connection (SQLite read query)
+`GET /health` verifies:
+- Config loaded (implicit — server wouldn't start otherwise)
+- Database connection (SQLite read)
 - Redis connection (PING)
 - Storage connectivity (HEAD bucket)
 
-Returns `200 OK` with component status, or `503 Service Unavailable` if any dependency is down.
+Returns `200 OK` with status, or `503` if any dependency is down.
+
+---
+
+## 12. gitignore
+
+```gitignore
+.env.local
+.env.production
+.env.*.local
+data/
+*.db
+*.db-wal
+*.db-shm
+node_modules/
+.next/
+dist/
+.DS_Store
+*.log
+```
+
+**Committed**: `.env.example`, `.env.test`, `.gitignore`

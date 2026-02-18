@@ -44,18 +44,56 @@ interface TranscriptionProvider {
 
 ### Provider Selection Logic
 
-1. **Phase 1 (MVP)**: Deepgram Nova-2 via API. Free credits cover the bootstrap period. Best quality + diarization.
-2. **Phase 2 (post-credits)**: Evaluate cost. Options:
+1. **Dev**: faster-whisper `large-v3-turbo` on local GPU (RTX 3090). Free, <1 min/hr, Deepgram-level accuracy.
+2. **Prod (MVP)**: Deepgram Nova-2 via API. $200 free credits cover bootstrap. Best quality + diarization.
+3. **Prod (post-credits)**: Evaluate cost. Options:
    - Stay with Deepgram ($23/mo at 50 hrs)
    - Switch to AssemblyAI ($8.50/mo, 2.7x cheaper)
-   - Switch to self-hosted faster-whisper (EUR 3.29/mo, no diarization)
+   - GPU VPS with faster-whisper large-v3-turbo (if volume justifies it)
    - Hybrid: self-hosted for bulk, cloud API for diarization-needed files
 
 ---
 
 ## 2. Self-Hosted Option (faster-whisper)
 
-### Feasibility
+### Dev Environment (GPU — recommended for development)
+
+**Hardware**: RTX 3090 (24GB VRAM) — ~3-4GB used by large-v3-turbo, plenty of headroom.
+
+| Model | VRAM | Speed (1hr audio) | Accuracy (WER) |
+|-------|------|-------------------|-----------------|
+| large-v3-turbo (recommended) | ~3-4 GB | < 1 min | ~5-8% (matches Deepgram) |
+| large-v3 | ~10 GB | ~2-3 min | ~5-6% |
+| medium | ~5 GB | ~1-2 min | ~7-9% |
+| small | ~2 GB | < 1 min | ~10-12% |
+
+**Setup (bare metal, no Docker):**
+
+```bash
+# Create venv with uv
+uv venv ~/.venvs/whisper-server
+source ~/.venvs/whisper-server/bin/activate
+
+# Install faster-whisper-server (exposes OpenAI-compatible API)
+uv pip install faster-whisper-server
+
+# Run on GPU
+faster-whisper-server --model large-v3-turbo --device cuda --port 8080
+```
+
+**Bush config** (`.env.local`):
+```bash
+TRANSCRIPTION_PROVIDER=faster-whisper
+FASTER_WHISPER_URL=http://localhost:8080
+FASTER_WHISPER_MODEL=large-v3-turbo
+FASTER_WHISPER_LANGUAGE=  # empty = auto-detect
+```
+
+The existing `src/transcription/providers/faster-whisper.ts` provider handles the rest — no code changes needed.
+
+### Production (CPU-only VPS — fallback)
+
+For the Hetzner production VPS (no GPU), use smaller models on CPU:
 
 | Setup | RAM | Speed (1hr audio) | Cost |
 |-------|-----|-------------------|------|
@@ -63,20 +101,23 @@ interface TranscriptionProvider {
 | Dedicated CX22 (2 vCPU, 4GB) | 1.5 GB | ~40-60 min | EUR 3.29/mo |
 | Dedicated CX32 (4 vCPU, 8GB) | 1.5 GB | ~25-40 min | EUR 7.11/mo |
 
-### What Doesn't Work Self-Hosted
+### What Doesn't Work Self-Hosted (CPU)
 
 - Whisper large-v3: needs 10-15GB RAM, hours per file on CPU
 - Pyannote diarization on CPU: impractically slow without GPU
 - SenseVoice/Moonshine: only 5-7 languages (need 27+)
 - Vosk/DeepSpeech/Coqui: dead or too inaccurate
 
-### Self-Hosted Architecture
+### Architecture
 
 ```
-[Main VPS]                         [Transcription VPS (optional)]
-  BullMQ pushes job  ──Redis──>      faster-whisper worker
-  FFmpeg extracts audio              Processes with small INT8 model
-                     <──Redis──      Returns word-level JSON
+[Dev — GPU]
+  BullMQ pushes job → faster-whisper on localhost:8080 (RTX 3090, large-v3-turbo)
+  < 1 min per hour of audio, Deepgram-level accuracy, zero cost
+
+[Prod — no GPU]
+  BullMQ pushes job → Deepgram Nova-2 API (primary)
+  Fallback: faster-whisper small INT8 on CPU (slow but free)
 ```
 
 ---
@@ -252,25 +293,22 @@ CREATE VIRTUAL TABLE transcript_search USING fts5(
 
 ## 8. Configuration
 
-```bash
-# Provider selection
-TRANSCRIPTION_PROVIDER=deepgram  # deepgram | assemblyai | faster-whisper
+See `specs/20-configuration-and-secrets.md` for all env vars. Transcription-specific variables:
 
-# Deepgram
-DEEPGRAM_API_KEY=
+| Variable | Dev | Prod |
+|----------|-----|------|
+| `TRANSCRIPTION_PROVIDER` | `faster-whisper` | `deepgram` |
+| `FASTER_WHISPER_URL` | `http://localhost:8080` | — |
+| `DEEPGRAM_API_KEY` | — | Production key |
+| `TRANSCRIPTION_MAX_DURATION` | `7200` (2 hrs) | `7200` |
 
-# AssemblyAI (alternative)
-ASSEMBLYAI_API_KEY=
+### Environment Strategy
 
-# Self-hosted faster-whisper (alternative)
-FASTER_WHISPER_URL=http://transcription-vps:8080
-FASTER_WHISPER_MODEL=small
-FASTER_WHISPER_LANGUAGE=  # empty = auto-detect
-
-# General
-TRANSCRIPTION_AUTO_ENABLED=true  # Auto-transcribe on upload
-TRANSCRIPTION_MAX_DURATION=7200  # Max file duration in seconds (2 hours)
-```
+| Environment | Provider | Model | Why |
+|-------------|----------|-------|-----|
+| **Dev** | faster-whisper | large-v3-turbo (GPU) | Free, fast, same accuracy as Deepgram |
+| **Prod** | Deepgram Nova-2 | nova-2 | $200 free credits, diarization, streaming |
+| **Prod (post-credits)** | Evaluate | — | Deepgram ($23/mo), AssemblyAI ($8.50/mo), or self-hosted |
 
 ---
 

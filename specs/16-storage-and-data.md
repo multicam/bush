@@ -310,22 +310,9 @@ bush:cache:{resource}:{id}       -- general cache entries
 
 ## 11. Storage Provider Configuration
 
-### Environment Variables
-```
-STORAGE_PROVIDER=s3           # s3 | r2 | minio | b2
-STORAGE_ENDPOINT=https://...
-STORAGE_REGION=us-east-1
-STORAGE_ACCESS_KEY=...
-STORAGE_SECRET_KEY=...
-STORAGE_BUCKET=bush-primary
-STORAGE_BUCKET_DERIVATIVES=bush-derivatives   # optional, defaults to primary
+See `specs/20-configuration-and-secrets.md` for the complete variable reference. Storage variables are in the "Object Storage", "CDN", and "Backup" sections.
 
-CDN_PROVIDER=bunny            # bunny | cloudfront | fastly | none
-CDN_BASE_URL=https://cdn.bush.example.com
-CDN_SIGNING_KEY=...
-
-BACKUP_STORAGE_BUCKET=bush-backups
-```
+Key variables: `STORAGE_PROVIDER`, `STORAGE_ENDPOINT`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_BUCKET`, `CDN_PROVIDER`, `CDN_BASE_URL`, `BACKUP_STORAGE_BUCKET`.
 
 ### Health Checks
 - Storage connectivity: verified on startup, checked every 60 seconds

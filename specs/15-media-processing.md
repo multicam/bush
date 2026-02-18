@@ -546,39 +546,6 @@ uploading --> processing --> ready
 
 ## 11. Environment Configuration
 
-```
-# FFmpeg
-FFMPEG_PATH=/usr/bin/ffmpeg
-FFPROBE_PATH=/usr/bin/ffprobe
+See `specs/20-configuration-and-secrets.md` for the complete variable reference. Media processing variables are in the "Media Processing" sections (Binaries, Behavior, Worker Concurrency).
 
-# ImageMagick
-IMAGEMAGICK_PATH=/usr/bin/convert
-IDENTIFY_PATH=/usr/bin/identify
-
-# RAW processing
-DCRAW_PATH=/usr/bin/dcraw
-
-# LibreOffice (document conversion)
-LIBREOFFICE_PATH=/usr/bin/libreoffice
-
-# Worker concurrency
-WORKER_THUMBNAIL_CONCURRENCY=4
-WORKER_FILMSTRIP_CONCURRENCY=2
-WORKER_PROXY_CONCURRENCY=2
-WORKER_WAVEFORM_CONCURRENCY=4
-WORKER_METADATA_CONCURRENCY=8
-
-# Processing
-TEMP_DIR=/tmp/bush-processing
-THUMBNAIL_POSITION=0.5
-THUMBNAIL_FORMAT=webp
-FILMSTRIP_FPS=1
-FILMSTRIP_TILE_WIDTH=160
-FILMSTRIP_TILE_HEIGHT=90
-FILMSTRIP_COLUMNS=10
-HLS_SEGMENT_DURATION=6
-PROXY_PRESET=medium
-
-# Redis (shared with 16-storage-and-data.md config)
-REDIS_URL=redis://localhost:6379
-```
+Key variables: `FFMPEG_PATH`, `FFPROBE_PATH`, `MEDIA_TEMP_DIR`, `THUMBNAIL_FORMAT`, `THUMBNAIL_QUALITY`, `THUMBNAIL_POSITION`, `HLS_SEGMENT_DURATION`, `PROXY_PRESET`, `WORKER_*_CONCURRENCY`.

@@ -36,7 +36,7 @@ import {
   shareRoutes,
   notificationRoutes,
   collectionRoutes,
-  webhookRoutes,
+  // webhookRoutes, // DEFERRED to future release
   transcriptionRoutes,
   captionsRoutes,
 } from "./routes/index.js";
@@ -214,11 +214,9 @@ v4.route("/projects/:projectId/collections", collectionRoutes);
 // Collection operations (standalone)
 v4.route("/collections", collectionRoutes);
 
-// Webhooks (nested under accounts)
-v4.route("/accounts/:accountId/webhooks", webhookRoutes);
-
-// Webhook operations (standalone)
-v4.route("/webhooks", webhookRoutes);
+// Webhooks - DEFERRED to future release
+// v4.route("/accounts/:accountId/webhooks", webhookRoutes);
+// v4.route("/webhooks", webhookRoutes);
 
 // Transcription (nested under files)
 v4.route("/files/:fileId/transcription", transcriptionRoutes);

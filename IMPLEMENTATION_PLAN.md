@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
 **Last updated**: 2026-02-18 (Transcription and Captions API Implementation)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks API COMPLETED**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks DEFERRED to future release**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) and Webhooks DEFERRED to future release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
@@ -25,7 +25,7 @@
 - **Member Management API**: COMPLETED (4 endpoints)
 - **Notifications API**: COMPLETED (5 endpoints)
 - **Collections API**: COMPLETED (7 endpoints)
-- **Webhooks API**: COMPLETED (7 endpoints)
+- **Webhooks API**: DEFERRED to future release (code exists but not mounted)
 - **Transcription API**: COMPLETED (11 endpoints: 8 transcription + 3 captions)
 - Custom Fields API: COMPLETED
 
@@ -953,30 +953,9 @@ These items are required for core platform functionality but are missing from th
 - Semantic search
 - **Dependencies**: 2.12 (Basic Search), 3.4 (Transcription)
 
-### 3.6 Webhook System [P2] - 3 days
+### 3.6 Webhook System [P2] - DEFERRED TO FUTURE RELEASE
 
-**COMPLETED** (2026-02-18)
-
-- **[P2] Webhooks API** [1d] -- COMPLETED
-  - `src/api/routes/webhooks.ts` - Full webhooks API
-  - Endpoints: GET/POST list/create, GET/PUT/DELETE single, GET deliveries, POST test
-  - **Dependencies**: 1.5 (API) - DONE
-  - **Spec refs**: `specs/17-api-complete.md` Section 6.12
-
-- **Features implemented**:
-  - Webhook CRUD (create, read, update, delete)
-  - Event subscriptions (18 event types)
-  - HMAC-SHA256 signatures for payload verification
-  - Test webhook endpoint (immediate delivery)
-  - Delivery tracking and logs
-  - Active/inactive status toggle
-  - **Pending**: BullMQ background delivery with retries (delivery records created, async processing not yet wired)
-
-- **Database schema**:
-  - `webhooks` table - endpoint configuration
-  - `webhookDeliveries` table - delivery tracking
-
-- **Remaining**: BullMQ worker for async delivery, Delivery logs UI
+**DEFERRED** - API code exists (`src/api/routes/webhooks.ts`) but not mounted/exposed. Will be enabled in a future release when needed. BullMQ async delivery and delivery logs UI still pending.
 
 ### 3.7 Asset Lifecycle Management [P2] - 2 days
 
