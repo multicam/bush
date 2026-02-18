@@ -163,8 +163,8 @@
 
 ### P3 - Nice-to-Have (Deferred)
 
-- **[P3] Webhooks** [Code exists, not mounted] -- DEFERRED
-  - API code exists at `src/api/routes/webhooks.ts`
+- **[P2] Webhooks** [7 endpoints] -- COMPLETED
+  - `src/api/routes/webhooks.ts` mounted and active
   - BullMQ async delivery with retries pending
   - Delivery logs UI pending
   - Can be enabled when needed
@@ -1138,9 +1138,9 @@ These items are required for core platform functionality but are missing from th
 - Semantic search
 - **Dependencies**: 2.12 (Basic Search), 3.4 (Transcription)
 
-### 3.6 Webhook System [P2] - DEFERRED TO FUTURE RELEASE
+### 3.6 Webhook System [P2] - COMPLETED
 
-**DEFERRED** - API code exists (`src/api/routes/webhooks.ts`) but not mounted/exposed. Will be enabled in a future release when needed. BullMQ async delivery and delivery logs UI still pending.
+**COMPLETED** - `src/api/routes/webhooks.ts` (7 endpoints) mounted and active. BullMQ async delivery and delivery logs UI still pending.
 
 ### 3.7 Asset Lifecycle Management [P2] - 2 days
 

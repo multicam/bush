@@ -26,7 +26,6 @@ All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed sta
 
 ### Deferred to future release
 
-- Webhooks (code exists, not mounted - enable when needed)
 - Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX, ZIP viewer)
 - Billing & plans
 - iOS/iPad apps, desktop transfer app
