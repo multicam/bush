@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Share UI Implementation)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. Realtime Infrastructure DECIDED but NOT IMPLEMENTED (0%). Notifications/Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (94/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications NOT STARTED, [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED.
+**Last updated**: 2026-02-18 (Realtime Infrastructure Implementation)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. Notifications/Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (94/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications NOT STARTED, [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -20,7 +20,7 @@
 - Annotation tools: COMPLETED (canvas, toolbar, overlay)
 - Comments API: COMPLETED (10 endpoints)
 - Shares API: COMPLETED (11 endpoints)
-- **CRITICAL GAP**: Realtime Infrastructure - specs say DECIDED but NO CODE EXISTS (0%)
+- **Realtime Infrastructure**: COMPLETED (event bus, WebSocket manager, client, React hooks)
 - Collections API: NOT IMPLEMENTED (0%)
 - Webhooks API: NOT IMPLEMENTED (0%)
 - Notifications API: NOT IMPLEMENTED (0%) - table exists, no routes
@@ -37,7 +37,7 @@
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 3 | Minor items remaining |
 | **Media Processing** | 75% | BullMQ + Worker infrastructure, metadata extraction (now persisted to DB), thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
-| **Real-time (WebSocket)** | 0% | **CRITICAL**: Decided in specs but NO CODE EXISTS |
+| **Real-time (WebSocket)** | 100% | COMPLETED: Event bus, WebSocket manager, browser client, React hooks |
 | **Upload Client** | 100% | Chunked upload with resumable support |
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
 | **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
@@ -63,19 +63,25 @@ This section lists all remaining implementation tasks, prioritized by impact and
 
 These items are required for core platform functionality but are missing from the codebase despite being documented in specs.
 
-### Realtime Infrastructure (0% - NO CODE EXISTS)
+### Realtime Infrastructure (COMPLETED 2026-02-18)
 
-- **[P0] WebSocket Server + Event Bus** [3d] -- NOT STARTED **(CRITICAL)**
-  - Despite specs/README.md documenting this as "DECIDED", NO implementation exists
-  - **Required files**:
+- **[P0] WebSocket Server + Event Bus** [3d] -- COMPLETED (2026-02-18)
+  - **Implemented files**:
     - `src/realtime/event-bus.ts` - In-process EventEmitter with typed events
     - `src/realtime/emit.ts` - `emitEvent()` helper for route handlers
     - `src/realtime/ws-manager.ts` - WebSocket connection manager (auth, rooms, broadcast)
+    - `src/realtime/index.ts` - Module entry point with all exports
     - `src/web/lib/ws-client.ts` - Browser WebSocket client with reconnection
     - `src/web/hooks/use-realtime.ts` - `useRealtime(projectId, callback)` React hook
-  - **WebSocket upgrade**: Add to `src/api/index.ts` at `/ws`
-  - **Event types**: comment.created/updated/deleted, file.upload_complete/processing_complete, share.activity
-  - **Blocks**: Comments real-time sync, Notifications, Share activity updates
+  - **WebSocket upgrade**: Added to `src/api/index.ts` at `/ws`
+  - **Event types**: comment.created/updated/deleted, file.created/deleted/moved/updated, processing.started/progress/completed/failed, share.viewed/downloaded, etc.
+  - **Features**:
+    - Cookie-based authentication (browser sends cookies automatically on upgrade)
+    - Per-project subscription scoping
+    - Rate limiting (100 messages/minute)
+    - Exponential backoff reconnection
+    - Auto-reconnect on disconnect
+    - Ping/pong keepalive
   - **Spec refs**: `specs/README.md` "Realtime Architecture" section, `specs/14-realtime-collaboration.md`
 
 ### Email Service (0% - NO CODE EXISTS)

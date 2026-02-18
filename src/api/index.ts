@@ -1,9 +1,10 @@
 /**
  * Bush Platform - API Server Entry Point
  *
- * Node.js + Hono backend server with CORS, health checks, and API routes.
+ * Node.js + Hono backend server with CORS, health checks, API routes, and WebSocket.
  * Uses Bun.serve() for native performance.
  * Reference: specs/17-api-complete.md
+ * Reference: specs/14-realtime-collaboration.md
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -14,6 +15,8 @@ import { sqlite } from "../db/index.js";
 import { redisHealthCheck } from "../redis/index.js";
 import { errorHandler, notFoundHandler } from "./router.js";
 import { standardRateLimit } from "./rate-limit.js";
+import { wsManager, type WebSocketData } from "../realtime/index.js";
+import type { ServerWebSocket } from "bun";
 
 // Import route modules
 import {
@@ -94,6 +97,18 @@ app.get("/health", async (c) => {
     };
   } catch (error) {
     checks.storage = { status: "error", error: String(error) };
+  }
+
+  // Check 5: WebSocket connections (optional info)
+  try {
+    const wsStats = wsManager.getStats();
+    checks.websocket = {
+      status: "ok",
+      latency: 0,
+      ...wsStats,
+    } as { status: string; latency: number };
+  } catch {
+    checks.websocket = { status: "ok" };
   }
 
   // Determine overall status
@@ -189,6 +204,9 @@ app.route("/v4", v4);
 app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
+// Initialize WebSocket manager
+wsManager.init();
+
 // Start server
 console.log(`\n🚀 Bush API Server starting...`);
 console.log(`   Environment: ${config.NODE_ENV}`);
@@ -196,13 +214,92 @@ console.log(`   Port: ${config.PORT}`);
 console.log(`   API URL: ${config.API_URL}`);
 console.log(`   App URL: ${config.APP_URL}\n`);
 
+/**
+ * Custom fetch handler that handles WebSocket upgrades for /ws endpoint
+ */
+async function fetchHandler(req: Request, server: { upgrade: (req: Request, options: { data: WebSocketData }) => boolean }): Promise<Response> {
+  const url = new URL(req.url);
+
+  // Handle WebSocket upgrade for /ws endpoint
+  if (url.pathname === "/ws" && req.headers.get("upgrade") === "websocket") {
+    // Authenticate the connection from cookies
+    const cookieHeader = req.headers.get("cookie") || "";
+    const authResult = await wsManager.authenticate(cookieHeader);
+
+    if (!authResult) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    // Prepare WebSocket data
+    const wsData: WebSocketData = {
+      connectionId: wsManager.generateConnectionId(),
+      userId: authResult.userId,
+      session: authResult.session,
+      connectedAt: new Date(),
+      subscriptions: new Set(),
+      messageTimestamps: [],
+    };
+
+    // Upgrade the connection
+    const success = server.upgrade(req, { data: wsData });
+    if (!success) {
+      return new Response("WebSocket upgrade failed", { status: 500 });
+    }
+
+    // Return undefined - Bun will handle the WebSocket response
+    return new Response(null, { status: 101 });
+  }
+
+  // For all other requests, use Hono
+  return app.fetch(req);
+}
+
 Bun.serve({
-  fetch: app.fetch,
+  fetch: fetchHandler,
   port: config.PORT,
   hostname: config.HOST,
+  websocket: {
+    /**
+     * Called when a WebSocket connection is opened
+     */
+    open(ws: ServerWebSocket<WebSocketData>) {
+      wsManager.register(ws);
+    },
+
+    /**
+     * Called when a message is received from a WebSocket
+     */
+    async message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer) {
+      const msgString = typeof message === "string" ? message : message.toString("utf-8");
+      await wsManager.handleMessage(ws, msgString);
+    },
+
+    /**
+     * Called when a WebSocket connection is closed
+     */
+    close(ws: ServerWebSocket<WebSocketData>) {
+      wsManager.unregister(ws);
+    },
+
+    /**
+     * Send ping frames every 30 seconds for keepalive
+     */
+    idleTimeout: 60,
+
+    /**
+     * Maximum message size (16 KB)
+     */
+    maxPayloadLength: 16 * 1024,
+
+    /**
+     * Enable per-message deflate for compression
+     */
+    perMessageDeflate: true,
+  },
 });
 
 console.log(`✅ Server listening on http://${config.HOST}:${config.PORT}`);
+console.log(`✅ WebSocket endpoint available at ws://${config.HOST}:${config.PORT}/ws`);
 
 // Export app for testing
 export { app };
