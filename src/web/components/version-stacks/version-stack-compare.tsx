@@ -12,8 +12,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Badge } from "@/web/components/ui";
 import { ImageViewer, VideoViewer } from "@/web/components/viewers";
-import type { VideoViewerHandle } from "@/web/components/viewers/video-viewer";
-import type { ImageViewerHandle } from "@/web/components/viewers/image-viewer";
 import { getFileCategory, formatFileSize } from "@/shared/file-types";
 import { filesApi, extractAttributes, getErrorMessage } from "@/web/lib/api";
 import { useLinkedPlayback } from "@/web/hooks/use-linked-playback";

@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import {
   getBushSocket,
   type BushSocket,
@@ -185,13 +185,11 @@ export function useChannel(
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const socketRef = useRef<BushSocket | null>(null);
 
-  // Parse event filter into a set for quick lookup
-  const eventFilterSet = useRef<Set<string> | null>(null);
-  if (eventFilter) {
-    eventFilterSet.current = new Set(Array.isArray(eventFilter) ? eventFilter : [eventFilter]);
-  } else {
-    eventFilterSet.current = null;
-  }
+  // Parse event filter into a set for quick lookup (useMemo to avoid accessing during render)
+  const eventFilterSet = useMemo<Set<string> | null>(() => {
+    if (!eventFilter) return null;
+    return new Set(Array.isArray(eventFilter) ? eventFilter : [eventFilter]);
+  }, [eventFilter]);
 
   useEffect(() => {
     if (!resourceId) return;
@@ -205,7 +203,7 @@ export function useChannel(
     // Subscribe to channel events
     const unsubscribeChannel = socket.subscribe(channel, resourceId, (event) => {
       // Apply event filter if set
-      if (eventFilterSet.current && !eventFilterSet.current.has(event.event)) {
+      if (eventFilterSet && !eventFilterSet.has(event.event)) {
         return;
       }
 
@@ -233,7 +231,7 @@ export function useChannel(
       unsubscribeState();
       unsubscribeChannel();
     };
-  }, [channel, resourceId, onEvent]);
+  }, [channel, resourceId, onEvent, eventFilterSet]);
 
   // Clear events function
   const clearEvents = useCallback(() => {
@@ -346,7 +344,8 @@ export function useConnectionState(): ConnectionState {
     const socket = getBushSocket();
     socketRef.current = socket;
 
-    // Get initial state
+    // Get initial state - this is intentional to sync with socket state
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(socket.state);
 
     // Subscribe to state changes

@@ -465,7 +465,7 @@ export function MetadataInspector({
     if (!metadata?.custom) return [];
 
     return Object.entries(metadata.custom).map(([fieldId, { field, value }]) => ({
-      field,
+      field: { ...field, id: fieldId },
       value,
     }));
   }, [metadata]);

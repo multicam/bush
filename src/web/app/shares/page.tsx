@@ -41,7 +41,7 @@ export default function SharesPage() {
   const { isAuthenticated, isLoading: authLoading, login, currentAccount } = useAuth();
   const [shares, setShares] = useState<ShareWithRelationships[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [_workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");

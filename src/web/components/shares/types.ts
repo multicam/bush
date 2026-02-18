@@ -12,6 +12,8 @@ import type {
   ShareActivityAttributes,
 } from "@/web/lib/api";
 
+export type { ShareLayout } from "@/web/lib/api";
+
 /**
  * Share with computed fields
  */

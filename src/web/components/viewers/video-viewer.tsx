@@ -184,29 +184,6 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
   const duration = videoDuration || propDuration || 0;
 
-  // Expose imperative methods for linked playback (ComparisonViewer)
-  useImperativeHandle(
-    forwardedRef,
-    () => ({
-      seekTo: (time: number) => seek(time),
-      play: () => {
-        const video = videoRef.current;
-        if (video) video.play().catch(console.error);
-      },
-      pause: () => {
-        const video = videoRef.current;
-        if (video) video.pause();
-      },
-      togglePlay,
-      getCurrentTime: () => currentTime,
-      getDuration: () => duration,
-      isPlaying: () => isPlaying,
-      setPlaybackRate: handleSpeedChange,
-      getPlaybackRate: () => playbackRate,
-    }),
-    [seek, togglePlay, currentTime, duration, isPlaying, handleSpeedChange, playbackRate]
-  );
-
   // Track container width for filmstrip positioning
   useEffect(() => {
     const updateWidth = () => {
@@ -409,6 +386,29 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
     }
     setPlaybackRate(speed);
   }, []);
+
+  // Expose imperative methods for linked playback (ComparisonViewer)
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      seekTo: (time: number) => seek(time),
+      play: () => {
+        const video = videoRef.current;
+        if (video) video.play().catch(console.error);
+      },
+      pause: () => {
+        const video = videoRef.current;
+        if (video) video.pause();
+      },
+      togglePlay,
+      getCurrentTime: () => currentTime,
+      getDuration: () => duration,
+      isPlaying: () => isPlaying,
+      setPlaybackRate: handleSpeedChange,
+      getPlaybackRate: () => playbackRate,
+    }),
+    [seek, togglePlay, currentTime, duration, isPlaying, handleSpeedChange, playbackRate]
+  );
 
   // JKL shuttle controls
   const startShuttle = useCallback((direction: "forward" | "backward") => {

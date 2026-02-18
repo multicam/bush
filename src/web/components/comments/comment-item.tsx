@@ -157,26 +157,33 @@ export function CommentItem({
     setIsEditing(false);
   }, [comment.text]);
 
-  const dropdownItems = useMemo(() => {
-    const items: Array<{ label: string; onClick: () => void; danger?: boolean }> = [];
+  const dropdownOptions = useMemo(() => {
+    const options: Array<{ label: string; value: string; disabled?: boolean }> = [];
 
     if (isOwner) {
-      items.push({
+      options.push({
         label: "Edit",
-        onClick: () => setIsEditing(true),
+        value: "edit",
       });
     }
 
     if (isOwner || !isReply) {
-      items.push({
+      options.push({
         label: "Delete",
-        onClick: () => onDelete?.(comment.id),
-        danger: true,
+        value: "delete",
       });
     }
 
-    return items;
-  }, [isOwner, isReply, comment.id, onDelete]);
+    return options;
+  }, [isOwner, isReply]);
+
+  const handleDropdownChange = useCallback((value: string) => {
+    if (value === "edit") {
+      setIsEditing(true);
+    } else if (value === "delete") {
+      onDelete?.(comment.id);
+    }
+  }, [comment.id, onDelete]);
 
   const handleTimestampClick = useCallback(() => {
     if (comment.timestamp !== null && onTimestampClick) {
@@ -304,7 +311,7 @@ export function CommentItem({
                 {isCompleted ? "Reopen" : "Complete"}
               </Button>
             )}
-            {dropdownItems.length > 0 && (
+            {dropdownOptions.length > 0 && (
               <Dropdown
                 trigger={
                   <Button size="sm" variant="ghost">
@@ -315,7 +322,8 @@ export function CommentItem({
                     </svg>
                   </Button>
                 }
-                items={dropdownItems}
+                options={dropdownOptions}
+                onChange={handleDropdownChange}
               />
             )}
           </div>

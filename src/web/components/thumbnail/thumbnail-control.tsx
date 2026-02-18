@@ -34,7 +34,7 @@ export function ThumbnailControl({
   fileId,
   mimeType,
   currentTime = 0,
-  duration = 0,
+  duration: _duration = 0,
   hasCustomThumbnail = false,
   onThumbnailUpdate,
   onClose,
@@ -47,7 +47,7 @@ export function ThumbnailControl({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isVideo = mimeType.startsWith("video/");
-  const isImage = mimeType.startsWith("image/");
+  const _isImage = mimeType.startsWith("image/");
 
   const handleCaptureFrame = async () => {
     if (!isVideo) {

@@ -351,7 +351,7 @@ export function TranscriptPanel({
 
     return (
       <span className={`${styles.transcriptPanel__status} ${styles[`transcriptPanel__status--${status}`]}`}>
-        {status === "processing" && <Spinner size="xs" />}
+        {status === "processing" && <Spinner size="sm" />}
         {statusLabels[status]}
       </span>
     );

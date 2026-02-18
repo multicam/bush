@@ -89,7 +89,7 @@ function getStatusLabel(share: ShareWithRelationships): string {
 /**
  * Share card component
  */
-export function ShareCard({ share, onEdit, onDuplicate, onDelete }: ShareCardProps) {
+export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: ShareCardProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   const handleCopyLink = () => {

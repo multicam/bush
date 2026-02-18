@@ -121,20 +121,6 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
     setPanOffset({ x, y });
   }, []);
 
-  useImperativeHandle(
-    forwardedRef,
-    () => ({
-      setZoom: setZoomExternal,
-      getZoom: () => zoomLevel,
-      setPan: setPanExternal,
-      getPan: () => panOffset,
-      zoomToFit,
-      zoomTo1to1,
-      isLoaded: () => imageSize.loaded,
-    }),
-    [setZoomExternal, zoomLevel, setPanExternal, panOffset, zoomToFit, zoomTo1to1, imageSize.loaded]
-  );
-
   // Mini-map visibility
   const shouldShowMiniMap = useMemo(() =>
     showMiniMap === true ||
@@ -247,6 +233,21 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
   const zoomOut = useCallback(() => setZoom(zoomLevel / 1.25), [setZoom, zoomLevel]);
   const zoomToFit = useCallback(() => setZoom(fitZoom), [setZoom, fitZoom]);
   const zoomTo1to1 = useCallback(() => setZoom(1), [setZoom]);
+
+  // Expose imperative methods for linked zoom/pan (ComparisonViewer)
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      setZoom: setZoomExternal,
+      getZoom: () => zoomLevel,
+      setPan: setPanExternal,
+      getPan: () => panOffset,
+      zoomToFit,
+      zoomTo1to1,
+      isLoaded: () => imageSize.loaded,
+    }),
+    [setZoomExternal, zoomLevel, setPanExternal, panOffset, zoomToFit, zoomTo1to1, imageSize.loaded]
+  );
 
   // Mouse wheel zoom
   const handleWheel = useCallback(

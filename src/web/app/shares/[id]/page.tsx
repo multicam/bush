@@ -13,7 +13,6 @@ import {
   sharesApi,
   getErrorMessage,
   extractCollectionAttributes,
-  type ShareAttributes,
   type ShareAssetAttributes,
 } from "@/web/lib/api";
 import { ShareBuilder, ShareActivityFeed } from "@/web/components/shares";
@@ -221,7 +220,7 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
           <div className={styles.sharesGrid}>
             {assets.map((asset) => (
               <div
-                key={asset.id}
+                key={asset.fileId}
                 className={styles.shareCard}
                 style={{ padding: "12px" }}
               >

@@ -11,7 +11,6 @@ import {
   sharesApi,
   getErrorMessage,
   type ShareBranding,
-  type ShareLayout,
 } from "@/web/lib/api";
 import type { Share, ShareFormData, LayoutOption } from "./types";
 import { DEFAULT_SHARE_FORM, LAYOUT_OPTIONS } from "./types";

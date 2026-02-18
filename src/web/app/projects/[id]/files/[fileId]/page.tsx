@@ -14,7 +14,7 @@ import {
   VideoViewer,
   AudioViewer,
   ImageViewer,
-  PDFViewer,
+  PdfViewer,
 } from "@/web/components/viewers";
 import { CommentPanel } from "@/web/components/comments";
 import { useAuth } from "@/web/context";
@@ -66,6 +66,7 @@ export default function FileDetailPage() {
 
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const [file, setFile] = useState<FileItem | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showComments, setShowComments] = useState(true);
@@ -80,6 +81,15 @@ export default function FileDetailPage() {
         const response = await filesApi.get(projectId, fileId);
         const fileData = extractAttributes(response) as FileItem;
         setFile(fileData);
+
+        // Get download URL for viewers
+        try {
+          const downloadResponse = await filesApi.download(projectId, fileId);
+          setDownloadUrl(downloadResponse.meta.download_url);
+        } catch {
+          // Download URL fetch failed - viewers will handle missing URL
+        }
+
         setLoadingState("loaded");
       } catch (error) {
         console.error("Failed to fetch file:", error);
@@ -203,38 +213,32 @@ export default function FileDetailPage() {
               </div>
             )}
 
-            {file.status === "ready" && viewerType === "video" && (
+            {file.status === "ready" && viewerType === "video" && downloadUrl && (
               <VideoViewer
-                fileId={fileId}
-                projectId={projectId}
-                title={file.name}
-                thumbnailUrl={file.thumbnailUrl}
+                src={downloadUrl}
+                name={file.name}
+                poster={file.thumbnailUrl || undefined}
               />
             )}
 
-            {file.status === "ready" && viewerType === "audio" && (
+            {file.status === "ready" && viewerType === "audio" && downloadUrl && (
               <AudioViewer
-                fileId={fileId}
-                projectId={projectId}
-                title={file.name}
-                thumbnailUrl={file.thumbnailUrl}
+                src={downloadUrl}
+                name={file.name}
               />
             )}
 
-            {file.status === "ready" && viewerType === "image" && (
+            {file.status === "ready" && viewerType === "image" && downloadUrl && (
               <ImageViewer
-                fileId={fileId}
-                projectId={projectId}
-                title={file.name}
-                thumbnailUrl={file.thumbnailUrl}
+                src={downloadUrl}
+                alt={file.name}
               />
             )}
 
-            {file.status === "ready" && viewerType === "pdf" && (
-              <PDFViewer
-                fileId={fileId}
-                projectId={projectId}
-                title={file.name}
+            {file.status === "ready" && viewerType === "pdf" && downloadUrl && (
+              <PdfViewer
+                src={downloadUrl}
+                name={file.name}
               />
             )}
 
@@ -263,7 +267,6 @@ export default function FileDetailPage() {
             <div className={styles.commentsPanel}>
               <CommentPanel
                 fileId={fileId}
-                projectId={projectId}
               />
             </div>
           )}

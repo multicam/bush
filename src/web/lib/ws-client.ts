@@ -90,9 +90,9 @@ export type ConnectionStateHandler = (state: ConnectionState) => void;
 const BACKOFF_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
 
 /**
- * Maximum backoff delay
+ * Maximum backoff delay (reserved for future use)
  */
-const MAX_BACKOFF = 30000;
+const _MAX_BACKOFF = 30000;
 
 /**
  * BushSocket client for real-time updates

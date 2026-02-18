@@ -5,7 +5,7 @@
  * Reference: specs/00-atomic-features.md Section 6
  */
 
-import type { TechnicalMetadata, CustomFieldAttributes, CustomFieldValue } from "../../lib/api";
+import type { CustomFieldAttributes } from "../../lib/api";
 
 /**
  * Built-in metadata field definition

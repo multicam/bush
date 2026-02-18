@@ -43,14 +43,16 @@ export default function NotificationsPage() {
     setError(null);
     try {
       const filterRead = filter === "unread" ? false : undefined;
-      const filterType = FILTER_OPTIONS.find((o) => o.value === filter)?.value as
-        | NotificationType
-        | undefined;
+      // Check if filter is a valid notification type (not "all" or "unread")
+      const isValidNotificationType = (val: string): val is NotificationType => {
+        return ["mention", "comment_reply", "upload", "share_invite", "assignment"].includes(val);
+      };
+      const filterType = isValidNotificationType(filter) ? filter : undefined;
 
       const response = await notificationsApi.list({
         limit: 100,
         filter_read: filterRead,
-        filter_type: filterType && filterType !== "all" ? filterType : undefined,
+        filter_type: filterType,
       });
 
       const items = response.data.map((item) =>
@@ -139,7 +141,7 @@ export default function NotificationsPage() {
         <h1 className={styles.pageTitle}>
           Notifications
           {unreadCount > 0 && (
-            <Badge variant="primary" size="sm" style={{ marginLeft: "0.5rem" }}>
+            <Badge variant="primary" size="sm" className={styles.unreadBadge}>
               {unreadCount} unread
             </Badge>
           )}

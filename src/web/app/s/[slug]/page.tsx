@@ -282,7 +282,7 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
         <div className={styles.publicShareGrid}>
           {assets.map((asset, index) => (
             <div
-              key={`${asset.id || index}`}
+              key={index}
               className={styles.publicAssetCard}
               style={{
                 background: branding.dark_mode !== false ? "#1a1a1a" : "#fff",

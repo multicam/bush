@@ -382,3 +382,8 @@
     gap: 1rem;
   }
 }
+
+/* Unread badge in page header */
+.unreadBadge {
+  margin-left: 0.5rem;
+}

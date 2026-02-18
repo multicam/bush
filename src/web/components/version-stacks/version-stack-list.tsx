@@ -34,7 +34,7 @@ export function VersionStackList({
       setError(null);
 
       const response = await versionStacksApi.get(stackId);
-      const stackData = extractAttributes(response.data) as VersionStackWithFiles;
+      const stackData = extractAttributes(response) as VersionStackWithFiles;
 
       // Extract included files
       const files: AssetFile[] = response.included.map((file) => ({

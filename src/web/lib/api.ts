@@ -1555,7 +1555,13 @@ export interface ShareAttributes {
   createdAt: string;
   updatedAt: string;
   asset_count?: number;
-  created_by?: UserAttributes;
+  created_by?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    avatarUrl: string | null;
+  };
 }
 
 /**

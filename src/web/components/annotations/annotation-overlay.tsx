@@ -6,13 +6,12 @@
  */
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AnnotationCanvas } from "./annotation-canvas";
 import { AnnotationToolbar } from "./annotation-toolbar";
 import type {
   AnnotationShape,
   AnnotationTool,
-  AnnotationCanvasProps,
 } from "./types";
 import { generateId } from "../../lib/utils";
 import styles from "./annotations.module.css";
@@ -69,16 +68,7 @@ export function AnnotationOverlay({
   const [history, setHistory] = useState<HistoryState[]>([{ annotations: [] }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  // Sync with external annotations
-  useEffect(() => {
-    setLocalAnnotations(externalAnnotations);
-    pushHistory(externalAnnotations);
-  }, [externalAnnotations]);
-
-  // Combined annotations for display
-  const displayAnnotations = localAnnotations.length > 0 ? localAnnotations : externalAnnotations;
-
-  // Push state to history
+  // Push state to history - declared before useEffect that uses it
   const pushHistory = useCallback((newAnnotations: AnnotationShape[]) => {
     setHistory((prev) => {
       // Remove any future states if we're not at the end
@@ -94,6 +84,17 @@ export function AnnotationOverlay({
     });
     setHistoryIndex((prev) => Math.min(prev + 1, 49));
   }, [historyIndex]);
+
+  // Sync with external annotations
+  useEffect(() => {
+    // Intentional setState to sync with external annotations
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalAnnotations(externalAnnotations);
+    void pushHistory(externalAnnotations);
+  }, [externalAnnotations, pushHistory]);
+
+  // Combined annotations for display
+  const displayAnnotations = localAnnotations.length > 0 ? localAnnotations : externalAnnotations;
 
   // Undo
   const handleUndo = useCallback(() => {

@@ -19,7 +19,7 @@ type SortField = "name" | "fileSizeBytes" | "createdAt" | "updatedAt" | "status"
 
 // Estimate row height
 const ROW_HEIGHT = 52;
-const HEADER_HEIGHT = 44;
+const _HEADER_HEIGHT = 44;
 
 // Virtualization threshold
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -157,6 +157,35 @@ export function AssetList({
 
   const allItems = [...folders, ...files];
 
+  // Virtualization setup - hooks must be called unconditionally BEFORE any early returns
+  const itemCount = allItems.length + (hasMore ? 1 : 0);
+  const useVirtualization = allItems.length > VIRTUALIZATION_THRESHOLD;
+
+  const virtualizer = useVirtualizer({
+    count: Math.max(1, itemCount), // Ensure count is at least 1 to avoid issues
+    getScrollElement: () => containerRef.current,
+    estimateSize: (index: number) => {
+      if (index === allItems.length) return 48; // Loading row
+      return ROW_HEIGHT;
+    },
+    overscan: 10,
+  });
+
+  // Infinite scroll: load more when near bottom
+  const lastVirtualItem = virtualizer.getVirtualItems().at(-1);
+  useEffect(() => {
+    if (
+      useVirtualization &&
+      hasMore &&
+      !isLoadingMore &&
+      onLoadMore &&
+      lastVirtualItem &&
+      lastVirtualItem.index >= allItems.length - 5
+    ) {
+      onLoadMore();
+    }
+  }, [useVirtualization, hasMore, isLoadingMore, onLoadMore, lastVirtualItem, allItems.length]);
+
   // Empty state
   if (allItems.length === 0) {
     return (
@@ -168,11 +197,8 @@ export function AssetList({
     );
   }
 
-  // Decide whether to use virtualization
-  const useVirtualization = allItems.length > VIRTUALIZATION_THRESHOLD;
-
   // Row renderer
-  const renderRow = (item: AssetFile | AssetFolder, index: number) => {
+  const renderRow = (item: AssetFile | AssetFolder, _index: number) => {
     // Check if it's a folder
     if ("parentId" in item) {
       const folder = item as AssetFolder;
@@ -289,32 +315,6 @@ export function AssetList({
   }
 
   // Virtualized rendering for large lists
-  const itemCount = allItems.length + (hasMore ? 1 : 0);
-
-  const virtualizer = useVirtualizer({
-    count: itemCount,
-    getScrollElement: () => containerRef.current,
-    estimateSize: (index) => {
-      if (index === allItems.length) return 48; // Loading row
-      return ROW_HEIGHT;
-    },
-    overscan: 10,
-  });
-
-  // Infinite scroll: load more when near bottom
-  const lastVirtualItem = virtualizer.getVirtualItems().at(-1);
-  useEffect(() => {
-    if (
-      hasMore &&
-      !isLoadingMore &&
-      onLoadMore &&
-      lastVirtualItem &&
-      lastVirtualItem.index >= allItems.length - 5
-    ) {
-      onLoadMore();
-    }
-  }, [hasMore, isLoadingMore, onLoadMore, lastVirtualItem, allItems.length]);
-
   return (
     <div
       ref={containerRef}

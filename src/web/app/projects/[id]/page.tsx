@@ -325,12 +325,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchData();
   }, [projectId, isAuthenticated, authLoading, login]);
 
-  // Refresh when folder changes
+  // Refresh when folder changes (only after initial load is complete)
   useEffect(() => {
-    if (loadingState === "loaded") {
-      refreshFiles();
-      buildBreadcrumbPath(currentFolderId);
-    }
+    if (loadingState !== "loaded") return;
+
+    // Use void to explicitly ignore the returned promise
+    // These async functions internally call setState, which is intentional here
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshFiles();
+    void buildBreadcrumbPath(currentFolderId);
   }, [currentFolderId, loadingState, refreshFiles, buildBreadcrumbPath]);
 
   // Handle files dropped/selected
