@@ -14,7 +14,7 @@ import styles from "./metadata-badges.module.css";
 /**
  * Format duration in seconds to a compact string
  */
-function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
@@ -28,7 +28,7 @@ function formatDuration(seconds: number): string {
 /**
  * Format resolution to compact string
  */
-function formatResolution(width: number, height: number): string {
+export function formatResolution(width: number, height: number): string {
   // Common resolution labels
   if (width >= 3840 || height >= 2160) return "4K";
   if (width >= 2560 || height >= 1440) return "QHD";

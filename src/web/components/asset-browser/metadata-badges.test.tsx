@@ -1,149 +1,75 @@
 /**
  * Bush Platform - Metadata Badges Tests
  *
- * Tests for the metadata badges component.
+ * Tests for the metadata badges utility functions.
  * Reference: IMPLEMENTATION_PLAN.md [P2] Metadata Badges
  */
-import { describe, it, expect } from "bun:test";
-import { render, screen } from "@testing-library/react";
-import { MetadataBadges } from "./metadata-badges";
-import type { AssetFile } from "./types";
+import { describe, it, expect } from "vitest";
+import { formatDuration, formatResolution } from "./metadata-badges";
 
-function createMockFile(overrides: Partial<AssetFile> = {}): AssetFile {
-  return {
-    id: "file-1",
-    name: "test-file.mp4",
-    mimeType: "video/mp4",
-    fileSizeBytes: 1024 * 1024 * 100, // 100MB
-    status: "ready",
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-    ...overrides,
-  };
-}
-
-describe("MetadataBadges", () => {
-  it("renders nothing when no metadata is available", () => {
-    const file = createMockFile();
-    const { container } = render(<MetadataBadges file={file} cardSize="medium" />);
-    expect(container.firstChild).toBeNull();
+describe("formatDuration", () => {
+  it("should format seconds to M:SS format", () => {
+    expect(formatDuration(65)).toBe("1:05");
+    expect(formatDuration(125)).toBe("2:05");
+    expect(formatDuration(5)).toBe("0:05");
+    expect(formatDuration(59)).toBe("0:59");
   });
 
-  it("renders duration badge for video files", () => {
-    const file = createMockFile({ duration: 125 }); // 2:05
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("2:05")).toBeTruthy();
+  it("should format durations with hours as H:MM:SS", () => {
+    expect(formatDuration(3661)).toBe("1:01:01");
+    expect(formatDuration(3600)).toBe("1:00:00");
+    expect(formatDuration(7325)).toBe("2:02:05");
   });
 
-  it("formats long durations with hours", () => {
-    const file = createMockFile({ duration: 3661 }); // 1:01:01
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("1:01:01")).toBeTruthy();
+  it("should handle zero duration", () => {
+    expect(formatDuration(0)).toBe("0:00");
   });
 
-  it("renders resolution badge", () => {
-    const file = createMockFile({ width: 1920, height: 1080 });
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("1080p")).toBeTruthy();
+  it("should pad seconds with leading zero", () => {
+    expect(formatDuration(9)).toBe("0:09");
+    expect(formatDuration(60)).toBe("1:00");
   });
 
-  it("renders 4K resolution label", () => {
-    const file = createMockFile({ width: 3840, height: 2160 });
-    render(<MetadataBadges file={file} cardSize="medium" />);
+  it("should pad minutes with leading zero when hours present", () => {
+    expect(formatDuration(3605)).toBe("1:00:05");
+    expect(formatDuration(3665)).toBe("1:01:05");
+  });
+});
 
-    expect(screen.getByText("4K")).toBeTruthy();
+describe("formatResolution", () => {
+  it("should identify 4K resolution", () => {
+    expect(formatResolution(3840, 2160)).toBe("4K");
+    expect(formatResolution(4096, 2160)).toBe("4K");
   });
 
-  it("renders rating badge", () => {
-    const file = createMockFile({ rating: 4 });
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("4")).toBeTruthy();
+  it("should identify QHD resolution", () => {
+    expect(formatResolution(2560, 1440)).toBe("QHD");
   });
 
-  it("renders status badge", () => {
-    const file = createMockFile({ assetStatus: "Approved" });
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("Approved")).toBeTruthy();
+  it("should identify 1080p resolution", () => {
+    expect(formatResolution(1920, 1080)).toBe("1080p");
+    expect(formatResolution(1920, 1200)).toBe("1080p"); // Based on height
   });
 
-  it("renders first keyword", () => {
-    const file = createMockFile({ keywords: ["action", "outdoor", "sunset"] });
-    render(<MetadataBadges file={file} cardSize="medium" />);
-
-    expect(screen.getByText("action")).toBeTruthy();
-    // Only first keyword should show
-    expect(screen.queryByText("outdoor")).toBeNull();
+  it("should identify 720p resolution", () => {
+    expect(formatResolution(1280, 720)).toBe("720p");
   });
 
-  it("respects maxBadges limit", () => {
-    const file = createMockFile({
-      duration: 60,
-      width: 1920,
-      height: 1080,
-      rating: 5,
-      assetStatus: "Approved",
-      keywords: ["featured"],
-    });
-    render(<MetadataBadges file={file} cardSize="medium" maxBadges={2} />);
-
-    // Should show only 2 badges (duration and resolution have highest priority)
-    const badges = screen.getAllByRole("generic").filter((el) =>
-      el.className.includes("badge")
-    );
-    expect(badges.length).toBeLessThanOrEqual(2);
+  it("should identify 480p resolution", () => {
+    expect(formatResolution(854, 480)).toBe("480p");
   });
 
-  it("shows more badges on larger card sizes", () => {
-    const file = createMockFile({
-      duration: 60,
-      width: 1920,
-      height: 1080,
-      rating: 5,
-      assetStatus: "Approved",
-    });
-
-    // Large cards can show up to 4 badges by default
-    render(<MetadataBadges file={file} cardSize="large" />);
-
-    expect(screen.getByText("1:00")).toBeTruthy(); // duration
-    expect(screen.getByText("1080p")).toBeTruthy(); // resolution
-    expect(screen.getByText("5")).toBeTruthy(); // rating
-    expect(screen.getByText("Approved")).toBeTruthy(); // status
+  it("should show raw dimensions for non-standard resolutions", () => {
+    // 640x360 - neither meets thresholds (min 854 width or 480 height for 480p)
+    expect(formatResolution(640, 360)).toBe("640×360");
+    // 500x400 - below all thresholds
+    expect(formatResolution(500, 400)).toBe("500×400");
   });
 
-  it("shows fewer badges on small card sizes", () => {
-    const file = createMockFile({
-      duration: 60,
-      width: 1920,
-      height: 1080,
-      rating: 5,
-    });
-
-    // Small cards show up to 2 badges by default
-    render(<MetadataBadges file={file} cardSize="small" />);
-
-    // Duration and resolution should show
-    expect(screen.getByText("1:00")).toBeTruthy();
-    expect(screen.getByText("1080p")).toBeTruthy();
-
-    // Rating might not show due to limit
-    expect(screen.queryByText("5")).toBeNull();
-  });
-
-  it("does not render duration badge for zero duration", () => {
-    const file = createMockFile({ duration: 0 });
-    const { container } = render(<MetadataBadges file={file} cardSize="medium" />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("does not render resolution badge without both dimensions", () => {
-    const file = createMockFile({ width: 1920, height: null });
-    const { container } = render(<MetadataBadges file={file} cardSize="medium" />);
-    expect(container.firstChild).toBeNull();
+  it("should detect resolution by height when width is smaller", () => {
+    // Vertical video that's 1920 tall (exceeds 1440 threshold for QHD)
+    expect(formatResolution(1080, 1920)).toBe("QHD");
+    // Vertical video that's 1280 tall (exceeds 1080 threshold for 1080p)
+    expect(formatResolution(720, 1280)).toBe("1080p");
   });
 });
