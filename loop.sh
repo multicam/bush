@@ -1,26 +1,29 @@
 #!/bin/bash
-# Usage: ./loop.sh [plan] [max_iterations]
+# Usage: ./loop.sh [mode] [max_iterations]
 # Examples:
 #   ./loop.sh              # Build mode, unlimited iterations
 #   ./loop.sh 20           # Build mode, max 20 iterations
 #   ./loop.sh plan         # Plan mode, unlimited iterations
 #   ./loop.sh plan 5       # Plan mode, max 5 iterations
+#   ./loop.sh review       # Review mode, unlimited iterations
+#   ./loop.sh review 10    # Review mode, max 10 iterations
 
 # Parse arguments
 if [ "$1" = "plan" ]; then
-    # Plan mode
     MODE="plan"
-    PROMPT_FILE="ralph-prompts/glm-5/plan.md"
+    PROMPT_FILE="ralph-prompts/anthropic/plan.md"
+    MAX_ITERATIONS=${2:-0}
+elif [ "$1" = "review" ]; then
+    MODE="review"
+    PROMPT_FILE="ralph-prompts/anthropic/review.md"
     MAX_ITERATIONS=${2:-0}
 elif [[ "$1" =~ ^[0-9]+$ ]]; then
-    # Build mode with max iterations
     MODE="build"
-    PROMPT_FILE="ralph-prompts/glm-5/build.md"
+    PROMPT_FILE="ralph-prompts/anthropic/build.md"
     MAX_ITERATIONS=$1
 else
-    # Build mode, unlimited (no arguments or invalid input)
     MODE="build"
-    PROMPT_FILE="ralph-prompts/glm-5/build.md"
+    PROMPT_FILE="ralph-prompts/anthropic/build.md"
     MAX_ITERATIONS=0
 fi
 
@@ -50,15 +53,19 @@ while true; do
     # -p: Headless mode (non-interactive, reads from stdin)
     # --dangerously-skip-permissions: Auto-approve all tool calls (YOLO mode)
     # --output-format=stream-json: Structured output for logging/monitoring
-    # --model opus: Primary agent uses Opus for complex reasoning (task selection, prioritization)
-    #               Can use 'sonnet' in build mode for speed if plan is clear and tasks well-defined
+    # --model: opus for plan/review (complex reasoning), sonnet for build (speed)
     # --verbose: Detailed execution logging
+    MODEL="sonnet"
+    if [ "$MODE" = "plan" ] || [ "$MODE" = "review" ]; then
+        MODEL="opus"
+    fi
+
     LOG_FILE="/tmp/ralph/${MODE}-$(date +%Y%m%d-%H%M%S)-iter${ITERATION}.jsonl"
     mkdir -p /tmp/ralph
     cat "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
-        --model sonnet \
+        --model "$MODEL" \
         --verbose \
         2>&1 | tee "$LOG_FILE"
 
@@ -75,10 +82,10 @@ while true; do
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
 
-    # In plan mode, check for pause gate between iterations
-    # Usage: touch .pause → edit specs → rm .pause
-    if [ "$MODE" = "plan" ] && [ -f ".pause" ]; then
-        echo "⏸ Paused. Edit specs, then: rm .pause"
+    # In plan/review mode, check for pause gate between iterations
+    # Usage: touch .pause → edit specs/REVIEW_PLAN → rm .pause
+    if [ "$MODE" != "build" ] && [ -f ".pause" ]; then
+        echo "Paused. Edit files, then: rm .pause"
         while [ -f ".pause" ]; do sleep 2; done
         echo "Resuming..."
     fi
