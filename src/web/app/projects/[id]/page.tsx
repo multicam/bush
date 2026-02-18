@@ -27,6 +27,7 @@ import {
   type FolderAttributes,
 } from "@/web/lib/api";
 import { getUploadClient, type UploadProgress } from "@/web/lib/upload-client";
+import { FolderUploadManager, hasFolderStructure, getFolderStructureSummary } from "@/web/lib/folder-upload";
 import styles from "./project.module.css";
 
 interface Project extends ProjectAttributes {
@@ -242,9 +243,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const startUpload = useCallback(
     async (queuedFile: QueuedFile) => {
       try {
+        // Use targetFolderId if set (from folder structure preservation), otherwise currentFolderId
+        const folderId = queuedFile.targetFolderId ?? currentFolderId ?? undefined;
+
         await uploadClient.upload(queuedFile.file, {
           projectId,
-          folderId: currentFolderId ?? undefined,
+          folderId,
           onProgress: (progress) => {
             setUploadQueue((prev) =>
               prev.map((f) =>
@@ -339,13 +343,52 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         return;
       }
 
+      // Check if any files have folder structure
+      const hasFolders = hasFolderStructure(
+        validFiles.map((f) => ({ file: f.file, relativePath: f.relativePath }))
+      );
+
+      let folderManager: FolderUploadManager | null = null;
+      if (hasFolders) {
+        // Create folder manager for preserving folder structure
+        folderManager = new FolderUploadManager(projectId, currentFolderId ?? undefined);
+
+        // Log folder structure for user awareness
+        const summary = getFolderStructureSummary(
+          validFiles.map((f) => ({ file: f.file, relativePath: f.relativePath }))
+        );
+        console.log(
+          `Uploading ${summary.totalFiles} files in ${summary.folderCount} folders (${summary.topLevelFolders.join(", ")})`
+        );
+      }
+
       // Add files to queue
-      const newQueuedFiles: QueuedFile[] = validFiles.map((f) => ({
-        id: f.id,
-        file: f.file,
-        progress: undefined,
-        error: undefined,
-      }));
+      const newQueuedFiles: QueuedFile[] = await Promise.all(
+        validFiles.map(async (f) => {
+          // Resolve target folder for files with relative paths
+          let targetFolderId: string | undefined;
+          if (f.relativePath && folderManager) {
+            try {
+              targetFolderId = (await folderManager.getFolderForPath(f.relativePath)) ?? undefined;
+            } catch (error) {
+              console.error(`Failed to resolve folder for ${f.relativePath}:`, error);
+              // Fall back to current folder on error
+              targetFolderId = currentFolderId ?? undefined;
+            }
+          } else {
+            targetFolderId = currentFolderId ?? undefined;
+          }
+
+          return {
+            id: f.id,
+            file: f.file,
+            progress: undefined,
+            error: undefined,
+            relativePath: f.relativePath,
+            targetFolderId,
+          };
+        })
+      );
 
       setUploadQueue((prev) => [...prev, ...newQueuedFiles]);
 
@@ -356,7 +399,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       setShowDropzone(false);
     },
-    []
+    [projectId, currentFolderId]
   );
 
   // Handle remove from queue
@@ -527,6 +570,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               onFiles={handleFilesDropped}
               multiple={true}
               maxFiles={200}
+              allowFolders={true}
             />
             <Button
               variant="ghost"

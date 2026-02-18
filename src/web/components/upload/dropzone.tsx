@@ -27,6 +27,8 @@ export interface DroppedFile {
   category: FileCategory;
   isValid: boolean;
   validationError?: string;
+  /** Relative path from folder drop (webkitRelativePath), undefined for single file drops */
+  relativePath?: string;
 }
 
 export interface DropzoneProps {
@@ -48,6 +50,8 @@ export interface DropzoneProps {
   className?: string;
   /** Custom instructions text */
   instructions?: string;
+  /** Whether to allow folder drops (enables webkitdirectory) */
+  allowFolders?: boolean;
 }
 
 const DEFAULT_MAX_FILE_SIZE = 5 * Math.pow(1024, 4); // 5TB
@@ -119,6 +123,8 @@ function processFiles(
 
   return limitedFiles.map((file) => {
     const validation = validateFile(file, maxFileSize);
+    // Extract webkitRelativePath if available (from folder drops)
+    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
     return {
       id: generateFileId(),
       file,
@@ -128,6 +134,7 @@ function processFiles(
       category: getFileCategory(validation.mimeType),
       isValid: validation.valid,
       validationError: validation.error,
+      relativePath: relativePath || undefined,
     };
   });
 }
@@ -142,6 +149,7 @@ export function Dropzone({
   accept,
   className = "",
   instructions = "Drag files here or click to browse",
+  allowFolders = false,
 }: DropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const [isDragReject, setIsDragReject] = useState(false);
@@ -308,6 +316,7 @@ export function Dropzone({
         disabled={disabled}
         className={styles.input}
         aria-hidden="true"
+        {...(allowFolders ? { webkitdirectory: "", directory: "" } : {})}
       />
 
       <div className={styles.content}>
@@ -336,9 +345,11 @@ export function Dropzone({
 
         {!disabled && (
           <p className={styles.hint}>
-            {multiple
-              ? `Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
-              : `Max ${formatFileSize(maxFileSize)}`}
+            {allowFolders
+              ? `Folders supported • Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
+              : multiple
+                ? `Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
+                : `Max ${formatFileSize(maxFileSize)}`}
           </p>
         )}
       </div>

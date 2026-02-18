@@ -30,6 +30,10 @@ export interface QueuedFile {
   progress?: UploadProgress;
   /** Upload error if failed */
   error?: string;
+  /** Relative path from folder drop (for folder structure preservation) */
+  relativePath?: string;
+  /** Target folder ID (resolved from relativePath, overrides default folderId) */
+  targetFolderId?: string;
 }
 
 export interface UploadQueueProps {

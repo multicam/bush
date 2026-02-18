@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Folder Navigation Integration)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks DEFERRED to future release**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. **Folder Navigation COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription + Folder Navigation all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) and Webhooks DEFERRED to future release.
+**Last updated**: 2026-02-18 (Folder Structure Preservation)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks DEFERRED to future release**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. **Folder Navigation COMPLETED**. **Folder Structure Preservation COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription + Folder Navigation + Folder Structure Preservation all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) and Webhooks DEFERRED to future release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
@@ -28,6 +28,7 @@
 - **Webhooks API**: DEFERRED to future release (code exists but not mounted)
 - **Transcription API**: COMPLETED (11 endpoints: 8 transcription + 3 captions)
 - Custom Fields API: COMPLETED
+- **Folder Structure Preservation**: COMPLETED (webkitdirectory, FolderUploadManager)
 
 | Metric | Status | Notes |
 |--------|--------|-------|
@@ -47,6 +48,7 @@
 | **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
 | **Share UI** | 100% | Full pages (list, detail, new, public) + components (card, builder, activity feed) |
 | **Folder Navigation** | 100% | COMPLETED: FolderTree sidebar, Breadcrumbs, create folder modal, folder-based content loading |
+| **Folder Structure Preservation** | 100% | COMPLETED: webkitdirectory support, FolderUploadManager for hierarchy creation |
 
 ---
 
@@ -391,11 +393,22 @@ These items are required for core platform functionality but are missing from th
   - **Dependencies**: Upload client
   - **Implementation**: `src/web/components/upload/upload-queue.tsx`
 
-- **[P2] Folder Structure Preservation** [4h]
+- **[P2] Folder Structure Preservation** [4h] -- COMPLETED (2026-02-18)
   - Parse folder hierarchy on drop
   - Create folders as needed
   - Preserve relative paths
-  - **Dependencies**: Upload backend
+  - **Dependencies**: Upload backend - DONE
+  - **Implementation**:
+    - `src/web/components/upload/dropzone.tsx` - Added webkitdirectory support and relativePath extraction
+    - `src/web/components/upload/upload-queue.tsx` - Added relativePath and targetFolderId fields
+    - `src/web/lib/folder-upload.ts` - FolderUploadManager class for creating folder hierarchy
+    - `src/web/app/projects/[id]/page.tsx` - Integration with FolderUploadManager
+  - **Features**:
+    - webkitdirectory attribute for folder selection
+    - webkitRelativePath parsing to extract folder hierarchy
+    - On-demand folder creation as files are uploaded
+    - Folder cache to avoid redundant API calls
+    - Concurrent folder creation handling with deduplication
 
 ### 2.2 Media Processing Pipeline [P0] - 4 days
 
@@ -2714,3 +2727,48 @@ This update incorporates comprehensive research findings on current implementati
 ### Previous Updates
 
 See end of document for full change history (items 1-39 from previous versions).
+
+### 2026-02-18 Folder Structure Preservation Implementation
+
+**Completed Work:**
+
+1. **Folder Structure Preservation COMPLETED** - Upload folders with hierarchy preservation
+   - **Files created**:
+     - `src/web/lib/folder-upload.ts` - FolderUploadManager class with:
+       - On-demand folder creation during uploads
+       - Folder cache to avoid redundant API calls
+       - Concurrent creation deduplication
+       - Helper utilities: `hasFolderStructure()`, `getFolderStructureSummary()`, `extractFolderPaths()`, `groupFilesByFolder()`
+
+   - **Files modified**:
+     - `src/web/components/upload/dropzone.tsx` - Added:
+       - `relativePath` field to `DroppedFile` interface
+       - `allowFolders` prop for webkitdirectory support
+       - `webkitRelativePath` extraction from File objects
+       - Updated hint text for folder support
+     - `src/web/components/upload/upload-queue.tsx` - Added:
+       - `relativePath` field to `QueuedFile` interface
+       - `targetFolderId` field for per-file folder resolution
+     - `src/web/app/projects/[id]/page.tsx` - Updated:
+       - Import and use `FolderUploadManager`
+       - `handleFilesDropped()` to resolve folder paths before queuing
+       - `startUpload()` to use `targetFolderId` instead of current folder
+       - Enable `allowFolders={true}` on Dropzone
+
+   - **Features implemented**:
+     - webkitdirectory attribute for folder selection in browsers
+     - webkitRelativePath parsing to extract folder hierarchy
+     - Automatic folder creation as files are uploaded
+     - Folder hierarchy cache to avoid redundant API calls
+     - Parallel folder creation with deduplication
+     - Files uploaded to correct target folders
+
+2. **Email Service TypeScript Fix** - Fixed circular import and missing type
+   - Added `from?: EmailAddress` to `EmailMessage` interface
+   - Removed circular `export { createEmailService }` from email.ts
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** Clean (0 errors)
+
+**Status Changes:**
+- Folder Structure Preservation: NOT STARTED → COMPLETED

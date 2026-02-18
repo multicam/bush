@@ -52,6 +52,7 @@ export type EmailTemplate =
  * Email message structure
  */
 export interface EmailMessage {
+  from?: EmailAddress;
   to: EmailAddress | EmailAddress[];
   cc?: EmailAddress | EmailAddress[];
   bcc?: EmailAddress | EmailAddress[];
@@ -280,6 +281,3 @@ export class EmailService {
     });
   }
 }
-
-// Re-export the factory function
-export { createEmailService } from "./email";
