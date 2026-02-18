@@ -20,6 +20,7 @@ import type {
   FilmstripJobData,
   ProxyJobData,
   WaveformJobData,
+  FrameCaptureJobData,
   ThumbnailSize,
   ProxyResolution,
 } from "./types.js";
@@ -207,4 +208,25 @@ export async function reprocessAsset(assetId: string): Promise<void> {
     file.originalName,
     { priority: Priority.USER_REPROCESS }
   );
+}
+
+/**
+ * Enqueue a frame capture job for custom thumbnail
+ */
+export async function enqueueFrameCapture(
+  data: Omit<FrameCaptureJobData, "type">
+): Promise<string> {
+  const queue = getQueue(QUEUE_NAMES.THUMBNAIL); // Reuse thumbnail queue
+  const job = await queue.add("frame_capture", {
+    ...data,
+    type: "frame_capture" as const,
+  }, {
+    priority: Priority.USER_REPROCESS,
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 5000,
+    },
+  });
+  return job.id ?? "";
 }

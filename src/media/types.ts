@@ -14,7 +14,8 @@ export type MediaJobType =
   | "filmstrip"
   | "proxy"
   | "waveform"
-  | "hls";
+  | "hls"
+  | "frame_capture";
 
 /**
  * Queue names for BullMQ
@@ -101,6 +102,14 @@ export interface WaveformJobData extends BaseJobData {
 }
 
 /**
+ * Frame capture job data (for custom thumbnails from video)
+ */
+export interface FrameCaptureJobData extends BaseJobData {
+  type: "frame_capture";
+  timestamp: number; // seconds
+}
+
+/**
  * Union of all job data types
  */
 export type MediaJobData =
@@ -108,7 +117,8 @@ export type MediaJobData =
   | ThumbnailJobData
   | FilmstripJobData
   | ProxyJobData
-  | WaveformJobData;
+  | WaveformJobData
+  | FrameCaptureJobData;
 
 /**
  * Job result types
@@ -187,6 +197,7 @@ export const JOB_TIMEOUTS = {
   filmstrip: 5 * 60 * 1000, // 5 minutes
   proxy: 30 * 60 * 1000, // 30 minutes (per resolution)
   waveform: 2 * 60 * 1000, // 2 minutes
+  frame_capture: 60 * 1000, // 1 minute
 } as const;
 
 /**

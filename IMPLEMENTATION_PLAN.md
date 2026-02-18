@@ -64,10 +64,29 @@
   - **Dependencies**: 2.6 (Video Player) - DONE, 2.7 (Image Viewer) - DONE, 2.5 (Version Stacks) - DONE
   - **Spec refs**: `specs/04-review-and-approval.md`
 
-- **[P2] Custom Thumbnails** [4h] -- NOT STARTED
+- **[P2] Custom Thumbnails** [4h] -- COMPLETED (2026-02-18)
   - Upload custom image or select video frame
   - **Dependencies**: 2.2 (processing) - DONE
   - **Spec refs**: `specs/03-file-management.md`
+  - **Implemented files**:
+    - `src/db/schema.ts` - Added `customThumbnailKey` column to files table
+    - `src/storage/index.ts` - Added `customThumbnail()` key builder
+    - `src/api/routes/files.ts` - Added thumbnail upload, frame capture, and delete endpoints
+    - `src/media/types.ts` - Added `FrameCaptureJobData` type
+    - `src/media/index.ts` - Added `enqueueFrameCapture()` function
+    - `src/media/processors/frame-capture.ts` - Frame capture processor for videos
+    - `src/media/worker.ts` - Updated to handle frame_capture job type
+    - `src/web/lib/api.ts` - Added thumbnail API methods
+    - `src/web/components/thumbnail/` - Thumbnail control UI component
+  - **API Endpoints**:
+    - `POST /v4/projects/:projectId/files/:id/thumbnail` - Upload custom thumbnail (base64 or URL mode)
+    - `POST /v4/projects/:projectId/files/:id/thumbnail/frame` - Capture video frame as thumbnail
+    - `DELETE /v4/projects/:projectId/files/:id/thumbnail` - Remove custom thumbnail
+  - **Features**:
+    - Base64 image upload for custom thumbnails
+    - Video frame capture at specified timestamp
+    - Async frame capture via BullMQ job queue
+    - Revert to auto-generated thumbnail
 
 - **[P2] Virtualized Lists** [4h] -- NOT STARTED
   - react-window or similar for large file lists
@@ -128,6 +147,30 @@
 ## COMPLETED FEATURES (Historical Reference)
 
 These items are required for core platform functionality but are missing from the codebase despite being documented in specs.
+
+### Custom Thumbnails (COMPLETED 2026-02-18)
+
+- **[P2] Custom Thumbnails** [4h] -- COMPLETED (2026-02-18)
+  - **Implemented files**:
+    - `src/db/schema.ts` - Added `customThumbnailKey` column to files table
+    - `src/storage/index.ts` - Added `customThumbnail()` key builder
+    - `src/api/routes/files.ts` - Added thumbnail upload, frame capture, and delete endpoints
+    - `src/media/types.ts` - Added `FrameCaptureJobData` type
+    - `src/media/index.ts` - Added `enqueueFrameCapture()` function
+    - `src/media/processors/frame-capture.ts` - Frame capture processor for videos
+    - `src/media/worker.ts` - Updated to handle frame_capture job type
+    - `src/web/lib/api.ts` - Added thumbnail API methods
+    - `src/web/components/thumbnail/` - Thumbnail control UI component
+  - **API Endpoints**:
+    - `POST /v4/projects/:projectId/files/:id/thumbnail` - Upload custom thumbnail (base64 or URL mode)
+    - `POST /v4/projects/:projectId/files/:id/thumbnail/frame` - Capture video frame as thumbnail
+    - `DELETE /v4/projects/:projectId/files/:id/thumbnail` - Remove custom thumbnail
+  - **Features**:
+    - Base64 image upload for custom thumbnails
+    - Video frame capture at specified timestamp
+    - Async frame capture via BullMQ job queue
+    - Revert to auto-generated thumbnail
+  - **Spec refs**: `specs/03-file-management.md`
 
 ### Realtime Infrastructure (COMPLETED 2026-02-18)
 

@@ -35,7 +35,7 @@ const ALLOWED_STATUS_TRANSITIONS: Record<FileStatus, FileStatus[]> = {
  * Returns null if file doesn't have thumbnails (not ready, non-media type)
  */
 async function getThumbnailUrl(
-  file: { id: string; projectId: string; status: string; mimeType: string },
+  file: { id: string; projectId: string; status: string; mimeType: string; customThumbnailKey?: string | null },
   accountId: string
 ): Promise<string | null> {
   // Only ready files with image/video MIME types have thumbnails
@@ -51,6 +51,12 @@ async function getThumbnailUrl(
   }
 
   try {
+    // If custom thumbnail exists, use it
+    if (file.customThumbnailKey) {
+      const result = await storage.getDownloadUrl(file.customThumbnailKey, 3600);
+      return result.url;
+    }
+
     // Generate pre-signed URL for medium thumbnail (640px)
     const key = storageKeys.thumbnail(
       { accountId, projectId: file.projectId, assetId: file.id },
@@ -1172,6 +1178,289 @@ app.post("/:id/confirm", async (c) => {
       message: "Upload confirmed, processing started",
     },
   });
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/thumbnail - Upload custom thumbnail
+ *
+ * Sets a custom thumbnail for a file. The thumbnail image should be uploaded
+ * as a base64-encoded data URL or via a pre-signed URL flow.
+ */
+app.post("/:id/thumbnail", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Validate input - either base64 image or request for upload URL
+  const mode = body.mode || "upload"; // "upload" or "url"
+
+  if (mode === "url") {
+    // Return pre-signed URL for direct upload
+    const thumbnailKey = storageKeys.customThumbnail(
+      { accountId: session.currentAccountId, projectId, assetId: fileId },
+      "640"
+    );
+
+    const uploadResult = await storage.getUploadUrl({
+      accountId: session.currentAccountId,
+      projectId,
+      assetId: fileId,
+      type: "thumbnail",
+      filename: "custom_640.jpg",
+    });
+
+    return c.json({
+      data: {
+        id: file.id,
+        type: "file",
+        attributes: formatDates(file),
+      },
+      meta: {
+        upload_url: uploadResult.url,
+        upload_expires_at: uploadResult.expiresAt.toISOString(),
+        storage_key: thumbnailKey,
+      },
+    });
+  }
+
+  // Handle base64 image upload
+  if (!body.image_data || typeof body.image_data !== "string") {
+    throw new ValidationError("image_data (base64 data URL) is required for upload mode", {
+      pointer: "/data/attributes/image_data",
+    });
+  }
+
+  // Parse base64 data URL
+  const dataUrlMatch = body.image_data.match(/^data:image\/(jpeg|png|webp);base64,(.+)$/);
+  if (!dataUrlMatch) {
+    throw new ValidationError("Invalid image data URL. Expected format: data:image/(jpeg|png|webp);base64,<data>", {
+      pointer: "/data/attributes/image_data",
+    });
+  }
+
+  const imageFormat = dataUrlMatch[1];
+  const base64Data = dataUrlMatch[2];
+
+  // Convert base64 to buffer
+  const imageBuffer = Buffer.from(base64Data, "base64");
+
+  // Validate image size (max 10MB)
+  if (imageBuffer.length > 10 * 1024 * 1024) {
+    throw new ValidationError("Image size exceeds maximum allowed (10MB)", {
+      pointer: "/data/attributes/image_data",
+    });
+  }
+
+  // Store custom thumbnail (we use the 640 size for display)
+  const thumbnailKey = storageKeys.customThumbnail(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    "640"
+  );
+
+  const contentType = imageFormat === "png" ? "image/png" :
+                      imageFormat === "webp" ? "image/webp" : "image/jpeg";
+
+  await storage.putObject(thumbnailKey, imageBuffer, contentType);
+
+  // Update file with custom thumbnail key
+  await db
+    .update(files)
+    .set({
+      customThumbnailKey: thumbnailKey,
+      updatedAt: new Date(),
+    })
+    .where(eq(files.id, fileId));
+
+  // Fetch and return updated file
+  const [updatedFile] = await db
+    .select()
+    .from(files)
+    .where(eq(files.id, fileId))
+    .limit(1);
+
+  return sendSingle(c, await formatFileWithExtras(updatedFile, session.currentAccountId), RESOURCE_TYPES.FILE);
+});
+
+/**
+ * POST /v4/projects/:projectId/files/:id/thumbnail/frame - Capture video frame as thumbnail
+ *
+ * Captures a frame from a video file at the specified timestamp and sets it as the custom thumbnail.
+ */
+app.post("/:id/thumbnail/frame", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // Only video files support frame capture
+  if (!file.mimeType.startsWith("video/")) {
+    throw new ValidationError("Frame capture is only supported for video files", {
+      pointer: "/data/attributes/mime_type",
+    });
+  }
+
+  // File must be ready
+  if (file.status !== "ready") {
+    throw new ValidationError(`File is not ready. Current status: ${file.status}`, {
+      pointer: "/data/attributes/status",
+    });
+  }
+
+  // Validate timestamp
+  const timestamp = body.timestamp; // in seconds
+  if (typeof timestamp !== "number" || timestamp < 0) {
+    throw new ValidationError("timestamp (in seconds) is required and must be a non-negative number", {
+      pointer: "/data/attributes/timestamp",
+    });
+  }
+
+  // Get video duration from technical metadata
+  const metadata = file.technicalMetadata as { duration?: number } | null;
+  const duration = metadata?.duration;
+
+  if (duration && timestamp > duration) {
+    throw new ValidationError(`timestamp (${timestamp}s) exceeds video duration (${duration}s)`, {
+      pointer: "/data/attributes/timestamp",
+    });
+  }
+
+  // We need to enqueue a job to capture the frame
+  // For now, we'll do a simple implementation that returns a job ID
+  // The actual frame capture will be done by the media worker
+
+  // Import the frame capture job queue
+  const { enqueueFrameCapture } = await import("../../media/index.js");
+  const storageKey = storageKeys.original(
+    { accountId: session.currentAccountId, projectId, assetId: fileId },
+    file.name
+  );
+  const jobId = await enqueueFrameCapture({
+    assetId: fileId,
+    accountId: session.currentAccountId,
+    projectId,
+    timestamp,
+    storageKey,
+    mimeType: file.mimeType,
+    sourceFilename: file.originalName,
+  });
+
+  return c.json({
+    data: {
+      id: file.id,
+      type: "file",
+      attributes: formatDates(file),
+    },
+    meta: {
+      job_id: jobId,
+      message: "Frame capture job enqueued",
+      timestamp,
+    },
+  });
+});
+
+/**
+ * DELETE /v4/projects/:projectId/files/:id/thumbnail - Remove custom thumbnail
+ *
+ * Removes the custom thumbnail and reverts to auto-generated thumbnail.
+ */
+app.delete("/:id/thumbnail", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const fileId = c.req.param("id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get file
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, fileId),
+        eq(files.projectId, projectId),
+        isNull(files.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new NotFoundError("file", fileId);
+  }
+
+  // If no custom thumbnail, nothing to do
+  if (!file.customThumbnailKey) {
+    return sendNoContent(c);
+  }
+
+  // Delete custom thumbnail from storage
+  try {
+    await storage.deleteObject(file.customThumbnailKey);
+  } catch (error) {
+    console.error(`Failed to delete custom thumbnail for file ${fileId}:`, error);
+    // Continue - we still want to clear the DB reference
+  }
+
+  // Clear custom thumbnail key
+  await db
+    .update(files)
+    .set({
+      customThumbnailKey: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(files.id, fileId));
+
+  return sendNoContent(c);
 });
 
 export default app;

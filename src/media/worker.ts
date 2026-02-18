@@ -69,6 +69,11 @@ async function processJob(job: Job<MediaJobData>): Promise<unknown> {
     case "waveform":
       return processWaveform(data);
 
+    case "frame_capture": {
+      const { processFrameCapture } = await import("./processors/frame-capture.js");
+      return processFrameCapture(data);
+    }
+
     default:
       throw new Error(`Unknown job type: ${(data as { type: string }).type}`);
   }

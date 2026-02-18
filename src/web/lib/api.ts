@@ -460,6 +460,59 @@ export const filesApi = {
       method: "POST",
     });
   },
+
+  /**
+   * Upload custom thumbnail (base64 data URL)
+   */
+  uploadThumbnail: async (projectId: string, fileId: string, imageData: string) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}/thumbnail`, {
+      method: "POST",
+      body: JSON.stringify({ image_data: imageData }),
+    });
+  },
+
+  /**
+   * Get presigned URL for thumbnail upload
+   */
+  getThumbnailUploadUrl: async (projectId: string, fileId: string) => {
+    return apiFetch<{
+      data: JsonApiResource<FileAttributes>;
+      meta: {
+        upload_url: string;
+        upload_expires_at: string;
+        storage_key: string;
+      };
+    }>(`/projects/${projectId}/files/${fileId}/thumbnail`, {
+      method: "POST",
+      body: JSON.stringify({ mode: "url" }),
+    });
+  },
+
+  /**
+   * Capture video frame as thumbnail
+   */
+  captureFrameAsThumbnail: async (projectId: string, fileId: string, timestamp: number) => {
+    return apiFetch<{
+      data: JsonApiResource<FileAttributes>;
+      meta: {
+        job_id: string;
+        message: string;
+        timestamp: number;
+      };
+    }>(`/projects/${projectId}/files/${fileId}/thumbnail/frame`, {
+      method: "POST",
+      body: JSON.stringify({ timestamp }),
+    });
+  },
+
+  /**
+   * Remove custom thumbnail
+   */
+  removeThumbnail: async (projectId: string, fileId: string) => {
+    return apiFetch<void>(`/projects/${projectId}/files/${fileId}/thumbnail`, {
+      method: "DELETE",
+    });
+  },
 };
 
 /**

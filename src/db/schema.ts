@@ -174,6 +174,8 @@ export const files = sqliteTable("files", {
   assigneeId: text("assignee_id").references(() => users.id, { onDelete: "set null" }),
   // Custom metadata values (field_id -> value)
   customMetadata: text("custom_metadata", { mode: "json" }).$type<Record<string, CustomFieldValue>>(),
+  // Custom thumbnail (user-uploaded or frame-captured)
+  customThumbnailKey: text("custom_thumbnail_key"),
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
   expiresAt: integer("expires_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),

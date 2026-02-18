@@ -74,6 +74,12 @@ export const storageKeys = {
     buildStorageKey({ ...parts, type: "thumbnail", filename: `thumb_${size}.jpg` }),
 
   /**
+   * Build key for custom thumbnail (user-uploaded or frame-captured)
+   */
+  customThumbnail: (parts: BaseKeyParts, size = "320"): string =>
+    buildStorageKey({ ...parts, type: "thumbnail", filename: `custom_${size}.jpg` }),
+
+  /**
    * Build key for filmstrip
    */
   filmstrip: (parts: BaseKeyParts): string =>
