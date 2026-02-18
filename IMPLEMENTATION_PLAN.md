@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Member Management + Notifications API Implementation)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications API COMPLETED (UI PENDING), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED.
+**Last updated**: 2026-02-18 (Member Management + Notifications API + Notifications UI Implementation)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -41,6 +41,7 @@
 | **Email Service** | 100% | COMPLETED: Provider interface, console provider, factory, 24 tests |
 | **Member Management** | 100% | COMPLETED: List/invite/update/remove members with role checks |
 | **Notifications API** | 100% | COMPLETED: List/mark read/unread count/delete with realtime push |
+| **Notifications UI** | 100% | COMPLETED: Bell/dropdown/full page with real-time updates, filtering, mark read |
 | **Upload Client** | 100% | Chunked upload with resumable support |
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
 | **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
@@ -139,12 +140,32 @@ These items are required for core platform functionality but are missing from th
     - Helper function `createNotification()` for other services
   - **Spec refs**: `specs/17-api-complete.md` Section 6.15
 
-- **[P1] Notifications UI** [1d] -- NOT STARTED
-  - Bell icon with unread badge in header
-  - Notification dropdown panel
-  - Full notifications page `/notifications`
-  - **Dependencies**: Notifications API - DONE
-  - **Implementation**: `src/web/components/notifications/`
+- **[P1] Notifications UI** [1d] -- COMPLETED (2026-02-18)
+  - **Files created**:
+    - `src/web/components/notifications/types.ts` - Type definitions
+    - `src/web/components/notifications/notification-bell.tsx` - Bell icon with unread badge
+    - `src/web/components/notifications/notification-item.tsx` - Individual notification display
+    - `src/web/components/notifications/notification-list.tsx` - Scrollable notification list
+    - `src/web/components/notifications/notification-dropdown.tsx` - Dropdown panel for header
+    - `src/web/components/notifications/notifications.module.css` - Shared styles
+    - `src/web/components/notifications/index.ts` - Component exports
+    - `src/web/app/notifications/page.tsx` - Full notifications page
+  - **Files modified**:
+    - `src/web/lib/api.ts` - Added notificationsApi client and helper functions
+    - `src/web/components/layout/app-layout.tsx` - Added NotificationBell and NotificationDropdown to header
+    - `src/web/tsconfig.json` - Added path aliases for notifications and other components
+  - **Features implemented**:
+    - Bell icon in header with unread count badge
+    - Dropdown panel showing recent notifications
+    - Real-time updates via WebSocket (notification.created events)
+    - Mark as read (single and all)
+    - Delete notifications
+    - Navigation to related context (file, project, share)
+    - Full notifications page at /notifications with filtering
+    - Type filtering (mention, reply, upload, share, assignment)
+    - Read/unread filtering
+    - Relative timestamp display
+  - **Spec refs**: `specs/00-atomic-features.md` Section 13, `specs/17-api-complete.md` Section 6.15
 
 ---
 
@@ -1098,7 +1119,34 @@ All quick wins are COMPLETED:
      - Pagination with cursor support
    - Spec refs: `specs/17-api-complete.md` Section 6.15
 
-3. **Realtime Events Wired in Comments** - Comment operations now emit events
+3. **Notifications UI COMPLETED** - Full frontend implementation for notifications
+   - Files created:
+     - `src/web/components/notifications/types.ts` - Type definitions
+     - `src/web/components/notifications/notification-bell.tsx` - Bell icon with unread badge
+     - `src/web/components/notifications/notification-item.tsx` - Individual notification display
+     - `src/web/components/notifications/notification-list.tsx` - Scrollable notification list
+     - `src/web/components/notifications/notification-dropdown.tsx` - Dropdown panel for header
+     - `src/web/components/notifications/notifications.module.css` - Shared styles
+     - `src/web/components/notifications/index.ts` - Component exports
+     - `src/web/app/notifications/page.tsx` - Full notifications page
+   - Files modified:
+     - `src/web/lib/api.ts` - Added notificationsApi client and helper functions
+     - `src/web/components/layout/app-layout.tsx` - Added NotificationBell and NotificationDropdown to header
+     - `src/web/tsconfig.json` - Added path aliases for notifications and other components
+   - Features:
+     - Bell icon in header with unread count badge
+     - Dropdown panel showing recent notifications
+     - Real-time updates via WebSocket (notification.created events)
+     - Mark as read (single and all)
+     - Delete notifications
+     - Navigation to related context (file, project, share)
+     - Full notifications page at /notifications with filtering
+     - Type filtering (mention, reply, upload, share, assignment)
+     - Read/unread filtering
+     - Relative timestamp display
+   - Spec refs: `specs/00-atomic-features.md` Section 13, `specs/17-api-complete.md` Section 6.15
+
+4. **Realtime Events Wired in Comments** - Comment operations now emit events
    - Events emitted:
      - `comment.created` - After creating a comment
      - `comment.updated` - After editing a comment
@@ -1113,6 +1161,7 @@ All quick wins are COMPLETED:
 **Status Changes:**
 - Member Management: 0% → 100% COMPLETE
 - Notifications API: 0% → 100% COMPLETE
+- Notifications UI: 0% → 100% COMPLETE
 - Comment Realtime Events: NOT WIRED → WIRED
 
 ### 2026-02-18 Email Service Implementation

@@ -18,7 +18,7 @@ import {
 } from "@/web/lib/api";
 import { ShareBuilder, ShareActivityFeed } from "@/web/components/shares";
 import type { Share } from "@/web/components/shares/types";
-import styles from "../../shares.module.css";
+import styles from "@/web/components/shares/shares.module.css";
 
 interface ShareDetailProps {
   params: Promise<{ id: string }>;

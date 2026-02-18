@@ -1665,3 +1665,152 @@ export const sharesApi = {
     return apiFetch<JsonApiCollectionResponse<ShareActivityAttributes>>(path);
   },
 };
+
+// ============================================================================
+// Notifications Types
+// ============================================================================
+
+/**
+ * Notification types (must match server)
+ */
+export type NotificationType =
+  | "mention"
+  | "comment_reply"
+  | "comment_created"
+  | "upload"
+  | "status_change"
+  | "share_invite"
+  | "share_viewed"
+  | "share_downloaded"
+  | "assignment"
+  | "file_processed";
+
+/**
+ * Notification attributes from API
+ */
+export interface NotificationAttributes {
+  notification_type: NotificationType;
+  title: string;
+  body: string | null;
+  read: boolean;
+  read_at: string | null;
+  created_at: string;
+  data: {
+    file_id?: string;
+    project_id?: string;
+    comment_id?: string;
+    share_id?: string;
+    actor_id?: string;
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * Notifications list response with meta
+ */
+export interface NotificationsListResponse {
+  data: Array<{
+    id: string;
+    type: "notification";
+    attributes: NotificationAttributes;
+  }>;
+  links: JsonApiLinks;
+  meta: {
+    total_count: number;
+    unread_count: number;
+    page_size: number;
+    has_more: boolean;
+  };
+}
+
+/**
+ * Unread count response
+ */
+export interface UnreadCountResponse {
+  data: {
+    id: "unread_count";
+    type: "unread_count";
+    attributes: {
+      count: number;
+    };
+  };
+}
+
+// ============================================================================
+// Notifications API
+// ============================================================================
+
+/**
+ * Notifications API
+ */
+export const notificationsApi = {
+  /**
+   * List notifications for current user
+   */
+  list: async (options?: {
+    limit?: number;
+    filter_read?: boolean;
+    filter_type?: NotificationType;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.filter_read !== undefined) {
+      params.set("filter[read]", String(options.filter_read));
+    }
+    if (options?.filter_type) {
+      params.set("filter[type]", options.filter_type);
+    }
+    const queryString = params.toString();
+    const path = `/users/me/notifications${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<NotificationsListResponse>(path);
+  },
+
+  /**
+   * Get unread notification count
+   */
+  getUnreadCount: async () => {
+    return apiFetch<UnreadCountResponse>("/users/me/notifications/unread-count");
+  },
+
+  /**
+   * Mark all notifications as read
+   */
+  markAllRead: async () => {
+    return apiFetch<void>("/users/me/notifications/read-all", {
+      method: "PUT",
+    });
+  },
+
+  /**
+   * Mark a single notification as read
+   */
+  markRead: async (notificationId: string) => {
+    return apiFetch<void>(`/notifications/${notificationId}/read`, {
+      method: "PUT",
+    });
+  },
+
+  /**
+   * Delete a notification
+   */
+  delete: async (notificationId: string) => {
+    return apiFetch<void>(`/notifications/${notificationId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * Convert API notification attributes to a typed notification object
+ */
+export function toNotification(
+  id: string,
+  attributes: NotificationAttributes
+): { id: string } & NotificationAttributes {
+  return {
+    id,
+    ...attributes,
+    read_at: attributes.read_at,
+    created_at: attributes.created_at,
+  };
+}

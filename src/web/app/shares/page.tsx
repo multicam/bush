@@ -21,7 +21,7 @@ import {
 } from "@/web/lib/api";
 import { ShareCard } from "@/web/components/shares";
 import type { ShareWithRelationships } from "@/web/components/shares/types";
-import styles from "./shares.module.css";
+import styles from "@/web/components/shares/shares.module.css";
 
 interface Share extends ShareAttributes {
   id: string;

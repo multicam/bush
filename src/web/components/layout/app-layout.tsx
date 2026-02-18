@@ -6,10 +6,13 @@
  */
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { useAuth, useHasRole } from "@/web/context";
 import { Avatar, Badge } from "@/web/components/ui";
 import { getDisplayName } from "@/web/lib/auth";
+import { notificationsApi } from "@/web/lib/api";
+import { useUserEvents } from "@/web/hooks/use-realtime";
+import { NotificationBell, NotificationDropdown } from "@/web/components/notifications";
 import type { AuthState } from "@/auth";
 import styles from "./app-layout.module.css";
 
@@ -26,13 +29,55 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const accountName = currentAccount?.name || "Select Account";
   const displayName = user ? getDisplayName(user) : "User";
 
+  // Fetch unread count on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchUnreadCount() {
+      try {
+        const response = await notificationsApi.getUnreadCount();
+        if (!cancelled) {
+          setUnreadCount(response.data.attributes.count);
+        }
+      } catch (error) {
+        console.error("Failed to fetch unread count:", error);
+      }
+    }
+
+    fetchUnreadCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Subscribe to real-time notification events to update unread count
+  useUserEvents(user?.id, {
+    eventFilter: "notification.created",
+    onEvent: () => {
+      setUnreadCount((prev) => prev + 1);
+    },
+  });
+
   const handleSwitchAccount = async (accountId: string) => {
     await switchAccount(accountId);
     setShowAccountMenu(false);
+  };
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+    setShowUserMenu(false);
+    setShowAccountMenu(false);
+  };
+
+  const handleMarkAllRead = () => {
+    setUnreadCount(0);
   };
 
   return (
@@ -125,6 +170,21 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className={styles.headerRight}>
+            {/* Notifications */}
+            <div className={styles.dropdownContainer}>
+              <NotificationBell
+                unreadCount={unreadCount}
+                isOpen={showNotifications}
+                onClick={handleNotificationClick}
+              />
+              <NotificationDropdown
+                isOpen={showNotifications}
+                onClose={() => setShowNotifications(false)}
+                unreadCount={unreadCount}
+                onMarkAllRead={handleMarkAllRead}
+              />
+            </div>
+
             {/* User menu */}
             <div className={styles.dropdownContainer}>
               <button

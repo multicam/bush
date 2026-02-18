@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { ShareBuilder } from "@/web/components/shares";
 import { useAuth } from "@/web/context";
-import styles from "../shares.module.css";
+import styles from "@/web/components/shares/shares.module.css";
 
 export default function NewSharePage() {
   const { isAuthenticated, isLoading: authLoading, login, currentAccount } = useAuth();
