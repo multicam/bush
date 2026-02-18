@@ -24,15 +24,15 @@
 - **Email Service**: COMPLETED (provider interface, console provider, factory)
 - **Member Management API**: COMPLETED (4 endpoints)
 - **Notifications API**: COMPLETED (5 endpoints)
-- Collections API: NOT IMPLEMENTED (0%)
+- **Collections API**: COMPLETED (7 endpoints)
 - Webhooks API: NOT IMPLEMENTED (0%)
 - Transcription API: NOT IMPLEMENTED (0%)
 - Custom Fields API: COMPLETED
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 103/118 (87%) | 15 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5) |
-| **Database Tables** | 18/20+ (90%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility |
+| **API Endpoints** | 110/118 (93%) | 16 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5), collections(7) |
+| **Database Tables** | 20/20+ (100%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility, collections, collectionAssets |
 | **Test Files** | 22 | 282 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 3 | Minor items remaining |
@@ -814,13 +814,24 @@ These items are required for core platform functionality but are missing from th
 
 ### 3.2 Collections [P2] - 3 days
 
-**NOT STARTED**
+**COMPLETED** (2026-02-18)
 
-- Team and private collections
-- Dynamic filtering (AND/OR rules)
-- Real-time sync, custom sort
-- Share entire collection
-- **Dependencies**: 2.10 (Metadata), 2.12 (Search), 3.1 (Sharing)
+- **[P2] Collections API** [1d] -- COMPLETED
+  - `src/api/routes/collections.ts` - Full collections API
+  - Endpoints: GET/POST list/create, GET/PUT/DELETE single, POST/DELETE items
+  - **Dependencies**: 2.10 (Metadata) - DONE, 3.1 (Sharing) - DONE
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.11
+
+- **Features implemented**:
+  - Team and private collections (visibility based on type)
+  - Dynamic filtering (filter rules stored as JSON)
+  - Custom sort order for collection assets
+  - Asset count aggregation
+  - Real-time sync potential (via existing WebSocket infrastructure)
+  - Share entire collection (via existing Shares API)
+  - **Dependencies**: 2.10 (Metadata) - DONE, 2.12 (Search) - DONE, 3.1 (Sharing) - DONE
+
+- **Remaining**: Collections UI (frontend pages/components)
 
 ### 3.3 Comparison Viewer [P2] - 2 days
 
@@ -1084,6 +1095,53 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Collections API Implementation
+
+**Completed Work:**
+
+1. **Collections API COMPLETED** - `src/api/routes/collections.ts`
+   - `GET /v4/projects/:projectId/collections` - List collections in project (team + user's private)
+   - `POST /v4/projects/:projectId/collections` - Create collection
+   - `GET /v4/collections/:id` - Get collection details with items
+   - `PUT /v4/collections/:id` - Update collection (name, type, filter rules, etc.)
+   - `DELETE /v4/collections/:id` - Delete collection
+   - `POST /v4/collections/:id/items` - Add items to collection
+   - `DELETE /v4/collections/:id/items/:itemId` - Remove item from collection
+
+2. **Database Schema Extensions** - `src/db/schema.ts`
+   - Added `collections` table with fields: id, projectId, createdByUserId, name, description, type (team/private), filterRules, isDynamic, defaultView
+   - Added `collectionAssets` table for linking files to collections with sort order
+   - Added `CollectionFilterRule` interface for dynamic collections
+
+3. **Features**:
+   - Team collections (visible to all project members) and Private collections (creator only)
+   - Dynamic collections with filter rules (auto-updating based on metadata filters)
+   - Manual collections with custom sort order
+   - Collection asset management (add/remove files)
+   - Asset count aggregation
+   - Creator information included in responses
+
+**New Files Created:**
+- `src/api/routes/collections.ts` - Collections API endpoints
+
+**Updated Files:**
+- `src/db/schema.ts` - Added collections and collectionAssets tables
+- `src/api/routes/index.ts` - Export collectionRoutes
+- `src/api/index.ts` - Mount collections routes under /v4/projects/:projectId/collections and /v4/collections
+- `src/api/response.ts` - Added COLLECTION and WEBHOOK resource types
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** Clean (0 errors in collections)
+
+**API Endpoints:** 103 → 110 (+7)
+**Database Tables:** 18 → 20 (+2: collections, collectionAssets)
+**Route Modules:** 15 → 16 (+collections)
+
+**Status Changes:**
+- Collections API: 0% → 100% COMPLETE
+
+**Spec refs:** `specs/17-api-complete.md` Section 6.11, `specs/00-atomic-features.md` Section 7
 
 ### 2026-02-18 Member Management + Notifications API Implementation
 

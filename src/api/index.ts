@@ -35,6 +35,7 @@ import {
   metadataRoutes,
   shareRoutes,
   notificationRoutes,
+  collectionRoutes,
 } from "./routes/index.js";
 import { getShareBySlug } from "./routes/index.js";
 
@@ -203,6 +204,12 @@ v4.route("/users/me/notifications", notificationRoutes);
 
 // Individual notification operations
 v4.route("/notifications", notificationRoutes);
+
+// Collections (nested under projects)
+v4.route("/projects/:projectId/collections", collectionRoutes);
+
+// Collection operations (standalone)
+v4.route("/collections", collectionRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);

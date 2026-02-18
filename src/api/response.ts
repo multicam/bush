@@ -270,4 +270,6 @@ export const RESOURCE_TYPES = {
   SHARE: "share",
   NOTIFICATION: "notification",
   CUSTOM_FIELD: "custom_field",
+  COLLECTION: "collection",
+  WEBHOOK: "webhook",
 } as const;

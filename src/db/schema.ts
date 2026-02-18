@@ -434,3 +434,58 @@ export const folderPermissions = sqliteTable("folder_permissions", {
   folderIdx: index("folder_permissions_folder_id_idx").on(table.folderId),
   userIdx: index("folder_permissions_user_id_idx").on(table.userId),
 }));
+
+/**
+ * Collection Types - Team or Private
+ */
+export type CollectionType = "team" | "private";
+
+/**
+ * Collection Filter Rule - For dynamic collections
+ */
+export interface CollectionFilterRule {
+  field: string; // Field name (e.g., "status", "rating", "keywords")
+  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in" | "nin" | "contains";
+  value: string | number | boolean | string[] | null;
+}
+
+/**
+ * Collections - Saved asset groupings
+ */
+export const collections = sqliteTable("collections", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  createdByUserId: text("created_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type", { enum: ["team", "private"] }).notNull().default("team"),
+  // Dynamic filter rules (JSON array of filter conditions)
+  filterRules: text("filter_rules", { mode: "json" }).$type<CollectionFilterRule[]>(),
+  // Whether this is a dynamic collection (auto-updates based on filters) or manual
+  isDynamic: integer("is_dynamic", { mode: "boolean" }).notNull().default(false),
+  // View preference for this collection
+  defaultView: text("default_view", { enum: ["grid", "list"] }).notNull().default("grid"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  projectIdx: index("collections_project_id_idx").on(table.projectId),
+  createdByIdx: index("collections_created_by_user_id_idx").on(table.createdByUserId),
+  typeIdx: index("collections_type_idx").on(table.type),
+}));
+
+/**
+ * Collection Assets - Assets in manual collections
+ */
+export const collectionAssets = sqliteTable("collection_assets", {
+  id: text("id").primaryKey(),
+  collectionId: text("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  fileId: text("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  addedByUserId: text("added_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  collectionIdx: index("collection_assets_collection_id_idx").on(table.collectionId),
+  fileIdx: index("collection_assets_file_id_idx").on(table.fileId),
+  collectionFileIdx: uniqueIndex("collection_assets_collection_file_idx").on(table.collectionId, table.fileId),
+  sortOrderIdx: index("collection_assets_sort_order_idx").on(table.sortOrder),
+}));
