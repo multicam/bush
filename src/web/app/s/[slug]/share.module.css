@@ -1,0 +1,295 @@
+/**
+ * Bush Platform - Public Share Page Styles
+ */
+
+/* Public Share Page */
+.publicShare {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.publicShareHeader {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.publicShareLogo {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.headerBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.headerBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.publicShareContent {
+  flex: 1;
+  padding: 32px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.publicShareInfo {
+  margin-bottom: 32px;
+}
+
+.publicShareName {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
+}
+
+.publicShareDescription {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 12px;
+  max-width: 600px;
+}
+
+.publicShareMeta {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.publicShareGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.publicAssetCard {
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid;
+}
+
+.publicAssetCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.publicAssetThumbnail {
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.publicAssetInfo {
+  padding: 16px;
+}
+
+.publicAssetName {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.publicAssetMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.publicShareEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.publicShareFooter {
+  padding: 16px 24px;
+  text-align: center;
+  margin-top: auto;
+}
+
+.publicShareFooter a {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.publicShareFooter a:hover {
+  text-decoration: underline;
+}
+
+/* Passphrase Form */
+.passphraseForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.passphraseCard {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid;
+  text-align: center;
+}
+
+.passphraseTitle {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.passphraseHint {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 24px;
+}
+
+.passphraseInput {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 2px solid;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.passphraseInput:focus {
+  outline: none;
+  border-color: var(--color-primary, #4f46e5);
+}
+
+.passphraseError {
+  font-size: 13px;
+  color: #ef4444;
+  margin: 0 0 16px;
+}
+
+.passphraseSubmit {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.passphraseSubmit:hover {
+  opacity: 0.9;
+}
+
+/* Loading/Error States */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-primary, #4f46e5);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 24px;
+}
+
+.error h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.error p {
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 400px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .publicShareHeader {
+    padding: 12px 16px;
+  }
+
+  .publicShareContent {
+    padding: 24px 16px;
+  }
+
+  .publicShareName {
+    font-size: 24px;
+  }
+
+  .publicShareGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .publicAssetThumbnail {
+    font-size: 32px;
+  }
+
+  .publicAssetInfo {
+    padding: 12px;
+  }
+
+  .passphraseCard {
+    padding: 24px;
+  }
+}
