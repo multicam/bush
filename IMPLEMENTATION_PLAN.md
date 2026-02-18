@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (v0.0.53 - Critical Migration Drift Identified)
+**Last updated**: 2026-02-18 (v0.0.54 - Comprehensive Codebase Analysis)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release BUT has critical database migration drift that will break fresh deployments.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -48,16 +48,32 @@ The `schema.ts` file defines **25 tables** but `migrate.ts` only creates **11 ta
 | `custom_metadata` | schema.ts:176 | Custom field values JSON |
 | `custom_thumbnail_key` | schema.ts:178 | User-defined thumbnail storage key |
 
+### Missing Columns in shares table (3 columns)
+
+| Column | Schema Line | Purpose |
+|--------|-------------|---------|
+| `show_all_versions` | schema.ts:319 | Show all versions in share |
+| `show_transcription` | schema.ts:320 | Show transcription in share |
+| `featured_field` | schema.ts:321 | Featured metadata field |
+
 ### Missing Indexes
 
-The `migrate.ts` is also missing several indexes defined in `schema.ts`:
-- `files_version_stack_id_idx`
-- `files_mime_type_idx`
-- `files_expires_at_idx`
-- `files_assignee_id_idx`
-- `folders_project_parent_idx` (critical for tree queries)
+The `migrate.ts` is also missing ~40+ indexes defined in `schema.ts`:
+
+**Files table indexes:**
+- `files_folder_id_idx`, `files_version_stack_id_idx`, `files_mime_type_idx`, `files_expires_at_idx`, `files_assignee_id_idx`
+
+**Folders table indexes:**
+- `folders_parent_id_idx`, `folders_path_idx`, `folders_project_parent_idx` (critical for tree queries)
+
+**Projects table indexes:**
 - `projects_archived_at_idx`
-- `folders_path_idx`
+
+**Shares table indexes:**
+- `shares_slug_idx`, `shares_account_id_idx`, `shares_project_id_idx`
+
+**Other tables (all indexes missing):**
+- `custom_fields`, `custom_field_visibility`, `workspace_permissions`, `project_permissions`, `folder_permissions`, `collections`, `collection_assets`, `webhooks`, `webhook_deliveries`, `transcripts`, `transcript_words`, `captions`, `share_assets`, `share_activity`
 
 ### Solution Required
 
@@ -74,7 +90,7 @@ Update `/home/tgds/projects/bush/src/db/migrate.ts` to include all tables, colum
 
 **Verified via comprehensive code analysis:**
 - All 303 tests pass (25 test files)
-- API endpoints: 118 total across 18 route modules (excluding index.ts and test files)
+- API endpoints: 123 total across 18 route modules (excluding index.ts and test files)
 - Database schema: 25 tables defined in schema.ts
 - Database migration: Only 11 tables in migrate.ts (CRITICAL GAP)
 - Media processing: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
@@ -84,14 +100,14 @@ Update `/home/tgds/projects/bush/src/db/migrate.ts` to include all tables, colum
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 118 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(14), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) |
+| **API Endpoints** | 123 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) |
 | **Database Schema (schema.ts)** | 25 tables (100%) | All tables defined with proper indexes |
 | **Database Migration (migrate.ts)** | 11/25 tables (44%) | **CRITICAL GAP** - 14 tables missing |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 12 | See detailed breakdown below |
 | **Media Processing** | 100% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
-| **Real-time (WebSocket)** | 100% | Event bus, WebSocket manager, browser client, React hooks, all events wired |
+| **Real-time (WebSocket)** | 100% | Event bus, WebSocket manager, browser client, React hooks, all 26 event types wired |
 | **Email Service** | Partial | Provider interface done, all providers are console stubs |
 | **Member Management** | 100% | List/invite/update/remove members with role checks |
 | **Notifications** | 100% | API + UI with real-time updates |
@@ -165,7 +181,8 @@ These are nice-to-fix but not blocking:
 - **Problem**: 14 tables defined in `schema.ts` are missing from `migrate.ts`
 - **Missing tables**: custom_fields, custom_field_visibility, workspace_permissions, project_permissions, folder_permissions, collections, collection_assets, webhooks, webhook_deliveries, transcripts, transcript_words, captions, share_assets, share_activity
 - **Missing columns in files table**: technicalMetadata, rating, assetStatus, keywords, notes, assigneeId, customMetadata, customThumbnailKey
-- **Missing indexes**: files_version_stack_id_idx, files_mime_type_idx, files_expires_at_idx, files_assignee_id_idx, folders_project_parent_idx, projects_archived_at_idx, folders_path_idx
+- **Missing columns in shares table**: show_all_versions, show_transcription, featured_field
+- **Missing indexes**: ~40+ indexes across all missing tables, plus files (5), folders (3), projects (1), shares (3)
 - **Impact**: Fresh database deployments will fail; features will not work
 - **Solution**: Update `src/db/migrate.ts` to include all schema tables/columns/indexes
 - **File**: `/home/tgds/projects/bush/src/db/migrate.ts`
@@ -187,17 +204,24 @@ These are nice-to-fix but not blocking:
 - **Impact**: Any account member can transcribe any file
 - **Solution**: Add `requirePermission()` middleware to transcription routes
 
-### [P2] Redis Cache Invalidation for Role Changes [2h] -- NOT STARTED
+### [P2] Redis Cache Invalidation for Role Changes [30m] -- NOT STARTED
 
 - **Problem**: TODOs at `src/api/routes/accounts.ts:594,664`
 - **Impact**: Role changes take up to 5 minutes to take effect (access token TTL)
-- **Solution**: Call session cache invalidation on role update/delete
+- **Solution**: Call existing `sessionCache.invalidateOnRoleChange()` function from `src/auth/session-cache.ts`
+- **Note**: The function already exists (lines 147-165), just needs to be wired up
 
 ### [P2] Share Channel Permission Check [2h] -- NOT STARTED
 
-- **Problem**: `src/realtime/ws-manager.ts` share permission check is placeholder returning `true`
+- **Problem**: `src/realtime/ws-manager.ts:446-449` share permission check is placeholder returning `true`
 - **Impact**: Any authenticated user could subscribe to any share's realtime events
 - **Solution**: Implement proper share membership check
+
+### [P2] File Channel Permission Check [1h] -- NOT STARTED
+
+- **Problem**: `src/realtime/ws-manager.ts:437-440` file permission check is placeholder returning `true`
+- **Impact**: Any authenticated user could subscribe to any file's realtime events
+- **Solution**: Implement proper file access check via project permission
 
 ### [P2] Comment Permission Check [1h] -- NOT STARTED
 
@@ -304,7 +328,7 @@ The following are correctly deferred per spec/README.md:
 
 - **Authentication**: WorkOS AuthKit, session cache, token refresh
 - **Permissions**: 5-level hierarchy (owner, content_admin, member, guest, reviewer)
-- **API Foundation**: 118 endpoints across 18 route modules
+- **API Foundation**: 123 endpoints across 18 route modules
 - **Object Storage**: R2/B2/S3-compatible with pre-signed URLs
 - **Database**: 25 tables defined (migration drift is deployment issue, not schema issue)
 
@@ -362,26 +386,51 @@ The following are correctly deferred per spec/README.md:
 
 2. Permission validation before grant
 3. Transcription permission checks
-4. Session cache invalidation on role changes
+4. Session cache invalidation on role changes (function exists, just wire it up)
 5. Share channel permission check
-6. Comment completion permission check
-7. Email provider implementation (SendGrid recommended)
-8. CDN provider implementation (Bunny CDN per specs)
-9. Session limits enforcement
+6. File channel permission check
+7. Comment completion permission check
+8. Email provider implementation (SendGrid recommended)
+9. CDN provider implementation (Bunny CDN per specs)
+10. Session limits enforcement
 
 ### Can Defer (P3)
 
-10. PDF text layer
-11. Collection file viewer integration
-12. Document processing
-13. RAW/Adobe image support
-14. Access groups
-15. API key token type
-16. OpenAPI spec generation
+11. PDF text layer
+12. Collection file viewer integration
+13. Document processing
+14. RAW/Adobe image support
+15. Access groups
+16. API key token type
+17. OpenAPI spec generation
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.54 (2026-02-18) - Comprehensive Codebase Analysis
+
+**Analysis Performed:**
+- Parallel subagent analysis of all specs (21 files), src/lib, src/api, src/web, src/db, src/storage, src/permissions, src/realtime, src/media
+- Corrected API endpoint count from 118 to **123** (files module has 17, not 14)
+- Found additional missing columns in shares table (3 columns)
+- Identified ~40+ missing indexes (not just 7)
+- Added File Channel Permission Check as P2 item (was only share channel)
+- Verified session cache invalidation function exists - just needs to be wired
+
+**Key Findings:**
+- `validatePermissionChange()` exists but is never called from grant methods
+- `invalidateOnRoleChange()` function already exists in session-cache.ts - just needs calling
+- Both share AND file channel permission checks are placeholder stubs
+- Grant permission methods not wired to API routes (permission granting UI may be incomplete)
+
+**Updates:**
+- Updated endpoint counts in statistics section
+- Added shares table columns to migration drift section
+- Expanded missing indexes documentation
+- Added File Channel Permission Check as P2 item
+- Updated time estimate for session cache invalidation (function exists)
+- Updated P2 summary list with 10 items (was 9)
 
 ### v0.0.53 (2026-02-18) - Critical Migration Drift Identified
 
