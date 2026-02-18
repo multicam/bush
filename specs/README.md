@@ -2,25 +2,36 @@
 
 ---
 
-**Current Phase**: MVP Complete
+**Current Phase**: MVP Complete ✅
 
 All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed status.
 
-### TODO (P2 nice-to-haves, non-blocking for launch)
+**Implementation Statistics (2026-02-18):**
+- API Endpoints: 120 across 18 route modules
+- Database Tables: 25 with proper indexes
+- Tests: 282 passing (22 test files)
+- Frontend Components: 49 TSX components
+- Web Pages: 16 Next.js pages
+
+### Post-MVP Enhancements (P2)
 
 | Feature | Est. | Spec |
 |---------|------|------|
 | Comparison viewer (side-by-side linked playback) | 2 days | `specs/04-review-and-approval.md` |
 | Enhanced search (visual/semantic via Vision API) | 3 days | `specs/00-atomic-features.md` |
 | Custom thumbnails (upload or select video frame) | 1 day | `specs/03-file-management.md` |
+| Virtualized lists (react-window for large file lists) | 4 hours | - |
+| Metadata badges on asset cards | 2 hours | - |
 
 ### Deferred to future release
 
-- Webhooks (code exists, not mounted)
+- Webhooks (code exists, not mounted - enable when needed)
 - Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX, ZIP viewer)
 - Billing & plans
 - iOS/iPad apps, desktop transfer app
 - Adobe/NLE integrations, C2C hardware integrations
+- Access Groups (bulk permission management)
+- API Key token type (`bush_key_` prefix)
 ---
 
 ## Specification Files
