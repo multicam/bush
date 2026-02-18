@@ -16,6 +16,68 @@
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
+/* Virtualized container */
+.virtualizedContainer {
+  width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.virtualizedRow {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.virtualizedRow > * {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 400px;
+}
+
+.virtualizedRow[data-size="small"] > * {
+  max-width: 200px;
+}
+
+.virtualizedRow[data-size="medium"] > * {
+  max-width: 280px;
+}
+
+.virtualizedRow[data-size="large"] > * {
+  max-width: 380px;
+}
+
+/* Loading trigger */
+.loadingTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.loadingMore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Empty state */
 .empty {
   display: flex;

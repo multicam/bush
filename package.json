@@ -24,6 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",
     "@aws-sdk/s3-request-presigner": "^3.990.0",
+    "@tanstack/react-virtual": "^3.13.18",
     "@workos-inc/authkit-nextjs": "^2.14.0",
     "@workos-inc/node": "^8.5.0",
     "bullmq": "^5.69.3",

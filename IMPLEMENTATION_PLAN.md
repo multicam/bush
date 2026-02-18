@@ -100,11 +100,25 @@
     - Async frame capture via BullMQ job queue
     - Revert to auto-generated thumbnail
 
-- **[P2] Virtualized Lists** [4h] -- NOT STARTED
-  - react-window or similar for large file lists
-  - Lazy thumbnail loading
-  - Infinite scroll with cursor pagination
+- **[P2] Virtualized Lists** [4h] -- COMPLETED (2026-02-18)
+  - @tanstack/react-virtual for large file lists
+  - Automatic virtualization for lists > 50 items
+  - Infinite scroll with cursor pagination (props ready for integration)
   - **Dependencies**: Grid/List views - DONE
+  - **Implemented files**:
+    - `src/web/components/asset-browser/asset-grid.tsx` - Added virtualization with useVirtualizer
+    - `src/web/components/asset-browser/asset-list.tsx` - Added virtualization with useVirtualizer
+    - `src/web/components/asset-browser/asset-browser.tsx` - Added onLoadMore, hasMore, isLoadingMore props
+    - `src/web/components/asset-browser/types.ts` - Updated AssetGridProps and AssetListProps interfaces
+    - `src/web/components/asset-browser/asset-grid.module.css` - Added virtualized container and loading styles
+    - `src/web/components/asset-browser/asset-list.module.css` - Added virtualized container and loading styles
+  - **Features**:
+    - Automatic virtualization for lists > 50 items (non-virtualized for small lists)
+    - ResizeObserver-based column count calculation for responsive grid
+    - Overscan (3-10 rows) for smooth scrolling
+    - Infinite scroll trigger near bottom
+    - Loading indicator for additional content
+    - Preserved folder-first ordering
 
 - **[P2] Metadata Badges** [2h] -- NOT STARTED
   - Show key metadata on asset cards

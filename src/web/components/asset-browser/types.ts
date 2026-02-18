@@ -74,6 +74,12 @@ export interface AssetGridProps {
   onSelectionChange?: (ids: string[]) => void;
   onFileClick?: (file: AssetFile) => void;
   onFolderClick?: (folder: AssetFolder) => void;
+  /** Callback to load more items (infinite scroll) */
+  onLoadMore?: () => void;
+  /** Whether more items are available */
+  hasMore?: boolean;
+  /** Whether currently loading more items */
+  isLoadingMore?: boolean;
 }
 
 export interface AssetListProps {
@@ -86,6 +92,12 @@ export interface AssetListProps {
   onSort?: (field: string) => void;
   onFileClick?: (file: AssetFile) => void;
   onFolderClick?: (folder: AssetFolder) => void;
+  /** Callback to load more items (infinite scroll) */
+  onLoadMore?: () => void;
+  /** Whether more items are available */
+  hasMore?: boolean;
+  /** Whether currently loading more items */
+  isLoadingMore?: boolean;
 }
 
 export interface ViewControlsProps {

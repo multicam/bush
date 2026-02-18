@@ -2,7 +2,9 @@
  * Bush Platform - Asset Browser Component
  *
  * Main component for browsing assets with grid/list views.
+ * Supports virtualization for large lists via @tanstack/react-virtual.
  * Reference: IMPLEMENTATION_PLAN.md 2.3 Asset Browser and Navigation
+ * Reference: IMPLEMENTATION_PLAN.md [P2] Virtualized Lists
  */
 "use client";
 
@@ -25,7 +27,17 @@ export function AssetBrowser({
   defaultViewMode = "grid",
   defaultCardSize = "medium",
   isLoading = false,
-}: AssetBrowserProps) {
+  onLoadMore,
+  hasMore = false,
+  isLoadingMore = false,
+}: AssetBrowserProps & {
+  /** Callback to load more items (infinite scroll) */
+  onLoadMore?: () => void;
+  /** Whether more items are available */
+  hasMore?: boolean;
+  /** Whether currently loading more items */
+  isLoadingMore?: boolean;
+}) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [cardSize, setCardSize] = useState<CardSize>(defaultCardSize);
   const [sortField, setSortField] = useState<string>("createdAt");
@@ -142,6 +154,9 @@ export function AssetBrowser({
             onSelectionChange={onSelectionChange}
             onFileClick={handleFileClick}
             onFolderClick={handleFolderClick}
+            onLoadMore={onLoadMore}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
           />
         ) : (
           <AssetList
@@ -154,6 +169,9 @@ export function AssetBrowser({
             onSort={handleSort}
             onFileClick={handleFileClick}
             onFolderClick={handleFolderClick}
+            onLoadMore={onLoadMore}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
           />
         )}
       </div>
