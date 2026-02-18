@@ -500,10 +500,11 @@ These items are required for core platform functionality but are missing from th
   - Upload custom image or select video frame
   - **Dependencies**: 2.2 (processing)
 
-- **[P2] Auto-Delete Scheduled Job** [2h]
+- **[P2] Auto-Delete Scheduled Job** [2h] -- COMPLETED (2026-02-18)
   - BullMQ daily job
-  - Purge expired soft-deleted files
-  - **Dependencies**: 2.4 delete logic
+  - Purge expired soft-deleted files (30-day retention)
+  - **Dependencies**: 2.4 delete logic - DONE
+  - **Implementation**: `src/scheduled/` module (queue.ts, processor.ts, worker.ts, run-purge.ts)
 
 ### 2.5 Version Stacking [P1] - 2 days
 
@@ -1203,6 +1204,63 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Maintenance Improvements - Auto-Delete, Thumbnail URLs
+
+**Completed Work:**
+
+1. **Auto-Delete Scheduled Job COMPLETED** - BullMQ daily job for purging expired soft-deleted files
+   - **Files created**:
+     - `src/scheduled/queue.ts` - BullMQ queue setup for scheduled jobs
+     - `src/scheduled/processor.ts` - Job processors (purgeExpiredFiles, recalculateStorageUsage)
+     - `src/scheduled/worker.ts` - Worker process that runs scheduled jobs
+     - `src/scheduled/run-purge.ts` - Manual purge script for testing
+     - `src/scheduled/index.ts` - Module entry point
+
+   - **Features**:
+     - Daily scheduled job running at midnight UTC
+     - 30-day retention period for soft-deleted files
+     - Permanent deletion of expired files from database and storage
+     - Manual purge script for immediate cleanup
+     - Graceful shutdown handling
+
+2. **Thumbnail URL in File API COMPLETED** - Added thumbnailUrl to file responses
+   - **Files modified**:
+     - `src/api/routes/files.ts` - Added `getThumbnailUrl()` and `formatFileWithExtras()` helpers
+     - `src/web/lib/api.ts` - Added `thumbnailUrl` to `FileAttributes` interface
+     - `src/web/app/projects/[id]/page.tsx` - Updated to use API-provided thumbnailUrl
+
+   - **Features**:
+     - Files API now returns `thumbnailUrl` for ready image/video files
+     - Pre-signed URLs with 1-hour expiry
+     - Null for non-media files or files still processing
+
+3. **File Viewer Page COMPLETED** - Added file detail/viewer page
+   - **Files created**:
+     - `src/web/app/projects/[id]/files/[fileId]/page.tsx` - File viewer page
+     - `src/web/app/projects/[id]/files/[fileId]/file.module.css` - Styles
+
+   - **Features**:
+     - Automatic viewer selection based on MIME type (video, audio, image, PDF)
+     - Comment panel integration
+     - Download functionality
+     - Processing status display
+     - Navigation back to project
+
+   - **Files modified**:
+     - `src/web/app/projects/[id]/page.tsx` - Added navigation to file viewer on click
+     - `src/web/lib/api.ts` - Added `download()` method to filesApi
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** No new errors (pre-existing errors in external dependencies)
+
+**Status Changes:**
+- Auto-Delete Scheduled Job: NOT STARTED → COMPLETED
+- Thumbnail URL in API: NOT STARTED → COMPLETED
+- File Viewer Page: NOT STARTED → COMPLETED
+- File Management Pages: NOT STARTED → PARTIAL (viewer page added)
+
+**Spec refs:** `specs/17-api-complete.md` Section 6.5 (Files), `specs/15-media-processing.md`
 
 ### 2026-02-18 Settings Team Management UI Implementation
 

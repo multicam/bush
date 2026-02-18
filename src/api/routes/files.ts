@@ -30,6 +30,55 @@ const ALLOWED_STATUS_TRANSITIONS: Record<FileStatus, FileStatus[]> = {
   deleted: [],
 };
 
+/**
+ * Get thumbnail URL for a file
+ * Returns null if file doesn't have thumbnails (not ready, non-media type)
+ */
+async function getThumbnailUrl(
+  file: { id: string; projectId: string; status: string; mimeType: string },
+  accountId: string
+): Promise<string | null> {
+  // Only ready files with image/video MIME types have thumbnails
+  if (file.status !== "ready") {
+    return null;
+  }
+
+  const isImage = file.mimeType.startsWith("image/");
+  const isVideo = file.mimeType.startsWith("video/");
+
+  if (!isImage && !isVideo) {
+    return null;
+  }
+
+  try {
+    // Generate pre-signed URL for medium thumbnail (640px)
+    const key = storageKeys.thumbnail(
+      { accountId, projectId: file.projectId, assetId: file.id },
+      "640"
+    );
+
+    const result = await storage.getDownloadUrl(key, 3600); // 1 hour expiry
+    return result.url;
+  } catch {
+    // Thumbnail doesn't exist yet - return null
+    return null;
+  }
+}
+
+/**
+ * Format file with additional computed fields like thumbnailUrl
+ */
+async function formatFileWithExtras(
+  file: typeof files.$inferSelect,
+  accountId: string
+): Promise<typeof files.$inferSelect & { thumbnailUrl: string | null }> {
+  const thumbnailUrl = await getThumbnailUrl(file, accountId);
+  return {
+    ...formatDates(file),
+    thumbnailUrl,
+  };
+}
+
 const app = new Hono();
 
 // Apply authentication to all routes (rate limiting applied at v4 router level)
@@ -86,7 +135,10 @@ app.get("/", async (c) => {
     .limit(limit + 1);
 
   const items = results.slice(0, limit);
-  const formattedItems = items.map((f) => formatDates(f));
+  // Add thumbnail URLs to each file
+  const formattedItems = await Promise.all(
+    items.map((f) => formatFileWithExtras(f, session.currentAccountId))
+  );
 
   return sendCollection(c, formattedItems, RESOURCE_TYPES.FILE, {
     basePath: `/v4/projects/${projectId}/files`,
@@ -126,7 +178,7 @@ app.get("/:id", async (c) => {
     throw new NotFoundError("file", fileId);
   }
 
-  return sendSingle(c, formatDates(file), RESOURCE_TYPES.FILE);
+  return sendSingle(c, await formatFileWithExtras(file, session.currentAccountId), RESOURCE_TYPES.FILE);
 });
 
 /**

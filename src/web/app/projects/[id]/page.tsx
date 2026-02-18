@@ -63,7 +63,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     mimeType: f.mimeType,
     fileSizeBytes: f.fileSizeBytes,
     status: f.status,
-    thumbnailUrl: null, // TODO: Get from file when API returns it
+    thumbnailUrl: f.thumbnailUrl ?? null,
     createdAt: f.createdAt,
     updatedAt: f.updatedAt,
   }));
@@ -240,9 +240,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   }, [uploadClient]);
 
   // Handle file click in asset browser
-  const handleFileClick = useCallback((_file: AssetFile) => {
-    // TODO: Open file viewer/preview
-  }, []);
+  const handleFileClick = useCallback((file: AssetFile) => {
+    // Navigate to file viewer page
+    window.location.href = `/projects/${projectId}/files/${file.id}`;
+  }, [projectId]);
 
   // Handle selection change
   const handleSelectionChange = useCallback((ids: string[]) => {

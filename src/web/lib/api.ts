@@ -325,6 +325,7 @@ export interface FileAttributes {
   folderId: string | null;
   versionStackId: string | null;
   checksum: string | null;
+  thumbnailUrl: string | null;
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -413,6 +414,15 @@ export const filesApi = {
    * Get download URL for a file
    */
   getDownloadUrl: async (projectId: string, fileId: string) => {
+    return apiFetch<{ data: JsonApiResource<FileAttributes>; meta: { download_url: string; download_expires_at: string } }>(
+      `/projects/${projectId}/files/${fileId}/download`
+    );
+  },
+
+  /**
+   * Download a file (convenience method that returns the signed URL)
+   */
+  download: async (projectId: string, fileId: string) => {
     return apiFetch<{ data: JsonApiResource<FileAttributes>; meta: { download_url: string; download_expires_at: string } }>(
       `/projects/${projectId}/files/${fileId}/download`
     );
