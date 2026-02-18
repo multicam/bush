@@ -1,0 +1,224 @@
+# Code Review Plan
+
+**Last updated**: 2026-02-18
+**Iteration**: 1
+**Coverage**: 16.08% statements (target: 80%)
+**Tests**: 303 passing, 0 failing
+
+## Issue Tracker
+
+### Critical (bugs, security)
+
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| C1 | `src/api/routes/files.ts` | 226-241, 469-484 | Race condition in storage quota enforcement (TOCTOU) - quota check and file creation not atomic | pending |
+| C2 | `src/api/routes/search.ts` | 135-140 | SQL injection risk via FTS5 query construction - dynamic filter concatenation | pending |
+| C3 | `src/api/routes/shares.ts` | 165 | Passphrase stored in plain text instead of bcrypt hash | **fixed** |
+| C4 | `src/web/lib/api.ts` | 158-192 | Missing AbortController support for request cancellation | **fixed** |
+| C5 | `src/web/lib/api.ts` | 158-192 | Missing request timeout handling | **fixed** |
+| C6 | `src/web/lib/api.ts` | 158-192 | Missing retry logic for transient failures (5xx, network) | **fixed** |
+| C7 | `src/web/hooks/use-realtime.ts` | 194-234 | Memory leak in useChannel hook - onEvent callback in deps causes re-subscriptions | pending |
+| C8 | `src/web/context/auth-context.tsx` | 180-234 | Unsafe state updates after unmount in WorkspaceProvider | pending |
+| C9 | `src/auth/session-cache.ts` | 185-221 | Session cookie parsed without integrity verification (base64 decode only) | pending |
+| C10 | `src/auth/session-cache.ts` | 35-43 | Session lookup doesn't validate userId in cookie matches session data | pending |
+
+### High (code smells, missing validation)
+
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| H1 | `src/api/routes/files.ts` | 487-496 | Missing storage quota check for destination account on file copy | pending |
+| H2 | `src/api/routes/shares.ts` | 470-518 | Missing authorization - files added to share not verified against account | pending |
+| H3 | `src/api/routes/bulk.ts` | 314-382 | Bulk delete not wrapped in transaction - partial failure leaves inconsistent state | pending |
+| H4 | `src/api/routes/accounts.ts` | 568-575, 656-662 | Session cache invalidation not implemented for role changes (TODO comments) | pending |
+| H5 | `src/transcription/processor.ts` | 235-252 | Unbounded transcript words - no limit on word count for long audio | pending |
+| H6 | `package.json` | N/A | Vulnerable npm dependencies (aws-sdk/xml-builder, esbuild-kit) | pending |
+| H7 | `src/web/hooks/use-linked-playback.ts` | 69-85, 110-125 | Stale closure risk - setTimeout without cleanup | pending |
+| H8 | `src/web/hooks/use-linked-zoom.ts` | 114-119 | Stale closure risk - setTimeout without cleanup | pending |
+| H9 | `src/web/components/viewers/video-viewer.tsx` | 529-640 | Missing keyboard event cleanup - ESLint exhaustive-deps disabled | pending |
+| H10 | `src/web/app/layout.tsx` | 11-29 | Missing React Error Boundary - errors crash entire app | pending |
+| H11 | `src/web/lib/ws-client.ts` | 427-437 | WebSocket singleton never disconnects on page hide/unload | pending |
+| H12 | `src/web/lib/upload-client.ts` | 541-562 | Resume logic creates new upload instead of resuming | pending |
+| H13 | `src/web/components/search/global-search.tsx` | 126-170 | Race condition in debounced search - stale results overwrite newer | pending |
+| H14 | `src/web/components/notifications/notification-dropdown.tsx` | 31-77 | Missing cleanup for async operations on unmount | pending |
+| H15 | `src/realtime/ws-manager.ts` | 200-226 | WebSocket auth creates users on demand - potential account creation abuse | pending |
+| H16 | `src/api/rate-limit.ts` | 77-95 | Rate limiting IP from X-Forwarded-For can be spoofed if proxy misconfigured | pending |
+
+### Medium (refactoring, test gaps)
+
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| M1 | `src/scheduled/processor.ts` | 67-70 | Storage key uses "unknown" accountId - storage objects not deleted | pending |
+| M2 | `src/api/routes/webhooks.ts` | 208-221 | Webhook secret returned in response - could be logged | pending |
+| M3 | `src/api/routes/search.ts` | 78-394 | No query complexity limits - expensive wildcard queries possible | pending |
+| M4 | `src/transcription/processor.ts` | 59-97 | Temp file cleanup failures silently ignored with .catch(() => {}) | pending |
+| M5 | `src/api/routes/notifications.ts` | 255-291 | N+1 pattern - notifications created sequentially without batching | pending |
+| M6 | `src/api/routes/bulk.ts` | 80-122, 194-289 | Inconsistent error handling in bulk ops - varying formats, stack traces | pending |
+| M7 | `src/web/components/ui/modal.tsx` | 69-92 | Missing focus trap - users can Tab outside modal | pending |
+| M8 | `src/web/components/comments/comment-panel.tsx` | 282-309 | Shows "No comments" briefly before loading state appears | pending |
+| M9 | `src/web/components/comments/comment-panel.tsx` | 282-401 | Missing AbortController for API calls | pending |
+| M10 | `src/web/components/version-stacks/use-version-stack-dnd.ts` | 123-173 | Drag state not reset on unmount | pending |
+| M11 | `src/web/components/upload/dropzone.tsx` | 159-209 | Drag counter can go negative with rapid mouse movements | pending |
+| M12 | `src/web/components/upload/upload-queue.tsx` | 386-402 | Resume callback has stale closure over files | pending |
+| M13 | `src/web/components/ui/toast.tsx` | 140-194 | Missing aria-describedby for accessibility | pending |
+| M14 | `src/api/routes/comments.ts` | 33-93 | Unbounded replies with include_replies parameter | pending |
+| M15 | `src/api/routes/files.ts` | multiple | Redundant account lookups in same request | pending |
+| M16 | `src/api/routes/files.ts` | 311-312, 804 | Hardcoded chunk count validation allows tiny chunks | pending |
+| M17 | `src/media/ffmpeg.ts` | 100-117 | FFprobe JSON parse errors not handled | pending |
+| M18 | `src/media/processors/proxy.ts` | 136-139 | Individual resolution failures caught but job continues - partial success unclear | pending |
+| M19 | `src/realtime/ws-manager.ts` | 116-125 | Connection maps modified without synchronization | pending |
+| M20 | `src/realtime/ws-manager.ts` | 536-542 | WebSocket send failures logged but not communicated to callers | pending |
+| M21 | `src/db/index.ts` | 12-27 | SQLite connection never closed - no cleanup on shutdown | pending |
+| M22 | `src/storage/index.ts` | 22-47 | S3 client singleton never disposed | pending |
+| M23 | `src/storage/index.ts` | 27-46 | Storage provider singleton not thread-safe | pending |
+| M24 | `src/redis/index.ts` | 17-44 | Redis singleton not thread-safe in lazy init | pending |
+
+### Low (style, naming, minor cleanup)
+
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| L1 | `src/api/routes/notifications.ts` | 50-64 | Two count queries could be combined into one | pending |
+| L2 | `src/api/routes/workspaces.ts` | 56-59 | Count via selecting all IDs instead of COUNT(*) | pending |
+| L3 | `src/auth/session-cache.ts` | 103-112 | Using Redis KEYS command - should use SCAN | pending |
+| L4 | `src/auth/session-cache.ts` | 48-75 | TOCTOU race condition in session update | pending |
+| L5 | `src/auth/session-cache.ts` | 80-89 | No sliding expiration - touch updates timestamp but not TTL | pending |
+| L6 | `src/api/routes/shares.ts` | 727 | Passphrase transmitted via query param - may be logged | pending |
+| L7 | `src/api/index.ts` | 203 | No rate limiting on public share access - brute force possible | pending |
+| L8 | `src/api/auth-middleware.ts` | 125-141 | Token parsing uses non-constant-time string ops | pending |
+| L9 | `src/config/env.ts` | 217-227 | Secret scrubbing limited to known keys - new secrets may leak | pending |
+| L10 | `src/web/components/notifications/notification-dropdown.tsx` | 199-209 | Retry button doesn't handle loading/error states properly | pending |
+| L11 | `src/web/components/viewers/video-viewer.tsx` | 329, 397 | Autoplay errors silently swallowed with console.error | pending |
+| L12 | `src/web/components/annotations/annotation-canvas.tsx` | 287-458 | No touch support - mobile devices can't draw annotations | pending |
+| L13 | Multiple files | N/A | Default + named export anti-pattern in hooks and components | pending |
+| L14 | Schema | N/A | Missing indexes on frequently queried columns (files.projectId+deletedAt, etc.) | pending |
+| L15 | `src/web/components/asset-browser/asset-browser.tsx` | 19-20 | Unused projectId/folderId variables | pending |
+
+## Coverage Gaps (files below 80%)
+
+### API Routes (0% coverage - 7213 statements)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/api/routes/files.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/api/routes/auth.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/api/routes/shares.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/api/routes/accounts.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/api/routes/comments.ts` | 0% | 0% | 0% | HIGH |
+| `src/api/routes/transcription.ts` | 0% | 0% | 0% | HIGH |
+| `src/api/routes/webhooks.ts` | 0% | 0% | 0% | HIGH |
+| `src/api/routes/bulk.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/version-stacks.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/collections.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/folders.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/metadata.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/search.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/custom-fields.ts` | 0% | 0% | 0% | LOW |
+| `src/api/routes/notifications.ts` | 0% | 0% | 0% | LOW |
+| `src/api/routes/projects.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/users.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/api/routes/workspaces.ts` | 0% | 0% | 0% | MEDIUM |
+
+### Media Processing (0% coverage - 1341 statements)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/media/ffmpeg.ts` | 0% | 0% | 0% | HIGH |
+| `src/media/worker.ts` | 0% | 0% | 0% | HIGH |
+| `src/media/index.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/media/queue.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/media/processors/thumbnail.ts` | 0% | 0% | 0% | HIGH |
+| `src/media/processors/proxy.ts` | 0% | 0% | 0% | HIGH |
+| `src/media/processors/metadata.ts` | 0% | 0% | 0% | HIGH |
+| `src/media/processors/filmstrip.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/media/processors/waveform.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/media/processors/frame-capture.ts` | 0% | 0% | 0% | MEDIUM |
+
+### Transcription (0% coverage - 771 statements)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/transcription/processor.ts` | 0% | 0% | 0% | HIGH |
+| `src/transcription/providers/deepgram.ts` | 0% | 0% | 0% | HIGH |
+| `src/transcription/providers/faster-whisper.ts` | 0% | 0% | 0% | HIGH |
+| `src/transcription/export.ts` | 0% | 0% | 0% | MEDIUM |
+
+### Realtime (0% coverage - 464 statements)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/realtime/ws-manager.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/realtime/event-bus.ts` | 0% | 0% | 0% | HIGH |
+| `src/realtime/emit.ts` | 0% | 0% | 0% | MEDIUM |
+
+### Storage & Infrastructure (low coverage)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/storage/index.ts` | 0% | 0% | 0% | HIGH |
+| `src/storage/s3-provider.ts` | 0% | 0% | 0% | HIGH |
+| `src/redis/index.ts` | 9.3% | 100% | 0% | HIGH |
+| `src/db/index.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/scheduled/processor.ts` | 0% | 0% | 0% | HIGH |
+| `src/scheduled/queue.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/scheduled/worker.ts` | 0% | 0% | 0% | MEDIUM |
+
+### Auth & Permissions (partial coverage)
+
+| File | Statements | Branches | Functions | Priority |
+|------|-----------|----------|-----------|----------|
+| `src/auth/service.ts` | 14.36% | 50% | 11.11% | CRITICAL |
+| `src/api/auth-middleware.ts` | 0% | 0% | 0% | CRITICAL |
+| `src/permissions/service.ts` | 75.12% | 61.9% | 73.33% | HIGH |
+| `src/permissions/middleware.ts` | 38.85% | 88.23% | 38.46% | HIGH |
+| `src/api/access-control.ts` | 25.84% | 100% | 20% | HIGH |
+
+## Iteration Log
+
+### Iteration 1 -- 2026-02-18
+**Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)
+**Fixed**: 4 critical issues
+**Coverage**: 16.08% (baseline)
+
+**Fixed Issues:**
+- C3: Passphrases now hashed with bcrypt before storage (src/api/routes/shares.ts)
+- C4: Added AbortController support for request cancellation (src/web/lib/api.ts)
+- C5: Added 30-second default request timeout (src/web/lib/api.ts)
+- C6: Added exponential backoff retry for transient failures (src/web/lib/api.ts)
+
+**Summary of Findings:**
+
+**Backend Security Issues:**
+- Race condition in storage quota enforcement allowing quota bypass
+- SQL injection potential via FTS5 query construction
+- ~~Passphrases stored in plain text~~ ✅ FIXED
+- Session cache issues (no encryption, no validation)
+- Missing session invalidation on role changes
+
+**Frontend Issues:**
+- ~~API client missing abort, timeout, retry capabilities~~ ✅ FIXED
+- Memory leaks in hooks (useChannel, setTimeout without cleanup)
+- Missing Error Boundary
+- WebSocket singleton lifecycle issues
+- Race conditions in search and notifications
+
+**Test Coverage:**
+- 18 API route files at 0% coverage (7213 statements)
+- All media processing at 0% (1341 statements)
+- All transcription at 0% (771 statements)
+- All realtime at 0% (464 statements)
+- Auth middleware at 0% (critical path)
+
+**Positive Observations:**
+- Good use of parameterized queries (Drizzle ORM)
+- Constant-time passphrase comparison (bcrypt)
+- Rate limiting implemented
+- Session management with Redis
+- Role-based access control
+
+**Priority Action Items:**
+1. Fix race condition in storage quota (use transactions)
+2. ~~Hash passphrases with bcrypt~~ ✅ DONE
+3. ~~Add AbortController/timeout/retry to API client~~ ✅ DONE
+4. Add Error Boundary to root layout
+5. Implement session cache invalidation for role changes
+6. Fix setTimeout cleanup in hooks
+7. Add rate limiting to public share endpoints

@@ -22,6 +22,18 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 
+// Use Bun's built-in password hashing (bcrypt)
+async function hashPassphrase(passphrase: string): Promise<string> {
+  return await Bun.password.hash(passphrase, {
+    algorithm: "bcrypt",
+    cost: 12,
+  });
+}
+
+async function verifyPassphrase(passphrase: string, hash: string): Promise<boolean> {
+  return await Bun.password.verify(passphrase, hash);
+}
+
 const app = new Hono();
 
 // Apply authentication to all routes
@@ -155,6 +167,9 @@ app.post("/", async (c) => {
   const shareId = generateId("share");
   const now = new Date();
 
+  // Hash passphrase if provided (bcrypt)
+  const hashedPassphrase = body.passphrase ? await hashPassphrase(body.passphrase) : null;
+
   await db.insert(shares).values({
     id: shareId,
     accountId,
@@ -162,7 +177,7 @@ app.post("/", async (c) => {
     createdByUserId: session.userId,
     name: body.name.trim(),
     slug,
-    passphrase: body.passphrase || null,
+    passphrase: hashedPassphrase,
     expiresAt: body.expires_at ? new Date(body.expires_at) : null,
     layout,
     allowComments: body.allow_comments !== false,
@@ -302,7 +317,8 @@ app.patch("/:id", async (c) => {
   }
 
   if (body.passphrase !== undefined) {
-    updates.passphrase = body.passphrase || null;
+    // Hash passphrase if provided (bcrypt)
+    updates.passphrase = body.passphrase ? await hashPassphrase(body.passphrase) : null;
   }
 
   if (body.expires_at !== undefined) {
@@ -762,9 +778,9 @@ export async function getShareBySlug(c: any) {
       );
     }
 
-    // Constant-time comparison to prevent timing attacks
+    // Verify passphrase using bcrypt (constant-time by design)
     // We already checked that share.passphrase is truthy above
-    const passphraseMatch = await constantTimeCompare(providedPassphrase, share.passphrase || "");
+    const passphraseMatch = await verifyPassphrase(providedPassphrase, share.passphrase || "");
     if (!passphraseMatch) {
       throw new ValidationError("Incorrect passphrase", { pointer: "/data/attributes/passphrase" });
     }
@@ -793,24 +809,6 @@ export async function getShareBySlug(c: any) {
     },
     RESOURCE_TYPES.SHARE
   );
-}
-
-/**
- * Constant-time string comparison to prevent timing attacks
- * Returns true if strings are equal, false otherwise
- */
-async function constantTimeCompare(a: string, b: string): Promise<boolean> {
-  if (a.length !== b.length) {
-    // Still perform a comparison to prevent length-based timing attacks
-    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(a));
-    return false;
-  }
-
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
 }
 
 export default app;

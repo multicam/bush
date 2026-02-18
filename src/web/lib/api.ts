@@ -148,47 +148,177 @@ function getApiBaseUrl(): string {
   return process.env.API_URL || "http://localhost:3001/v4";
 }
 
+/**
+ * Default request timeout in milliseconds
+ */
+const DEFAULT_TIMEOUT_MS = 30000;
+
+/**
+ * Default max retries for transient failures
+ */
+const DEFAULT_MAX_RETRIES = 3;
+
+/**
+ * Base delay between retries (exponential backoff)
+ */
+const RETRY_BASE_DELAY_MS = 1000;
+
 // ============================================================================
 // Fetch Wrapper
 // ============================================================================
 
 /**
- * Typed fetch wrapper with credentials and error handling
+ * Extended request options with timeout, retry, and abort support
+ */
+export interface ApiFetchOptions extends RequestInit {
+  /** Request timeout in milliseconds (default: 30000) */
+  timeout?: number;
+  /** Maximum retry attempts for transient failures (default: 3) */
+  maxRetries?: number;
+  /** AbortSignal for request cancellation */
+  signal?: AbortSignal;
+  /** Skip retry logic (useful for non-idempotent requests) */
+  skipRetry?: boolean;
+}
+
+/**
+ * Check if an error is retryable (5xx, network errors)
+ */
+function isRetryableError(error: unknown, response?: Response): boolean {
+  // Network errors are retryable
+  if (error instanceof TypeError && error.message.includes("fetch")) {
+    return true;
+  }
+  // 5xx errors are retryable
+  if (response && response.status >= 500 && response.status < 600) {
+    return true;
+  }
+  // 429 Too Many Requests is retryable
+  if (response && response.status === 429) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Typed fetch wrapper with credentials, timeout, retry, and abort support
  */
 async function apiFetch<T>(
   path: string,
-  options: RequestInit = {}
+  options: ApiFetchOptions = {}
 ): Promise<T> {
+  const {
+    timeout = DEFAULT_TIMEOUT_MS,
+    maxRetries = DEFAULT_MAX_RETRIES,
+    signal: externalSignal,
+    skipRetry = false,
+    ...fetchOptions
+  } = options;
+
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path}`;
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: "include", // Include session cookies
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  // Only retry idempotent methods (GET, HEAD, OPTIONS)
+  const method = fetchOptions.method?.toUpperCase() || "GET";
+  const shouldRetry = !skipRetry && ["GET", "HEAD", "OPTIONS"].includes(method);
 
-  // Handle non-2xx responses
-  if (!response.ok) {
-    // Try to parse JSON:API error response
-    let errorResponse: JsonApiErrorResponse | undefined;
-    try {
-      errorResponse = await response.json();
-    } catch {
-      // Ignore JSON parse errors
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= (shouldRetry ? maxRetries : 0); attempt++) {
+    // Create abort controller for timeout
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
+
+    // Combine with external signal if provided
+    let combinedSignal = timeoutController.signal;
+    if (externalSignal) {
+      // If external signal is already aborted, throw immediately
+      if (externalSignal.aborted) {
+        clearTimeout(timeoutId);
+        throw new DOMException("The operation was aborted.", "AbortError");
+      }
+
+      // Create a combined abort controller
+      const combinedController = new AbortController();
+      const abortHandler = () => combinedController.abort();
+      externalSignal.addEventListener("abort", abortHandler);
+      timeoutController.signal.addEventListener("abort", abortHandler);
+      combinedSignal = combinedController.signal;
     }
-    throw new ApiError(response.status, errorResponse);
+
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: combinedSignal,
+        credentials: "include", // Include session cookies
+        headers: {
+          "Content-Type": "application/json",
+          ...fetchOptions.headers,
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      // Handle non-2xx responses
+      if (!response.ok) {
+        // Check if we should retry
+        if (shouldRetry && attempt < maxRetries && isRetryableError(null, response)) {
+          const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+          await sleep(delay);
+          continue;
+        }
+
+        // Try to parse JSON:API error response
+        let errorResponse: JsonApiErrorResponse | undefined;
+        try {
+          errorResponse = await response.json();
+        } catch {
+          // Ignore JSON parse errors
+        }
+        throw new ApiError(response.status, errorResponse);
+      }
+
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      // Don't retry abort errors
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
+
+      lastError = error;
+      lastResponse = undefined;
+
+      // Check if we should retry
+      if (shouldRetry && attempt < maxRetries && isRetryableError(error)) {
+        const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+        await sleep(delay);
+        continue;
+      }
+    }
   }
 
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return undefined as T;
+  // All retries exhausted, throw last error
+  if (lastError instanceof ApiError) {
+    throw lastError;
   }
-
-  return response.json();
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error("Request failed after retries");
 }
 
 // ============================================================================
