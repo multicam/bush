@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (v0.0.51 - ESLint/TypeScript Fixes)
+**Last updated**: 2026-02-18 (v0.0.52 - Gap Analysis Complete)
 **Project status**: **MVP COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (120 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -197,6 +197,110 @@
   - Generate OpenAPI 3.1 spec from Hono routes
   - Serve at `/v4/openapi.json`
   - **Dependencies**: Routes complete - DONE
+
+---
+
+## IDENTIFIED GAPS (2026-02-18 Analysis)
+
+The following items were identified through comprehensive code analysis comparing `specs/*` against `src/*`. These are items that should be addressed for production readiness but do not block MVP functionality.
+
+### P1 - Critical for Production Readiness
+
+- **[P1] Database Migration Drift** [4h] -- NOT STARTED
+  - **Problem**: 14 tables defined in `schema.ts` are missing from `migrate.ts` SQL
+  - **Missing tables**: custom_fields, custom_field_visibility, workspace_permissions, project_permissions, folder_permissions, collections, collection_assets, webhooks, webhook_deliveries, transcripts, transcript_words, captions, share_assets, share_activity
+  - **Missing columns in files table**: technicalMetadata, rating, assetStatus, keywords, notes, assigneeId, customMetadata, customThumbnailKey
+  - **Impact**: Fresh database deployments will fail; features will not work
+  - **Solution**: Update `src/db/migrate.ts` to include all schema tables/columns
+  - **Effort**: 4 hours
+
+- **[P1] Project/Workspace Members API** [1d] -- NOT STARTED
+  - **Missing endpoints**:
+    - `GET/POST/PATCH/DELETE /v4/projects/:id/members/*`
+    - `GET/POST/PATCH/DELETE /v4/workspaces/:id/members/*`
+  - **Impact**: Cannot manage permissions at project/workspace granularity
+  - **Dependencies**: Permission tables exist in schema
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.3-6.4
+
+- **[P1] Audit Logging** [1d] -- NOT STARTED
+  - **Missing**: `audit_logs` table and event logging service
+  - **Impact**: Cannot track security-relevant events (logins, permission changes, deletions)
+  - **Spec refs**: `specs/11-security-features.md` Section 4
+  - **Events to log**: auth events, permission changes, member role changes, file deletions, share access
+
+### P2 - Important Security/Quality Fixes
+
+- **[P2] Permission Validation Before Grant** [2h] -- NOT STARTED
+  - **Problem**: `validatePermissionChange()` exists but is never called
+  - **Impact**: Could grant permissions that violate inheritance rules
+  - **Location**: `src/permissions/service.ts`
+  - **Solution**: Call validation before `grantProjectPermission()`, `grantFolderPermission()`
+
+- **[P2] Transcription Permission Checks** [2h] -- NOT STARTED
+  - **Problem**: TODOs at `src/api/routes/transcription.ts:42,66` - no project permission checks
+  - **Impact**: Any account member can transcribe any file
+  - **Solution**: Add `requirePermission()` middleware to transcription routes
+
+- **[P2] Redis Cache Invalidation for Role Changes** [2h] -- NOT STARTED
+  - **Problem**: TODOs at `src/api/routes/accounts.ts:594,664`
+  - **Impact**: Role changes take up to 5 minutes to take effect (access token TTL)
+  - **Solution**: Call session cache invalidation on role update/delete
+
+- **[P2] Session Limits Enforcement** [4h] -- NOT STARTED
+  - **Problem**: Max 10 concurrent sessions per user not enforced
+  - **Location**: `src/redis/session-cache.ts` - infrastructure exists
+  - **Solution**: Add session count check, evict oldest on exceed
+  - **Spec refs**: `specs/12-authentication.md`
+
+- **[P2] Comment Permission Check** [1h] -- NOT STARTED
+  - **Problem**: TODO at `src/api/routes/comments.ts:421` - `full_access+` check not implemented
+  - **Impact**: Comment completion may be allowed without appropriate permissions
+
+- **[P2] Share Channel Permission Check** [2h] -- NOT STARTED
+  - **Problem**: `src/realtime/ws-manager.ts` share permission check is placeholder returning `true`
+  - **Impact**: Any authenticated user could subscribe to any share's realtime events
+  - **Solution**: Implement proper share membership check
+
+- **[P2] Email Provider Implementation** [4h] -- NOT STARTED
+  - **Problem**: All providers (SendGrid, SES, Postmark, Resend, SMTP) are TODO stubs
+  - **Impact**: No production email capability; only console logging
+  - **Recommendation**: Implement SendGrid provider first
+  - **Location**: `src/lib/email/index.ts`
+
+- **[P2] CDN Provider Interface** [4h] -- NOT STARTED
+  - **Problem**: `CDNProvider` interface not implemented
+  - **Impact**: Cannot invalidate CDN cache or use CDN-specific features
+  - **Recommendation**: Implement Bunny CDN adapter per specs/README.md
+  - **Location**: `src/storage/`
+
+### P3 - Minor UI Fixes
+
+- **[P3] PDF Viewer Text Layer** [4h] -- NOT STARTED
+  - **Problem**: TODO at `src/web/components/viewers/pdf-viewer.tsx:253`
+  - **Impact**: Cannot select/copy text from PDFs
+  - **Cause**: pdf.js v4+ API changes
+
+- **[P3] Collection Detail File Viewer Integration** [2h] -- NOT STARTED
+  - **Problem**: TODO at `src/web/app/projects/[id]/collections/[collectionId]/page.tsx:364`
+  - **Impact**: Clicking files in collection view only logs to console
+
+- **[P3] Missing API Endpoints (Lower Priority)** [1d] -- NOT STARTED
+  - `POST /v4/projects/:id/duplicate` - Project duplication
+  - `POST /v4/bulk/files/metadata` - Bulk metadata update
+  - `GET/PUT /v4/users/me/notifications/settings` - User notification preferences
+  - `POST /v4/shares/:id/invite` - Share invitation email
+  - `GET /v4/projects/:project_id/shares` - List shares for project
+
+### Correctly Deferred (No Action Needed)
+
+The following are correctly deferred per spec/README.md:
+- Document Processing (PDF thumb, DOCX/PPTX/XLSX) - P3
+- RAW/Adobe Format Thumbnails - P3
+- Access Groups - P3 (depends on billing)
+- API Key Token Type (`bush_key_`) - P3
+- HLS Generation - Using MP4 proxies with CDN delivery instead
+- AssemblyAI Provider - Deepgram + faster-whisper cover needs
+- Enhanced Search (Visual/Semantic) - Requires AI/ML provider decision
 
 ---
 
