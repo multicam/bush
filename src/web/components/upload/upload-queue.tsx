@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   UploadClient,
   UploadProgress,
@@ -314,6 +314,10 @@ export function UploadQueue({
   onClearCompleted,
   maxHeight = "400px",
 }: UploadQueueProps) {
+  // Keep a ref to files to avoid stale closures in callbacks
+  const filesRef = useRef(files);
+  filesRef.current = files;
+
   // Calculate queue statistics
   const stats = useMemo(() => {
     let pending = 0;
@@ -386,7 +390,8 @@ export function UploadQueue({
   const handleResume = useCallback(
     async (fileId: string) => {
       const client = getUploadClient();
-      const queuedFile = files.find((f) => f.id === fileId);
+      // Use ref to get current files to avoid stale closure
+      const queuedFile = filesRef.current.find((f) => f.id === fileId);
       if (!queuedFile) return;
 
       onResume?.(fileId);
@@ -398,7 +403,7 @@ export function UploadQueue({
         onError: (error) => onUploadError?.(fileId, error),
       });
     },
-    [files, projectId, folderId, onResume, onProgress, onUploadComplete, onUploadError]
+    [projectId, folderId, onResume, onProgress, onUploadComplete, onUploadError]
   );
 
   // Handle cancel for a single upload
@@ -414,7 +419,8 @@ export function UploadQueue({
   // Handle retry for a single upload
   const handleRetry = useCallback(
     async (fileId: string) => {
-      const queuedFile = files.find((f) => f.id === fileId);
+      // Use ref to get current files to avoid stale closure
+      const queuedFile = filesRef.current.find((f) => f.id === fileId);
       if (!queuedFile) return;
 
       onRetry?.(fileId);
@@ -427,7 +433,7 @@ export function UploadQueue({
         onError: (error) => onUploadError?.(fileId, error),
       });
     },
-    [files, projectId, folderId, onRetry, onProgress, onUploadComplete, onUploadError]
+    [projectId, folderId, onRetry, onProgress, onUploadComplete, onUploadError]
   );
 
   // Handle retry all failed

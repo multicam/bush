@@ -153,7 +153,7 @@ export function Dropzone({
 }: DropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const [isDragReject, setIsDragReject] = useState(false);
-  const [dragCount, setDragCount] = useState(0);
+  const dragCountRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle drag enter
@@ -165,8 +165,8 @@ export function Dropzone({
       if (disabled) return;
 
       // Track drag count to handle child element enter/leave
-      const newCount = dragCount + 1;
-      setDragCount(newCount);
+      dragCountRef.current++;
+      const currentCount = dragCountRef.current;
 
       if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
         setIsDragActive(true);
@@ -189,7 +189,7 @@ export function Dropzone({
         }
       }
     },
-    [disabled, dragCount, accept]
+    [disabled, accept]
   );
 
   // Handle drag leave
@@ -198,15 +198,15 @@ export function Dropzone({
       e.preventDefault();
       e.stopPropagation();
 
-      const newCount = dragCount - 1;
-      setDragCount(newCount);
+      // Decrement and clamp to 0 to prevent negative values from rapid mouse movements
+      dragCountRef.current = Math.max(0, dragCountRef.current - 1);
 
-      if (newCount === 0) {
+      if (dragCountRef.current === 0) {
         setIsDragActive(false);
         setIsDragReject(false);
       }
     },
-    [dragCount]
+    []
   );
 
   // Handle drag over
@@ -230,7 +230,8 @@ export function Dropzone({
       e.preventDefault();
       e.stopPropagation();
 
-      setDragCount(0);
+      // Reset drag counter
+      dragCountRef.current = 0;
       setIsDragActive(false);
       setIsDragReject(false);
 

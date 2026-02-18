@@ -98,8 +98,12 @@ async function extractAudioForTranscription(
     });
   });
 
-  // Clean up input file
-  await unlink(inputPath).catch(() => {});
+  // Clean up input file - log warning on failure
+  try {
+    await unlink(inputPath);
+  } catch (err) {
+    console.warn(`[Transcription] Failed to clean up temp input file ${inputPath}:`, err);
+  }
 
   return outputPath;
 }
@@ -188,13 +192,21 @@ export async function processTranscriptionJob(
         // If presigned URL fails, extract and upload
         const audioPath = await extractAudioForTranscription(storageKey, tempDir);
         audioBuffer = await readFile(audioPath);
-        await unlink(audioPath).catch(() => {});
+        try {
+          await unlink(audioPath);
+        } catch (err) {
+          console.warn(`[Transcription] Failed to clean up temp audio file ${audioPath}:`, err);
+        }
       }
     } else {
       // For self-hosted, extract audio locally
       const audioPath = await extractAudioForTranscription(storageKey, tempDir);
       audioBuffer = await readFile(audioPath);
-      await unlink(audioPath).catch(() => {});
+      try {
+        await unlink(audioPath);
+      } catch (err) {
+        console.warn(`[Transcription] Failed to clean up temp audio file ${audioPath}:`, err);
+      }
     }
 
     // Submit transcription

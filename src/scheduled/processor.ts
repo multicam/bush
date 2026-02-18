@@ -4,8 +4,8 @@
  * Processes scheduled maintenance jobs.
  */
 import { db } from "../db/index.js";
-import { files, accounts } from "../db/schema.js";
-import { and, isNotNull, lt, sql } from "drizzle-orm";
+import { files, accounts, projects, workspaces } from "../db/schema.js";
+import { and, isNotNull, lt, sql, eq } from "drizzle-orm";
 import { storage, storageKeys } from "../storage/index.js";
 
 /**
@@ -37,15 +37,19 @@ export async function purgeExpiredFiles(): Promise<{
 
   try {
     // Find all files deleted before the cutoff date
+    // Also join to get the account ID for proper storage key construction
     const expiredFiles = await db
       .select({
         id: files.id,
         projectId: files.projectId,
+        accountId: workspaces.accountId,
         name: files.name,
         fileSizeBytes: files.fileSizeBytes,
         deletedAt: files.deletedAt,
       })
       .from(files)
+      .innerJoin(projects, eq(files.projectId, projects.id))
+      .innerJoin(workspaces, eq(projects.workspaceId, workspaces.id))
       .where(
         and(
           isNotNull(files.deletedAt),
@@ -62,22 +66,37 @@ export async function purgeExpiredFiles(): Promise<{
 
       for (const file of batch) {
         try {
-          // Delete from storage
+          // Delete from storage using the correct accountId from the joined workspace
           // We need to delete: original, thumbnails, proxies, filmstrip, waveform
           const storageKey = storageKeys.original(
-            { accountId: "unknown", projectId: file.projectId, assetId: file.id },
+            { accountId: file.accountId, projectId: file.projectId, assetId: file.id },
             file.name
           );
 
           // Try to delete the original file
-          // Note: In production, we'd need to look up the account ID properly
-          // For now, we'll delete the file record and rely on lifecycle rules for storage cleanup
           try {
             await storage.deleteObject(storageKey);
           } catch (storageError) {
             // Storage deletion failed - log but continue
             // The DB record is the source of truth; orphaned storage objects can be cleaned up later
             console.warn(`[scheduled] Failed to delete storage for file ${file.id}:`, storageError);
+          }
+
+          // Also try to delete derived assets (thumbnails, proxies, etc.)
+          // Use tryDelete pattern - delete each type, ignoring errors if not found
+          const derivedKeyBuilders = [
+            () => storageKeys.thumbnail({ accountId: file.accountId, projectId: file.projectId, assetId: file.id }),
+            () => storageKeys.proxy({ accountId: file.accountId, projectId: file.projectId, assetId: file.id }, "1080"),
+            () => storageKeys.filmstrip({ accountId: file.accountId, projectId: file.projectId, assetId: file.id }),
+            () => storageKeys.waveform({ accountId: file.accountId, projectId: file.projectId, assetId: file.id }, "json"),
+          ];
+
+          for (const buildKey of derivedKeyBuilders) {
+            try {
+              await storage.deleteObject(buildKey());
+            } catch {
+              // Ignore - derived assets may not exist
+            }
           }
 
           // Delete from database

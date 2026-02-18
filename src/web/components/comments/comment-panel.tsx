@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 import { CommentThread } from "./comment-thread";
@@ -278,18 +278,29 @@ export function CommentPanel({
   const [showExport, setShowExport] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Track mounted state and abort controller for cleanup
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Load comments
   useEffect(() => {
     const loadComments = async () => {
       if (!fileId && !versionStackId) return;
+
+      // Cancel any in-flight request
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
 
       setIsLoading(true);
       setError(null);
 
       try {
         const response = fileId
-          ? await commentsApi.listByFile(fileId, { include_replies: true, limit: 100 })
-          : await commentsApi.listByVersionStack(versionStackId!, { limit: 100 });
+          ? await commentsApi.listByFile(fileId, { include_replies: true, limit: 100 }, { signal: abortControllerRef.current.signal })
+          : await commentsApi.listByVersionStack(versionStackId!, { limit: 100 }, { signal: abortControllerRef.current.signal });
+
+        // Check if component is still mounted
+        if (!isMountedRef.current) return;
 
         const mappedComments = response.data.map((item) => ({
           ...item.attributes,
@@ -298,14 +309,26 @@ export function CommentPanel({
 
         setComments(mappedComments);
       } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === "AbortError") return;
+        if (!isMountedRef.current) return;
+
         console.error("Failed to load comments:", err);
         setError("Failed to load comments");
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadComments();
+
+    // Cleanup on unmount
+    return () => {
+      isMountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, [fileId, versionStackId]);
 
   // Group, filter, and sort comments
@@ -618,16 +641,16 @@ export function CommentPanel({
         </div>
       )}
 
-      {/* Comments list */}
+      {/* Comments list - only show content when not loading */}
       <div className="comment-panel__list">
-        {threads.length === 0 && !isLoading ? (
+        {!isLoading && threads.length === 0 ? (
           <div className="comment-panel__empty">
             <p>No comments yet</p>
             <p className="comment-panel__empty-hint">
               Be the first to add feedback
             </p>
           </div>
-        ) : (
+        ) : isLoading ? null : (
           threads.map((thread) => (
             <CommentThread
               key={thread.parent.id}

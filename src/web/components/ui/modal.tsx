@@ -38,6 +38,16 @@ export interface ModalProps {
   footer?: React.ReactNode;
 }
 
+/**
+ * Get all focusable elements within a container
+ */
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const elements = container.querySelectorAll<HTMLElement>(
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+  return Array.from(elements);
+}
+
 export function Modal({
   open,
   onClose,
@@ -79,8 +89,36 @@ export function Modal({
       // Prevent body scroll
       document.body.style.overflow = "hidden";
 
+      // Focus trap handler
+      const handleFocusTrap = (event: KeyboardEvent) => {
+        if (event.key !== "Tab" || !modalRef.current) return;
+
+        const focusableElements = getFocusableElements(modalRef.current);
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) {
+          // Shift+Tab: if on first element, move to last
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab: if on last element, move to first
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleFocusTrap);
+
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keydown", handleFocusTrap);
         document.body.style.overflow = "";
 
         // Restore focus

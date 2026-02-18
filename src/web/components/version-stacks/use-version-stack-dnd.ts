@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { versionStacksApi, getErrorMessage } from "@/web/lib/api";
 import type { AssetFile } from "@/web/components/asset-browser";
 
@@ -53,6 +53,13 @@ export interface UseVersionStackDndReturn {
   addToStack: (stackId: string, fileId: string) => Promise<boolean>;
 }
 
+const INITIAL_DRAG_STATE: DragState = {
+  draggedFile: null,
+  targetFile: null,
+  isDragging: false,
+  isValidDrop: false,
+};
+
 export function useVersionStackDnd({
   projectId,
   onStackCreated,
@@ -60,14 +67,17 @@ export function useVersionStackDnd({
   onError,
   enabled = true,
 }: UseVersionStackDndOptions): UseVersionStackDndReturn {
-  const [dragState, setDragState] = useState<DragState>({
-    draggedFile: null,
-    targetFile: null,
-    isDragging: false,
-    isValidDrop: false,
-  });
+  const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
 
   const isProcessingRef = useRef(false);
+
+  // Reset drag state on unmount
+  useEffect(() => {
+    return () => {
+      setDragState(INITIAL_DRAG_STATE);
+      isProcessingRef.current = false;
+    };
+  }, []);
 
   /**
    * Check if a drop is valid (can't drop on self, must be same project)
@@ -123,23 +133,13 @@ export function useVersionStackDnd({
   const handleDrop = useCallback(
     async (targetFile: AssetFile) => {
       if (!enabled || !dragState.draggedFile || isProcessingRef.current) {
-        setDragState({
-          draggedFile: null,
-          targetFile: null,
-          isDragging: false,
-          isValidDrop: false,
-        });
+        setDragState(INITIAL_DRAG_STATE);
         return;
       }
 
       const isValid = isValidDropTarget(dragState.draggedFile, targetFile);
       if (!isValid) {
-        setDragState({
-          draggedFile: null,
-          targetFile: null,
-          isDragging: false,
-          isValidDrop: false,
-        });
+        setDragState(INITIAL_DRAG_STATE);
         return;
       }
 
@@ -161,12 +161,7 @@ export function useVersionStackDnd({
         onError?.(getErrorMessage(err));
       } finally {
         isProcessingRef.current = false;
-        setDragState({
-          draggedFile: null,
-          targetFile: null,
-          isDragging: false,
-          isValidDrop: false,
-        });
+        setDragState(INITIAL_DRAG_STATE);
       }
     },
     [enabled, dragState.draggedFile, isValidDropTarget, projectId, onStackCreated, onError]

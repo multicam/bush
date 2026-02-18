@@ -291,6 +291,63 @@ export async function createNotification(params: {
 }
 
 /**
+ * Helper function to create multiple notifications in batch
+ *
+ * This is more efficient than calling createNotification multiple times
+ * as it performs a single database insert.
+ */
+export async function createNotifications(
+  items: Array<{
+    userId: string;
+    type: string;
+    title: string;
+    body?: string;
+    data?: Record<string, unknown>;
+    projectId?: string;
+  }>
+): Promise<string[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const now = new Date();
+  const notificationIds = items.map(() => generateId("ntf"));
+
+  // Batch insert all notifications
+  await db.insert(notifications).values(
+    items.map((params, index) => ({
+      id: notificationIds[index],
+      userId: params.userId,
+      type: params.type,
+      title: params.title,
+      body: params.body || null,
+      data: params.data || null,
+      readAt: null,
+      createdAt: now,
+    }))
+  );
+
+  // Emit real-time events for each notification
+  for (let i = 0; i < items.length; i++) {
+    const params = items[i];
+    const notificationId = notificationIds[i];
+    emitNotificationEvent("notification.created", {
+      actorId: params.userId,
+      projectId: params.projectId,
+      notificationId,
+      data: {
+        notificationType: params.type,
+        title: params.title,
+        body: params.body,
+        ...params.data,
+      },
+    });
+  }
+
+  return notificationIds;
+}
+
+/**
  * Notification types enum
  */
 export const NOTIFICATION_TYPES = {
