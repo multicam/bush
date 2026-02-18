@@ -8,6 +8,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { CaptionOverlay, type TranscriptWord } from "../transcript";
 import styles from "./audio-viewer.module.css";
 
 /** Waveform data format from server */
@@ -44,6 +45,12 @@ export interface AudioViewerProps {
   };
   /** Comment markers to display on waveform */
   commentMarkers?: CommentMarker[];
+  /** Transcript words for caption display */
+  transcriptWords?: TranscriptWord[];
+  /** Speaker names for caption display */
+  speakerNames?: Record<string, string>;
+  /** Whether captions are enabled */
+  showCaptions?: boolean;
   /** Callback when time changes */
   onTimeUpdate?: (currentTime: number) => void;
   /** Callback when comment marker is clicked */
@@ -84,6 +91,9 @@ export function AudioViewer({
   duration: propDuration,
   meta,
   commentMarkers = [],
+  transcriptWords = [],
+  speakerNames = {},
+  showCaptions = false,
   onTimeUpdate,
   onCommentClick,
   autoPlay = false,
@@ -106,6 +116,7 @@ export function AudioViewer({
   const [isLoadingWaveform, setIsLoadingWaveform] = useState(typeof waveformInput === "string");
   const [isAudioLoading, setIsAudioLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [captionsEnabled, setCaptionsEnabled] = useState(showCaptions);
 
   const duration = audioDuration || propDuration || 0;
 
@@ -334,6 +345,12 @@ export function AudioViewer({
         case "M":
           toggleMute();
           break;
+        case "c":
+        case "C":
+          if (transcriptWords.length > 0) {
+            setCaptionsEnabled((prev) => !prev);
+          }
+          break;
         case "j":
         case "J":
           handleSpeedChange(Math.max(0.25, playbackRate - 0.25));
@@ -361,6 +378,7 @@ export function AudioViewer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [togglePlay, seekRelative, toggleMute, handleSpeedChange, playbackRate, isPlaying, seek, duration]);
 
   // Calculate progress percentage
@@ -442,6 +460,18 @@ export function AudioViewer({
           {name && <h2 className={styles.fileName}>{name}</h2>}
           {metaDataDisplay && <p className={styles.fileMeta}>{metaDataDisplay}</p>}
         </div>
+
+        {/* Caption overlay */}
+        {transcriptWords.length > 0 && (
+          <div className={styles.captionContainer}>
+            <CaptionOverlay
+              words={transcriptWords}
+              currentTime={currentTime}
+              speakerNames={speakerNames}
+              enabled={captionsEnabled}
+            />
+          </div>
+        )}
 
         {/* Waveform */}
         <div className={styles.waveformSection}>
@@ -584,12 +614,30 @@ export function AudioViewer({
               <option value="2">2x</option>
             </select>
           </div>
+
+          {/* Caption toggle */}
+          {transcriptWords.length > 0 && (
+            <>
+              <div className={styles.divider} />
+              <button
+                className={`${styles.controlButton} ${captionsEnabled ? styles.active : ""}`}
+                onClick={() => setCaptionsEnabled(!captionsEnabled)}
+                title={captionsEnabled ? "Hide captions (C)" : "Show captions (C)"}
+                aria-label={captionsEnabled ? "Hide captions" : "Show captions"}
+                aria-pressed={captionsEnabled}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Keyboard shortcut hint */}
       <div className={styles.shortcutHint}>
-        Space: play/pause · ←→: seek · M: mute · J/K/L: speed
+        Space: play/pause · ←→: seek · M: mute · C: captions · J/K/L: speed
       </div>
     </div>
   );

@@ -8,6 +8,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { CaptionOverlay, type TranscriptWord } from "../transcript";
 import styles from "./video-viewer.module.css";
 
 /** Comment marker for timeline */
@@ -54,6 +55,12 @@ export interface VideoViewerProps {
   filmstrip?: FilmstripData;
   /** Comment markers to display on timeline */
   commentMarkers?: CommentMarker[];
+  /** Transcript words for caption display */
+  transcriptWords?: TranscriptWord[];
+  /** Speaker names for caption display */
+  speakerNames?: Record<string, string>;
+  /** Whether captions are enabled */
+  showCaptions?: boolean;
   /** Callback when time changes */
   onTimeUpdate?: (currentTime: number) => void;
   /** Callback when comment marker is clicked */
@@ -104,6 +111,9 @@ export function VideoViewer({
   filmstripUrl,
   filmstrip,
   commentMarkers = [],
+  transcriptWords = [],
+  speakerNames = {},
+  showCaptions = false,
   onTimeUpdate,
   onCommentClick,
   autoPlay = false,
@@ -137,6 +147,9 @@ export function VideoViewer({
 
   // Current resolution
   const [currentResolution, setCurrentResolution] = useState<string>("auto");
+
+  // Caption visibility
+  const [captionsEnabled, setCaptionsEnabled] = useState(showCaptions);
 
   // Shuttle direction (no speed state needed - derived from interval)
   const [shuttleDirection, setShuttleDirection] = useState<"forward" | "backward" | null>(null);
@@ -513,6 +526,11 @@ export function VideoViewer({
         case "m":
           toggleMute();
           break;
+        case "c":
+          if (transcriptWords.length > 0) {
+            setCaptionsEnabled((prev) => !prev);
+          }
+          break;
         case "f":
           toggleFullscreen();
           break;
@@ -549,6 +567,7 @@ export function VideoViewer({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     togglePlay,
     seekRelative,
@@ -674,6 +693,16 @@ export function VideoViewer({
             </svg>
           </div>
         </div>
+      )}
+
+      {/* Caption overlay */}
+      {transcriptWords.length > 0 && (
+        <CaptionOverlay
+          words={transcriptWords}
+          currentTime={currentTime}
+          speakerNames={speakerNames}
+          enabled={captionsEnabled}
+        />
       )}
 
       {/* Controls overlay */}
@@ -963,6 +992,24 @@ export function VideoViewer({
 
             <div className={styles.divider} />
 
+            {/* Caption toggle */}
+            {transcriptWords.length > 0 && (
+              <>
+                <button
+                  className={`${styles.controlButton} ${captionsEnabled ? styles.active : ""}`}
+                  onClick={() => setCaptionsEnabled(!captionsEnabled)}
+                  title={captionsEnabled ? "Hide captions (C)" : "Show captions (C)"}
+                  aria-label={captionsEnabled ? "Hide captions" : "Show captions"}
+                  aria-pressed={captionsEnabled}
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z" />
+                  </svg>
+                </button>
+                <div className={styles.divider} />
+              </>
+            )}
+
             {/* Fullscreen */}
             <button
               className={styles.controlButton}
@@ -986,7 +1033,7 @@ export function VideoViewer({
 
       {/* Keyboard shortcut hint */}
       <div className={styles.shortcutHint}>
-        Space/K: play/pause · J/L: shuttle · ←→: frame · M: mute · F: fullscreen · I/O: in/out points
+        Space/K: play/pause · J/L: shuttle · ←→: frame · M: mute · C: captions · F: fullscreen · I/O: in/out points
       </div>
     </div>
   );

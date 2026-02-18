@@ -1814,3 +1814,221 @@ export function toNotification(
     created_at: attributes.created_at,
   };
 }
+
+// ============================================================================
+// Transcription Types
+// ============================================================================
+
+/**
+ * Transcription status
+ */
+export type TranscriptionStatus = "pending" | "processing" | "completed" | "failed";
+
+/**
+ * Transcription provider
+ */
+export type TranscriptionProvider = "deepgram" | "assemblyai" | "faster-whisper";
+
+/**
+ * Transcription attributes from API
+ */
+export interface TranscriptionAttributes {
+  file_id: string;
+  status: TranscriptionStatus;
+  provider: TranscriptionProvider;
+  language: string | null;
+  language_confidence: number | null;
+  full_text: string | null;
+  speaker_count: number | null;
+  speaker_names: Record<string, string>;
+  duration_seconds: number | null;
+  is_edited: boolean;
+  edited_at: string | null;
+  edited_by_user_id: string | null;
+  edited_by_user: CommentUserAttributes | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Transcript word attributes from API
+ */
+export interface TranscriptWordAttributes {
+  word: string;
+  start_ms: number;
+  end_ms: number;
+  speaker: string | null;
+  confidence: number | null;
+  position: number;
+  original_word: string | null;
+}
+
+/**
+ * Caption attributes from API
+ */
+export interface CaptionAttributes {
+  file_id: string;
+  language: string;
+  format: "srt" | "vtt";
+  label: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+// ============================================================================
+// Transcription API
+// ============================================================================
+
+/**
+ * Transcription API
+ */
+export const transcriptionApi = {
+  /**
+   * Get transcription for a file
+   */
+  get: async (fileId: string) => {
+    return apiFetch<JsonApiSingleResponse<TranscriptionAttributes>>(
+      `/files/${fileId}/transcription`
+    );
+  },
+
+  /**
+   * Generate or re-generate transcription
+   */
+  create: async (fileId: string, options?: {
+    language?: string;
+    speaker_identification?: boolean;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<TranscriptionAttributes>>(
+      `/files/${fileId}/transcription`,
+      {
+        method: "POST",
+        body: JSON.stringify(options || {}),
+      }
+    );
+  },
+
+  /**
+   * Update transcription (edit words, rename speakers)
+   */
+  update: async (fileId: string, data: {
+    speaker_names?: Record<string, string>;
+    words?: Array<{ id: string; word: string }>;
+    full_text?: string;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<TranscriptionAttributes>>(
+      `/files/${fileId}/transcription`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  /**
+   * Delete transcription
+   */
+  delete: async (fileId: string) => {
+    return apiFetch<void>(`/files/${fileId}/transcription`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Export transcription as SRT/VTT/TXT
+   */
+  export: async (fileId: string, format: "srt" | "vtt" | "txt" = "vtt") => {
+    const response = await fetch(
+      `${getApiBaseUrl()}/files/${fileId}/transcription/export?format=${format}`,
+      { credentials: "include" }
+    );
+    if (!response.ok) {
+      throw new ApiError(response.status);
+    }
+    return response.text();
+  },
+
+  /**
+   * Get words for a time range
+   */
+  getWords: async (fileId: string, options?: {
+    start_ms?: number;
+    end_ms?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.start_ms !== undefined) {
+      params.set("start_ms", String(options.start_ms));
+    }
+    if (options?.end_ms !== undefined) {
+      params.set("end_ms", String(options.end_ms));
+    }
+    const queryString = params.toString();
+    const path = `/files/${fileId}/transcription/words${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<{ data: Array<{ id: string; type: "transcript_word"; attributes: TranscriptWordAttributes }> }>(
+      path
+    );
+  },
+};
+
+/**
+ * Captions API
+ */
+export const captionsApi = {
+  /**
+   * List caption tracks for a file
+   */
+  list: async (fileId: string) => {
+    return apiFetch<{ data: Array<{ id: string; type: "caption"; attributes: CaptionAttributes }> }>(
+      `/files/${fileId}/captions`
+    );
+  },
+
+  /**
+   * Upload a caption file
+   */
+  upload: async (fileId: string, data: {
+    file: File;
+    language: string;
+    label?: string;
+    format?: "srt" | "vtt";
+  }) => {
+    const formData = new FormData();
+    formData.append("file", data.file);
+    formData.append("language", data.language);
+    if (data.label) {
+      formData.append("label", data.label);
+    }
+    if (data.format) {
+      formData.append("format", data.format);
+    }
+
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/files/${fileId}/captions`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorResponse: JsonApiErrorResponse | undefined;
+      try {
+        errorResponse = await response.json();
+      } catch {
+        // Ignore JSON parse errors
+      }
+      throw new ApiError(response.status, errorResponse);
+    }
+
+    return response.json() as Promise<JsonApiSingleResponse<CaptionAttributes>>;
+  },
+
+  /**
+   * Delete a caption track
+   */
+  delete: async (fileId: string, captionId: string) => {
+    return apiFetch<void>(`/files/${fileId}/captions/${captionId}`, {
+      method: "DELETE",
+    });
+  },
+};

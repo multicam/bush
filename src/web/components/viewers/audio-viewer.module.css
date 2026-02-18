@@ -218,6 +218,11 @@
   border-color: #666;
 }
 
+.controlButton.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
 .controlButton svg {
   width: 18px;
   height: 18px;
@@ -342,4 +347,16 @@
 
 .errorMessage {
   font-size: 14px;
+}
+
+/* Caption container */
+.captionContainer {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
