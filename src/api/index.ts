@@ -36,6 +36,7 @@ import {
   shareRoutes,
   notificationRoutes,
   collectionRoutes,
+  webhookRoutes,
 } from "./routes/index.js";
 import { getShareBySlug } from "./routes/index.js";
 
@@ -210,6 +211,12 @@ v4.route("/projects/:projectId/collections", collectionRoutes);
 
 // Collection operations (standalone)
 v4.route("/collections", collectionRoutes);
+
+// Webhooks (nested under accounts)
+v4.route("/accounts/:accountId/webhooks", webhookRoutes);
+
+// Webhook operations (standalone)
+v4.route("/webhooks", webhookRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);

@@ -489,3 +489,83 @@ export const collectionAssets = sqliteTable("collection_assets", {
   collectionFileIdx: uniqueIndex("collection_assets_collection_file_idx").on(table.collectionId, table.fileId),
   sortOrderIdx: index("collection_assets_sort_order_idx").on(table.sortOrder),
 }));
+
+/**
+ * Webhook Event Types
+ */
+export type WebhookEventType =
+  | "file.created"
+  | "file.updated"
+  | "file.deleted"
+  | "file.status_changed"
+  | "file.downloaded"
+  | "version.created"
+  | "comment.created"
+  | "comment.updated"
+  | "comment.deleted"
+  | "comment.completed"
+  | "share.created"
+  | "share.viewed"
+  | "project.created"
+  | "project.updated"
+  | "project.deleted"
+  | "member.added"
+  | "member.removed"
+  | "transcription.completed";
+
+/**
+ * Webhooks - HTTP webhook endpoints for event notifications
+ */
+export const webhooks = sqliteTable("webhooks", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdByUserId: text("created_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  secret: text("secret").notNull(), // Used for HMAC-SHA256 signatures
+  events: text("events", { mode: "json" }).$type<WebhookEvent[]>().notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  lastTriggeredAt: integer("last_triggered_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  accountIdx: index("webhooks_account_id_idx").on(table.accountId),
+  activeIdx: index("webhooks_is_active_idx").on(table.isActive),
+}));
+
+/**
+ * Webhook Event - for type-safe event configuration
+ */
+export interface WebhookEvent {
+  type: WebhookEventType;
+  filters?: {
+    projectId?: string;
+    workspaceId?: string;
+  };
+}
+
+/**
+ * Webhook Delivery Status
+ */
+export type WebhookDeliveryStatus = "pending" | "success" | "failed" | "retrying";
+
+/**
+ * Webhook Deliveries - Track webhook delivery attempts
+ */
+export const webhookDeliveries = sqliteTable("webhook_deliveries", {
+  id: text("id").primaryKey(),
+  webhookId: text("webhook_id").notNull().references(() => webhooks.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  payload: text("payload", { mode: "json" }).notNull(),
+  statusCode: integer("status_code"),
+  response: text("response"),
+  status: text("status", { enum: ["pending", "success", "failed", "retrying"] }).notNull().default("pending"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  nextRetryAt: integer("next_retry_at", { mode: "timestamp" }),
+  deliveredAt: integer("delivered_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  webhookIdx: index("webhook_deliveries_webhook_id_idx").on(table.webhookId),
+  statusIdx: index("webhook_deliveries_status_idx").on(table.status),
+  createdAtIdx: index("webhook_deliveries_created_at_idx").on(table.createdAt),
+}));

@@ -19,6 +19,7 @@ export { default as metadataRoutes } from "./metadata.js";
 export { default as shareRoutes } from "./shares.js";
 export { default as notificationRoutes, createNotification, NOTIFICATION_TYPES } from "./notifications.js";
 export { default as collectionRoutes } from "./collections.js";
+export { default as webhookRoutes, emitWebhookEvent } from "./webhooks.js";
 export {
   getVersionStackComments,
   createVersionStackComment,

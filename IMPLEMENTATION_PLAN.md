@@ -25,14 +25,14 @@
 - **Member Management API**: COMPLETED (4 endpoints)
 - **Notifications API**: COMPLETED (5 endpoints)
 - **Collections API**: COMPLETED (7 endpoints)
-- Webhooks API: NOT IMPLEMENTED (0%)
+- **Webhooks API**: COMPLETED (7 endpoints)
 - Transcription API: NOT IMPLEMENTED (0%)
 - Custom Fields API: COMPLETED
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 110/118 (93%) | 16 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5), collections(7) |
-| **Database Tables** | 20/20+ (100%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility, collections, collectionAssets |
+| **API Endpoints** | 117/118 (99%) | 17 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5), collections(7), webhooks(7) |
+| **Database Tables** | 22/22+ (100%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility, collections, collectionAssets, webhooks, webhookDeliveries |
 | **Test Files** | 22 | 282 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 3 | Minor items remaining |
@@ -864,13 +864,28 @@ These items are required for core platform functionality but are missing from th
 
 ### 3.6 Webhook System [P2] - 3 days
 
-**NOT STARTED**
+**COMPLETED** (2026-02-18)
 
-- Webhook CRUD, event subscriptions
-- HMAC-SHA256 signatures
-- BullMQ delivery with retries
-- Delivery logs UI
-- **Dependencies**: 1.5 (API), 2.2 (Processing for events)
+- **[P2] Webhooks API** [1d] -- COMPLETED
+  - `src/api/routes/webhooks.ts` - Full webhooks API
+  - Endpoints: GET/POST list/create, GET/PUT/DELETE single, GET deliveries, POST test
+  - **Dependencies**: 1.5 (API) - DONE
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.12
+
+- **Features implemented**:
+  - Webhook CRUD (create, read, update, delete)
+  - Event subscriptions (18 event types)
+  - HMAC-SHA256 signatures for payload verification
+  - Test webhook endpoint (immediate delivery)
+  - Delivery tracking and logs
+  - Active/inactive status toggle
+  - **Pending**: BullMQ background delivery with retries (delivery records created, async processing not yet wired)
+
+- **Database schema**:
+  - `webhooks` table - endpoint configuration
+  - `webhookDeliveries` table - delivery tracking
+
+- **Remaining**: BullMQ worker for async delivery, Delivery logs UI
 
 ### 3.7 Asset Lifecycle Management [P2] - 2 days
 
@@ -1095,6 +1110,57 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Webhooks API Implementation
+
+**Completed Work:**
+
+1. **Webhooks API COMPLETED** - `src/api/routes/webhooks.ts`
+   - `GET /v4/accounts/:accountId/webhooks` - List webhooks for account
+   - `POST /v4/accounts/:accountId/webhooks` - Create webhook
+   - `GET /v4/webhooks/:id` - Get webhook details
+   - `PUT /v4/webhooks/:id` - Update webhook
+   - `DELETE /v4/webhooks/:id` - Delete webhook
+   - `GET /v4/webhooks/:id/deliveries` - List recent deliveries
+   - `POST /v4/webhooks/:id/test` - Send test event
+
+2. **Database Schema Extensions** - `src/db/schema.ts`
+   - Added `webhooks` table with fields: id, accountId, createdByUserId, name, url, secret, events, isActive, lastTriggeredAt
+   - Added `webhookDeliveries` table for tracking delivery attempts
+   - Added `WebhookEventType` and `WebhookEvent` interfaces
+
+3. **Features**:
+   - 18 supported event types (file, comment, share, project, member, transcription events)
+   - HMAC-SHA256 payload signing
+   - Test webhook endpoint with immediate delivery
+   - Delivery tracking with status, response codes, and retry info
+   - Active/inactive toggle
+   - Creator information included in responses
+   - `emitWebhookEvent()` helper for integration with other services
+
+**New Files Created:**
+- `src/api/routes/webhooks.ts` - Webhooks API endpoints
+
+**Updated Files:**
+- `src/db/schema.ts` - Added webhooks and webhookDeliveries tables
+- `src/api/routes/index.ts` - Export webhookRoutes and emitWebhookEvent
+- `src/api/index.ts` - Mount webhooks routes under /v4/accounts/:accountId/webhooks and /v4/webhooks
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** Clean (0 errors in webhooks)
+
+**API Endpoints:** 110 → 117 (+7)
+**Database Tables:** 20 → 22 (+2: webhooks, webhookDeliveries)
+**Route Modules:** 16 → 17 (+webhooks)
+
+**Status Changes:**
+- Webhooks API: 0% → 100% COMPLETE
+
+**Spec refs:** `specs/17-api-complete.md` Section 6.12
+
+**Remaining:**
+- BullMQ worker for async delivery with retries (1min, 5min, 30min)
+- Delivery logs UI
 
 ### 2026-02-18 Collections API Implementation
 
