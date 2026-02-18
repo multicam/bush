@@ -569,3 +569,83 @@ export const webhookDeliveries = sqliteTable("webhook_deliveries", {
   statusIdx: index("webhook_deliveries_status_idx").on(table.status),
   createdAtIdx: index("webhook_deliveries_created_at_idx").on(table.createdAt),
 }));
+
+/**
+ * Transcription status values
+ */
+export type TranscriptionStatus = "pending" | "processing" | "completed" | "failed";
+
+/**
+ * Transcription provider types
+ */
+export type TranscriptionProvider = "deepgram" | "assemblyai" | "faster-whisper";
+
+/**
+ * Speaker names map (speaker index -> display name)
+ */
+export type SpeakerNames = Record<string, string>;
+
+/**
+ * Transcripts - Transcription of audio/video files
+ */
+export const transcripts = sqliteTable("transcripts", {
+  id: text("id").primaryKey(),
+  fileId: text("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  provider: text("provider", { enum: ["deepgram", "assemblyai", "faster-whisper"] }).notNull(),
+  providerTranscriptId: text("provider_transcript_id"),
+  fullText: text("full_text"),
+  language: text("language"),
+  languageConfidence: integer("language_confidence"),
+  speakerCount: integer("speaker_count"),
+  speakerNames: text("speaker_names", { mode: "json" }).$type<SpeakerNames>().default({}),
+  status: text("status", { enum: ["pending", "processing", "completed", "failed"] }).notNull().default("pending"),
+  errorMessage: text("error_message"),
+  durationSeconds: integer("duration_seconds"),
+  isEdited: integer("is_edited", { mode: "boolean" }).notNull().default(false),
+  editedAt: integer("edited_at", { mode: "timestamp" }),
+  editedByUserId: text("edited_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  fileIdx: uniqueIndex("transcripts_file_id_idx").on(table.fileId),
+  statusIdx: index("transcripts_status_idx").on(table.status),
+  providerIdx: index("transcripts_provider_idx").on(table.provider),
+}));
+
+/**
+ * Transcript Words - Individual words with timestamps for time-synced playback
+ */
+export const transcriptWords = sqliteTable("transcript_words", {
+  id: text("id").primaryKey(),
+  transcriptId: text("transcript_id").notNull().references(() => transcripts.id, { onDelete: "cascade" }),
+  word: text("word").notNull(),
+  startMs: integer("start_ms").notNull(),
+  endMs: integer("end_ms").notNull(),
+  speaker: integer("speaker"),
+  confidence: integer("confidence"),
+  position: integer("position").notNull(),
+  originalWord: text("original_word"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  transcriptIdx: index("transcript_words_transcript_id_idx").on(table.transcriptId),
+  transcriptStartIdx: index("transcript_words_transcript_start_idx").on(table.transcriptId, table.startMs),
+  transcriptPositionIdx: index("transcript_words_transcript_position_idx").on(table.transcriptId, table.position),
+}));
+
+/**
+ * Captions - Uploaded caption tracks (SRT/VTT files)
+ */
+export const captions = sqliteTable("captions", {
+  id: text("id").primaryKey(),
+  fileId: text("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  language: text("language").notNull(),
+  format: text("format", { enum: ["srt", "vtt"] }).notNull(),
+  storageKey: text("storage_key").notNull(),
+  label: text("label"),
+  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
+  createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  fileIdx: index("captions_file_id_idx").on(table.fileId),
+  languageIdx: index("captions_language_idx").on(table.language),
+}));

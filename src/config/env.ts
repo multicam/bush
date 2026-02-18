@@ -19,6 +19,8 @@ export const SECRET_KEYS = [
   "CDN_SIGNING_KEY",
   "SMTP_PASS",
   "SESSION_SECRET",
+  "DEEPGRAM_API_KEY",
+  "ASSEMBLYAI_API_KEY",
 ] as const;
 
 /**
@@ -84,6 +86,13 @@ const envSchema = z.object({
   WORKER_PROXY_CONCURRENCY: z.coerce.number().int().positive().default(2),
   WORKER_WAVEFORM_CONCURRENCY: z.coerce.number().int().positive().default(4),
   WORKER_METADATA_CONCURRENCY: z.coerce.number().int().positive().default(8),
+
+  // Transcription
+  TRANSCRIPTION_PROVIDER: z.enum(["deepgram", "assemblyai", "faster-whisper"]).optional().default("deepgram"),
+  TRANSCRIPTION_MAX_DURATION: z.coerce.number().int().positive().default(7200),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  ASSEMBLYAI_API_KEY: z.string().optional(),
+  FASTER_WHISPER_URL: z.string().optional(),
 
   // Email
   SMTP_HOST: z.string().default("localhost"),
@@ -183,6 +192,8 @@ function loadConfig(): Env {
       WORKER_PROXY_CONCURRENCY: 2,
       WORKER_WAVEFORM_CONCURRENCY: 4,
       WORKER_METADATA_CONCURRENCY: 8,
+      TRANSCRIPTION_PROVIDER: "deepgram",
+      TRANSCRIPTION_MAX_DURATION: 7200,
     } as Env;
   }
 

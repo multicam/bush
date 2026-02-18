@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Member Management + Notifications API + Notifications UI Implementation)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. Webhooks/Collections/Transcription APIs NOT STARTED. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
+**Last updated**: 2026-02-18 (Transcription and Captions API Implementation)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks API COMPLETED**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) DEFERRED to future release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
@@ -26,13 +26,13 @@
 - **Notifications API**: COMPLETED (5 endpoints)
 - **Collections API**: COMPLETED (7 endpoints)
 - **Webhooks API**: COMPLETED (7 endpoints)
-- Transcription API: NOT IMPLEMENTED (0%)
+- **Transcription API**: COMPLETED (11 endpoints: 8 transcription + 3 captions)
 - Custom Fields API: COMPLETED
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 117/118 (99%) | 17 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5), collections(7), webhooks(7) |
-| **Database Tables** | 22/22+ (100%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility, collections, collectionAssets, webhooks, webhookDeliveries |
+| **API Endpoints** | 128/129 (99%) | 18 route modules: auth(3), accounts(10), workspaces(5), projects(5), users(3), files(14), folders(9), bulk(6), search(2), version-stacks(10), comments(10), custom-fields(6), metadata(3), shares(11), notifications(5), collections(7), webhooks(7), transcription(11) |
+| **Database Tables** | 25/25+ (100%) | Core tables: accounts, users, accountMemberships, workspaces, projects, folders, files, versionStacks, comments, shares, shareAssets, shareActivity, notifications, workspacePermissions, projectPermissions, folderPermissions, customFields, customFieldVisibility, collections, collectionAssets, webhooks, webhookDeliveries, transcripts, transcript_words, captions |
 | **Test Files** | 22 | 282 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 3 | Minor items remaining |
@@ -166,6 +166,46 @@ These items are required for core platform functionality but are missing from th
     - Read/unread filtering
     - Relative timestamp display
   - **Spec refs**: `specs/00-atomic-features.md` Section 13, `specs/17-api-complete.md` Section 6.15
+
+### Transcription System (COMPLETED 2026-02-18)
+
+- **[P1] Transcription and Captions API** [2d] -- COMPLETED (2026-02-18)
+  - **Implemented files**:
+    - `src/api/routes/transcription.ts` - Full transcription and captions API
+    - `src/transcription/types.ts` - Transcription job data, provider interface, config types
+    - `src/transcription/providers/deepgram.ts` - Deepgram Nova-2 provider implementation
+    - `src/transcription/providers/faster-whisper.ts` - Self-hosted fallback provider
+    - `src/transcription/export.ts` - VTT/SRT/TXT export with word grouping into segments
+    - `src/transcription/processor.ts` - BullMQ job processor with FFmpeg audio extraction
+    - `src/transcription/index.ts` - Module entry point
+  - **Endpoints**:
+    - `GET /v4/files/:fileId/transcription` - Get transcription for a file
+    - `POST /v4/files/:fileId/transcription` - Generate transcription (enqueue job)
+    - `PUT /v4/files/:fileId/transcription` - Update transcription (edit words, rename speakers)
+    - `DELETE /v4/files/:fileId/transcription` - Delete transcription
+    - `GET /v4/files/:fileId/transcription/export` - Export as SRT/VTT/TXT
+    - `GET /v4/files/:fileId/transcription/words` - Get words for time range
+    - `GET /v4/files/:fileId/captions` - List caption tracks
+    - `POST /v4/files/:fileId/captions` - Upload caption file (SRT/VTT)
+    - `DELETE /v4/files/:fileId/captions/:captionId` - Delete caption track
+  - **Database schema** (`src/db/schema.ts`):
+    - `transcripts` table: id, file_id, provider, provider_transcript_id, full_text, language, language_confidence, speaker_count, speaker_names, status, error_message, duration_seconds, is_edited, edited_at, edited_by_user_id
+    - `transcript_words` table: id, transcript_id, word, start_ms, end_ms, speaker, confidence, position, original_word
+    - `captions` table: id, file_id, language, format, storage_key, label, is_default, created_by_user_id
+  - **Configuration** (`src/config/env.ts`):
+    - Added TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MAX_DURATION, DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY, FASTER_WHISPER_URL
+    - Added DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY to SECRET_KEYS for log scrubbing
+  - **Features**:
+    - Deepgram Nova-2 as primary provider ($200 free credits)
+    - faster-whisper as self-hosted fallback
+    - Word-level timestamps for time-synced playback
+    - Speaker diarization support
+    - Editable transcripts with original word preservation
+    - Caption export to SRT, VTT, TXT formats
+    - Upload external caption files (SRT/VTT)
+    - Automatic transcription job enqueueing after video/audio upload
+    - FFmpeg audio extraction for transcription processing
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.13
 
 ---
 
@@ -844,14 +884,55 @@ These items are required for core platform functionality but are missing from th
 
 ### 3.4 Transcription and Captions [P1] - 4 days **(PROMOTED to current release)**
 
-**NOT STARTED** — Pending R6 (Transcription Service) research
+**COMPLETED** (2026-02-18)
 
-- Provider integration (R6 decision — research needed)
-- 27 languages, speaker diarization
-- Editable transcripts, time-synced highlighting
-- Caption generation/export (VTT, SRT)
-- Transcript search integration
-- **Dependencies**: 2.6 (Video) - DONE, 2.8a (Audio) - DONE, R6 (Transcription research) - NOT STARTED
+- **[P1] Transcription API** [2d] -- COMPLETED (2026-02-18)
+  - `src/api/routes/transcription.ts` - Full transcription API
+  - **Endpoints**:
+    - `GET /v4/files/:fileId/transcription` - Get transcription for a file
+    - `POST /v4/files/:fileId/transcription` - Generate transcription (enqueue job)
+    - `PUT /v4/files/:fileId/transcription` - Update transcription (edit words, rename speakers)
+    - `DELETE /v4/files/:fileId/transcription` - Delete transcription
+    - `GET /v4/files/:fileId/transcription/export` - Export as SRT/VTT/TXT
+    - `GET /v4/files/:fileId/transcription/words` - Get words for time range
+    - `GET /v4/files/:fileId/captions` - List caption tracks
+    - `POST /v4/files/:fileId/captions` - Upload caption file
+    - `DELETE /v4/files/:fileId/captions/:captionId` - Delete caption track
+  - **Dependencies**: 2.6 (Video) - DONE, 2.8a (Audio) - DONE
+  - **Spec refs**: `specs/17-api-complete.md` Section 6.13
+
+- **Features implemented**:
+  - Deepgram Nova-2 as primary provider ($200 free credits)
+  - faster-whisper as self-hosted fallback provider
+  - Word-level timestamps for time-synced playback
+  - Speaker diarization support (speaker identification)
+  - Editable transcripts with original word preservation
+  - Caption export to SRT, VTT, TXT formats
+  - Upload external caption files (SRT/VTT)
+  - Automatic transcription job enqueueing after video/audio upload
+  - Multiple language support with confidence scoring
+  - FFmpeg audio extraction for transcription processing
+
+- **Database schema** (`src/db/schema.ts`):
+  - `transcripts` table: id, file_id, provider, provider_transcript_id, full_text, language, language_confidence, speaker_count, speaker_names, status, error_message, duration_seconds, is_edited, edited_at, edited_by_user_id
+  - `transcript_words` table: id, transcript_id, word, start_ms, end_ms, speaker, confidence, position, original_word
+  - `captions` table: id, file_id, language, format, storage_key, label, is_default, created_by_user_id
+
+- **Transcription module** (`src/transcription/`):
+  - `types.ts` - Transcription job data, provider interface, config types
+  - `providers/deepgram.ts` - Deepgram Nova-2 provider implementation
+  - `providers/faster-whisper.ts` - Self-hosted fallback provider
+  - `export.ts` - VTT/SRT/TXT export with word grouping into segments
+  - `processor.ts` - BullMQ job processor with FFmpeg audio extraction
+  - `index.ts` - Module entry point
+
+- **Configuration** (`src/config/env.ts`):
+  - TRANSCRIPTION_PROVIDER, TRANSCRIPTION_MAX_DURATION environment variables
+  - DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY for provider authentication
+  - FASTER_WHISPER_URL for self-hosted fallback
+  - Added DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY to SECRET_KEYS for log scrubbing
+
+- **Remaining**: Transcription UI (frontend components for transcript display/editing)
 
 ### 3.5 Enhanced Search [P2] - 3 days
 

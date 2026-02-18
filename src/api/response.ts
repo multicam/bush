@@ -272,4 +272,6 @@ export const RESOURCE_TYPES = {
   CUSTOM_FIELD: "custom_field",
   COLLECTION: "collection",
   WEBHOOK: "webhook",
+  TRANSCRIPT: "transcript",
+  CAPTION: "caption",
 } as const;

@@ -37,6 +37,8 @@ import {
   notificationRoutes,
   collectionRoutes,
   webhookRoutes,
+  transcriptionRoutes,
+  captionsRoutes,
 } from "./routes/index.js";
 import { getShareBySlug } from "./routes/index.js";
 
@@ -217,6 +219,18 @@ v4.route("/accounts/:accountId/webhooks", webhookRoutes);
 
 // Webhook operations (standalone)
 v4.route("/webhooks", webhookRoutes);
+
+// Transcription (nested under files)
+v4.route("/files/:fileId/transcription", transcriptionRoutes);
+
+// Transcription words (nested under files)
+v4.route("/files/:fileId/transcription/words", transcriptionRoutes);
+
+// Transcription export (nested under files)
+v4.route("/files/:fileId/transcription/export", transcriptionRoutes);
+
+// Captions (nested under files)
+v4.route("/files/:fileId/captions", captionsRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);

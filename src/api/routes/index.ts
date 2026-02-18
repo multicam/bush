@@ -20,6 +20,7 @@ export { default as shareRoutes } from "./shares.js";
 export { default as notificationRoutes, createNotification, NOTIFICATION_TYPES } from "./notifications.js";
 export { default as collectionRoutes } from "./collections.js";
 export { default as webhookRoutes, emitWebhookEvent } from "./webhooks.js";
+export { default as transcriptionRoutes, captionsApp as captionsRoutes } from "./transcription.js";
 export {
   getVersionStackComments,
   createVersionStackComment,
