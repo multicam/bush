@@ -1,3 +1,8 @@
+---
+description: Deep code review — triage, fix, refactor, test. Track in @REVIEW_PLAN.md.
+model: glm-5
+---
+
 0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
 0b. Study @REVIEW_PLAN.md (if present) to understand review progress so far.
 0c. Study `src/*` with up to 250 parallel Sonnet subagents to understand the codebase.
