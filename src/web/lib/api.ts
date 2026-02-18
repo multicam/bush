@@ -330,6 +330,13 @@ export interface FileAttributes {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  // Metadata fields for badge display
+  technicalMetadata?: TechnicalMetadata | null;
+  rating?: number | null;
+  assetStatus?: string | null;
+  keywords?: string[];
+  notes?: string | null;
+  assigneeId?: string | null;
 }
 
 /**

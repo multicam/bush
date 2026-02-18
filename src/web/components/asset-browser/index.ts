@@ -14,6 +14,7 @@ export { AssetList } from "./asset-list";
 export { AssetCard } from "./asset-card";
 export { FolderCard } from "./folder-card";
 export { ViewControls } from "./view-controls";
+export { MetadataBadges } from "./metadata-badges";
 
 // Types
 export type {

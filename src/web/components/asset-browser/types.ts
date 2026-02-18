@@ -18,6 +18,13 @@ export interface AssetFile {
   thumbnailUrl?: string | null;
   createdAt: string;
   updatedAt: string;
+  // Optional metadata fields for badge display
+  duration?: number | null; // in seconds
+  width?: number | null;
+  height?: number | null;
+  rating?: number | null; // 1-5
+  assetStatus?: string | null; // Custom status label
+  keywords?: string[];
 }
 
 export interface AssetFolder {

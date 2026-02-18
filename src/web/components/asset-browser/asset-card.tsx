@@ -3,6 +3,7 @@
  *
  * Card component for displaying a single asset in grid view.
  * Reference: IMPLEMENTATION_PLAN.md 2.3 Asset Browser and Navigation
+ * Reference: IMPLEMENTATION_PLAN.md [P2] Metadata Badges
  */
 "use client";
 
@@ -11,6 +12,7 @@ import { Badge } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import type { AssetFile, CardSize } from "./types";
 import { CARD_SIZE_DIMENSIONS } from "./types";
+import { MetadataBadges } from "./metadata-badges";
 import styles from "./asset-card.module.css";
 
 interface AssetCardProps {
@@ -128,6 +130,9 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
           {formatFileSize(file.fileSizeBytes)}
         </span>
       </div>
+
+      {/* Metadata badges */}
+      <MetadataBadges file={file} cardSize={cardSize} />
     </div>
   );
 }

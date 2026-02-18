@@ -162,6 +162,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     thumbnailUrl: f.thumbnailUrl ?? null,
     createdAt: f.createdAt,
     updatedAt: f.updatedAt,
+    // Metadata for badge display
+    duration: f.technicalMetadata?.duration ?? null,
+    width: f.technicalMetadata?.width ?? null,
+    height: f.technicalMetadata?.height ?? null,
+    rating: f.rating ?? null,
+    assetStatus: f.assetStatus ?? null,
+    keywords: f.keywords ?? [],
   }));
 
   // Convert FolderItem to AssetFolder format for AssetBrowser

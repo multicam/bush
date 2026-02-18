@@ -120,10 +120,19 @@
     - Loading indicator for additional content
     - Preserved folder-first ordering
 
-- **[P2] Metadata Badges** [2h] -- NOT STARTED
-  - Show key metadata on asset cards
-  - Configurable which fields display
+- **[P2] Metadata Badges** [2h] -- COMPLETED (2026-02-18)
+  - Show key metadata on asset cards (duration, resolution, rating, status, keywords)
+  - Badge display adapts to card size (small: 2, medium: 3, large: 4 badges)
+  - Priority ordering: duration → resolution → rating → status → keywords
   - **Dependencies**: Built-in fields - DONE
+  - **Implemented files**:
+    - `src/web/components/asset-browser/metadata-badges.tsx` - MetadataBadges component
+    - `src/web/components/asset-browser/metadata-badges.module.css` - Badge styles
+    - `src/web/components/asset-browser/asset-card.tsx` - Integrated MetadataBadges
+    - `src/web/components/asset-browser/types.ts` - Extended AssetFile with metadata fields
+    - `src/web/lib/api.ts` - Extended FileAttributes with metadata fields
+    - `src/web/app/projects/[id]/page.tsx` - Maps API metadata to AssetFile
+    - `src/web/components/asset-browser/metadata-badges.test.tsx` - Test coverage
 
 - **[P2] Enhanced Search** [3d] -- NOT STARTED
   - Visual search (Vision API)
