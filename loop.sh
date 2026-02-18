@@ -8,22 +8,24 @@
 #   ./loop.sh review       # Review mode, unlimited iterations
 #   ./loop.sh review 10    # Review mode, max 10 iterations
 
+DEFAULT_MODEL="glm-5"
+
 # Parse arguments
 if [ "$1" = "plan" ]; then
     MODE="plan"
-    PROMPT_FILE="ralph-prompts/anthropic/plan.md"
+    PROMPT_FILE="ralph-prompts/$DEFAULT_MODEL/plan.md"
     MAX_ITERATIONS=${2:-0}
 elif [ "$1" = "review" ]; then
     MODE="review"
-    PROMPT_FILE="ralph-prompts/anthropic/review.md"
+    PROMPT_FILE="ralph-prompts/$DEFAULT_MODEL/review.md"
     MAX_ITERATIONS=${2:-0}
 elif [[ "$1" =~ ^[0-9]+$ ]]; then
     MODE="build"
-    PROMPT_FILE="ralph-prompts/anthropic/build.md"
+    PROMPT_FILE="ralph-prompts/$DEFAULT_MODEL/build.md"
     MAX_ITERATIONS=$1
 else
     MODE="build"
-    PROMPT_FILE="ralph-prompts/anthropic/build.md"
+    PROMPT_FILE="ralph-prompts/$DEFAULT_MODEL/build.md"
     MAX_ITERATIONS=0
 fi
 
