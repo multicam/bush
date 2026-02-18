@@ -25,3 +25,15 @@ export * from "./schema.js";
 
 // Export the raw SQLite instance for advanced use cases
 export { sqlite };
+
+/**
+ * Close the database connection (for graceful shutdown)
+ */
+export function closeDatabase(): void {
+  try {
+    sqlite.close();
+    console.log("[Database] Connection closed");
+  } catch (error) {
+    console.error("[Database] Error closing connection:", error);
+  }
+}

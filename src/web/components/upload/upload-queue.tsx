@@ -316,7 +316,11 @@ export function UploadQueue({
 }: UploadQueueProps) {
   // Keep a ref to files to avoid stale closures in callbacks
   const filesRef = useRef(files);
-  filesRef.current = files;
+
+  // Update ref in useEffect to avoid updating during render
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   // Calculate queue statistics
   const stats = useMemo(() => {

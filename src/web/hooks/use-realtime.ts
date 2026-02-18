@@ -96,7 +96,11 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
   // Use a ref for the onStateChange callback to avoid re-initialization
   // when the callback changes (e.g., inline functions)
   const onStateChangeRef = useRef(onStateChange);
-  onStateChangeRef.current = onStateChange;
+
+  // Update ref in useEffect to avoid updating during render
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
 
   // Initialize socket on mount
   useEffect(() => {
@@ -194,7 +198,11 @@ export function useChannel(
   // Use a ref for the onEvent callback to avoid re-subscriptions
   // when the callback changes (e.g., inline functions)
   const onEventRef = useRef(onEvent);
-  onEventRef.current = onEvent;
+
+  // Update ref in useEffect to avoid updating during render
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
 
   // Parse event filter into a set for quick lookup (useMemo to avoid accessing during render)
   const eventFilterSet = useMemo<Set<string> | null>(() => {

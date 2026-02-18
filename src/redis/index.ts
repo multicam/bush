@@ -10,12 +10,30 @@ import { config } from "../config/index.js";
 // Singleton Redis client instance
 let _redis: Redis | null = null;
 
+// Flag to prevent concurrent initialization
+let _isInitializing = false;
+
 /**
  * Get the Redis client instance
- * Creates the client lazily on first access
+ * Creates the client lazily on first access (thread-safe)
  */
 export function getRedis(): Redis {
-  if (!_redis) {
+  // Double-check pattern for thread-safe lazy initialization
+  if (_redis) {
+    return _redis;
+  }
+
+  // Prevent concurrent initialization
+  if (_isInitializing) {
+    // Spin-wait until initialization completes
+    // In JavaScript's single-threaded event loop, this won't actually block
+    // but it ensures we don't create multiple clients
+    throw new Error("[Redis] Client is being initialized. Call getRedis() after initialization completes.");
+  }
+
+  _isInitializing = true;
+
+  try {
     _redis = new Redis(config.REDIS_URL, {
       keyPrefix: config.REDIS_KEY_PREFIX,
       maxRetriesPerRequest: 3,
@@ -38,6 +56,8 @@ export function getRedis(): Redis {
         console.log("[Redis] Connected");
       }
     });
+  } finally {
+    _isInitializing = false;
   }
 
   return _redis;

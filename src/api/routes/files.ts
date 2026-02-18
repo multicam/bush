@@ -826,6 +826,19 @@ app.post("/:id/multipart", async (c) => {
     });
   }
 
+  // Validate chunk size is reasonable (at least 5MB per chunk for files > 5MB)
+  // This prevents abuse with thousands of tiny chunks
+  const MIN_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  if (file.fileSizeBytes > MIN_CHUNK_SIZE) {
+    const expectedMaxChunks = Math.ceil(file.fileSizeBytes / MIN_CHUNK_SIZE);
+    if (chunkCount > expectedMaxChunks * 2) {
+      throw new ValidationError(
+        `chunk_count (${chunkCount}) is excessive for file size (${file.fileSizeBytes} bytes). Maximum recommended: ${expectedMaxChunks * 2}`,
+        { pointer: "/data/attributes/chunk_count" }
+      );
+    }
+  }
+
   // Build storage key
   const storageKey = {
     accountId: session.currentAccountId,
@@ -892,6 +905,18 @@ app.get("/:id/multipart/parts", async (c) => {
     throw new ValidationError("chunk_count must be between 1 and 10000", {
       pointer: "/query/chunk_count",
     });
+  }
+
+  // Validate chunk size is reasonable (at least 5MB per chunk for files > 5MB)
+  const MIN_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  if (file.fileSizeBytes > MIN_CHUNK_SIZE) {
+    const expectedMaxChunks = Math.ceil(file.fileSizeBytes / MIN_CHUNK_SIZE);
+    if (chunkCount > expectedMaxChunks * 2) {
+      throw new ValidationError(
+        `chunk_count (${chunkCount}) is excessive for file size (${file.fileSizeBytes} bytes). Maximum recommended: ${expectedMaxChunks * 2}`,
+        { pointer: "/query/chunk_count" }
+      );
+    }
   }
 
   // Build storage key

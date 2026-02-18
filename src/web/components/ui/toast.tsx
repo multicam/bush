@@ -137,17 +137,21 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     }
   }, [toast.duration, onClose]);
 
+  // Generate unique ID for description element (for aria-describedby)
+  const descriptionId = toast.description ? `${toast.id}-description` : undefined;
+
   return (
     <div
       className={`toast toast--${toast.type}`}
       role="alert"
       aria-live="polite"
+      aria-describedby={descriptionId}
     >
       <ToastIcon type={toast.type} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p className="toast-title">{toast.title}</p>
         {toast.description && (
-          <p className="toast-description">
+          <p id={descriptionId} className="toast-description">
             {toast.description}
           </p>
         )}

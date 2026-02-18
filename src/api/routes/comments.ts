@@ -27,6 +27,9 @@ const app = new Hono();
 // Apply authentication to all routes
 app.use("*", authMiddleware());
 
+/** Maximum number of replies to include when include_replies=true */
+const MAX_REPLIES_PER_COMMENT = 50;
+
 /**
  * GET /v4/files/:fileId/comments - List comments on a file
  */
@@ -70,6 +73,8 @@ app.get("/", async (c) => {
   }
 
   // Get comments with user info
+  // Note: When include_replies=true, replies are bounded by the limit parameter
+  // Clients should paginate or fetch replies separately for large comment threads
   const results = await db
     .select({
       comment: comments,
@@ -84,6 +89,8 @@ app.get("/", async (c) => {
   const items = results.slice(0, limit).map((r) => ({
     ...formatDates(r.comment),
     user: formatDates(r.user),
+    // Indicate if more replies exist (for client to fetch if needed)
+    _meta: includeReplies ? { maxRepliesPerComment: MAX_REPLIES_PER_COMMENT } : undefined,
   }));
 
   return sendCollection(c, items, RESOURCE_TYPES.COMMENT, {

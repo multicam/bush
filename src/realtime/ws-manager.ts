@@ -126,6 +126,12 @@ class WebSocketManager {
   /** Event bus unsubscribe function */
   private eventBusUnsubscribe: (() => void) | null = null;
 
+  /** Lock flag to prevent concurrent modifications during broadcast */
+  private isBroadcasting = false;
+
+  /** Queue of pending modifications */
+  private pendingModifications: Array<() => void> = [];
+
   /**
    * Initialize the WebSocket manager
    * Subscribes to the event bus for broadcasting
@@ -156,6 +162,31 @@ class WebSocketManager {
    */
   generateConnectionId(): string {
     return `conn_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  }
+
+  /**
+   * Execute a modification safely, queuing if currently broadcasting
+   */
+  private safeModify(modification: () => void): void {
+    if (this.isBroadcasting) {
+      this.pendingModifications.push(modification);
+    } else {
+      modification();
+    }
+  }
+
+  /**
+   * Process any pending modifications after broadcast completes
+   */
+  private processPendingModifications(): void {
+    const pending = this.pendingModifications.splice(0);
+    for (const modification of pending) {
+      try {
+        modification();
+      } catch (error) {
+        console.error("[WebSocket] Error processing pending modification:", error);
+      }
+    }
   }
 
   /**
@@ -238,13 +269,16 @@ class WebSocketManager {
    */
   register(ws: ServerWebSocket<WebSocketData>): void {
     const data = ws.data;
-    this.connections.set(data.connectionId, ws);
 
-    // Track by user
-    if (!this.connectionsByUser.has(data.userId)) {
-      this.connectionsByUser.set(data.userId, new Set());
-    }
-    this.connectionsByUser.get(data.userId)!.add(data.connectionId);
+    this.safeModify(() => {
+      this.connections.set(data.connectionId, ws);
+
+      // Track by user
+      if (!this.connectionsByUser.has(data.userId)) {
+        this.connectionsByUser.set(data.userId, new Set());
+      }
+      this.connectionsByUser.get(data.userId)!.add(data.connectionId);
+    });
 
     console.log(`[WebSocket] Connection ${data.connectionId} registered for user ${data.userId}`);
 
@@ -262,22 +296,24 @@ class WebSocketManager {
   unregister(ws: ServerWebSocket<WebSocketData>): void {
     const data = ws.data;
 
-    // Remove from all channels
-    for (const channelKey of data.subscriptions) {
-      this.removeFromChannel(channelKey, data.connectionId);
-    }
-
-    // Remove from user tracking
-    const userConnections = this.connectionsByUser.get(data.userId);
-    if (userConnections) {
-      userConnections.delete(data.connectionId);
-      if (userConnections.size === 0) {
-        this.connectionsByUser.delete(data.userId);
+    this.safeModify(() => {
+      // Remove from all channels
+      for (const channelKey of data.subscriptions) {
+        this.removeFromChannel(channelKey, data.connectionId);
       }
-    }
 
-    // Remove connection
-    this.connections.delete(data.connectionId);
+      // Remove from user tracking
+      const userConnections = this.connectionsByUser.get(data.userId);
+      if (userConnections) {
+        userConnections.delete(data.connectionId);
+        if (userConnections.size === 0) {
+          this.connectionsByUser.delete(data.userId);
+        }
+      }
+
+      // Remove connection
+      this.connections.delete(data.connectionId);
+    });
 
     console.log(`[WebSocket] Connection ${data.connectionId} unregistered`);
   }
@@ -477,43 +513,55 @@ class WebSocketManager {
    * Broadcast an event to all subscribed connections
    */
   private broadcastEvent(event: RealtimeEvent): void {
-    // Determine which channels to broadcast to
-    const channels: ChannelKey[] = [];
+    // Set broadcast flag to queue any modifications during iteration
+    this.isBroadcasting = true;
 
-    // Project-level events go to project channel
-    if (event.projectId) {
-      channels.push(`project:${event.projectId}`);
-    }
+    try {
+      // Determine which channels to broadcast to
+      const channels: ChannelKey[] = [];
 
-    // File-level events also go to file channel
-    if (event.fileId) {
-      channels.push(`file:${event.fileId}`);
-    }
-
-    // Broadcast to each channel
-    const actorId = event.actorId;
-
-    for (const channelKey of channels) {
-      const connectionIds = this.connectionsByChannel.get(channelKey);
-      if (!connectionIds) continue;
-
-      for (const connId of connectionIds) {
-        const ws = this.connections.get(connId);
-        if (!ws) continue;
-
-        // Skip the actor (don't send their own events back)
-        if (ws.data.userId === actorId) continue;
-
-        // Send the event
-        this.send(ws, {
-          channel: channelKey.split(":")[0] as ChannelType,
-          resourceId: channelKey.split(":")[1],
-          event: event.type,
-          eventId: event.eventId,
-          timestamp: event.timestamp,
-          data: event.data,
-        });
+      // Project-level events go to project channel
+      if (event.projectId) {
+        channels.push(`project:${event.projectId}`);
       }
+
+      // File-level events also go to file channel
+      if (event.fileId) {
+        channels.push(`file:${event.fileId}`);
+      }
+
+      // Broadcast to each channel
+      const actorId = event.actorId;
+
+      for (const channelKey of channels) {
+        const connectionIds = this.connectionsByChannel.get(channelKey);
+        if (!connectionIds) continue;
+
+        // Snapshot connection IDs to avoid modification during iteration
+        const connIdSnapshot = [...connectionIds];
+
+        for (const connId of connIdSnapshot) {
+          const ws = this.connections.get(connId);
+          if (!ws) continue;
+
+          // Skip the actor (don't send their own events back)
+          if (ws.data.userId === actorId) continue;
+
+          // Send the event
+          this.send(ws, {
+            channel: channelKey.split(":")[0] as ChannelType,
+            resourceId: channelKey.split(":")[1],
+            event: event.type,
+            eventId: event.eventId,
+            timestamp: event.timestamp,
+            data: event.data,
+          });
+        }
+      }
+    } finally {
+      // Clear broadcast flag and process any queued modifications
+      this.isBroadcasting = false;
+      this.processPendingModifications();
     }
   }
 
@@ -532,12 +580,15 @@ class WebSocketManager {
 
   /**
    * Send a message to a WebSocket
+   * @returns true if sent successfully, false if failed
    */
-  private send(ws: ServerWebSocket<WebSocketData>, message: ServerMessage): void {
+  private send(ws: ServerWebSocket<WebSocketData>, message: ServerMessage): boolean {
     try {
       ws.send(JSON.stringify(message));
+      return true;
     } catch (error) {
       console.error("[WebSocket] Failed to send message:", error);
+      return false;
     }
   }
 

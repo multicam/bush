@@ -114,7 +114,13 @@ export async function runFFprobe(inputPath: string): Promise<FFprobeOutput> {
     }
   );
 
-  return JSON.parse(stdout);
+  try {
+    return JSON.parse(stdout);
+  } catch (error) {
+    throw new Error(
+      `FFprobe returned invalid JSON for ${inputPath}: ${error instanceof Error ? error.message : String(error)}\nOutput: ${stdout.slice(0, 500)}`
+    );
+  }
 }
 
 /**

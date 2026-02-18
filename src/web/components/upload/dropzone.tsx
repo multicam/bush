@@ -166,7 +166,7 @@ export function Dropzone({
 
       // Track drag count to handle child element enter/leave
       dragCountRef.current++;
-      const currentCount = dragCountRef.current;
+      const _currentCount = dragCountRef.current; // Keep for debugging
 
       if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
         setIsDragActive(true);

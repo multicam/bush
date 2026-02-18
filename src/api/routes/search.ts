@@ -86,7 +86,7 @@ function formatTimestamp(ms: number): string {
  */
 function escapeFts5Query(query: string): string {
   // Remove or escape dangerous characters
-  let escaped = query
+  const escaped = query
     // Escape double quotes by doubling them
     .replace(/"/g, '""')
     // Remove parentheses (could break query structure)

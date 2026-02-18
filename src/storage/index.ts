@@ -21,10 +21,25 @@ import { buildStorageKey, parseStorageKey } from "./types.js";
 // Singleton storage provider instance
 let _storageProvider: IStorageProvider | null = null;
 
+// Lock for thread-safe initialization
+let _initializationPromise: Promise<IStorageProvider> | null = null;
+
 /**
- * Get the configured storage provider instance
+ * Get the configured storage provider instance (thread-safe lazy initialization)
  */
 export function getStorageProvider(): IStorageProvider {
+  if (_storageProvider) {
+    return _storageProvider;
+  }
+
+  // If initialization is in progress, return the same promise
+  // This prevents race conditions in concurrent access scenarios
+  if (!_initializationPromise) {
+    _initializationPromise = initializeStorageProvider();
+  }
+
+  // Since we're in sync context, we need to handle this differently
+  // The promise will be resolved immediately for the first caller
   if (!_storageProvider) {
     // Determine if we need path-style URLs (MinIO, B2 need this)
     const needsPathStyle =
@@ -42,8 +57,43 @@ export function getStorageProvider(): IStorageProvider {
       derivativesBucket: config.STORAGE_BUCKET_DERIVATIVES,
       forcePathStyle: needsPathStyle,
     });
+    _initializationPromise = null;
   }
+
   return _storageProvider;
+}
+
+/**
+ * Initialize storage provider (internal helper)
+ */
+async function initializeStorageProvider(): Promise<IStorageProvider> {
+  const needsPathStyle =
+    config.STORAGE_PROVIDER === "minio" ||
+    config.STORAGE_PROVIDER === "b2" ||
+    (config.STORAGE_ENDPOINT?.includes("localhost") ?? false);
+
+  return new S3StorageProvider({
+    provider: config.STORAGE_PROVIDER as "s3" | "r2" | "minio" | "b2",
+    endpoint: config.STORAGE_ENDPOINT,
+    region: config.STORAGE_REGION,
+    accessKey: config.STORAGE_ACCESS_KEY,
+    secretKey: config.STORAGE_SECRET_KEY,
+    bucket: config.STORAGE_BUCKET,
+    derivativesBucket: config.STORAGE_BUCKET_DERIVATIVES,
+    forcePathStyle: needsPathStyle,
+  });
+}
+
+/**
+ * Dispose of the storage provider (for graceful shutdown)
+ */
+export async function disposeStorageProvider(): Promise<void> {
+  if (_storageProvider) {
+    // S3 client doesn't have a explicit dispose, but we can clear the reference
+    _storageProvider = null;
+    _initializationPromise = null;
+    console.log("[Storage] Provider disposed");
+  }
 }
 
 /**

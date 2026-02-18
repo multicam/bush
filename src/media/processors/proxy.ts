@@ -91,6 +91,8 @@ export async function processProxy(
 
     console.log(`[proxy] Generating ${resolutionsToGenerate.length} resolutions for ${actualWidth}x${actualHeight} source`);
 
+    const failedResolutions: Array<{ resolution: ProxyResolution; error: unknown }> = [];
+
     for (const resolution of resolutionsToGenerate) {
       const proxyConfig = PROXY_CONFIGS[resolution];
       const outputPath = join(tempDir, `proxy_${resolution}.mp4`);
@@ -111,7 +113,8 @@ export async function processProxy(
 
         // Verify proxy was created
         if (!(await fileExists(outputPath))) {
-          console.error(`[proxy] Failed to generate ${resolution} proxy`);
+          console.error(`[proxy] Failed to generate ${resolution} proxy - file not created`);
+          failedResolutions.push({ resolution, error: new Error("Proxy file not created") });
           continue;
         }
 
@@ -135,8 +138,17 @@ export async function processProxy(
         console.log(`[proxy] Generated ${resolution} proxy for ${assetId} (${fileSize} bytes)`);
       } catch (error) {
         console.error(`[proxy] Error generating ${resolution} proxy:`, error);
+        failedResolutions.push({ resolution, error });
         // Continue with other resolutions
       }
+    }
+
+    // Log summary of results
+    if (failedResolutions.length > 0) {
+      console.warn(
+        `[proxy] Partial success for ${assetId}: ${results.length}/${resolutionsToGenerate.length} resolutions generated. ` +
+        `Failed: ${failedResolutions.map(f => f.resolution).join(", ")}`
+      );
     }
 
     // Update file status if we have at least one successful proxy
