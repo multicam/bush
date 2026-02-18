@@ -13,6 +13,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { AuthState, AccountRole } from "@/auth";
@@ -176,18 +177,26 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Use a ref to track the current workspace ID for comparison without re-triggering effects
+  const currentWorkspaceIdRef = useRef<string | null>(null);
+  currentWorkspaceIdRef.current = currentWorkspace?.id ?? null;
+
   // Load workspaces when account changes
   useEffect(() => {
     let cancelled = false;
 
     async function loadWorkspaces() {
       if (!isAuthenticated || !currentAccount) {
-        setWorkspaces([]);
-        setCurrentWorkspace(null);
+        if (!cancelled) {
+          setWorkspaces([]);
+          setCurrentWorkspace(null);
+        }
         return;
       }
 
-      setIsLoading(true);
+      if (!cancelled) {
+        setIsLoading(true);
+      }
       try {
         const response = await workspacesApi.list({ limit: 100 });
         const workspaceList: Workspace[] = response.data.map((w) => ({
@@ -200,7 +209,8 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           setWorkspaces(workspaceList);
 
           // Auto-select first workspace if none selected
-          if (workspaceList.length > 0 && !currentWorkspace) {
+          // Use ref to check current state without adding to dependencies
+          if (workspaceList.length > 0 && !currentWorkspaceIdRef.current) {
             // Try to restore from localStorage
             const savedWorkspaceId = typeof window !== "undefined"
               ? localStorage.getItem(`bush_workspace_${currentAccount.id}`)

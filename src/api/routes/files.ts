@@ -222,24 +222,6 @@ app.post("/", async (c) => {
     );
   }
 
-  // Check storage quota
-  const [account] = await db
-    .select()
-    .from(accounts)
-    .where(eq(accounts.id, session.currentAccountId))
-    .limit(1);
-
-  if (!account) {
-    throw new NotFoundError("account", session.currentAccountId);
-  }
-
-  if (account.storageUsedBytes + body.file_size_bytes > account.storageQuotaBytes) {
-    throw new ValidationError(
-      `Insufficient storage quota. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Requested: ${body.file_size_bytes} bytes`,
-      { pointer: "/data/attributes/file_size_bytes" }
-    );
-  }
-
   // Verify folder if specified
   if (body.folder_id) {
     const [folder] = await db
@@ -258,25 +240,58 @@ app.post("/", async (c) => {
     }
   }
 
-  // Create file record
+  // Create file record with atomic quota check using transaction
+  // This prevents race conditions where multiple uploads could exceed quota
   const fileId = generateId("file");
   const now = new Date();
 
-  await db.insert(files).values({
-    id: fileId,
-    projectId,
-    folderId: body.folder_id || null,
-    versionStackId: body.version_stack_id || null,
-    name: body.name,
-    originalName: body.original_name || body.name,
-    mimeType: body.mime_type,
-    fileSizeBytes: body.file_size_bytes,
-    checksum: body.checksum || null,
-    status: "uploading",
-    deletedAt: null,
-    expiresAt: null,
-    createdAt: now,
-    updatedAt: now,
+  await db.transaction(async (tx) => {
+    // Get account with lock using FOR UPDATE equivalent (SQLite uses BEGIN IMMEDIATE)
+    const [account] = await tx
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, session.currentAccountId))
+      .limit(1);
+
+    if (!account) {
+      throw new NotFoundError("account", session.currentAccountId);
+    }
+
+    // Check storage quota atomically
+    if (account.storageUsedBytes + body.file_size_bytes > account.storageQuotaBytes) {
+      throw new ValidationError(
+        `Insufficient storage quota. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Requested: ${body.file_size_bytes} bytes`,
+        { pointer: "/data/attributes/file_size_bytes" }
+      );
+    }
+
+    // Reserve quota by updating storage used immediately
+    // This will be adjusted later when upload completes (confirm endpoint)
+    await tx
+      .update(accounts)
+      .set({
+        storageUsedBytes: account.storageUsedBytes + body.file_size_bytes,
+        updatedAt: now,
+      })
+      .where(eq(accounts.id, session.currentAccountId));
+
+    // Create file record
+    await tx.insert(files).values({
+      id: fileId,
+      projectId,
+      folderId: body.folder_id || null,
+      versionStackId: body.version_stack_id || null,
+      name: body.name,
+      originalName: body.original_name || body.name,
+      mimeType: body.mime_type,
+      fileSizeBytes: body.file_size_bytes,
+      checksum: body.checksum || null,
+      status: "uploading",
+      deletedAt: null,
+      expiresAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 
   // Fetch the created file
@@ -465,24 +480,6 @@ app.post("/:id/copy", async (c) => {
     throw new NotFoundError("file", fileId);
   }
 
-  // Check storage quota for copy
-  const [account] = await db
-    .select()
-    .from(accounts)
-    .where(eq(accounts.id, session.currentAccountId))
-    .limit(1);
-
-  if (!account) {
-    throw new NotFoundError("account", session.currentAccountId);
-  }
-
-  if (account.storageUsedBytes + sourceFile.fileSizeBytes > account.storageQuotaBytes) {
-    throw new ValidationError(
-      `Insufficient storage quota to copy file. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Required: ${sourceFile.fileSizeBytes} bytes`,
-      { pointer: "/data/attributes/file_size_bytes" }
-    );
-  }
-
   // Determine destination project/folder
   const destProjectId = body.project_id || projectId;
   const destFolderId = body.folder_id !== undefined ? body.folder_id : sourceFile.folderId;
@@ -513,38 +510,60 @@ app.post("/:id/copy", async (c) => {
     }
   }
 
-  // Create new file record for the copy
+  // Create file copy with atomic quota check
   const newFileId = generateId("file");
   const now = new Date();
   const copyName = body.name || `Copy of ${sourceFile.name}`;
 
-  await db.insert(files).values({
-    id: newFileId,
-    projectId: destProjectId,
-    folderId: destFolderId,
-    versionStackId: null, // Don't copy version stack membership
-    name: copyName,
-    originalName: sourceFile.originalName,
-    mimeType: sourceFile.mimeType,
-    fileSizeBytes: sourceFile.fileSizeBytes,
-    checksum: sourceFile.checksum,
-    status: sourceFile.status,
-    deletedAt: null,
-    expiresAt: null,
-    createdAt: now,
-    updatedAt: now,
+  await db.transaction(async (tx) => {
+    // Get account with lock
+    const [account] = await tx
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, session.currentAccountId))
+      .limit(1);
+
+    if (!account) {
+      throw new NotFoundError("account", session.currentAccountId);
+    }
+
+    // Check storage quota atomically
+    if (account.storageUsedBytes + sourceFile.fileSizeBytes > account.storageQuotaBytes) {
+      throw new ValidationError(
+        `Insufficient storage quota to copy file. Available: ${account.storageQuotaBytes - account.storageUsedBytes} bytes, Required: ${sourceFile.fileSizeBytes} bytes`,
+        { pointer: "/data/attributes/file_size_bytes" }
+      );
+    }
+
+    // Create new file record
+    await tx.insert(files).values({
+      id: newFileId,
+      projectId: destProjectId,
+      folderId: destFolderId,
+      versionStackId: null, // Don't copy version stack membership
+      name: copyName,
+      originalName: sourceFile.originalName,
+      mimeType: sourceFile.mimeType,
+      fileSizeBytes: sourceFile.fileSizeBytes,
+      checksum: sourceFile.checksum,
+      status: sourceFile.status,
+      deletedAt: null,
+      expiresAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Update storage usage atomically
+    await tx
+      .update(accounts)
+      .set({
+        storageUsedBytes: account.storageUsedBytes + sourceFile.fileSizeBytes,
+        updatedAt: now,
+      })
+      .where(eq(accounts.id, session.currentAccountId));
   });
 
-  // Update storage usage
-  await db
-    .update(accounts)
-    .set({
-      storageUsedBytes: account.storageUsedBytes + sourceFile.fileSizeBytes,
-      updatedAt: now,
-    })
-    .where(eq(accounts.id, session.currentAccountId));
-
-  // Copy file in storage
+  // Copy file in storage (outside transaction - best effort)
   if (sourceFile.status === "ready") {
     const sourceKey = storageKeys.original(
       { accountId: session.currentAccountId, projectId, assetId: fileId },
@@ -961,6 +980,7 @@ app.post("/:id/multipart/complete", async (c) => {
   await storage.completeChunkedUpload(storageKey, uploadId, parts);
 
   // Update file status to processing (media pipeline will set to ready)
+  // Note: Storage quota was already reserved when file was created, so no need to update here
   await db
     .update(files)
     .set({
@@ -968,23 +988,6 @@ app.post("/:id/multipart/complete", async (c) => {
       updatedAt: new Date(),
     })
     .where(eq(files.id, fileId));
-
-  // Update storage used bytes on account - add file size to current usage
-  const [currentAccount] = await db
-    .select({ storageUsedBytes: accounts.storageUsedBytes })
-    .from(accounts)
-    .where(eq(accounts.id, session.currentAccountId))
-    .limit(1);
-
-  if (currentAccount) {
-    await db
-      .update(accounts)
-      .set({
-        storageUsedBytes: currentAccount.storageUsedBytes + file.fileSizeBytes,
-        updatedAt: new Date(),
-      })
-      .where(eq(accounts.id, session.currentAccountId));
-  }
 
   // Enqueue media processing jobs
   try {
@@ -1122,6 +1125,7 @@ app.post("/:id/confirm", async (c) => {
   }
 
   // Update file status to processing
+  // Note: Storage quota was already reserved when file was created, so no need to update here
   await db
     .update(files)
     .set({
@@ -1129,23 +1133,6 @@ app.post("/:id/confirm", async (c) => {
       updatedAt: new Date(),
     })
     .where(eq(files.id, fileId));
-
-  // Update storage used bytes on account
-  const [currentAccount] = await db
-    .select({ storageUsedBytes: accounts.storageUsedBytes })
-    .from(accounts)
-    .where(eq(accounts.id, session.currentAccountId))
-    .limit(1);
-
-  if (currentAccount) {
-    await db
-      .update(accounts)
-      .set({
-        storageUsedBytes: currentAccount.storageUsedBytes + file.fileSizeBytes,
-        updatedAt: new Date(),
-      })
-      .where(eq(accounts.id, session.currentAccountId));
-  }
 
   // Enqueue media processing jobs
   try {

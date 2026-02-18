@@ -93,6 +93,11 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
   const socketRef = useRef<BushSocket | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
 
+  // Use a ref for the onStateChange callback to avoid re-initialization
+  // when the callback changes (e.g., inline functions)
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
   // Initialize socket on mount
   useEffect(() => {
     const socket = getBushSocket();
@@ -101,7 +106,8 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     // Subscribe to state changes
     const unsubscribe = socket.onStateChange((state) => {
       setConnectionState(state);
-      onStateChange?.(state);
+      // Call callback via ref to always get latest
+      onStateChangeRef.current?.(state);
     });
 
     // Auto-connect if enabled
@@ -114,7 +120,7 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     return () => {
       unsubscribe();
     };
-  }, [autoConnect, onStateChange]);
+  }, [autoConnect]);
 
   // Connect function
   const connect = useCallback(async () => {
@@ -185,6 +191,11 @@ export function useChannel(
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const socketRef = useRef<BushSocket | null>(null);
 
+  // Use a ref for the onEvent callback to avoid re-subscriptions
+  // when the callback changes (e.g., inline functions)
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
+
   // Parse event filter into a set for quick lookup (useMemo to avoid accessing during render)
   const eventFilterSet = useMemo<Set<string> | null>(() => {
     if (!eventFilter) return null;
@@ -200,7 +211,7 @@ export function useChannel(
     // Subscribe to state changes
     const unsubscribeState = socket.onStateChange(setConnectionState);
 
-    // Subscribe to channel events
+    // Subscribe to channel events - use stable reference via ref
     const unsubscribeChannel = socket.subscribe(channel, resourceId, (event) => {
       // Apply event filter if set
       if (eventFilterSet && !eventFilterSet.has(event.event)) {
@@ -216,8 +227,8 @@ export function useChannel(
         return newEvents;
       });
 
-      // Call onEvent callback
-      onEvent?.(event);
+      // Call onEvent callback via ref to always get latest
+      onEventRef.current?.(event);
     });
 
     // Auto-connect if not already connected
@@ -231,7 +242,7 @@ export function useChannel(
       unsubscribeState();
       unsubscribeChannel();
     };
-  }, [channel, resourceId, onEvent, eventFilterSet]);
+  }, [channel, resourceId, eventFilterSet]);
 
   // Clear events function
   const clearEvents = useCallback(() => {

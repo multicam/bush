@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { shares, shareAssets, shareActivity, files, users } from "../../db/schema.js";
-import { eq, and, desc, lt, sql } from "drizzle-orm";
+import { eq, and, desc, lt, sql, isNull } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import {
   sendSingle,
@@ -510,6 +510,46 @@ app.post("/:id/assets", async (c) => {
     throw new ValidationError("file_ids array is required", { pointer: "/data/attributes/file_ids" });
   }
 
+  // Verify all files exist and are accessible via the account
+  // Using verifyProjectAccess for each file's project ensures proper authorization
+  const validFileIds: string[] = [];
+  const invalidFileIds: string[] = [];
+
+  for (const fileId of body.file_ids as string[]) {
+    // Get the file with its project's workspace to verify access
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.id, fileId),
+          isNull(files.deletedAt)
+        )
+      )
+      .limit(1);
+
+    if (!file) {
+      invalidFileIds.push(fileId);
+      continue;
+    }
+
+    // Verify the user has access to the file's project
+    const projectAccess = await verifyProjectAccess(file.projectId, session.currentAccountId);
+    if (!projectAccess) {
+      invalidFileIds.push(fileId);
+      continue;
+    }
+
+    validFileIds.push(fileId);
+  }
+
+  if (invalidFileIds.length > 0) {
+    throw new ValidationError(
+      `Files not found or not accessible: ${invalidFileIds.join(", ")}`,
+      { pointer: "/data/attributes/file_ids" }
+    );
+  }
+
   // Get current max sort order
   const [{ maxOrder }] = await db
     .select({ maxOrder: sql<number>`coalesce(max(sort_order), -1)` })
@@ -518,7 +558,7 @@ app.post("/:id/assets", async (c) => {
 
   // Add assets
   const now = new Date();
-  const assetValues = body.file_ids.map((fileId: string, index: number) => ({
+  const assetValues = validFileIds.map((fileId, index) => ({
     id: generateId("share_asset"),
     shareId,
     fileId,

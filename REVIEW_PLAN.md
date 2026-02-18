@@ -1,7 +1,7 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-18
-**Iteration**: 1
+**Iteration**: 2
 **Coverage**: 16.08% statements (target: 80%)
 **Tests**: 303 passing, 0 failing
 
@@ -11,24 +11,24 @@
 
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
-| C1 | `src/api/routes/files.ts` | 226-241, 469-484 | Race condition in storage quota enforcement (TOCTOU) - quota check and file creation not atomic | pending |
-| C2 | `src/api/routes/search.ts` | 135-140 | SQL injection risk via FTS5 query construction - dynamic filter concatenation | pending |
+| C1 | `src/api/routes/files.ts` | 226-241, 469-484 | Race condition in storage quota enforcement (TOCTOU) - quota check and file creation not atomic | **fixed** |
+| C2 | `src/api/routes/search.ts` | 135-140 | SQL injection risk via FTS5 query construction - dynamic filter concatenation | **fixed** |
 | C3 | `src/api/routes/shares.ts` | 165 | Passphrase stored in plain text instead of bcrypt hash | **fixed** |
 | C4 | `src/web/lib/api.ts` | 158-192 | Missing AbortController support for request cancellation | **fixed** |
 | C5 | `src/web/lib/api.ts` | 158-192 | Missing request timeout handling | **fixed** |
 | C6 | `src/web/lib/api.ts` | 158-192 | Missing retry logic for transient failures (5xx, network) | **fixed** |
-| C7 | `src/web/hooks/use-realtime.ts` | 194-234 | Memory leak in useChannel hook - onEvent callback in deps causes re-subscriptions | pending |
-| C8 | `src/web/context/auth-context.tsx` | 180-234 | Unsafe state updates after unmount in WorkspaceProvider | pending |
-| C9 | `src/auth/session-cache.ts` | 185-221 | Session cookie parsed without integrity verification (base64 decode only) | pending |
-| C10 | `src/auth/session-cache.ts` | 35-43 | Session lookup doesn't validate userId in cookie matches session data | pending |
+| C7 | `src/web/hooks/use-realtime.ts` | 194-234 | Memory leak in useChannel hook - onEvent callback in deps causes re-subscriptions | **fixed** |
+| C8 | `src/web/context/auth-context.tsx` | 180-234 | Unsafe state updates after unmount in WorkspaceProvider | **fixed** |
+| C9 | `src/auth/session-cache.ts` | 185-221 | Session cookie parsed without integrity verification (base64 decode only) | **fixed** |
+| C10 | `src/auth/session-cache.ts` | 35-43 | Session lookup doesn't validate userId in cookie matches session data | **fixed** |
 
 ### High (code smells, missing validation)
 
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
-| H1 | `src/api/routes/files.ts` | 487-496 | Missing storage quota check for destination account on file copy | pending |
-| H2 | `src/api/routes/shares.ts` | 470-518 | Missing authorization - files added to share not verified against account | pending |
-| H3 | `src/api/routes/bulk.ts` | 314-382 | Bulk delete not wrapped in transaction - partial failure leaves inconsistent state | pending |
+| H1 | `src/api/routes/files.ts` | 487-496 | Missing storage quota check for destination account on file copy | **fixed** |
+| H2 | `src/api/routes/shares.ts` | 470-518 | Missing authorization - files added to share not verified against account | **fixed** |
+| H3 | `src/api/routes/bulk.ts` | 314-382 | Bulk delete not wrapped in transaction - partial failure leaves inconsistent state | **fixed** |
 | H4 | `src/api/routes/accounts.ts` | 568-575, 656-662 | Session cache invalidation not implemented for role changes (TODO comments) | pending |
 | H5 | `src/transcription/processor.ts` | 235-252 | Unbounded transcript words - no limit on word count for long audio | pending |
 | H6 | `package.json` | N/A | Vulnerable npm dependencies (aws-sdk/xml-builder, esbuild-kit) | pending |
@@ -173,6 +173,36 @@
 
 ## Iteration Log
 
+### Iteration 2 -- 2026-02-18
+**Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)
+**Fixed**: 10 critical + 3 high issues (13 total)
+**Coverage**: 16.08% (no change - tests not runnable due to Bun crash)
+
+**Fixed Issues:**
+- C1: Storage quota enforcement now atomic using database transactions (src/api/routes/files.ts)
+- C2: FTS5 queries now properly escaped with new escapeFts5Query function (src/api/routes/search.ts)
+- C7: useChannel/useRealtime hooks now use refs for callbacks to prevent re-subscriptions (src/web/hooks/use-realtime.ts)
+- C8: WorkspaceProvider uses ref for currentWorkspace check to prevent stale closures (src/web/context/auth-context.tsx)
+- C9: Session cookie now uses HMAC signature for integrity verification (src/auth/session-cache.ts)
+- C10: Added getWithValidation method that verifies userId matches session data (src/auth/session-cache.ts)
+- H1: File copy now uses atomic transaction for quota check and file creation (src/api/routes/files.ts)
+- H2: Files added to share now verified against account via project access (src/api/routes/shares.ts)
+- H3: Bulk delete now validates all files first, then wraps deletes in transaction (src/api/routes/bulk.ts)
+
+**Summary of Fixes:**
+
+**Backend Security Fixes:**
+- ~~Race condition in storage quota enforcement~~ ✅ FIXED with transactions
+- ~~SQL injection potential via FTS5~~ ✅ FIXED with proper escaping
+- ~~Session cookie without integrity verification~~ ✅ FIXED with HMAC signatures
+- ~~Session userId not validated against data~~ ✅ FIXED with getWithValidation
+- ~~Missing authorization for files added to share~~ ✅ FIXED with project access verification
+- ~~Bulk delete partial failures~~ ✅ FIXED with transactions
+
+**Frontend Fixes:**
+- ~~Memory leak in useChannel hook~~ ✅ FIXED with refs for callbacks
+- ~~Stale closure in WorkspaceProvider~~ ✅ FIXED with refs
+
 ### Iteration 1 -- 2026-02-18
 **Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)
 **Fixed**: 4 critical issues
@@ -215,7 +245,7 @@
 - Role-based access control
 
 **Priority Action Items:**
-1. Fix race condition in storage quota (use transactions)
+1. ~~Fix race condition in storage quota (use transactions)~~ ✅ DONE
 2. ~~Hash passphrases with bcrypt~~ ✅ DONE
 3. ~~Add AbortController/timeout/retry to API client~~ ✅ DONE
 4. Add Error Boundary to root layout

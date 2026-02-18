@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { files, folders, accounts } from "../../db/schema.js";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { generateId } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
@@ -330,7 +330,9 @@ app.post("/files/delete", async (c) => {
   const failed: { id: string; error: string }[] = [];
   const now = new Date();
 
-  // Process each file
+  // Pre-validate all files for access before making any changes
+  const filesToDelete: string[] = [];
+
   for (const fileId of fileIds) {
     try {
       // Get file
@@ -357,19 +359,40 @@ app.post("/files/delete", async (c) => {
         continue;
       }
 
-      // Soft delete
-      await db
-        .update(files)
-        .set({
-          deletedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(files.id, fileId));
-
-      succeeded.push(fileId);
+      filesToDelete.push(fileId);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       failed.push({ id: fileId, error: message });
+    }
+  }
+
+  // If there are files to delete, wrap in transaction for atomicity
+  if (filesToDelete.length > 0) {
+    try {
+      await db.transaction(async (tx) => {
+        // Soft delete all validated files atomically
+        await tx
+          .update(files)
+          .set({
+            deletedAt: now,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              sql`${files.id} IN (${sql.raw(filesToDelete.map(() => "?").join(","))})`,
+              isNull(files.deletedAt)
+            )
+          );
+
+        // All succeeded
+        succeeded.push(...filesToDelete);
+      });
+    } catch (error) {
+      // If transaction fails, mark all as failed
+      const message = error instanceof Error ? error.message : "Transaction failed";
+      for (const fileId of filesToDelete) {
+        failed.push({ id: fileId, error: message });
+      }
     }
   }
 

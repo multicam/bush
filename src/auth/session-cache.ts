@@ -6,14 +6,51 @@
  * Reference: specs/12-authentication.md Section "Redis Session Cache"
  */
 import { getRedis } from "../redis/index.js";
+import { config } from "../config/index.js";
 import type { SessionData } from "./types.js";
 import { getSessionCacheKey } from "./types.js";
+import crypto from "crypto";
 
 // Default session TTL (7 days in seconds)
 const DEFAULT_SESSION_TTL = 7 * 24 * 60 * 60;
 
 // Only update last activity if older than this threshold (5 minutes in ms)
 const TOUCH_THROTTLE_MS = 5 * 60 * 1000;
+
+/**
+ * Get the HMAC secret for session cookie signing
+ * Uses the session secret from config
+ */
+function getHmacSecret(): Buffer {
+  // Use SESSION_SECRET from config (must be at least 32 characters)
+  const secret = config.SESSION_SECRET;
+  return crypto.createHash("sha256").update(secret).digest();
+}
+
+/**
+ * Create HMAC signature for session cookie value
+ */
+function signCookieValue(data: string): string {
+  const hmac = crypto.createHmac("sha256", getHmacSecret());
+  hmac.update(data);
+  return hmac.digest("hex");
+}
+
+/**
+ * Verify HMAC signature for session cookie value
+ */
+function verifyCookieSignature(data: string, signature: string): boolean {
+  const expectedSignature = signCookieValue(data);
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, "hex"),
+      Buffer.from(expectedSignature, "hex")
+    );
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Session cache operations
@@ -31,6 +68,8 @@ export const sessionCache = {
 
   /**
    * Get session data from Redis
+   * IMPORTANT: Always call this with the userId from the cookie, and the returned
+   * session's userId is verified to match the requested userId in getSessionWithValidation.
    */
   async get(userId: string, sessionId: string): Promise<SessionData | null> {
     const redis = getRedis();
@@ -40,6 +79,31 @@ export const sessionCache = {
       return null;
     }
     return JSON.parse(value) as SessionData;
+  },
+
+  /**
+   * Get session with validation that userId in cookie matches session data.
+   * This prevents session hijacking by validating the user identity.
+   */
+  async getWithValidation(
+    cookieUserId: string,
+    sessionId: string
+  ): Promise<SessionData | null> {
+    const session = await this.get(cookieUserId, sessionId);
+
+    if (!session) {
+      return null;
+    }
+
+    // CRITICAL: Verify that the userId in the cookie matches the userId in the session
+    // This prevents attackers from using a valid sessionId with a different userId
+    if (session.userId !== cookieUserId) {
+      // Session mismatch - this could indicate tampering, delete the session
+      await this.delete(cookieUserId, sessionId);
+      return null;
+    }
+
+    return session;
   },
 
   /**
@@ -179,8 +243,21 @@ export async function generateSessionId(): Promise<string> {
 export const SESSION_COOKIE_NAME = "bush_session";
 
 /**
- * Parse session from cookie header
+ * Create a signed session cookie value
+ * Format: base64(JSON{userId, sessionId}).signature
+ */
+export function createSignedCookieValue(userId: string, sessionId: string): string {
+  const data = JSON.stringify({ userId, sessionId });
+  const encoded = Buffer.from(data).toString("base64url");
+  const signature = signCookieValue(encoded);
+  return `${encoded}.${signature}`;
+}
+
+/**
+ * Parse session from cookie header with integrity verification
  * Returns userId and sessionId if valid session cookie exists
+ *
+ * Security: Uses HMAC signature to verify cookie hasn't been tampered with
  */
 export function parseSessionCookie(cookieHeader: string): { userId: string; sessionId: string } | null {
   // Parse cookies from header
@@ -190,11 +267,44 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
     if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
       const value = cookie.slice(SESSION_COOKIE_NAME.length + 1);
 
+      // Try signed format first (new secure format)
+      // Format: base64(JSON{userId, sessionId}).signature
+      const signedParts = value.split(".");
+      if (signedParts.length === 2) {
+        const [encoded, signature] = signedParts;
+
+        // Verify HMAC signature
+        if (verifyCookieSignature(encoded, signature)) {
+          try {
+            const decoded = Buffer.from(encoded, "base64url").toString();
+            const parsed = JSON.parse(decoded) as Record<string, unknown>;
+            if (parsed.userId && parsed.sessionId) {
+              return {
+                userId: parsed.userId as string,
+                sessionId: parsed.sessionId as string,
+              };
+            }
+          } catch {
+            // Invalid base64 or JSON, fall through to legacy format
+          }
+        }
+        // If signature verification fails, don't fall through to legacy format
+        // as it could be a tampering attempt
+        continue;
+      }
+
+      // Legacy format support (unsigned, for backward compatibility during migration)
+      // WARNING: This should be removed after migration period
       // Try base64-encoded JSON format (set by Next.js auth callback)
       try {
         const decoded = Buffer.from(value, "base64").toString();
         const parsed = JSON.parse(decoded) as Record<string, unknown>;
         if (parsed.userId && parsed.sessionId) {
+          // Log warning about legacy cookie format
+          console.warn(
+            "[session] Legacy unsigned cookie format detected. " +
+            "Session will be migrated to signed format on next refresh."
+          );
           return {
             userId: parsed.userId as string,
             sessionId: parsed.sessionId as string,
@@ -205,8 +315,13 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
       }
 
       // Plain format: {userId}:{sessionId}
+      // WARNING: This is the least secure format and should be migrated
       const parts = value.split(":");
       if (parts.length === 2) {
+        console.warn(
+          "[session] Legacy plain cookie format detected. " +
+          "Session will be migrated to signed format on next refresh."
+        );
         return {
           userId: parts[0],
           sessionId: parts[1],

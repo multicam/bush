@@ -30,6 +30,11 @@ const MIN_QUERY_LENGTH = 2;
 const MAX_RESULTS = 100;
 
 /**
+ * Maximum query string length to prevent abuse
+ */
+const MAX_QUERY_LENGTH = 500;
+
+/**
  * MIME type mappings for file type filters
  */
 const MIME_TYPE_FILTERS: Record<string, string[]> = {
@@ -66,6 +71,40 @@ function formatTimestamp(ms: number): string {
 }
 
 /**
+ * Escape user input for safe use in FTS5 queries.
+ * FTS5 has special characters that need to be handled:
+ * - Double quotes (") - used for phrase queries
+ * - Parentheses () - used for grouping
+ * - Asterisk (*) - used for prefix queries
+ * - Caret (^) - used for column-specific queries
+ * - Colon (:) - used for column-specific queries
+ * - Hyphen (-) at start of word - NOT operator
+ * - Plus (+) at start of word - AND (implicit)
+ *
+ * We escape by wrapping the query in double quotes and escaping
+ * any internal double quotes.
+ */
+function escapeFts5Query(query: string): string {
+  // Remove or escape dangerous characters
+  let escaped = query
+    // Escape double quotes by doubling them
+    .replace(/"/g, '""')
+    // Remove parentheses (could break query structure)
+    .replace(/[()]/g, "")
+    // Remove caret and colon (column-specific syntax)
+    .replace(/[\^:]/g, "")
+    // Trim whitespace
+    .trim();
+
+  // Split into words and handle each
+  const words = escaped.split(/\s+/).filter((w) => w.length > 0);
+
+  // Wrap each word in quotes for safe literal matching and add prefix operator
+  // This ensures special FTS5 characters are treated as literals
+  return words.map((word) => `"${word}"*`).join(" ");
+}
+
+/**
  * GET /v4/search - Search files and transcripts across accessible projects
  *
  * Query params:
@@ -87,6 +126,14 @@ app.get("/", async (c) => {
   if (!query || query.length < MIN_QUERY_LENGTH) {
     throw new ValidationError(
       `Query must be at least ${MIN_QUERY_LENGTH} characters`,
+      { pointer: "/query" }
+    );
+  }
+
+  // Limit query length to prevent abuse
+  if (query.length > MAX_QUERY_LENGTH) {
+    throw new ValidationError(
+      `Query must be at most ${MAX_QUERY_LENGTH} characters`,
       { pointer: "/query" }
     );
   }
@@ -131,13 +178,8 @@ app.get("/", async (c) => {
     ? "f.project_id = ?"
     : `f.project_id IN (${projectIds.map(() => "?").join(",")})`;
 
-  // Escape special FTS5 characters in query
-  const escapedQuery = query
-    .replace(/['"]/g, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 0)
-    .map((word) => `${word}*`)
-    .join(" ");
+  // Escape special FTS5 characters in query securely
+  const escapedQuery = escapeFts5Query(query);
 
   // Build params array for file search
   const fileParams: (string | number)[] = [escapedQuery];
@@ -410,6 +452,11 @@ app.get("/suggestions", async (c) => {
     return c.json({ data: [] });
   }
 
+  // Limit query length to prevent abuse
+  if (query.length > MAX_QUERY_LENGTH) {
+    return c.json({ data: [] });
+  }
+
   // Get all projects the user has access to
   const accessibleProjects = await db
     .select({ id: projects.id })
@@ -423,13 +470,8 @@ app.get("/suggestions", async (c) => {
 
   const projectIds = accessibleProjects.map((p) => p.id);
 
-  // Escape query for FTS5 prefix search
-  const escapedQuery = query
-    .replace(/['"]/g, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 0)
-    .map((word) => `${word}*`)
-    .join(" ");
+  // Escape query for FTS5 prefix search securely
+  const escapedQuery = escapeFts5Query(query);
 
   // Get distinct file name suggestions
   const results = sqlite
