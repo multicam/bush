@@ -57,12 +57,24 @@
 
 ### P2 - Important Enhancements
 
-- **[P2] Comparison Viewer** [2d] -- NOT STARTED
+- **[P2] Comparison Viewer** [2d] -- COMPLETED (2026-02-18)
   - Side-by-side video/image comparison
-  - Linked playback mode
-  - Adjustable split divider
+  - Linked playback mode (synchronized play/pause/seek for videos)
+  - Linked zoom/pan (synchronized zoom and pan for images)
+  - Sync toggle (Y key) to enable/disable linked controls
+  - Swap versions (S key)
+  - Keyboard shortcuts (S, Y, Esc)
   - **Dependencies**: 2.6 (Video Player) - DONE, 2.7 (Image Viewer) - DONE, 2.5 (Version Stacks) - DONE
   - **Spec refs**: `specs/04-review-and-approval.md`
+  - **Implemented files**:
+    - `src/web/components/viewers/video-viewer.tsx` - Added `VideoViewerHandle` with `useImperativeHandle`
+    - `src/web/components/viewers/image-viewer.tsx` - Added `ImageViewerHandle` with `useImperativeHandle`
+    - `src/web/hooks/use-linked-playback.ts` - Hook for synchronized video playback
+    - `src/web/hooks/use-linked-zoom.ts` - Hook for synchronized image zoom/pan
+    - `src/web/components/version-stacks/version-stack-compare.tsx` - Updated with linked controls
+    - `src/web/components/version-stacks/version-stack.module.css` - Added sync indicator and hint styles
+    - `src/web/hooks/use-linked-playback.test.ts` - Tests for linked playback hook
+    - `src/web/hooks/use-linked-zoom.test.ts` - Tests for linked zoom hook
 
 - **[P2] Custom Thumbnails** [4h] -- COMPLETED (2026-02-18)
   - Upload custom image or select video frame
@@ -996,12 +1008,18 @@ These items are required for core platform functionality but are missing from th
 
 ### 3.3 Comparison Viewer [P2] - 2 days
 
-**NOT STARTED**
+**COMPLETED** (2026-02-18)
 
 - Side-by-side video/image comparison
-- Linked playback mode
-- Adjustable split divider
-- **Dependencies**: 2.6 (Video Player), 2.7 (Image Viewer), 2.5 (Version Stacks)
+- Linked playback mode (synchronized play/pause/seek for videos)
+- Linked zoom/pan (synchronized zoom and pan for images)
+- Sync toggle (Y key) to enable/disable linked controls
+- Swap versions (S key)
+- Keyboard shortcuts (S, Y, Esc)
+- **Dependencies**: 2.6 (Video Player) - DONE, 2.7 (Image Viewer) - DONE, 2.5 (Version Stacks) - DONE
+- **Spec refs**: `specs/04-review-and-approval.md`, `specs/00-atomic-features.md` Section 9.7
+
+### 3.4 Transcription and Captions [P1] - 4 days **(PROMOTED to current release)**
 
 ### 3.4 Transcription and Captions [P1] - 4 days **(PROMOTED to current release)**
 
@@ -1359,8 +1377,8 @@ All quick wins are COMPLETED:
 - All Phase 2 and Phase 3 core features marked COMPLETED
 
 **Remaining Items (P2/P3 - Post-MVP Enhancements):**
-- Comparison Viewer (P2)
-- Custom Thumbnails (P2)
+- ~~Comparison Viewer (P2)~~ - COMPLETED
+- ~~Custom Thumbnails (P2)~~ - COMPLETED
 - Virtualized Lists (P2)
 - Enhanced Search (P2)
 - Webhooks (P3 - code exists, not mounted)

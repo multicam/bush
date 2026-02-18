@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { CaptionOverlay, type TranscriptWord } from "../transcript";
 import styles from "./video-viewer.module.css";
 
@@ -100,25 +100,53 @@ const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 /** JKL shuttle speeds */
 const SHUTTLE_SPEEDS = [1, 2, 4, 8];
 
-export function VideoViewer({
-  src,
-  hlsSrc,
-  poster,
-  name,
-  duration: propDuration,
-  meta,
-  resolutions = [],
-  filmstripUrl,
-  filmstrip,
-  commentMarkers = [],
-  transcriptWords = [],
-  speakerNames = {},
-  showCaptions = false,
-  onTimeUpdate,
-  onCommentClick,
-  autoPlay = false,
-  className,
-}: VideoViewerProps) {
+/**
+ * Imperative methods exposed by VideoViewer for linked playback.
+ * Used by ComparisonViewer to synchronize playback between two videos.
+ */
+export interface VideoViewerHandle {
+  /** Seek to specific time in seconds */
+  seekTo: (time: number) => void;
+  /** Start playback */
+  play: () => void;
+  /** Pause playback */
+  pause: () => void;
+  /** Toggle play/pause */
+  togglePlay: () => void;
+  /** Get current playback time in seconds */
+  getCurrentTime: () => number;
+  /** Get video duration in seconds */
+  getDuration: () => number;
+  /** Check if currently playing */
+  isPlaying: () => boolean;
+  /** Set playback rate */
+  setPlaybackRate: (rate: number) => void;
+  /** Get current playback rate */
+  getPlaybackRate: () => number;
+}
+
+export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(function VideoViewer(
+  {
+    src,
+    hlsSrc,
+    poster,
+    name,
+    duration: propDuration,
+    meta,
+    resolutions = [],
+    filmstripUrl,
+    filmstrip,
+    commentMarkers = [],
+    transcriptWords = [],
+    speakerNames = {},
+    showCaptions = false,
+    onTimeUpdate,
+    onCommentClick,
+    autoPlay = false,
+    className,
+  }: VideoViewerProps,
+  forwardedRef: React.ForwardedRef<VideoViewerHandle>
+) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -155,6 +183,29 @@ export function VideoViewer({
   const [shuttleDirection, setShuttleDirection] = useState<"forward" | "backward" | null>(null);
 
   const duration = videoDuration || propDuration || 0;
+
+  // Expose imperative methods for linked playback (ComparisonViewer)
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      seekTo: (time: number) => seek(time),
+      play: () => {
+        const video = videoRef.current;
+        if (video) video.play().catch(console.error);
+      },
+      pause: () => {
+        const video = videoRef.current;
+        if (video) video.pause();
+      },
+      togglePlay,
+      getCurrentTime: () => currentTime,
+      getDuration: () => duration,
+      isPlaying: () => isPlaying,
+      setPlaybackRate: handleSpeedChange,
+      getPlaybackRate: () => playbackRate,
+    }),
+    [seek, togglePlay, currentTime, duration, isPlaying, handleSpeedChange, playbackRate]
+  );
 
   // Track container width for filmstrip positioning
   useEffect(() => {
@@ -1037,6 +1088,6 @@ export function VideoViewer({
       </div>
     </div>
   );
-}
+});
 
 export default VideoViewer;

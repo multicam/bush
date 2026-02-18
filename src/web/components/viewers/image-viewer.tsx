@@ -12,7 +12,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import styles from "./image-viewer.module.css";
 
 export interface ImageViewerProps {
@@ -55,16 +55,40 @@ function getDefaultZoom(
   return 1;
 }
 
-export function ImageViewer({
-  src,
-  alt,
-  initialZoom = "fit",
-  maxZoom = 4,
-  minZoom = 0.25,
-  showMiniMap = "auto",
-  onZoomChange,
-  className,
-}: ImageViewerProps) {
+/**
+ * Imperative methods exposed by ImageViewer for linked zoom/pan.
+ * Used by ComparisonViewer to synchronize zoom between two images.
+ */
+export interface ImageViewerHandle {
+  /** Set zoom level (0.25 to 4) */
+  setZoom: (level: number) => void;
+  /** Get current zoom level */
+  getZoom: () => number;
+  /** Set pan offset */
+  setPan: (x: number, y: number) => void;
+  /** Get current pan offset */
+  getPan: () => { x: number; y: number };
+  /** Zoom to fit container */
+  zoomToFit: () => void;
+  /** Zoom to 1:1 pixel view */
+  zoomTo1to1: () => void;
+  /** Check if image is loaded */
+  isLoaded: () => boolean;
+}
+
+export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(function ImageViewer(
+  {
+    src,
+    alt,
+    initialZoom = "fit",
+    maxZoom = 4,
+    minZoom = 0.25,
+    showMiniMap = "auto",
+    onZoomChange,
+    className,
+  }: ImageViewerProps,
+  forwardedRef: React.ForwardedRef<ImageViewerHandle>
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const prevFitZoomRef = useRef<number | null>(null);
@@ -85,6 +109,31 @@ export function ImageViewer({
 
   // Track if initialized
   const [isZoomInitialized, setIsZoomInitialized] = useState(false);
+
+  // Expose imperative methods for linked zoom/pan (ComparisonViewer)
+  const setZoomExternal = useCallback((level: number) => {
+    const clampedLevel = Math.max(minZoom, Math.min(maxZoom, level));
+    setZoomLevel(clampedLevel);
+    onZoomChange?.(clampedLevel);
+  }, [minZoom, maxZoom, onZoomChange]);
+
+  const setPanExternal = useCallback((x: number, y: number) => {
+    setPanOffset({ x, y });
+  }, []);
+
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      setZoom: setZoomExternal,
+      getZoom: () => zoomLevel,
+      setPan: setPanExternal,
+      getPan: () => panOffset,
+      zoomToFit,
+      zoomTo1to1,
+      isLoaded: () => imageSize.loaded,
+    }),
+    [setZoomExternal, zoomLevel, setPanExternal, panOffset, zoomToFit, zoomTo1to1, imageSize.loaded]
+  );
 
   // Mini-map visibility
   const shouldShowMiniMap = useMemo(() =>
@@ -374,6 +423,6 @@ export function ImageViewer({
       )}
     </div>
   );
-}
+});
 
 export default ImageViewer;

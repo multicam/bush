@@ -17,7 +17,7 @@ All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed sta
 
 | Feature | Est. | Spec | Status |
 |---------|------|------|--------|
-| Comparison viewer (side-by-side linked playback) | 2 days | `specs/04-review-and-approval.md` | Not started |
+| Comparison viewer (side-by-side linked playback) | 2 days | `specs/04-review-and-approval.md` | **DONE** |
 | Enhanced search (visual/semantic via Vision API) | 3 days | `specs/00-atomic-features.md` | Not started |
 | Custom thumbnails (upload or select video frame) | 1 day | `specs/03-file-management.md` | **DONE** |
 | Virtualized lists (react-window for large file lists) | 4 hours | - | Not started |

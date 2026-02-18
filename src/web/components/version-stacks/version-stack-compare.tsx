@@ -2,16 +2,22 @@
  * Bush Platform - Version Stack Compare Component
  *
  * Side-by-side comparison view for two versions in a stack.
+ * Supports linked playback for videos and linked zoom/pan for images.
+ *
  * Reference: IMPLEMENTATION_PLAN.md 2.5 [P1] Version Stack UI
+ * Reference: specs/00-atomic-features.md Section 9.7 Comparison Viewer
  */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Badge } from "@/web/components/ui";
-import { ImageViewer } from "@/web/components/viewers";
-import { VideoViewer } from "@/web/components/viewers";
+import { ImageViewer, VideoViewer } from "@/web/components/viewers";
+import type { VideoViewerHandle } from "@/web/components/viewers/video-viewer";
+import type { ImageViewerHandle } from "@/web/components/viewers/image-viewer";
 import { getFileCategory, formatFileSize } from "@/shared/file-types";
 import { filesApi, extractAttributes, getErrorMessage } from "@/web/lib/api";
+import { useLinkedPlayback } from "@/web/hooks/use-linked-playback";
+import { useLinkedZoom } from "@/web/hooks/use-linked-zoom";
 import type { AssetFile } from "@/web/components/asset-browser";
 import type { VersionStackCompareProps } from "./types";
 import type { FileAttributes } from "@/web/lib/api";
@@ -30,6 +36,25 @@ export function VersionStackCompare({
   const [files, setFiles] = useState<[FileWithUrl | null, FileWithUrl | null]>([null, null]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Linked controls hooks
+  const linkedPlayback = useLinkedPlayback({ enabled: true });
+  const linkedZoom = useLinkedZoom({ enabled: true });
+
+  // Determine file categories
+  const categories = useMemo(() => {
+    return files.map((file) => (file ? getFileCategory(file.mimeType) : null)) as [
+      string | null,
+      string | null
+    ];
+  }, [files]);
+
+  // Check if both files are the same category for syncing
+  const canSyncPlayback = categories[0] === "video" && categories[1] === "video";
+  const canSyncZoom = categories[0] === "image" && categories[1] === "image";
+
+  // Determine if sync is currently active
+  const isSyncActive = (canSyncPlayback && linkedPlayback.isSynced) || (canSyncZoom && linkedZoom.isSynced);
 
   // Load file data
   useEffect(() => {
@@ -90,15 +115,31 @@ export function VersionStackCompare({
         onClose?.();
       } else if (e.key === "s" || e.key === "S") {
         onSwap?.();
+      } else if (e.key === "y" || e.key === "Y") {
+        // Toggle sync
+        if (canSyncPlayback) {
+          linkedPlayback.toggleSync();
+        } else if (canSyncZoom) {
+          linkedZoom.toggleSync();
+        }
       }
     },
-    [onClose, onSwap]
+    [onClose, onSwap, canSyncPlayback, canSyncZoom, linkedPlayback, linkedZoom]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Toggle sync based on file type
+  const handleToggleSync = useCallback(() => {
+    if (canSyncPlayback) {
+      linkedPlayback.toggleSync();
+    } else if (canSyncZoom) {
+      linkedZoom.toggleSync();
+    }
+  }, [canSyncPlayback, canSyncZoom, linkedPlayback, linkedZoom]);
 
   // Loading state
   if (isLoading) {
@@ -123,7 +164,7 @@ export function VersionStackCompare({
   }
 
   // Render viewer based on file type
-  const renderViewer = (file: FileWithUrl | null, _side: "left" | "right") => {
+  const renderViewer = (file: FileWithUrl | null, side: "left" | "right") => {
     if (!file) {
       return (
         <div className={styles.comparePlaceholder}>
@@ -138,6 +179,7 @@ export function VersionStackCompare({
     if (category === "image") {
       return (
         <ImageViewer
+          ref={side === "left" ? linkedZoom.primaryRef : linkedZoom.secondaryRef}
           src={src}
           alt={file.name}
           className={styles.compareViewer}
@@ -148,6 +190,7 @@ export function VersionStackCompare({
     if (category === "video") {
       return (
         <VideoViewer
+          ref={side === "left" ? linkedPlayback.primaryRef : linkedPlayback.secondaryRef}
           src={src}
           className={styles.compareViewer}
         />
@@ -161,9 +204,7 @@ export function VersionStackCompare({
         <p className={styles.compareMeta}>
           {formatFileSize(file.fileSizeBytes)} &middot; {file.mimeType}
         </p>
-        <p className={styles.compareNote}>
-          Preview not available for this file type
-        </p>
+        <p className={styles.compareNote}>Preview not available for this file type</p>
       </div>
     );
   };
@@ -177,6 +218,17 @@ export function VersionStackCompare({
       <div className={styles.compareHeader}>
         <h3>Compare Versions</h3>
         <div className={styles.compareActions}>
+          {/* Sync toggle - only show for same-type comparisons */}
+          {(canSyncPlayback || canSyncZoom) && (
+            <Button
+              variant={isSyncActive ? "primary" : "secondary"}
+              size="sm"
+              onClick={handleToggleSync}
+              title={isSyncActive ? "Unsync controls (Y)" : "Sync controls (Y)"}
+            >
+              {isSyncActive ? "🔗 Synced" : "Sync"}
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={onSwap}>
             Swap (S)
           </Button>
@@ -185,6 +237,18 @@ export function VersionStackCompare({
           </Button>
         </div>
       </div>
+
+      {/* Sync indicator bar */}
+      {isSyncActive && (
+        <div className={styles.syncIndicator}>
+          <span className={styles.syncIcon}>🔗</span>
+          <span>
+            {canSyncPlayback
+              ? "Linked playback: Play, pause, and seek are synchronized"
+              : "Linked zoom: Zoom and pan are synchronized"}
+          </span>
+        </div>
+      )}
 
       {/* Comparison panels */}
       <div className={styles.comparePanels}>
@@ -198,9 +262,7 @@ export function VersionStackCompare({
               </span>
             )}
           </div>
-          <div className={styles.comparePanelContent}>
-            {renderViewer(leftFile, "left")}
-          </div>
+          <div className={styles.comparePanelContent}>{renderViewer(leftFile, "left")}</div>
           {leftFile && (
             <div className={styles.comparePanelFooter}>
               <span>{formatFileSize(leftFile.fileSizeBytes)}</span>
@@ -224,9 +286,7 @@ export function VersionStackCompare({
               </span>
             )}
           </div>
-          <div className={styles.comparePanelContent}>
-            {renderViewer(rightFile, "right")}
-          </div>
+          <div className={styles.comparePanelContent}>{renderViewer(rightFile, "right")}</div>
           {rightFile && (
             <div className={styles.comparePanelFooter}>
               <span>{formatFileSize(rightFile.fileSizeBytes)}</span>
@@ -234,6 +294,12 @@ export function VersionStackCompare({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Keyboard shortcuts hint */}
+      <div className={styles.compareHint}>
+        S: swap versions
+        {(canSyncPlayback || canSyncZoom) && " · Y: toggle sync"} · Esc: close
       </div>
     </div>
   );
