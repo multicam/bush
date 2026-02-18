@@ -546,6 +546,11 @@ export class UploadClient {
       throw new Error(`Cannot resume upload in ${state.status} status`);
     }
 
+    // Verify file matches
+    if (file.name !== state.fileName || file.size !== state.fileSize) {
+      throw new Error("File does not match the original upload");
+    }
+
     // Reset failed chunks to pending
     for (const chunk of state.chunks) {
       if (chunk.status === "failed") {
@@ -558,8 +563,143 @@ export class UploadClient {
     state.updatedAt = new Date();
     await uploadStorage.save(state);
 
-    // Resume the upload
-    return this.upload(file, { ...options, projectId: state.projectId });
+    const maxParallel = options.maxParallel ?? this.maxParallel;
+    const maxRetries = options.maxRetries ?? this.maxRetries;
+
+    // Create abort controller for this upload
+    const abortController = new AbortController();
+    this.activeUploads.set(uploadId, abortController);
+
+    // Track progress
+    const startTime = Date.now();
+    let lastProgressUpdate = startTime;
+    let lastUploadedBytes = state.uploadedBytes;
+
+    const emitProgress = (currentState: UploadState) => {
+      const now = Date.now();
+      const bytesSinceLastUpdate = currentState.uploadedBytes - lastUploadedBytes;
+      const timeSinceLastUpdate = now - lastProgressUpdate;
+
+      const uploadSpeed = timeSinceLastUpdate > 0
+        ? (bytesSinceLastUpdate / timeSinceLastUpdate) * 1000
+        : 0;
+
+      const remainingBytes = file.size - currentState.uploadedBytes;
+      const estimatedTimeRemaining = uploadSpeed > 0
+        ? remainingBytes / uploadSpeed
+        : 0;
+
+      const completedChunks = currentState.chunks.filter(c => c.status === "completed").length;
+      const pendingChunks = currentState.chunks.filter(c => c.status === "pending").length;
+      const failedChunks = currentState.chunks.filter(c => c.status === "failed").length;
+
+      options.onProgress?.({
+        uploadId,
+        fileId: currentState.fileId,
+        fileName: file.name,
+        fileSize: file.size,
+        uploadedBytes: currentState.uploadedBytes,
+        progress: (currentState.uploadedBytes / file.size) * 100,
+        status: currentState.status,
+        chunksTotal: state.totalChunks,
+        chunksCompleted: completedChunks,
+        chunksPending: pendingChunks,
+        chunksFailed: failedChunks,
+        uploadSpeed,
+        estimatedTimeRemaining,
+      });
+
+      lastProgressUpdate = now;
+      lastUploadedBytes = currentState.uploadedBytes;
+    };
+
+    try {
+      // Ensure we have an upload ID for multipart
+      if (!state.uploadId && state.fileId) {
+        const multipartInit = await this.initMultipart(state.fileId, state.projectId, state.totalChunks);
+        state.uploadId = multipartInit.meta.upload_id;
+        await uploadStorage.save(state);
+      }
+
+      // Get fresh part URLs for remaining chunks
+      if (state.uploadId && state.fileId) {
+        const partsResponse = await this.getPartUrls(
+          state.fileId,
+          state.projectId,
+          state.uploadId,
+          state.totalChunks
+        );
+        const partUrls = partsResponse.meta.parts;
+
+        // Upload remaining chunks
+        await this.uploadChunksParallel(
+          file,
+          state,
+          partUrls,
+          maxParallel,
+          maxRetries,
+          abortController.signal,
+          (updatedState) => {
+            emitProgress(updatedState);
+          }
+        );
+
+        // Complete multipart upload
+        const completedParts = state.chunks
+          .filter(c => c.status === "completed" && c.etag)
+          .map(c => ({
+            part_number: c.partNumber,
+            etag: c.etag!,
+          }))
+          .sort((a, b) => a.part_number - b.part_number);
+
+        await this.completeMultipart(state.fileId, state.projectId, state.uploadId, completedParts);
+      }
+
+      // Mark as completed
+      state.status = "completed";
+      state.uploadedBytes = file.size;
+      state.updatedAt = new Date();
+      await uploadStorage.save(state);
+
+      const result: UploadResult = {
+        uploadId,
+        fileId: state.fileId,
+        fileName: file.name,
+        fileSize: file.size,
+        status: "completed",
+        fileAttributes: {
+          id: state.fileId,
+          name: file.name,
+          status: "ready",
+        },
+      };
+
+      options.onComplete?.(result);
+
+      // Clean up state after successful upload
+      await uploadStorage.delete(uploadId);
+
+      return result;
+    } catch (error) {
+      // Handle abort
+      if ((error as Error).name === "AbortError") {
+        state.status = "cancelled";
+        state.error = "Upload cancelled";
+        await uploadStorage.save(state);
+        options.onError?.(new Error("Upload cancelled"));
+        throw error;
+      }
+
+      // Handle failure
+      state.status = "failed";
+      state.error = (error as Error).message;
+      await uploadStorage.save(state);
+      options.onError?.(error as Error);
+      throw error;
+    } finally {
+      this.activeUploads.delete(uploadId);
+    }
   }
 
   /**

@@ -16,6 +16,13 @@ import {
   RETRY_CONFIG,
   MAX_DURATION_SECONDS,
 } from "./types.js";
+
+/**
+ * Maximum number of words to store per transcript
+ * Prevents memory issues with very long audio files
+ * At ~150 words per minute, 100,000 words = ~11 hours of audio
+ */
+const MAX_WORDS_PER_TRANSCRIPT = 100_000;
 import { DeepgramProvider } from "./providers/deepgram.js";
 import { FasterWhisperProvider } from "./providers/faster-whisper.js";
 import type { ITranscriptionProvider } from "./types.js";
@@ -231,9 +238,18 @@ export async function processTranscriptionJob(
       throw new Error(result.error || "Transcription failed");
     }
 
+    // Truncate words if exceeds maximum (prevents memory issues)
+    const wordsToStore = result.words.slice(0, MAX_WORDS_PER_TRANSCRIPT);
+    if (result.words.length > MAX_WORDS_PER_TRANSCRIPT) {
+      console.warn(
+        `[Transcription] Transcript ${transcriptId} exceeded word limit. ` +
+        `Truncated from ${result.words.length} to ${MAX_WORDS_PER_TRANSCRIPT} words.`
+      );
+    }
+
     // Store words
-    if (result.words.length > 0) {
-      const wordRecords = result.words.map((word, index) => ({
+    if (wordsToStore.length > 0) {
+      const wordRecords = wordsToStore.map((word, index) => ({
         id: `tw_${randomUUID().replace(/-/g, "")}`,
         transcriptId,
         word: word.word,
@@ -285,7 +301,7 @@ export async function processTranscriptionJob(
 
     return {
       transcriptId,
-      wordCount: result.words.length,
+      wordCount: wordsToStore.length,
       language: result.language || "unknown",
       durationSeconds: result.durationSeconds || durationSeconds,
     };

@@ -526,6 +526,12 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
     onCommentClick?.(marker.id);
   }, [seek, onCommentClick]);
 
+  // Store transcriptWords in a ref to avoid re-binding keyboard events on every change
+  const transcriptWordsRef = useRef(transcriptWords);
+  useEffect(() => {
+    transcriptWordsRef.current = transcriptWords;
+  }, [transcriptWords]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -578,7 +584,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
           toggleMute();
           break;
         case "c":
-          if (transcriptWords.length > 0) {
+          if (transcriptWordsRef.current.length > 0) {
             setCaptionsEnabled((prev) => !prev);
           }
           break;
@@ -618,7 +624,6 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     togglePlay,
     seekRelative,

@@ -67,6 +67,8 @@ export function GlobalSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+  const currentSearchIdRef = useRef<number>(0);
 
   // Open search modal
   const openSearch = useCallback(() => {
@@ -77,6 +79,10 @@ export function GlobalSearch({
 
   // Close search modal
   const closeSearch = useCallback(() => {
+    // Cancel any pending search
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
     setIsOpen(false);
     setQuery("");
     setResults([]);
@@ -122,14 +128,24 @@ export function GlobalSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, closeSearch]);
 
-  // Debounced search
-  const performSearch = useCallback(async (searchQuery: string) => {
+  // Debounced search with race condition protection
+  const performSearch = useCallback(async (searchQuery: string, searchId: number) => {
     if (searchQuery.length < 2) {
-      setResults([]);
-      setSuggestions([]);
-      setShowSuggestions(false);
+      // Only update if this is still the current search
+      if (searchId === currentSearchIdRef.current) {
+        setResults([]);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
       return;
     }
+
+    // Cancel previous search
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+    searchAbortControllerRef.current = new AbortController();
+    const signal = searchAbortControllerRef.current.signal;
 
     setIsLoading(true);
     try {
@@ -139,16 +155,26 @@ export function GlobalSearch({
         searchApi.suggestions(searchQuery, 5),
       ]);
 
-      setResults(searchResponse.data);
-      setSuggestions(suggestionsResponse.data);
-      setShowSuggestions(true);
-      setSelectedIndex(0);
+      // Only update state if this search is still current and not aborted
+      if (searchId === currentSearchIdRef.current && !signal.aborted) {
+        setResults(searchResponse.data);
+        setSuggestions(suggestionsResponse.data);
+        setShowSuggestions(true);
+        setSelectedIndex(0);
+      }
     } catch (error) {
+      // Ignore abort errors
+      if ((error as Error).name === "AbortError") return;
       console.error("Search failed:", error);
-      setResults([]);
-      setSuggestions([]);
+      // Only clear results if this is still the current search
+      if (searchId === currentSearchIdRef.current) {
+        setResults([]);
+        setSuggestions([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (searchId === currentSearchIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [projectId]);
 
@@ -158,8 +184,10 @@ export function GlobalSearch({
       clearTimeout(debounceRef.current);
     }
 
+    const searchId = ++currentSearchIdRef.current;
+
     debounceRef.current = setTimeout(() => {
-      performSearch(query);
+      performSearch(query, searchId);
     }, 300);
 
     return () => {
@@ -168,6 +196,15 @@ export function GlobalSearch({
       }
     };
   }, [query, performSearch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Handle keyboard navigation in results
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

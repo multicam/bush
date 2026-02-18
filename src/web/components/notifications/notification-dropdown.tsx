@@ -26,6 +26,14 @@ export function NotificationDropdown({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {
@@ -36,15 +44,20 @@ export function NotificationDropdown({
       setError(null);
       try {
         const response = await notificationsApi.list({ limit: 20 });
+        // Check if still mounted before updating state
+        if (!isMountedRef.current) return;
         const items = response.data.map((item) =>
           toNotification(item.id, item.attributes)
         );
         setNotifications(items);
       } catch (err) {
+        if (!isMountedRef.current) return;
         setError("Failed to load notifications");
         console.error("Failed to fetch notifications:", err);
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -196,19 +209,29 @@ export function NotificationDropdown({
         <div className={styles.errorState}>
           <span>{error}</span>
           <button
-            onClick={() => {
+            disabled={isLoading}
+            onClick={async () => {
               setIsLoading(true);
-              notificationsApi.list({ limit: 20 }).then((response) => {
+              setError(null);
+              try {
+                const response = await notificationsApi.list({ limit: 20 });
+                if (!isMountedRef.current) return;
                 const items = response.data.map((item) =>
                   toNotification(item.id, item.attributes)
                 );
                 setNotifications(items);
-                setError(null);
-                setIsLoading(false);
-              });
+              } catch (err) {
+                if (!isMountedRef.current) return;
+                setError("Failed to load notifications");
+                console.error("Failed to fetch notifications:", err);
+              } finally {
+                if (isMountedRef.current) {
+                  setIsLoading(false);
+                }
+              }
             }}
           >
-            Retry
+            {isLoading ? "Retrying..." : "Retry"}
           </button>
         </div>
       )}

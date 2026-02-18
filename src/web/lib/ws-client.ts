@@ -427,11 +427,50 @@ export class BushSocket {
 let sharedInstance: BushSocket | null = null;
 
 /**
+ * Track if we've set up page lifecycle listeners
+ */
+let lifecycleListenersSetUp = false;
+
+/**
+ * Set up page lifecycle listeners to disconnect on hide/unload
+ */
+function setupLifecycleListeners(): void {
+  if (lifecycleListenersSetUp || typeof window === "undefined") return;
+  lifecycleListenersSetUp = true;
+
+  // Disconnect when page is hidden (tab switch, minimize, etc.)
+  const handleVisibilityChange = (): void => {
+    if (document.visibilityState === "hidden" && sharedInstance) {
+      sharedInstance.disconnect();
+    }
+  };
+
+  // Disconnect before page unload
+  const handleBeforeUnload = (): void => {
+    if (sharedInstance) {
+      sharedInstance.disconnect();
+    }
+  };
+
+  // Disconnect on page hide (mobile, etc.)
+  const handlePageHide = (): void => {
+    if (sharedInstance) {
+      sharedInstance.disconnect();
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  window.addEventListener("pagehide", handlePageHide);
+}
+
+/**
  * Get the shared BushSocket instance
  */
 export function getBushSocket(): BushSocket {
   if (!sharedInstance) {
     sharedInstance = new BushSocket();
+    setupLifecycleListeners();
   }
   return sharedInstance;
 }
