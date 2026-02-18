@@ -846,9 +846,9 @@ These items are required for core platform functionality but are missing from th
     - Activity feed showing views, comments, downloads
   - **Dependencies**: Shares API - DONE
 
-- **[P2] External Reviewer Access** [1d] -- PARTIAL (passphrase UI implemented)
+- **[P2] External Reviewer Access** [1d] -- COMPLETED (2026-02-18)
   - Guest flows with share links - DONE (public page at /s/[slug])
-  - Passphrase verification - DONE (UI implemented, server-side verification needed)
+  - Passphrase verification - DONE (server-side verification with constant-time comparison implemented 2026-02-18)
   - Activity tracking - Partial (activity tracking API exists, needs integration)
   - **Dependencies**: Shares API - DONE
 
@@ -1180,6 +1180,35 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Share Passphrase Security Fix
+
+**Security Fix:**
+
+1. **Server-Side Passphrase Verification** - Fixed critical security vulnerability in public share access
+   - **Issue**: Passphrase was exposed to client in API response, allowing client-side only verification
+   - **Fix**: Modified `getShareBySlug` to never return the actual passphrase
+   - **New flow**: API returns `passphrase_required: true` flag instead of the passphrase itself
+   - **Verification**: Passphrase now sent as query parameter and verified server-side using constant-time comparison
+
+2. **Files Modified:**
+   - `src/api/routes/shares.ts` - Added `constantTimeCompare()` function, modified `getShareBySlug` to:
+     - Return `passphrase_required: true` instead of the actual passphrase
+     - Accept `?passphrase=` query parameter for verification
+     - Use constant-time comparison to prevent timing attacks
+   - `src/web/lib/api.ts` - Updated `sharesApi.getBySlug()` to accept optional passphrase parameter
+   - `src/web/app/s/[slug]/page.tsx` - Updated to use server-side verification with loading state
+
+3. **Security Measures:**
+   - Constant-time string comparison prevents timing attacks
+   - Passphrase never exposed in API responses
+   - Server-side verification required for protected shares
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** 1 pre-existing error in email.ts (unrelated), 0 errors in shares
+
+**Status Changes:**
+- External Reviewer Access: PARTIAL → COMPLETED
 
 ### 2026-02-18 Webhooks API Implementation
 

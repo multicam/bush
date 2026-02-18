@@ -3,6 +3,10 @@
  *
  * View a share without authentication. This is the page that external
  * stakeholders see when they click on a share link.
+ *
+ * Security: Passphrase verification is done server-side. The passphrase
+ * is sent as a query parameter and verified by the API using constant-time
+ * comparison to prevent timing attacks.
  */
 "use client";
 
@@ -22,6 +26,7 @@ interface PublicSharePageProps {
 
 interface Share extends ShareAttributes {
   id: string;
+  passphrase_required?: boolean;
   assets?: FileAttributes[];
 }
 
@@ -32,6 +37,7 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [passphrase, setPassphrase] = useState("");
   const [passphraseError, setPassphraseError] = useState<string>("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Unwrap params Promise
   useEffect(() => {
@@ -48,10 +54,10 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
         setErrorMessage("");
 
         const response = await sharesApi.getBySlug(slug);
-        const shareData = response.data.attributes;
+        const shareData = response.data.attributes as Share;
 
-        // Check if passphrase is required
-        if (shareData.passphrase) {
+        // Check if passphrase is required (server tells us via passphrase_required flag)
+        if (shareData.passphrase_required) {
           setShare({ id: response.data.id, ...shareData });
           setLoadingState("passphrase");
           return;
@@ -78,13 +84,27 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
       return;
     }
 
-    // The API doesn't have a separate passphrase verification endpoint,
-    // so we just check locally for the MVP. In production, this would
-    // need to be verified server-side.
-    if (share?.passphrase === passphrase) {
+    if (!slug) return;
+
+    // Verify passphrase server-side by retrying the API call with the passphrase
+    setIsVerifying(true);
+    try {
+      const response = await sharesApi.getBySlug(slug, passphrase);
+      const shareData = response.data.attributes as Share;
+
+      // If we get here, the passphrase was correct (API returns full share data)
+      setShare({ id: response.data.id, ...shareData });
       setLoadingState("loaded");
-    } else {
-      setPassphraseError("Incorrect passphrase");
+    } catch (error) {
+      // Incorrect passphrase or other error
+      const msg = getErrorMessage(error);
+      if (msg.includes("passphrase") || msg.includes("Incorrect")) {
+        setPassphraseError("Incorrect passphrase");
+      } else {
+        setPassphraseError(msg);
+      }
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -183,11 +203,13 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
             <button
               type="submit"
               className={styles.passphraseSubmit}
+              disabled={isVerifying}
               style={{
                 background: branding.accent_color || "#4f46e5",
+                opacity: isVerifying ? 0.7 : 1,
               }}
             >
-              Access Share
+              {isVerifying ? "Verifying..." : "Access Share"}
             </button>
           </div>
         </form>

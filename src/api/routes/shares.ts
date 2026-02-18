@@ -714,9 +714,17 @@ app.get("/:id/activity", async (c) => {
 /**
  * GET /v4/shares/slug/:slug - Get a share by slug (public access)
  * This endpoint is for viewing shared content without authentication
+ *
+ * Query parameters:
+ * - passphrase: Required if share has passphrase protection
+ *
+ * Security: The passphrase is never returned in the response. If the share
+ * has passphrase protection, the response includes `passphrase_required: true`
+ * and the client must submit the passphrase to access the content.
  */
 export async function getShareBySlug(c: any) {
   const slug = c.req.param("slug");
+  const providedPassphrase = c.req.query("passphrase");
 
   // Get share
   const [share] = await db
@@ -734,6 +742,34 @@ export async function getShareBySlug(c: any) {
     throw new ValidationError("This share has expired", { pointer: "/data/attributes/expires_at" });
   }
 
+  // Check passphrase protection
+  const requiresPassphrase = !!share.passphrase;
+
+  if (requiresPassphrase) {
+    // Verify passphrase if provided
+    if (!providedPassphrase) {
+      // Return minimal info indicating passphrase is required
+      return sendSingle(
+        c,
+        {
+          id: share.id,
+          slug: share.slug,
+          name: share.name,
+          passphrase_required: true,
+          branding: share.branding || {},
+        },
+        RESOURCE_TYPES.SHARE
+      );
+    }
+
+    // Constant-time comparison to prevent timing attacks
+    // We already checked that share.passphrase is truthy above
+    const passphraseMatch = await constantTimeCompare(providedPassphrase, share.passphrase || "");
+    if (!passphraseMatch) {
+      throw new ValidationError("Incorrect passphrase", { pointer: "/data/attributes/passphrase" });
+    }
+  }
+
   // Get assets with file info
   const assets = await db
     .select({
@@ -745,14 +781,36 @@ export async function getShareBySlug(c: any) {
     .where(eq(shareAssets.shareId, share.id))
     .orderBy(shareAssets.sortOrder);
 
+  // Build response without exposing the passphrase
+  const { passphrase: _omitPassphrase, ...shareWithoutPassphrase } = share;
+
   return sendSingle(
     c,
     {
-      ...formatDates(share),
+      ...formatDates(shareWithoutPassphrase),
+      passphrase_required: false,
       assets: assets.map((a) => formatDates(a.file)),
     },
     RESOURCE_TYPES.SHARE
   );
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks
+ * Returns true if strings are equal, false otherwise
+ */
+async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+  if (a.length !== b.length) {
+    // Still perform a comparison to prevent length-based timing attacks
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(a));
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 export default app;

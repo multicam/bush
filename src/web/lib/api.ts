@@ -1549,10 +1549,15 @@ export const sharesApi = {
 
   /**
    * Get a share by slug (public access)
+   * @param slug The share slug
+   * @param passphrase Optional passphrase for protected shares
    */
-  getBySlug: async (slug: string) => {
-    return apiFetch<JsonApiSingleResponse<ShareAttributes & { assets: FileAttributes[] }>>(
-      `/shares/slug/${slug}`
+  getBySlug: async (slug: string, passphrase?: string) => {
+    const url = passphrase
+      ? `/shares/slug/${slug}?passphrase=${encodeURIComponent(passphrase)}`
+      : `/shares/slug/${slug}`;
+    return apiFetch<JsonApiSingleResponse<ShareAttributes & { assets: FileAttributes[]; passphrase_required?: boolean }>>(
+      url
     );
   },
 
