@@ -2,11 +2,25 @@
 
 ---
 
-**Current Phase**: Phase 2 (Refactoring & Architecture Consolidation)
+**Current Phase**: MVP Complete
 
-Phase 1 delivered the working web shell with WorkOS authentication, API routes, database schema, and test coverage. Phase 2 focuses on consolidating shared utilities, eliminating duplication, and establishing clean architecture patterns before expanding features.
+All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed status.
 
-Features marked "Phase 2" are being actively implemented. See IMPLEMENTATION_PLAN.md for current status.
+### TODO (P2 nice-to-haves, non-blocking for launch)
+
+| Feature | Est. | Spec |
+|---------|------|------|
+| Comparison viewer (side-by-side linked playback) | 2 days | `specs/04-review-and-approval.md` |
+| Enhanced search (visual/semantic via Vision API) | 3 days | `specs/00-atomic-features.md` |
+| Custom thumbnails (upload or select video frame) | 1 day | `specs/03-file-management.md` |
+
+### Deferred to future release
+
+- Webhooks (code exists, not mounted)
+- Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX, ZIP viewer)
+- Billing & plans
+- iOS/iPad apps, desktop transfer app
+- Adobe/NLE integrations, C2C hardware integrations
 ---
 
 ## Specification Files
