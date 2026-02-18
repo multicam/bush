@@ -4,16 +4,27 @@
  * Standard AuthKit callback handler for OAuth flow.
  * Uses onSuccess to create Bush session alongside WorkOS session.
  * Reference: https://github.com/workos/authkit-nextjs
+ *
+ * NOTE: We use dynamic imports for database-dependent modules to avoid
+ * bundling bun:sqlite during Next.js build (Node.js doesn't have bun:sqlite).
  */
 import { handleAuth } from "@workos-inc/authkit-nextjs";
 import { cookies } from "next/headers";
-import { authService } from "@/auth";
 import { BUSH_SESSION_COOKIE } from "@/web/lib/session-cookie";
+
+// Dynamic import for database-dependent module (avoid bundling bun:sqlite in Next.js)
+async function getAuthService() {
+  const { authService } = await import("@/auth");
+  return authService;
+}
 
 export const GET = handleAuth({
   returnPathname: "/dashboard",
   onSuccess: async (data) => {
     const { user, organizationId } = data;
+
+    // Use dynamic import to avoid bundling bun:sqlite
+    const authService = await getAuthService();
 
     // Create or find Bush user
     const { userId } = await authService.findOrCreateUser({

@@ -4,6 +4,9 @@
  * API routes for authentication operations in the Next.js app.
  * Uses WorkOS AuthKit for authentication with Bush-specific session management.
  * Reference: specs/12-authentication.md
+ *
+ * NOTE: We use dynamic imports for database-dependent modules to avoid
+ * bundling bun:sqlite during Next.js build (Node.js doesn't have bun:sqlite).
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -14,13 +17,21 @@ import {
   getWorkOS,
 } from "@workos-inc/authkit-nextjs";
 import { config } from "@/config";
-import { authService } from "@/auth";
-import type { SessionData } from "@/auth/types";
 import {
   BUSH_SESSION_COOKIE,
   encodeSessionCookie,
   decodeSessionCookie,
 } from "@/web/lib/session-cookie";
+
+// Dynamic imports for database-dependent modules (avoid bundling bun:sqlite in Next.js)
+// These are only loaded at runtime, not during build
+async function getAuthService() {
+  const { authService } = await import("@/auth");
+  return authService;
+}
+
+// Type import (doesn't execute code at build time)
+import type { SessionData } from "@/auth/types";
 
 /**
  * Set the Bush session cookie on a response
@@ -85,6 +96,7 @@ async function getSession(_request: NextRequest) {
     }
 
     // Get user's accounts
+    const authService = await getAuthService();
     const accounts = await authService.getUserAccounts(bushSession.userId);
 
     // Find current account
@@ -210,6 +222,7 @@ async function callback(request: NextRequest) {
     }
 
     // Create or find Bush user
+    const authService = await getAuthService();
     const { userId } = await authService.findOrCreateUser({
       workosUserId: user.id,
       email: user.email,
@@ -286,6 +299,7 @@ async function logout(request: NextRequest) {
   if (bushSessionCookie) {
     const sessionData = decodeSessionCookie(bushSessionCookie.value);
     if (sessionData?.userId && sessionData?.sessionId) {
+      const authService = await getAuthService();
       await authService.invalidateSession(
         sessionData.userId,
         sessionData.sessionId
@@ -327,6 +341,7 @@ async function switchAccount(request: NextRequest) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
+    const authService = await getAuthService();
     const updatedSession = await authService.switchAccount(
       sessionData.userId,
       sessionData.sessionId,
