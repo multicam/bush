@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (Transcription and Captions API Implementation)
-**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks DEFERRED to future release**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) and Webhooks DEFERRED to future release.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED.
+**Last updated**: 2026-02-18 (Folder Navigation Integration)
+**Project status**: Phase 1 COMPLETED, Phase 2 COMPLETED, Phase 3 IN PROGRESS. Shares API COMPLETED, Share UI COMPLETED. **Realtime Infrastructure COMPLETED**. **Email Service COMPLETED**. **Member Management API COMPLETED**. **Notifications API COMPLETED**. **Notifications UI COMPLETED**. **Webhooks DEFERRED to future release**. **Collections API COMPLETED**. **Transcription and Captions API COMPLETED**. **Folder Navigation COMPLETED**. File Upload System + Media Processing Pipeline + Asset Browser + All Viewers + Version Stacking + Search + Comments/Annotations + Metadata System + Share UI + Realtime Infrastructure + Email Service + Member Management + Notifications API + Notifications UI + Webhooks + Collections + Transcription + Folder Navigation all COMPLETED. Document processing (RAW/Adobe proxy, DOCX/PPTX/XLSX viewer, ZIP viewer) and Webhooks DEFERRED to future release.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (18/20+ tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation IN PROGRESS (103/118 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing ~75% COMPLETE, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer PARTIAL, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 54-76)
 
 ---
@@ -46,6 +46,7 @@
 | **Upload UI** | 100% | Dropzone + Upload Queue components |
 | **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
 | **Share UI** | 100% | Full pages (list, detail, new, public) + components (card, builder, activity feed) |
+| **Folder Navigation** | 100% | COMPLETED: FolderTree sidebar, Breadcrumbs, create folder modal, folder-based content loading |
 
 ---
 
@@ -1083,17 +1084,27 @@ All quick wins are COMPLETED:
 
 ## WEB FRONTEND GAPS
 
-- **[P1] File Management Pages** [2d] -- NOT STARTED
-  - `/files` route - file browser page
-  - File upload UI integration
-  - File viewer routing
-  - **Dependencies**: 2.1 (Upload), 2.3 (Asset Browser)
+- **[P1] File Management Pages** [2d] -- PARTIAL (file viewer page exists, folder navigation integrated)
+  - `/projects/[id]` route - project file browser with folder navigation
+  - File upload UI integration - DONE
+  - File viewer routing - DONE
+  - Folder navigation integration - COMPLETED (2026-02-18)
+  - **Dependencies**: 2.1 (Upload), 2.3 (Asset Browser) - DONE
 
-- **[P1] Folder Navigation** [1d] -- NOT STARTED
-  - Folder tree component
-  - Breadcrumbs
-  - Create/rename/delete folders
+- **[P1] Folder Navigation** [1d] -- COMPLETED (2026-02-18)
+  - **Files modified**:
+    - `src/web/app/projects/[id]/page.tsx` - Integrated folder navigation with sidebar, breadcrumbs, folder CRUD
+    - `src/web/app/projects/[id]/project.module.css` - Added sidebar, modal, and main content layout styles
+  - **Features implemented**:
+    - FolderTree sidebar component integration
+    - Breadcrumb navigation with folder hierarchy
+    - Create folder modal with API integration
+    - Folder-based file/folder content loading
+    - Upload files to current folder
+    - Toggle sidebar visibility
+    - Navigation between folders via tree view, breadcrumbs, and grid click
   - **Dependencies**: None
+  - **Components used**: `FolderTree`, `Breadcrumbs` from `src/web/components/folder-navigation/`
 
 - **[P2] Collections Page** [4h] -- COMPLETED (2026-02-18)
   - **Files created**:
@@ -1204,6 +1215,47 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Folder Navigation Integration
+
+**Completed Work:**
+
+1. **Folder Navigation Integration COMPLETED** - Full folder navigation on project page
+   - **Files modified**:
+     - `src/web/app/projects/[id]/page.tsx` - Integrated folder navigation with sidebar, breadcrumbs, folder CRUD
+     - `src/web/app/projects/[id]/project.module.css` - Added sidebar, modal, and main content layout styles
+
+   - **Features implemented**:
+     - FolderTree sidebar component with collapsible folder hierarchy
+     - Breadcrumb navigation for current folder path
+     - Create folder modal with API integration
+     - Folder-based file/folder content loading via `foldersApi.getChildren()`
+     - Upload files to current folder (folderId passed to upload client)
+     - Toggle sidebar visibility button
+     - Navigation via tree view, breadcrumbs, and asset grid folder click
+     - Responsive layout with collapsible sidebar on mobile
+     - Item count breakdown (folders vs files)
+
+   - **Components used**:
+     - `FolderTree` from `src/web/components/folder-navigation/folder-tree.tsx`
+     - `Breadcrumbs` from `src/web/components/folder-navigation/breadcrumbs.tsx`
+     - `AssetBrowser` with folder support from `src/web/components/asset-browser/`
+
+   - **API integration**:
+     - `foldersApi.listRoot()` for root-level folders
+     - `foldersApi.getChildren()` for folder contents
+     - `foldersApi.create()` for root folder creation
+     - `foldersApi.createSubfolder()` for nested folder creation
+     - `foldersApi.get()` for breadcrumb path building
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** No new errors in project files (pre-existing email.ts errors)
+
+**Status Changes:**
+- File Management Pages: NOT STARTED → PARTIAL (folder navigation integrated)
+- Folder Navigation: NOT STARTED → COMPLETED
+
+**Spec refs:** `specs/00-atomic-features.md` Section 5.3 (Folder Navigation), `specs/17-api-complete.md` Section 6.4 (Folders)
 
 ### 2026-02-18 Maintenance Improvements - Auto-Delete, Thumbnail URLs
 
