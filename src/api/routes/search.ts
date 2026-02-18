@@ -3,6 +3,7 @@
  *
  * API routes for file search using FTS5.
  * Reference: specs/00-atomic-features.md Section 12
+ * Reference: specs/06-transcription-and-captions.md Section 3.6
  */
 import { Hono } from "hono";
 import { db, sqlite } from "../../db/index.js";
@@ -49,12 +50,29 @@ function timestampToISO(timestamp: number | null): string | null {
 }
 
 /**
- * GET /v4/search - Search files across accessible projects
+ * Format milliseconds to HH:MM:SS.mmm timestamp
+ */
+function formatTimestamp(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = ms % 1000;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
+
+/**
+ * GET /v4/search - Search files and transcripts across accessible projects
  *
  * Query params:
  * - q: Search query (required, min 2 chars)
  * - project_id: Filter to specific project (optional)
  * - type: Filter by file type (video, audio, image, document) (optional)
+ * - include_transcripts: Include transcript search results (default: true)
  * - limit: Max results (default 50, max 100)
  */
 app.get("/", async (c) => {
@@ -62,6 +80,7 @@ app.get("/", async (c) => {
   const query = c.req.query("q")?.trim();
   const projectId = c.req.query("project_id");
   const fileType = c.req.query("type");
+  const includeTranscripts = c.req.query("include_transcripts") !== "false";
   const limit = Math.min(parseLimit(c.req.query("limit")), MAX_RESULTS);
 
   // Validate query
@@ -120,18 +139,18 @@ app.get("/", async (c) => {
     .map((word) => `${word}*`)
     .join(" ");
 
-  // Build params array
-  const params: (string | number)[] = [escapedQuery];
+  // Build params array for file search
+  const fileParams: (string | number)[] = [escapedQuery];
   if (projectId) {
-    params.push(projectId);
+    fileParams.push(projectId);
   } else {
-    params.push(...projectIds);
+    fileParams.push(...projectIds);
   }
-  params.push(...mimeTypeValues);
-  params.push(limit);
+  fileParams.push(...mimeTypeValues);
+  fileParams.push(limit);
 
-  // Execute FTS5 search with BM25 ranking
-  const results = sqlite
+  // Execute FTS5 search for files with BM25 ranking
+  const fileResults = sqlite
     .prepare(
       `
       SELECT
@@ -156,7 +175,7 @@ app.get("/", async (c) => {
       LIMIT ?
     `
     )
-    .all(...params) as Array<{
+    .all(...fileParams) as Array<{
       id: string;
       project_id: string;
       folder_id: string | null;
@@ -170,8 +189,14 @@ app.get("/", async (c) => {
       relevance: number;
     }>;
 
-  // Format results
-  const data = results.map((row) => ({
+  // Format file results
+  const data: Array<{
+    type: string;
+    id: string;
+    attributes: Record<string, unknown>;
+    relationships: Record<string, unknown>;
+    meta: Record<string, unknown>;
+  }> = fileResults.map((row) => ({
     type: RESOURCE_TYPES.FILE,
     id: row.id,
     attributes: {
@@ -197,15 +222,173 @@ app.get("/", async (c) => {
     },
     meta: {
       relevance: row.relevance,
+      matchType: "filename",
     },
   }));
 
+  // Search transcripts if enabled
+  if (includeTranscripts) {
+    const transcriptLimit = Math.max(10, Math.floor(limit / 2));
+
+    // Build params for transcript search
+    const transcriptParams: (string | number)[] = [escapedQuery];
+    if (projectId) {
+      transcriptParams.push(projectId);
+    } else {
+      transcriptParams.push(...projectIds);
+    }
+    if (fileType && fileType in MIME_TYPE_FILTERS) {
+      transcriptParams.push(...mimeTypeValues);
+    }
+    transcriptParams.push(transcriptLimit);
+
+    // Build MIME filter for transcripts
+    let transcriptMimeFilter = "";
+    if (fileType && fileType in MIME_TYPE_FILTERS) {
+      const types = MIME_TYPE_FILTERS[fileType];
+      const conditions = types.map(() => "f.mime_type LIKE ?").join(" OR ");
+      transcriptMimeFilter = `AND (${conditions})`;
+    }
+
+    // Search transcripts FTS
+    const transcriptResults = sqlite
+      .prepare(
+        `
+        SELECT
+          t.id as transcript_id,
+          t.file_id,
+          t.full_text,
+          f.id,
+          f.project_id,
+          f.folder_id,
+          f.name,
+          f.original_name,
+          f.mime_type,
+          f.file_size_bytes,
+          f.status,
+          f.created_at,
+          f.updated_at,
+          bm25(transcripts_fts) as relevance
+        FROM transcripts_fts
+        JOIN transcripts t ON transcripts_fts.id = t.id
+        JOIN files f ON t.file_id = f.id
+        WHERE transcripts_fts MATCH ?
+          AND ${projectFilter}
+          AND f.deleted_at IS NULL
+          AND t.status = 'completed'
+          ${transcriptMimeFilter}
+        ORDER BY relevance
+        LIMIT ?
+      `
+      )
+      .all(...transcriptParams) as Array<{
+        transcript_id: string;
+        file_id: string;
+        full_text: string;
+        id: string;
+        project_id: string;
+        folder_id: string | null;
+        name: string;
+        original_name: string;
+        mime_type: string;
+        file_size_bytes: number;
+        status: string;
+        created_at: number;
+        updated_at: number;
+        relevance: number;
+      }>;
+
+    // For each transcript match, find the first matching word for timestamp
+    for (const row of transcriptResults) {
+      // Find the first matching word in transcript_words for timestamp
+      const matchingWord = sqlite
+        .prepare(
+          `
+          SELECT start_ms, end_ms, word
+          FROM transcript_words
+          WHERE transcript_id = ?
+            AND word LIKE ?
+          ORDER BY position
+          LIMIT 1
+        `
+        )
+        .get(row.transcript_id, `%${query.split(/\s+/)[0]}%`) as {
+        start_ms: number;
+        end_ms: number;
+        word: string;
+      } | undefined;
+
+      // Extract context around the match
+      let matchContext = "";
+      if (row.full_text) {
+        const lowerText = row.full_text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        const matchIndex = lowerText.indexOf(lowerQuery.split(/\s+/)[0]);
+        if (matchIndex !== -1) {
+          const contextStart = Math.max(0, matchIndex - 50);
+          const contextEnd = Math.min(row.full_text.length, matchIndex + query.length + 50);
+          matchContext = (contextStart > 0 ? "..." : "") +
+            row.full_text.slice(contextStart, contextEnd) +
+            (contextEnd < row.full_text.length ? "..." : "");
+        }
+      }
+
+      // Only add if not already in file results
+      if (!data.find((r) => r.id === row.id)) {
+        data.push({
+          type: RESOURCE_TYPES.FILE,
+          id: row.id,
+          attributes: {
+            name: row.name,
+            originalName: row.original_name,
+            mimeType: row.mime_type,
+            fileSizeBytes: row.file_size_bytes,
+            status: row.status,
+            createdAt: timestampToISO(row.created_at),
+            updatedAt: timestampToISO(row.updated_at),
+          },
+          relationships: {
+            project: {
+              type: RESOURCE_TYPES.PROJECT,
+              id: row.project_id,
+            },
+            folder: row.folder_id
+              ? {
+                  type: RESOURCE_TYPES.FOLDER,
+                  id: row.folder_id,
+                }
+              : null,
+            transcript: {
+              type: "transcript",
+              id: row.transcript_id,
+            },
+          },
+          meta: {
+            relevance: row.relevance,
+            matchType: "transcript",
+            timestamp: matchingWord ? {
+              ms: matchingWord.start_ms,
+              formatted: formatTimestamp(matchingWord.start_ms),
+            } : null,
+            matchContext,
+          },
+        });
+      }
+    }
+
+    // Sort combined results by relevance
+    data.sort((a, b) => ((a.meta.relevance as number) || 0) - ((b.meta.relevance as number) || 0));
+  }
+
+  // Limit final results
+  const limitedData = data.slice(0, limit);
+
   return c.json({
-    data,
+    data: limitedData,
     meta: {
-      total: results.length,
+      total: data.length,
       query,
-      has_more: results.length === limit,
+      has_more: data.length > limit,
     },
   });
 });

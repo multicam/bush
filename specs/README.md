@@ -9,7 +9,7 @@ All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed sta
 **Implementation Statistics (2026-02-18):**
 - API Endpoints: 120 across 18 route modules
 - Database Tables: 25 with proper indexes
-- Tests: 282 passing (22 test files)
+- Tests: 303 passing (25 test files)
 - Frontend Components: 49 TSX components
 - Web Pages: 16 Next.js pages
 
@@ -18,10 +18,11 @@ All core features are implemented. See `IMPLEMENTATION_PLAN.md` for detailed sta
 | Feature | Est. | Spec | Status |
 |---------|------|------|--------|
 | Comparison viewer (side-by-side linked playback) | 2 days | `specs/04-review-and-approval.md` | **DONE** |
-| Enhanced search (visual/semantic via Vision API) | 3 days | `specs/00-atomic-features.md` | Not started |
+| Transcript search (FTS5 indexed, timestamp navigation) | 4 hours | `specs/06-transcription-and-captions.md` | **DONE** |
 | Custom thumbnails (upload or select video frame) | 1 day | `specs/03-file-management.md` | **DONE** |
 | Virtualized lists (@tanstack/react-virtual for large file lists) | 4 hours | - | **DONE** |
-| Metadata badges on asset cards | 2 hours | - | Not started |
+| Metadata badges on asset cards | 2 hours | - | **DONE** |
+| Enhanced search (visual/semantic via Vision API) | 2 days | `specs/00-atomic-features.md` | Not started |
 
 ### Deferred to future release
 

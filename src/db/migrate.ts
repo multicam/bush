@@ -215,6 +215,15 @@ sqlite.exec(`
   CREATE TRIGGER IF NOT EXISTS files_fts_delete AFTER DELETE ON files BEGIN
     DELETE FROM files_fts WHERE rowid = OLD.rowid;
   END;
+
+  -- FTS5 virtual table for transcript search
+  -- Note: This is a standalone FTS table (not content-indexed) since transcripts are in a separate table
+  CREATE VIRTUAL TABLE IF NOT EXISTS transcripts_fts USING fts5(
+    id UNINDEXED,
+    file_id UNINDEXED,
+    full_text,
+    tokenize='porter unicode61'
+  );
 `);
 
 console.log("✅ Migrations completed successfully");

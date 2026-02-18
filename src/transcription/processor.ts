@@ -4,7 +4,7 @@
  * BullMQ job processor for transcription jobs.
  * Reference: specs/06-transcription-and-captions.md
  */
-import { db } from "../db/index.js";
+import { db, sqlite } from "../db/index.js";
 import { transcripts, transcriptWords, files } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { config } from "../config/index.js";
@@ -264,6 +264,16 @@ export async function processTranscriptionJob(
         updatedAt: new Date(),
       })
       .where(eq(transcripts.id, transcriptId));
+
+    // Update FTS index for transcript search
+    if (result.fullText) {
+      // Delete any existing entry first (upsert pattern for FTS5)
+      sqlite.prepare("DELETE FROM transcripts_fts WHERE id = ?").run(transcriptId);
+      // Insert new entry
+      sqlite
+        .prepare("INSERT INTO transcripts_fts (id, file_id, full_text) VALUES (?, ?, ?)")
+        .run(transcriptId, fileId, result.fullText);
+    }
 
     // Update file status to ready
     await db

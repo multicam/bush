@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (v0.0.48 - Test fix)
+**Last updated**: 2026-02-18 (v0.0.49 - Transcript Search)
 **Project status**: **MVP COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (120 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -134,11 +134,32 @@
     - `src/web/app/projects/[id]/page.tsx` - Maps API metadata to AssetFile
     - `src/web/components/asset-browser/metadata-badges.test.tsx` - Test coverage
 
-- **[P2] Enhanced Search** [3d] -- NOT STARTED
-  - Visual search (Vision API)
-  - Transcript search integration
-  - Semantic search
+- **[P2] Transcript Search** [4h] -- COMPLETED (2026-02-18)
+  - Full transcript text indexed in SQLite FTS5
+  - Search results link to specific files with timestamp
+  - Integrates with existing global search (Cmd+K)
+  - Match context display (surrounding text)
   - **Dependencies**: 2.12 (Basic Search) - DONE, 3.4 (Transcription) - DONE
+  - **Spec refs**: `specs/06-transcription-and-captions.md` Section 3.6
+  - **Implemented files**:
+    - `src/db/migrate.ts` - Added `transcripts_fts` FTS5 virtual table
+    - `src/transcription/processor.ts` - Added FTS index sync on transcript completion
+    - `src/api/routes/search.ts` - Added transcript search with timestamp support
+  - **API Changes**:
+    - `GET /v4/search?include_transcripts=true` - Now searches both files and transcripts
+    - Response includes `matchType` (filename/transcript) in meta
+    - Transcript matches include `timestamp` and `matchContext` in meta
+  - **Features**:
+    - FTS5 indexing with porter stemming for transcript full text
+    - Automatic sync when transcription completes
+    - First matching word timestamp returned for navigation
+    - Context display (50 chars before and after match)
+    - Combined ranking of file and transcript results
+
+- **[P2] Enhanced Search (Visual/Semantic)** [2d] -- NOT STARTED
+  - Visual search (Vision API) - requires external AI service
+  - Semantic search - requires embedding model
+  - **Dependencies**: AI/ML provider decision (specs/README.md "AI/ML (Vision)")
 
 ### P3 - Nice-to-Have (Deferred)
 
@@ -1375,6 +1396,38 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Transcript Search Integration
+
+**Completed Work:**
+
+1. **Transcript Search Integration COMPLETED** - Full FTS5-based search for transcripts
+   - **Files modified**:
+     - `src/db/migrate.ts` - Added `transcripts_fts` FTS5 virtual table for transcript full-text indexing
+     - `src/transcription/processor.ts` - Added automatic FTS index sync when transcription completes
+     - `src/api/routes/search.ts` - Enhanced search API to include transcript content
+
+   - **Features implemented**:
+     - FTS5 virtual table for transcripts with porter stemming
+     - Automatic index sync on transcript completion
+     - Combined file and transcript search results
+     - Timestamp navigation for transcript matches (first matching word position)
+     - Match context display (50 characters before and after match)
+     - BM25 ranking for relevance scoring
+     - Optional transcript search via `include_transcripts` query param
+
+   - **API Changes**:
+     - `GET /v4/search` now searches both files and transcripts by default
+     - Response includes `matchType` field in meta ("filename" or "transcript")
+     - Transcript matches include `timestamp` object with `ms` and `formatted` fields
+     - Transcript matches include `matchContext` string with surrounding text
+
+   - **Spec refs**: `specs/06-transcription-and-captions.md` Section 3.6
+
+**Test Count:** 303 tests (all pass)
+**Build:** Success (with ESLint warnings only)
+
+**Git Tag:** v0.0.49
 
 ### 2026-02-18 Next.js Build Fix for bun:sqlite
 
