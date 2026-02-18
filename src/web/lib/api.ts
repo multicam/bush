@@ -2156,3 +2156,217 @@ export const captionsApi = {
     });
   },
 };
+
+// ============================================================================
+// Collections Types
+// ============================================================================
+
+/**
+ * Collection types
+ */
+export type CollectionType = "team" | "private";
+
+/**
+ * Collection default view
+ */
+export type CollectionDefaultView = "grid" | "list";
+
+/**
+ * Collection filter rule for dynamic collections
+ */
+export interface CollectionFilterRule {
+  field: string;
+  operator: "eq" | "ne" | "gt" | "lt" | "gte" | "lte" | "contains" | "starts_with";
+  value: string | number | boolean;
+}
+
+/**
+ * Creator info embedded in collection responses
+ */
+export interface CollectionCreator {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  avatarUrl: string | null;
+}
+
+/**
+ * Collection attributes from API
+ */
+export interface CollectionAttributes {
+  name: string;
+  description: string | null;
+  type: CollectionType;
+  isDynamic: boolean;
+  filterRules: CollectionFilterRule[] | null;
+  defaultView: CollectionDefaultView;
+  assetCount: number;
+  creator: CollectionCreator;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Collection asset attributes
+ */
+export interface CollectionAssetAttributes {
+  id: string;
+  name: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  status: string;
+  addedBy: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  createdAt: string;
+}
+
+/**
+ * Collection with assets response
+ */
+export interface CollectionWithAssetsResponse {
+  data: {
+    id: string;
+    type: "collection";
+    attributes: CollectionAttributes;
+    relationships: {
+      assets: {
+        data: Array<{ id: string; type: "file" }>;
+      };
+    };
+  };
+  included: Array<{
+    id: string;
+    type: "file";
+    attributes: CollectionAssetAttributes;
+  }>;
+}
+
+// ============================================================================
+// Collections API
+// ============================================================================
+
+/**
+ * Collections API
+ */
+export const collectionsApi = {
+  /**
+   * List collections in a project
+   */
+  list: async (projectId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/projects/${projectId}/collections${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<CollectionAttributes>>(path);
+  },
+
+  /**
+   * Create a new collection
+   */
+  create: async (projectId: string, data: {
+    name: string;
+    description?: string;
+    type?: CollectionType;
+    filter_rules?: CollectionFilterRule[];
+    default_view?: CollectionDefaultView;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<CollectionAttributes>>(
+      `/projects/${projectId}/collections`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  /**
+   * Get a collection by ID with assets
+   */
+  get: async (collectionId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/collections/${collectionId}${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<CollectionWithAssetsResponse>(path);
+  },
+
+  /**
+   * Update a collection
+   */
+  update: async (collectionId: string, data: {
+    name?: string;
+    description?: string | null;
+    type?: CollectionType;
+    filter_rules?: CollectionFilterRule[] | null;
+    default_view?: CollectionDefaultView;
+  }) => {
+    return apiFetch<JsonApiSingleResponse<CollectionAttributes>>(
+      `/collections/${collectionId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  /**
+   * Delete a collection
+   */
+  delete: async (collectionId: string) => {
+    return apiFetch<void>(`/collections/${collectionId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Add items to a collection
+   */
+  addItems: async (collectionId: string, fileIds: string[]) => {
+    return apiFetch<{ data: { added: string[]; failed: Array<{ id: string; error: string }> } }>(
+      `/collections/${collectionId}/items`,
+      {
+        method: "POST",
+        body: JSON.stringify({ file_ids: fileIds }),
+      }
+    );
+  },
+
+  /**
+   * Remove an item from a collection
+   */
+  removeItem: async (collectionId: string, itemId: string) => {
+    return apiFetch<void>(`/collections/${collectionId}/items/${itemId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * Extract collection attributes with ID from API response
+ */
+export function extractCollectionAttributesFromResponse(
+  response: JsonApiSingleResponse<CollectionAttributes>
+): CollectionAttributes & { id: string } {
+  const { id, attributes } = response.data;
+  return { id, ...attributes };
+}
+
+/**
+ * Extract collection collection with IDs from API response
+ */
+export function extractCollectionList(
+  response: JsonApiCollectionResponse<CollectionAttributes>
+): Array<CollectionAttributes & { id: string }> {
+  return response.data.map((item) => ({
+    id: item.id,
+    ...item.attributes,
+  }));
+}

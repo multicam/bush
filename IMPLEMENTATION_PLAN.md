@@ -1094,9 +1094,23 @@ All quick wins are COMPLETED:
   - Create/rename/delete folders
   - **Dependencies**: None
 
-- **[P2] Collections Page** [4h] -- NOT STARTED
-  - `/collections` route referenced in sidebar
-  - **Dependencies**: 3.2 (Collections)
+- **[P2] Collections Page** [4h] -- COMPLETED (2026-02-18)
+  - **Files created**:
+    - `src/web/lib/api.ts` - Added `collectionsApi` with list/create/get/update/delete/addItems/removeItem methods
+    - `src/web/app/projects/[id]/collections/page.tsx` - Collections list page with create modal
+    - `src/web/app/projects/[id]/collections/collections.module.css` - Styles for collections list
+    - `src/web/app/projects/[id]/collections/[collectionId]/page.tsx` - Collection detail page with edit/delete
+    - `src/web/app/projects/[id]/collections/[collectionId]/collection.module.css` - Styles for collection detail
+  - **Features**:
+    - List all collections in a project (team + user's private)
+    - Create new collection with name, description, type (team/private)
+    - View collection details with assets
+    - Edit collection (name, description, visibility)
+    - Delete collection with confirmation
+    - Remove assets from collection
+    - Multi-select and bulk remove
+    - Asset browser integration for viewing collection assets
+  - **Dependencies**: 3.2 (Collections API) - DONE
 
 - **[P2] Shares Page** [4h] -- COMPLETED (2026-02-18)
   - `/shares` route exists with full Share UI implementation
@@ -1228,6 +1242,56 @@ All quick wins are COMPLETED:
 - Settings Save Functionality: NOT STARTED → COMPLETED
 
 **Spec refs:** `specs/17-api-complete.md` Section 6.1 (Member Management)
+
+### 2026-02-18 Collections UI Implementation
+
+**Completed Work:**
+
+1. **Collections UI COMPLETED** - Full frontend implementation for collections feature
+   - **Files created**:
+     - `src/web/app/projects/[id]/collections/page.tsx` - Collections list page
+     - `src/web/app/projects/[id]/collections/collections.module.css` - Styles
+     - `src/web/app/projects/[id]/collections/[collectionId]/page.tsx` - Collection detail page
+     - `src/web/app/projects/[id]/collections/[collectionId]/collection.module.css` - Styles
+
+   - **Files modified**:
+     - `src/web/lib/api.ts` - Added `collectionsApi` with all CRUD and item management methods
+
+   - **Features implemented**:
+     - List all collections in a project (team + user's private)
+     - Create new collection with name, description, type (team/private)
+     - View collection details with assets in grid/list view
+     - Edit collection (name, description, visibility)
+     - Delete collection with confirmation dialog
+     - Remove assets from collection (single or bulk)
+     - Multi-select and bulk operations
+     - Asset browser integration for viewing collection assets
+     - Loading and error states for all operations
+
+   - **API client additions** (`src/web/lib/api.ts`):
+     - `CollectionType` type
+     - `CollectionDefaultView` type
+     - `CollectionFilterRule` interface
+     - `CollectionCreator` interface
+     - `CollectionAttributes` interface
+     - `CollectionAssetAttributes` interface
+     - `CollectionWithAssetsResponse` interface
+     - `collectionsApi.list()` - List collections in project
+     - `collectionsApi.create()` - Create collection
+     - `collectionsApi.get()` - Get collection with assets
+     - `collectionsApi.update()` - Update collection
+     - `collectionsApi.delete()` - Delete collection
+     - `collectionsApi.addItems()` - Add files to collection
+     - `collectionsApi.removeItem()` - Remove file from collection
+     - `extractCollectionList()` and `extractCollectionAttributesFromResponse()` helpers
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** No new errors in collections files
+
+**Status Changes:**
+- Collections Page: NOT STARTED → COMPLETED
+
+**Spec refs:** `specs/17-api-complete.md` Section 6.11, `specs/00-atomic-features.md` Section 7
 
 ### 2026-02-18 Share Passphrase Security Fix
 
