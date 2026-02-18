@@ -20,6 +20,7 @@ import {
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess } from "../access-control.js";
+import { emitCommentEvent } from "../../realtime/index.js";
 
 const app = new Hono();
 
@@ -207,6 +208,20 @@ app.post("/", async (c) => {
     .where(eq(comments.id, commentId))
     .limit(1);
 
+  // Emit real-time event for comment creation
+  emitCommentEvent("comment.created", {
+    actorId: session.userId,
+    projectId: access.project.id,
+    fileId,
+    commentId,
+    data: {
+      text: createdComment.comment.text,
+      parentId: createdComment.comment.parentId || undefined,
+      timestamp: createdComment.comment.timestamp || undefined,
+      isInternal: createdComment.comment.isInternal,
+    },
+  });
+
   return sendSingle(
     c,
     {
@@ -216,10 +231,6 @@ app.post("/", async (c) => {
     RESOURCE_TYPES.COMMENT
   );
 });
-
-/**
- * GET /v4/comments/:id - Get comment details
- */
 app.get("/:id", async (c) => {
   const session = requireAuth(c);
   const commentId = c.req.param("id");
@@ -281,16 +292,22 @@ app.put("/:id", async (c) => {
   const commentId = c.req.param("id");
   const body = await c.req.json();
 
-  // Get comment
-  const [comment] = await db
-    .select()
+  // Get comment with file info for project ID
+  const [commentResult] = await db
+    .select({
+      comment: comments,
+      file: files,
+    })
     .from(comments)
+    .leftJoin(files, eq(comments.fileId, files.id))
     .where(eq(comments.id, commentId))
     .limit(1);
 
-  if (!comment) {
+  if (!commentResult) {
     throw new NotFoundError("comment", commentId);
   }
+
+  const comment = commentResult.comment;
 
   // Only comment owner can edit
   if (comment.userId !== session.userId) {
@@ -347,6 +364,20 @@ app.put("/:id", async (c) => {
     .where(eq(comments.id, commentId))
     .limit(1);
 
+  // Emit real-time event for comment update
+  if (commentResult.file) {
+    emitCommentEvent("comment.updated", {
+      actorId: session.userId,
+      projectId: commentResult.file.projectId,
+      fileId: comment.fileId!,
+      commentId,
+      data: {
+        text: updatedComment.comment.text,
+        isInternal: updatedComment.comment.isInternal,
+      },
+    });
+  }
+
   return sendSingle(
     c,
     {
@@ -365,45 +396,51 @@ app.delete("/:id", async (c) => {
   const commentId = c.req.param("id");
 
   // Get comment with file for access check
-  const [comment] = await db
-    .select()
+  const [commentResult] = await db
+    .select({
+      comment: comments,
+      file: files,
+    })
     .from(comments)
+    .leftJoin(files, eq(comments.fileId, files.id))
     .where(eq(comments.id, commentId))
     .limit(1);
 
-  if (!comment) {
+  if (!commentResult) {
     throw new NotFoundError("comment", commentId);
   }
+
+  const comment = commentResult.comment;
 
   // Check if user can delete (own comment or full_access+ permission)
   const isOwner = comment.userId === session.userId;
 
   // For non-owners, check if they have full_access permission
   if (!isOwner) {
-    // Get file to check project access
-    if (comment.fileId) {
-      const [file] = await db
-        .select()
-        .from(files)
-        .where(eq(files.id, comment.fileId))
-        .limit(1);
-
-      if (file) {
-        // For now, only allow owner to delete
-        // TODO: Check full_access+ permission when permission system is more complete
-        throw new ValidationError("You can only delete your own comments", {
-          pointer: "/data/relationships/user",
-        });
-      }
-    } else {
-      throw new ValidationError("You can only delete your own comments", {
-        pointer: "/data/relationships/user",
-      });
-    }
+    // For now, only allow owner to delete
+    // TODO: Check full_access+ permission when permission system is more complete
+    throw new ValidationError("You can only delete your own comments", {
+      pointer: "/data/relationships/user",
+    });
   }
+
+  // Store info for event emission before deletion
+  const fileId = comment.fileId;
+  const projectId = commentResult.file?.projectId;
 
   // Delete comment (cascade will handle replies if configured)
   await db.delete(comments).where(eq(comments.id, commentId));
+
+  // Emit real-time event for comment deletion
+  if (fileId && projectId) {
+    emitCommentEvent("comment.deleted", {
+      actorId: session.userId,
+      projectId,
+      fileId,
+      commentId,
+      data: {},
+    });
+  }
 
   return sendNoContent(c);
 });
@@ -506,33 +543,31 @@ app.put("/:id/complete", async (c) => {
   const commentId = c.req.param("id");
   const body = await c.req.json();
 
-  // Get comment
-  const [comment] = await db
-    .select()
+  // Get comment with file info
+  const [commentResult] = await db
+    .select({
+      comment: comments,
+      file: files,
+    })
     .from(comments)
+    .leftJoin(files, eq(comments.fileId, files.id))
     .where(eq(comments.id, commentId))
     .limit(1);
 
-  if (!comment) {
+  if (!commentResult) {
     throw new NotFoundError("comment", commentId);
   }
 
+  const comment = commentResult.comment;
+
   // Verify access through file
-  if (comment.fileId) {
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(eq(files.id, comment.fileId))
-      .limit(1);
-
-    if (!file) {
-      throw new NotFoundError("comment", commentId);
-    }
-
-    const access = await verifyProjectAccess(file.projectId, session.currentAccountId);
+  let projectId: string | undefined;
+  if (commentResult.file) {
+    const access = await verifyProjectAccess(commentResult.file.projectId, session.currentAccountId);
     if (!access) {
       throw new NotFoundError("comment", commentId);
     }
+    projectId = commentResult.file.projectId;
   }
 
   // Toggle completed status
@@ -557,6 +592,20 @@ app.put("/:id/complete", async (c) => {
     .innerJoin(users, eq(comments.userId, users.id))
     .where(eq(comments.id, commentId))
     .limit(1);
+
+  // Emit real-time event for comment completion
+  if (comment.fileId && projectId) {
+    emitCommentEvent("comment.completed", {
+      actorId: session.userId,
+      projectId,
+      fileId: comment.fileId,
+      commentId,
+      data: {
+        isComplete,
+        completedAt: completedAt?.toISOString() || null,
+      },
+    });
+  }
 
   return sendSingle(
     c,

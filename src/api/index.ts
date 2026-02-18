@@ -34,6 +34,7 @@ import {
   customFieldRoutes,
   metadataRoutes,
   shareRoutes,
+  notificationRoutes,
 } from "./routes/index.js";
 import { getShareBySlug } from "./routes/index.js";
 
@@ -196,6 +197,12 @@ v4.route("/accounts/:accountId/shares", shareRoutes);
 
 // Public share access by slug (no auth required)
 v4.get("/shares/slug/:slug", getShareBySlug);
+
+// Notifications (for current user)
+v4.route("/users/me/notifications", notificationRoutes);
+
+// Individual notification operations
+v4.route("/notifications", notificationRoutes);
 
 // Mount V4 routes under /v4 prefix
 app.route("/v4", v4);
