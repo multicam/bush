@@ -138,11 +138,17 @@ function loadConfig(): Env {
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build" ||
     (process.env.NODE_ENV === "production" && !process.env.APP_URL);
 
-  if (isBuildPhase) {
-    // Return a partial config for build time - only needed for type checking
-    // The actual runtime config will be validated on server start
+  // During test phase (vitest), return test defaults.
+  // vi.stubEnv() in vitest.setup.ts runs after module imports, so env vars
+  // aren't available when this module is first imported.
+  const isTestPhase = process.env.NODE_ENV === "test" ||
+    typeof process.env.VITEST !== "undefined";
+
+  if (isBuildPhase || isTestPhase) {
+    // Return defaults for build/test - actual runtime config validated on server start
+    const nodeEnv = isTestPhase ? "test" : "production";
     return {
-      NODE_ENV: "production",
+      NODE_ENV: nodeEnv,
       PORT: 3001,
       HOST: "0.0.0.0",
       LOG_LEVEL: "info",

@@ -3,7 +3,7 @@
  *
  * Tests for Redis-backed session cache operations.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   sessionCache,
   generateSessionId,
@@ -12,6 +12,12 @@ import {
 } from "./session-cache.js";
 import type { SessionData } from "./types.js";
 
+// Mock multi chain
+const mockMultiChain = {
+  setex: vi.fn().mockReturnThis(),
+  exec: vi.fn().mockResolvedValue(["OK"]),
+};
+
 // Mock Redis
 const mockRedis = {
   setex: vi.fn(),
@@ -19,6 +25,10 @@ const mockRedis = {
   del: vi.fn(),
   ttl: vi.fn(),
   keys: vi.fn(),
+  scan: vi.fn(),
+  watch: vi.fn(),
+  multi: vi.fn(() => mockMultiChain),
+  unwatch: vi.fn(),
 };
 
 vi.mock("../redis/index.js", () => ({
@@ -41,10 +51,13 @@ describe("sessionCache", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.resetAllMocks();
+    // Restore multi chain and mock implementations after clearAllMocks
+    mockMultiChain.setex.mockReturnThis();
+    mockMultiChain.exec.mockResolvedValue(["OK"]);
+    mockRedis.multi.mockReturnValue(mockMultiChain);
+    mockRedis.scan.mockResolvedValue(["0", []]);
+    mockRedis.watch.mockResolvedValue("OK");
+    mockRedis.unwatch.mockResolvedValue("OK");
   });
 
   describe("set", () => {
@@ -95,11 +108,9 @@ describe("sessionCache", () => {
   });
 
   describe("update", () => {
-    it("should update session and preserve TTL", async () => {
+    it("should update session using WATCH/MULTI transaction", async () => {
       const existingSession = { ...mockSession, displayName: "Old Name" };
       mockRedis.get.mockResolvedValueOnce(JSON.stringify(existingSession));
-      mockRedis.ttl.mockResolvedValueOnce(5000);
-      mockRedis.setex.mockResolvedValueOnce("OK");
 
       const result = await sessionCache.update(
         mockSession.userId,
@@ -108,11 +119,14 @@ describe("sessionCache", () => {
       );
 
       expect(result).toBe(true);
-      expect(mockRedis.setex).toHaveBeenCalledWith(
+      expect(mockRedis.watch).toHaveBeenCalled();
+      expect(mockRedis.multi).toHaveBeenCalled();
+      expect(mockMultiChain.setex).toHaveBeenCalledWith(
         expect.any(String),
-        5000, // preserved TTL
+        expect.any(Number),
         expect.stringContaining("New Name")
       );
+      expect(mockMultiChain.exec).toHaveBeenCalled();
     });
 
     it("should return false if session does not exist", async () => {
@@ -123,18 +137,17 @@ describe("sessionCache", () => {
       });
 
       expect(result).toBe(false);
+      expect(mockRedis.unwatch).toHaveBeenCalled();
     });
 
     it("should update lastActivityAt", async () => {
       const oldTime = Date.now() - 10000;
       const existingSession = { ...mockSession, lastActivityAt: oldTime };
       mockRedis.get.mockResolvedValueOnce(JSON.stringify(existingSession));
-      mockRedis.ttl.mockResolvedValueOnce(5000);
-      mockRedis.setex.mockResolvedValueOnce("OK");
 
       await sessionCache.update(mockSession.userId, mockSession.sessionId, {});
 
-      const storedValue = JSON.parse(mockRedis.setex.mock.calls[0][2]);
+      const storedValue = JSON.parse(mockMultiChain.setex.mock.calls[0][2]);
       expect(storedValue.lastActivityAt).toBeGreaterThan(oldTime);
     });
   });
@@ -147,12 +160,10 @@ describe("sessionCache", () => {
       mockRedis.get
         .mockResolvedValueOnce(JSON.stringify(existingSession))
         .mockResolvedValueOnce(JSON.stringify(existingSession));
-      mockRedis.ttl.mockResolvedValueOnce(5000);
-      mockRedis.setex.mockResolvedValueOnce("OK");
 
       await sessionCache.touch(mockSession.userId, mockSession.sessionId);
 
-      expect(mockRedis.setex).toHaveBeenCalled();
+      expect(mockRedis.multi).toHaveBeenCalled();
     });
 
     it("should not update if lastActivityAt is recent", async () => {
@@ -162,7 +173,7 @@ describe("sessionCache", () => {
 
       await sessionCache.touch(mockSession.userId, mockSession.sessionId);
 
-      expect(mockRedis.setex).not.toHaveBeenCalled();
+      expect(mockRedis.multi).not.toHaveBeenCalled();
     });
   });
 
@@ -180,10 +191,10 @@ describe("sessionCache", () => {
 
   describe("deleteAllForUser", () => {
     it("should delete all sessions for a user", async () => {
-      mockRedis.keys.mockResolvedValueOnce([
+      mockRedis.scan.mockResolvedValueOnce(["0", [
         "session:usr_abc123:session1",
         "session:usr_abc123:session2",
-      ]);
+      ]]);
       mockRedis.del.mockResolvedValueOnce(2);
 
       const result = await sessionCache.deleteAllForUser(mockSession.userId);
@@ -196,7 +207,7 @@ describe("sessionCache", () => {
     });
 
     it("should return 0 if no sessions exist", async () => {
-      mockRedis.keys.mockResolvedValueOnce([]);
+      mockRedis.scan.mockResolvedValueOnce(["0", []]);
 
       const result = await sessionCache.deleteAllForUser(mockSession.userId);
 
@@ -207,10 +218,10 @@ describe("sessionCache", () => {
 
   describe("getSessionIds", () => {
     it("should return all session IDs for a user", async () => {
-      mockRedis.keys.mockResolvedValueOnce([
+      mockRedis.scan.mockResolvedValueOnce(["0", [
         "session:usr_abc123:session1",
         "session:usr_abc123:session2",
-      ]);
+      ]]);
 
       const result = await sessionCache.getSessionIds(mockSession.userId);
 
@@ -222,11 +233,6 @@ describe("sessionCache", () => {
     it("should update account context in session", async () => {
       const existingSession = { ...mockSession };
       mockRedis.get.mockResolvedValueOnce(JSON.stringify(existingSession));
-      mockRedis.ttl.mockResolvedValueOnce(5000);
-      mockRedis.setex.mockResolvedValueOnce("OK");
-      mockRedis.get.mockResolvedValueOnce(
-        JSON.stringify({ ...existingSession, currentAccountId: "acc_new", accountRole: "member" })
-      );
 
       const result = await sessionCache.switchAccount(
         mockSession.userId,
@@ -236,15 +242,20 @@ describe("sessionCache", () => {
       );
 
       expect(result).toBe(true);
+      expect(mockMultiChain.setex).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Number),
+        expect.stringContaining("acc_new")
+      );
     });
   });
 
   describe("invalidateOnRoleChange", () => {
     it("should invalidate sessions for account matching role change", async () => {
-      mockRedis.keys.mockResolvedValueOnce([
+      mockRedis.scan.mockResolvedValueOnce(["0", [
         "session:usr_abc123:session1",
         "session:usr_abc123:session2",
-      ]);
+      ]]);
       mockRedis.get
         .mockResolvedValueOnce(
           JSON.stringify({ ...mockSession, currentAccountId: "acc_xyz789" })
