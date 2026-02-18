@@ -65,6 +65,18 @@ export function useLinkedPlayback(
   // Track if we're currently syncing to prevent loops
   const isSyncingRef = useRef(false);
 
+  // Track timeout IDs for cleanup
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Sync secondary to primary's current time
   const syncToPrimary = useCallback(() => {
     if (!isSynced || !primaryRef.current || !secondaryRef.current || isSyncingRef.current) {
@@ -78,7 +90,7 @@ export function useLinkedPlayback(
       isSyncingRef.current = true;
       secondaryRef.current.seekTo(primaryTime);
       // Reset sync flag after a short delay
-      setTimeout(() => {
+      syncTimeoutRef.current = setTimeout(() => {
         isSyncingRef.current = false;
       }, 100);
     }
@@ -119,7 +131,7 @@ export function useLinkedPlayback(
     secondaryRef.current?.seekTo(time);
 
     // Reset sync flag after a short delay
-    setTimeout(() => {
+    syncTimeoutRef.current = setTimeout(() => {
       isSyncingRef.current = false;
     }, 100);
   }, [isSynced]);
@@ -137,6 +149,9 @@ export function useLinkedPlayback(
   // Auto-sync on time changes when synced
   useEffect(() => {
     if (!isSynced) return;
+
+    // Track interval timeout for cleanup
+    let intervalTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
     // Periodically check for drift and correct
     const interval = setInterval(() => {
@@ -163,13 +178,22 @@ export function useLinkedPlayback(
       if (primaryPlaying && Math.abs(primaryTime - secondaryTime) > syncTolerance) {
         isSyncingRef.current = true;
         secondaryRef.current.seekTo(primaryTime);
-        setTimeout(() => {
+        // Clear any pending timeout before setting new one
+        if (intervalTimeoutId) {
+          clearTimeout(intervalTimeoutId);
+        }
+        intervalTimeoutId = setTimeout(() => {
           isSyncingRef.current = false;
         }, 100);
       }
     }, 200);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (intervalTimeoutId) {
+        clearTimeout(intervalTimeoutId);
+      }
+    };
   }, [isSynced, syncTolerance]);
 
   return {

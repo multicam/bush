@@ -14,6 +14,7 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyAccountMembership } from "../access-control.js";
 import { getEmailService } from "../../lib/email/index.js";
+import { sessionCache } from "../../auth/session-cache.js";
 import type { AccountRole } from "../../auth/types.js";
 
 const app = new Hono();
@@ -591,7 +592,8 @@ app.patch("/:id/members/:memberId", async (c) => {
     .where(eq(accountMemberships.id, membershipId))
     .limit(1);
 
-  // TODO: Invalidate Redis session cache for the affected user so role change takes effect immediately
+  // Invalidate session cache for the affected user so role change takes effect immediately
+  await sessionCache.invalidateOnRoleChange(targetMembership.userId, accountId);
 
   return sendSingle(c, {
     id: updatedMembership!.id,
@@ -661,7 +663,8 @@ app.delete("/:id/members/:memberId", async (c) => {
   // Delete the membership
   await db.delete(accountMemberships).where(eq(accountMemberships.id, membershipId));
 
-  // TODO: Invalidate Redis session cache for the affected user
+  // Invalidate session cache for the affected user
+  await sessionCache.invalidateOnRoleChange(targetMembership.userId, accountId);
 
   return sendNoContent(c);
 });

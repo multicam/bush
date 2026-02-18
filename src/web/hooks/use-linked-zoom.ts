@@ -64,6 +64,18 @@ export function useLinkedZoom(options: LinkedZoomOptions = {}): LinkedZoomContro
   const prevZoomRef = useRef<number | null>(null);
   const prevPanRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Track timeout IDs for cleanup
+  const fitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fitTimeoutRef.current) {
+        clearTimeout(fitTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Sync secondary to primary's zoom and pan
   const syncToPrimary = useCallback(() => {
     if (!isSynced || !primaryRef.current || !secondaryRef.current) {
@@ -111,8 +123,12 @@ export function useLinkedZoom(options: LinkedZoomOptions = {}): LinkedZoomContro
   const zoomBothToFit = useCallback(() => {
     primaryRef.current?.zoomToFit();
     if (isSynced) {
+      // Clear any pending timeout before setting new one
+      if (fitTimeoutRef.current) {
+        clearTimeout(fitTimeoutRef.current);
+      }
       // Delay sync to allow fit calculation
-      setTimeout(() => {
+      fitTimeoutRef.current = setTimeout(() => {
         if (primaryRef.current && secondaryRef.current) {
           secondaryRef.current.zoomToFit();
         }

@@ -1,7 +1,7 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-18
-**Iteration**: 2
+**Iteration**: 3
 **Coverage**: 16.08% statements (target: 80%)
 **Tests**: 303 passing, 0 failing
 
@@ -29,13 +29,13 @@
 | H1 | `src/api/routes/files.ts` | 487-496 | Missing storage quota check for destination account on file copy | **fixed** |
 | H2 | `src/api/routes/shares.ts` | 470-518 | Missing authorization - files added to share not verified against account | **fixed** |
 | H3 | `src/api/routes/bulk.ts` | 314-382 | Bulk delete not wrapped in transaction - partial failure leaves inconsistent state | **fixed** |
-| H4 | `src/api/routes/accounts.ts` | 568-575, 656-662 | Session cache invalidation not implemented for role changes (TODO comments) | pending |
+| H4 | `src/api/routes/accounts.ts` | 568-575, 656-662 | Session cache invalidation not implemented for role changes (TODO comments) | **fixed** |
 | H5 | `src/transcription/processor.ts` | 235-252 | Unbounded transcript words - no limit on word count for long audio | pending |
 | H6 | `package.json` | N/A | Vulnerable npm dependencies (aws-sdk/xml-builder, esbuild-kit) | pending |
-| H7 | `src/web/hooks/use-linked-playback.ts` | 69-85, 110-125 | Stale closure risk - setTimeout without cleanup | pending |
-| H8 | `src/web/hooks/use-linked-zoom.ts` | 114-119 | Stale closure risk - setTimeout without cleanup | pending |
+| H7 | `src/web/hooks/use-linked-playback.ts` | 69-85, 110-125 | Stale closure risk - setTimeout without cleanup | **fixed** |
+| H8 | `src/web/hooks/use-linked-zoom.ts` | 114-119 | Stale closure risk - setTimeout without cleanup | **fixed** |
 | H9 | `src/web/components/viewers/video-viewer.tsx` | 529-640 | Missing keyboard event cleanup - ESLint exhaustive-deps disabled | pending |
-| H10 | `src/web/app/layout.tsx` | 11-29 | Missing React Error Boundary - errors crash entire app | pending |
+| H10 | `src/web/app/layout.tsx` | 11-29 | Missing React Error Boundary - errors crash entire app | **fixed** |
 | H11 | `src/web/lib/ws-client.ts` | 427-437 | WebSocket singleton never disconnects on page hide/unload | pending |
 | H12 | `src/web/lib/upload-client.ts` | 541-562 | Resume logic creates new upload instead of resuming | pending |
 | H13 | `src/web/components/search/global-search.tsx` | 126-170 | Race condition in debounced search - stale results overwrite newer | pending |
@@ -173,6 +173,27 @@
 
 ## Iteration Log
 
+### Iteration 3 -- 2026-02-18
+**Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)
+**Fixed**: 4 high issues (4 total)
+**Coverage**: 16.08% (no change - tests not runnable due to Bun crash)
+
+**Fixed Issues:**
+- H4: Session cache invalidation now implemented for role changes using sessionCache.invalidateOnRoleChange (src/api/routes/accounts.ts)
+- H7: useLinkedPlayback hook now properly cleans up setTimeout with refs (src/web/hooks/use-linked-playback.ts)
+- H8: useLinkedZoom hook now properly cleans up setTimeout with refs (src/web/hooks/use-linked-zoom.ts)
+- H10: Added ErrorBoundary component to root layout to prevent app crashes (src/web/app/layout.tsx, src/web/components/error-boundary.tsx)
+
+**Summary of Fixes:**
+
+**Backend Fixes:**
+- ~~Session cache invalidation not implemented for role changes~~ ✅ FIXED - Now calls sessionCache.invalidateOnRoleChange after role updates and member removals
+
+**Frontend Fixes:**
+- ~~Stale closure in useLinkedPlayback~~ ✅ FIXED with timeout refs and cleanup
+- ~~Stale closure in useLinkedZoom~~ ✅ FIXED with timeout refs and cleanup
+- ~~Missing Error Boundary~~ ✅ FIXED with new ErrorBoundary component wrapping app
+
 ### Iteration 2 -- 2026-02-18
 **Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)
 **Fixed**: 10 critical + 3 high issues (13 total)
@@ -248,7 +269,10 @@
 1. ~~Fix race condition in storage quota (use transactions)~~ ✅ DONE
 2. ~~Hash passphrases with bcrypt~~ ✅ DONE
 3. ~~Add AbortController/timeout/retry to API client~~ ✅ DONE
-4. Add Error Boundary to root layout
-5. Implement session cache invalidation for role changes
-6. Fix setTimeout cleanup in hooks
+4. ~~Add Error Boundary to root layout~~ ✅ DONE
+5. ~~Implement session cache invalidation for role changes~~ ✅ DONE
+6. ~~Fix setTimeout cleanup in hooks~~ ✅ DONE
 7. Add rate limiting to public share endpoints
+8. Fix H9: Missing keyboard event cleanup in video-viewer.tsx
+9. Fix H11: WebSocket singleton lifecycle issues
+10. Address vulnerable npm dependencies
