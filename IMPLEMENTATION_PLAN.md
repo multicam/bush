@@ -1098,14 +1098,23 @@ All quick wins are COMPLETED:
   - `/collections` route referenced in sidebar
   - **Dependencies**: 3.2 (Collections)
 
-- **[P2] Shares Page** [4h] -- NOT STARTED
-  - `/shares` route referenced in sidebar
-  - **Dependencies**: 3.1 (Sharing)
+- **[P2] Shares Page** [4h] -- COMPLETED (2026-02-18)
+  - `/shares` route exists with full Share UI implementation
+  - **Dependencies**: 3.1 (Sharing) - DONE
 
-- **[P2] Settings Save Functionality** [4h] -- NOT STARTED
-  - Connect Settings page forms to API
-  - Remove mock team member data
-  - **Dependencies**: Member management endpoints
+- **[P2] Settings Save Functionality** [4h] -- COMPLETED (2026-02-18)
+  - **Files modified**:
+    - `src/web/lib/api.ts` - Added `membersApi` with list/invite/updateRole/remove methods
+    - `src/web/app/settings/page.tsx` - Connected Team Management to real API
+    - `src/web/app/settings/settings.module.css` - Added styles for invite form and member list
+  - **Features**:
+    - Fetch real team members from Member Management API
+    - Invite new members with email and role selection
+    - Update member roles via dropdown (with permission checks)
+    - Remove members with confirmation dialog
+    - Role-based UI restrictions (only owners can assign owner/content_admin roles)
+    - Loading and error states
+  - **Dependencies**: Member Management endpoints - DONE
 
 - **[P1] Workspace Context** [2h] -- COMPLETED (2026-02-16)
   - `WorkspaceProvider` component with workspace state management
@@ -1180,6 +1189,45 @@ All quick wins are COMPLETED:
 ---
 
 ## CHANGE LOG
+
+### 2026-02-18 Settings Team Management UI Implementation
+
+**Completed Work:**
+
+1. **Settings Team Management UI COMPLETED** - Connected to Member Management API
+   - **Files modified**:
+     - `src/web/lib/api.ts` - Added `membersApi` with `list()`, `invite()`, `updateRole()`, `remove()` methods
+     - `src/web/app/settings/page.tsx` - Replaced mock team data with real API calls
+     - `src/web/app/settings/settings.module.css` - Added styles for invite form, role select, member actions
+
+   - **Features implemented**:
+     - Fetch and display real team members from Member Management API
+     - Invite new members with email and role selection
+     - Update member roles via dropdown (role-based permissions enforced)
+     - Remove members with confirmation dialog
+     - Role-based UI restrictions:
+       - Only owners can assign owner/content_admin roles
+       - Content admins cannot modify or remove owners/content admins
+       - Users cannot modify or remove themselves
+     - Loading and error states for all operations
+
+   - **API client additions** (`src/web/lib/api.ts`):
+     - `MemberAttributes` interface
+     - `MemberUser` interface
+     - `AccountRole` type
+     - `membersApi.list()` - List members
+     - `membersApi.invite()` - Invite member
+     - `membersApi.updateRole()` - Update member role
+     - `membersApi.remove()` - Remove member
+     - `extractMemberCollection()` and `extractMemberAttributes()` helpers
+
+**Test Count:** 282 tests (all pass)
+**Typecheck:** No new errors (pre-existing errors in unrelated files)
+
+**Status Changes:**
+- Settings Save Functionality: NOT STARTED → COMPLETED
+
+**Spec refs:** `specs/17-api-complete.md` Section 6.1 (Member Management)
 
 ### 2026-02-18 Share Passphrase Security Fix
 

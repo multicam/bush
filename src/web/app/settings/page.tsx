@@ -6,14 +6,25 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { Button, Input, Badge } from "@/web/components/ui";
 import { useAuth, useHasRole } from "@/web/context";
 import { getDisplayName, getUserInitials } from "@/web/lib/auth";
+import {
+  membersApi,
+  extractMemberCollection,
+  getErrorMessage,
+  type MemberAttributes,
+  type AccountRole,
+} from "@/web/lib/api";
 import styles from "./settings.module.css";
 
 type SettingsTab = "profile" | "account" | "team" | "notifications" | "security" | "billing";
+
+interface Member extends MemberAttributes {
+  id: string;
+}
 
 export default function SettingsPage() {
   const { user, currentAccount } = useAuth();
@@ -21,8 +32,122 @@ export default function SettingsPage() {
   const isContentAdmin = useHasRole("content_admin");
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
 
+  // Team management state
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<AccountRole>("member");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [roleUpdateLoading, setRoleUpdateLoading] = useState<string | null>(null);
+
   const _displayName = user ? getDisplayName(user) : "User";
   const initials = user ? getUserInitials(user) : "?";
+
+  // Fetch team members
+  const fetchMembers = useCallback(async () => {
+    if (!currentAccount?.id) return;
+
+    setMembersLoading(true);
+    setMembersError(null);
+
+    try {
+      const response = await membersApi.list(currentAccount.id, { limit: 100 });
+      const memberList = extractMemberCollection(response);
+      setMembers(memberList as Member[]);
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+      setMembersError(getErrorMessage(error));
+    } finally {
+      setMembersLoading(false);
+    }
+  }, [currentAccount?.id]);
+
+  // Fetch members when team tab is active
+  useEffect(() => {
+    if (activeTab === "team" && currentAccount?.id) {
+      fetchMembers();
+    }
+  }, [activeTab, currentAccount?.id, fetchMembers]);
+
+  // Handle invite member
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentAccount?.id || !inviteEmail.trim()) return;
+
+    setInviteLoading(true);
+    setInviteError(null);
+
+    try {
+      const response = await membersApi.invite(currentAccount.id, {
+        email: inviteEmail.trim(),
+        role: inviteRole,
+      });
+      const newMember = extractMemberCollection({ data: [response.data], links: {}, meta: { total_count: 1, page_size: 1, has_more: false } })[0];
+      setMembers((prev) => [...prev, newMember as Member]);
+      setInviteEmail("");
+      setInviteRole("member");
+    } catch (error) {
+      console.error("Failed to invite member:", error);
+      setInviteError(getErrorMessage(error));
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  // Handle role update
+  const handleRoleUpdate = async (memberId: string, newRole: AccountRole) => {
+    if (!currentAccount?.id) return;
+
+    setRoleUpdateLoading(memberId);
+
+    try {
+      await membersApi.updateRole(currentAccount.id, memberId, newRole);
+      setMembers((prev) =>
+        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+      );
+    } catch (error) {
+      console.error("Failed to update role:", error);
+      alert(getErrorMessage(error));
+    } finally {
+      setRoleUpdateLoading(null);
+    }
+  };
+
+  // Handle remove member
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!currentAccount?.id) return;
+
+    if (!confirm(`Are you sure you want to remove ${memberName} from the account?`)) {
+      return;
+    }
+
+    try {
+      await membersApi.remove(currentAccount.id, memberId);
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    } catch (error) {
+      console.error("Failed to remove member:", error);
+      alert(getErrorMessage(error));
+    }
+  };
+
+  // Get role badge variant
+  const getRoleBadgeVariant = (role: AccountRole): "primary" | "success" | "default" => {
+    switch (role) {
+      case "owner":
+        return "primary";
+      case "content_admin":
+        return "success";
+      default:
+        return "default";
+    }
+  };
+
+  // Format role display
+  const formatRole = (role: AccountRole): string => {
+    return role.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   const tabs: { id: SettingsTab; label: string; adminOnly?: boolean }[] = [
     { id: "profile", label: "Profile" },
@@ -156,34 +281,127 @@ export default function SettingsPage() {
                   Manage team members and their permissions.
                 </p>
 
-                <div className={styles.teamActions}>
-                  <Button variant="primary">Invite Team Member</Button>
-                </div>
+                {/* Invite Form */}
+                <form onSubmit={handleInviteMember} className={styles.inviteForm}>
+                  <div className={styles.inviteRow}>
+                    <Input
+                      label="Email Address"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="colleague@example.com"
+                      required
+                    />
+                    <div className={styles.inviteSelect}>
+                      <label className={styles.selectLabel}>Role</label>
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value as AccountRole)}
+                        className={styles.select}
+                      >
+                        <option value="member">Member</option>
+                        <option value="guest">Guest</option>
+                        <option value="reviewer">Reviewer</option>
+                        {isOwner && (
+                          <>
+                            <option value="content_admin">Content Admin</option>
+                            <option value="owner">Owner</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={inviteLoading || !inviteEmail.trim()}
+                    >
+                      {inviteLoading ? "Inviting..." : "Invite"}
+                    </Button>
+                  </div>
+                  {inviteError && (
+                    <p className={styles.error}>{inviteError}</p>
+                  )}
+                </form>
 
-                <div className={styles.memberList}>
-                  {/* Mock team members */}
-                  <div className={styles.memberItem}>
-                    <div className={styles.memberInfo}>
-                      <span className={styles.memberName}>John Doe</span>
-                      <span className={styles.memberEmail}>john@example.com</span>
-                    </div>
-                    <Badge variant="primary">Owner</Badge>
+                {/* Members List */}
+                {membersLoading ? (
+                  <div className={styles.loading}>Loading members...</div>
+                ) : membersError ? (
+                  <div className={styles.errorContainer}>
+                    <p className={styles.error}>{membersError}</p>
+                    <Button variant="secondary" onClick={fetchMembers}>
+                      Try Again
+                    </Button>
                   </div>
-                  <div className={styles.memberItem}>
-                    <div className={styles.memberInfo}>
-                      <span className={styles.memberName}>Jane Smith</span>
-                      <span className={styles.memberEmail}>jane@example.com</span>
-                    </div>
-                    <Badge variant="success">Content Admin</Badge>
+                ) : members.length === 0 ? (
+                  <p className={styles.emptyState}>No team members found.</p>
+                ) : (
+                  <div className={styles.memberList}>
+                    {members.map((member) => (
+                      <div key={member.id} className={styles.memberItem}>
+                        <div className={styles.memberInfo}>
+                          <span className={styles.memberName}>
+                            {member.user.first_name && member.user.last_name
+                              ? `${member.user.first_name} ${member.user.last_name}`
+                              : member.user.email}
+                          </span>
+                          <span className={styles.memberEmail}>
+                            {member.user.email}
+                          </span>
+                        </div>
+                        <div className={styles.memberActions}>
+                          {roleUpdateLoading === member.id ? (
+                            <span className={styles.updating}>Updating...</span>
+                          ) : member.user.id === user?.id ? (
+                            <Badge variant={getRoleBadgeVariant(member.role)}>
+                              {formatRole(member.role)} (You)
+                            </Badge>
+                          ) : (
+                            <>
+                              <select
+                                value={member.role}
+                                onChange={(e) => handleRoleUpdate(member.id, e.target.value as AccountRole)}
+                                className={`${styles.select} ${styles.roleSelect}`}
+                                disabled={
+                                  // Only owner can change owner/content_admin roles
+                                  ((member.role === "owner" || member.role === "content_admin") && !isOwner) ||
+                                  // Content admins can only modify member/guest/reviewer
+                                  (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
+                                }
+                              >
+                                <option value="member">Member</option>
+                                <option value="guest">Guest</option>
+                                <option value="reviewer">Reviewer</option>
+                                {isOwner && (
+                                  <>
+                                    <option value="content_admin">Content Admin</option>
+                                    <option value="owner">Owner</option>
+                                  </>
+                                )}
+                              </select>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveMember(
+                                  member.id,
+                                  member.user.first_name && member.user.last_name
+                                    ? `${member.user.first_name} ${member.user.last_name}`
+                                    : member.user.email
+                                )}
+                                disabled={
+                                  // Content admins cannot remove owners or content admins
+                                  (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
+                                }
+                              >
+                                Remove
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className={styles.memberItem}>
-                    <div className={styles.memberInfo}>
-                      <span className={styles.memberName}>Bob Wilson</span>
-                      <span className={styles.memberEmail}>bob@example.com</span>
-                    </div>
-                    <Badge variant="default">Member</Badge>
-                  </div>
-                </div>
+                )}
               </section>
             )}
 

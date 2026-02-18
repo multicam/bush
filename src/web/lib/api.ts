@@ -1821,6 +1821,125 @@ export function toNotification(
 }
 
 // ============================================================================
+// Member Management Types
+// ============================================================================
+
+/**
+ * Account roles
+ */
+export type AccountRole = "owner" | "content_admin" | "member" | "guest" | "reviewer";
+
+/**
+ * Member user info embedded in member responses
+ */
+export interface MemberUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+/**
+ * Member attributes from API
+ */
+export interface MemberAttributes {
+  role: AccountRole;
+  created_at: string;
+  user: MemberUser;
+}
+
+// ============================================================================
+// Member Management API
+// ============================================================================
+
+/**
+ * Members API (for account member management)
+ */
+export const membersApi = {
+  /**
+   * List members of an account
+   */
+  list: async (accountId: string, options?: { limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) {
+      params.set("limit", String(options.limit));
+    }
+    const queryString = params.toString();
+    const path = `/accounts/${accountId}/members${queryString ? `?${queryString}` : ""}`;
+    return apiFetch<JsonApiCollectionResponse<MemberAttributes>>(path);
+  },
+
+  /**
+   * Invite a new member to the account
+   */
+  invite: async (accountId: string, data: { email: string; role?: AccountRole }) => {
+    return apiFetch<JsonApiSingleResponse<MemberAttributes>>(`/accounts/${accountId}/members`, {
+      method: "POST",
+      body: JSON.stringify({
+        data: {
+          type: "member",
+          attributes: {
+            email: data.email,
+            role: data.role || "member",
+          },
+        },
+      }),
+    });
+  },
+
+  /**
+   * Update a member's role
+   */
+  updateRole: async (accountId: string, memberId: string, role: AccountRole) => {
+    return apiFetch<JsonApiSingleResponse<MemberAttributes>>(
+      `/accounts/${accountId}/members/${memberId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          data: {
+            type: "member",
+            id: memberId,
+            attributes: { role },
+          },
+        }),
+      }
+    );
+  },
+
+  /**
+   * Remove a member from the account
+   */
+  remove: async (accountId: string, memberId: string) => {
+    return apiFetch<void>(`/accounts/${accountId}/members/${memberId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * Extract member attributes with ID from API response
+ */
+export function extractMemberAttributes(
+  response: JsonApiSingleResponse<MemberAttributes>
+): MemberAttributes & { id: string } {
+  const { id, attributes } = response.data;
+  return { id, ...attributes };
+}
+
+/**
+ * Extract member collection with IDs from API response
+ */
+export function extractMemberCollection(
+  response: JsonApiCollectionResponse<MemberAttributes>
+): Array<MemberAttributes & { id: string }> {
+  return response.data.map((item) => ({
+    id: item.id,
+    ...item.attributes,
+  }));
+}
+
+// ============================================================================
 // Transcription Types
 // ============================================================================
 
