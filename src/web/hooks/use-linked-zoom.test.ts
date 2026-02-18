@@ -17,9 +17,9 @@ describe("useLinkedZoom interface", () => {
   it("should have ImageViewerHandle interface with required methods", () => {
     // Verify ImageViewerHandle has the required methods
     const mockHandle = {
-      setZoom: vi.fn((level: number) => {}),
+      setZoom: vi.fn((_level: number) => {}),
       getZoom: vi.fn(() => 1),
-      setPan: vi.fn((x: number, y: number) => {}),
+      setPan: vi.fn((_x: number, _y: number) => {}),
       getPan: vi.fn(() => ({ x: 0, y: 0 })),
       zoomToFit: vi.fn(() => {}),
       zoomTo1to1: vi.fn(() => {}),
@@ -43,10 +43,10 @@ describe("LinkedZoomControl interface", () => {
       secondaryRef: { current: null },
       isSynced: true,
       toggleSync: vi.fn(() => {}),
-      setSynced: vi.fn((synced: boolean) => {}),
+      setSynced: vi.fn((_synced: boolean) => {}),
       syncToPrimary: vi.fn(() => {}),
-      setZoomBoth: vi.fn((level: number) => {}),
-      setPanBoth: vi.fn((x: number, y: number) => {}),
+      setZoomBoth: vi.fn((_level: number) => {}),
+      setPanBoth: vi.fn((_x: number, _y: number) => {}),
       zoomBothToFit: vi.fn(() => {}),
       zoomBothTo1to1: vi.fn(() => {}),
     };

@@ -4,13 +4,12 @@
  * Note: These tests verify the hook's logic without rendering.
  * Full integration tests should be done with actual VideoViewer components.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { useRef, useState, useCallback, useEffect } from "react";
-import { renderHook, act } from "./test-utils";
+import { describe, it, expect, vi } from "vitest";
+import { renderHook } from "./test-utils";
 
 // Simple test utils for hooks without @testing-library/react
 export function renderHook<T, P>(hook: (props: P) => T, initialProps: P = {} as P) {
-  let result: { current: T } = { current: null as unknown as T };
+  const result: { current: T } = { current: null as unknown as T };
 
   function TestComponent({ hookProps }: { hookProps: P }) {
     result.current = hook(hookProps);
@@ -26,18 +25,12 @@ export function renderHook<T, P>(hook: (props: P) => T, initialProps: P = {} as 
 }
 
 function renderTestComponent<P>(
-  Component: React.FC<P>,
-  props: P
+  _Component: React.FC<P>,
+  _props: P
 ): { rerender: (props: P) => void } {
-  let currentProps = props;
-  let key = 0;
-
-  const container = { current: null as Element | null };
-
   // For testing purposes, we just simulate rerenders
-  const rerender = (newProps: P) => {
-    currentProps = newProps;
-    key++;
+  const rerender = (_newProps: P) => {
+    // No-op for test mock
   };
 
   return { rerender };
@@ -58,14 +51,14 @@ describe("useLinkedPlayback interface", () => {
   it("should have VideoViewerHandle interface with required methods", () => {
     // Verify VideoViewerHandle has the required methods
     const mockHandle = {
-      seekTo: vi.fn((time: number) => {}),
+      seekTo: vi.fn((_time: number) => {}),
       play: vi.fn(() => {}),
       pause: vi.fn(() => {}),
       togglePlay: vi.fn(() => {}),
       getCurrentTime: vi.fn(() => 0),
       getDuration: vi.fn(() => 100),
       isPlaying: vi.fn(() => false),
-      setPlaybackRate: vi.fn((rate: number) => {}),
+      setPlaybackRate: vi.fn((_rate: number) => {}),
       getPlaybackRate: vi.fn(() => 1),
     };
 
@@ -88,11 +81,11 @@ describe("LinkedPlaybackControl interface", () => {
       secondaryRef: { current: null },
       isSynced: true,
       toggleSync: vi.fn(() => {}),
-      setSynced: vi.fn((synced: boolean) => {}),
+      setSynced: vi.fn((_synced: boolean) => {}),
       syncToPrimary: vi.fn(() => {}),
       playBoth: vi.fn(() => {}),
       pauseBoth: vi.fn(() => {}),
-      seekBoth: vi.fn((time: number) => {}),
+      seekBoth: vi.fn((_time: number) => {}),
     };
 
     expect(typeof mockControl.toggleSync).toBe("function");

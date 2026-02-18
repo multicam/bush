@@ -233,7 +233,7 @@ export class DeepgramProvider implements ITranscriptionProvider {
 
     // Prefer utterances if available (better for speaker diarization)
     if (result.utterances && result.utterances.length > 0) {
-      let position = 0;
+      let _position = 0;
       for (const utterance of result.utterances) {
         fullText += (fullText ? " " : "") + utterance.transcript;
 
@@ -247,7 +247,7 @@ export class DeepgramProvider implements ITranscriptionProvider {
             speaker,
             confidence: w.confidence ? Math.round(w.confidence * 100) : undefined,
           });
-          position++;
+          _position++;
         }
       }
       speakerCount = speakerSet.size;
@@ -259,7 +259,7 @@ export class DeepgramProvider implements ITranscriptionProvider {
 
       if (alternative) {
         fullText = alternative.transcript;
-        let position = 0;
+        let _position = 0;
 
         for (const w of alternative.words) {
           const speaker = w.speaker ?? 0;
@@ -271,7 +271,7 @@ export class DeepgramProvider implements ITranscriptionProvider {
             speaker,
             confidence: w.confidence ? Math.round(w.confidence * 100) : undefined,
           });
-          position++;
+          _position++;
         }
         speakerCount = speakerSet.size;
       }

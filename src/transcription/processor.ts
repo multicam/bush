@@ -24,6 +24,8 @@ import { spawn } from "child_process";
 import { writeFile, unlink, readFile } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
+import { Worker, Queue } from "bullmq";
+import { getRedisOptions } from "../media/queue.js";
 
 /**
  * Get the configured transcription provider
@@ -317,9 +319,6 @@ export function createTranscriptionWorker(
   processor: (job: { data: TranscriptionJobData }) => Promise<TranscriptionJobResult>,
   concurrency: number = 1
 ) {
-  const { Worker } = require("bullmq");
-  const { getRedisOptions } = require("../media/queue.js");
-
   return new Worker(QUEUE_NAME, processor, {
     connection: getRedisOptions(),
     concurrency,
@@ -336,15 +335,11 @@ export function createTranscriptionWorker(
 export async function enqueueTranscriptionJob(
   data: Omit<TranscriptionJobData, "type">
 ): Promise<void> {
-  const { Queue } = require("bullmq");
-  const { getRedisOptions } = require("../media/queue.js");
-
   const queue = new Queue(QUEUE_NAME, {
     connection: getRedisOptions(),
     defaultJobOptions: {
       attempts: RETRY_CONFIG.maxAttempts,
       backoff: RETRY_CONFIG.backoff,
-      timeout: JOB_TIMEOUT,
       removeOnComplete: {
         count: 100,
         age: 24 * 3600,

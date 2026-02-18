@@ -537,7 +537,7 @@ app.post("/:id/items", async (c) => {
       });
       added.push(fileId);
       sortOrder++;
-    } catch (err) {
+    } catch {
       // Likely a duplicate key error (file already in collection)
       failed.push({ id: fileId, error: "File already in collection" });
     }
