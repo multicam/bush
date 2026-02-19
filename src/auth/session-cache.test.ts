@@ -403,3 +403,221 @@ describe("SESSION_COOKIE_NAME", () => {
     expect(SESSION_COOKIE_NAME).toBe("bush_session");
   });
 });
+
+describe("createSignedCookieValue", () => {
+  it("should create a signed cookie value with correct format", async () => {
+    const { createSignedCookieValue } = await import("./session-cache.js");
+    const userId = "usr_test123";
+    const sessionId = "sess_abc456";
+
+    const result = createSignedCookieValue(userId, sessionId);
+
+    // Format should be: base64url(JSON{userId, sessionId}).signature
+    expect(result).toContain(".");
+    const parts = result.split(".");
+    expect(parts).toHaveLength(2);
+
+    // Decode the payload to verify
+    const decoded = Buffer.from(parts[0], "base64url").toString();
+    const parsed = JSON.parse(decoded);
+    expect(parsed.userId).toBe(userId);
+    expect(parsed.sessionId).toBe(sessionId);
+  });
+
+  it("should create verifiable signatures", async () => {
+    const { createSignedCookieValue, parseSessionCookie } = await import("./session-cache.js");
+    const userId = "usr_test123";
+    const sessionId = "sess_abc456";
+
+    const signedValue = createSignedCookieValue(userId, sessionId);
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${signedValue}`;
+
+    const result = parseSessionCookie(cookieHeader);
+
+    expect(result).toEqual({
+      userId,
+      sessionId,
+    });
+  });
+});
+
+describe("parseSessionCookie legacy formats", () => {
+  it("should parse legacy base64 JSON format", () => {
+    // Legacy format: base64(JSON{userId, sessionId}) without signature
+    const payload = Buffer.from(JSON.stringify({
+      userId: "usr_legacy",
+      sessionId: "sess_legacy"
+    })).toString("base64"); // Note: base64, not base64url
+
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${payload}`;
+    const result = parseSessionCookie(cookieHeader);
+
+    expect(result).toEqual({
+      userId: "usr_legacy",
+      sessionId: "sess_legacy",
+    });
+  });
+
+  it("should return null for legacy format with invalid JSON", () => {
+    const payload = Buffer.from("not valid json").toString("base64");
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${payload}`;
+    const result = parseSessionCookie(cookieHeader);
+
+    // Should fall through to plain format check, which will fail
+    expect(result).toBeNull();
+  });
+
+  it("should parse legacy format with missing sessionId", () => {
+    const payload = Buffer.from(JSON.stringify({ userId: "usr_123" })).toString("base64");
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${payload}`;
+    const result = parseSessionCookie(cookieHeader);
+
+    // Should fall through to plain format, which fails due to colon check
+    expect(result).toBeNull();
+  });
+});
+
+describe("sessionCache.getWithValidation", () => {
+  const mockSession: SessionData = {
+    sessionId: "test-session-123",
+    userId: "usr_abc123",
+    email: "test@example.com",
+    displayName: "Test User",
+    currentAccountId: "acc_xyz789",
+    accountRole: "owner",
+    workosOrganizationId: "org_workos123",
+    workosUserId: "user_workos456",
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMultiChain.setex.mockReturnThis();
+    mockMultiChain.exec.mockResolvedValue(["OK"]);
+    mockRedis.multi.mockReturnValue(mockMultiChain);
+    mockRedis.scan.mockResolvedValue(["0", []]);
+    mockRedis.watch.mockResolvedValue("OK");
+    mockRedis.unwatch.mockResolvedValue("OK");
+  });
+
+  it("should return session when userId matches", async () => {
+    mockRedis.get.mockResolvedValueOnce(JSON.stringify(mockSession));
+
+    const result = await sessionCache.getWithValidation(
+      mockSession.userId,
+      mockSession.sessionId
+    );
+
+    expect(result).toEqual(mockSession);
+  });
+
+  it("should return null and delete session when userId does not match", async () => {
+    const tamperedSession = { ...mockSession, userId: "usr_different" };
+    mockRedis.get.mockResolvedValueOnce(JSON.stringify(tamperedSession));
+    mockRedis.del.mockResolvedValueOnce(1);
+
+    const result = await sessionCache.getWithValidation(
+      "usr_abc123", // Different from session's userId
+      mockSession.sessionId
+    );
+
+    expect(result).toBeNull();
+    expect(mockRedis.del).toHaveBeenCalled();
+  });
+
+  it("should return null when session not found", async () => {
+    mockRedis.get.mockResolvedValueOnce(null);
+
+    const result = await sessionCache.getWithValidation("nonexistent", "session");
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("sessionCache.update retry logic", () => {
+  const mockSession: SessionData = {
+    sessionId: "test-session-123",
+    userId: "usr_abc123",
+    email: "test@example.com",
+    displayName: "Test User",
+    currentAccountId: "acc_xyz789",
+    accountRole: "owner",
+    workosOrganizationId: "org_workos123",
+    workosUserId: "user_workos456",
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMultiChain.setex.mockReturnThis();
+    mockRedis.multi.mockReturnValue(mockMultiChain);
+    mockRedis.scan.mockResolvedValue(["0", []]);
+    mockRedis.watch.mockResolvedValue("OK");
+    mockRedis.unwatch.mockResolvedValue("OK");
+  });
+
+  it("should retry when transaction is aborted", async () => {
+    // First attempt: transaction aborted (returns null)
+    mockMultiChain.exec.mockResolvedValueOnce(null);
+    // Second attempt: success
+    mockMultiChain.exec.mockResolvedValueOnce(["OK"]);
+    mockRedis.get.mockResolvedValue(JSON.stringify(mockSession));
+
+    const result = await sessionCache.update(
+      mockSession.userId,
+      mockSession.sessionId,
+      { displayName: "New Name" }
+    );
+
+    expect(result).toBe(true);
+    expect(mockRedis.watch).toHaveBeenCalledTimes(2);
+  });
+
+  it("should return false after max retries", async () => {
+    // All attempts fail
+    mockMultiChain.exec.mockResolvedValue(null);
+    mockRedis.get.mockResolvedValue(JSON.stringify(mockSession));
+
+    const result = await sessionCache.update(
+      mockSession.userId,
+      mockSession.sessionId,
+      { displayName: "New Name" }
+    );
+
+    expect(result).toBe(false);
+    expect(mockRedis.watch).toHaveBeenCalledTimes(3);
+  });
+
+  it("should retry on error and succeed", async () => {
+    // First attempt throws
+    mockMultiChain.exec.mockRejectedValueOnce(new Error("Redis error"));
+    // Second attempt succeeds
+    mockMultiChain.exec.mockResolvedValueOnce(["OK"]);
+    mockRedis.get.mockResolvedValue(JSON.stringify(mockSession));
+
+    const result = await sessionCache.update(
+      mockSession.userId,
+      mockSession.sessionId,
+      { displayName: "New Name" }
+    );
+
+    expect(result).toBe(true);
+    expect(mockRedis.watch).toHaveBeenCalledTimes(2);
+  });
+
+  it("should return false after errors exhaust retries", async () => {
+    mockMultiChain.exec.mockRejectedValue(new Error("Redis error"));
+    mockRedis.get.mockResolvedValue(JSON.stringify(mockSession));
+
+    const result = await sessionCache.update(
+      mockSession.userId,
+      mockSession.sessionId,
+      { displayName: "New Name" }
+    );
+
+    expect(result).toBe(false);
+    expect(mockRedis.watch).toHaveBeenCalledTimes(3);
+  });
+});

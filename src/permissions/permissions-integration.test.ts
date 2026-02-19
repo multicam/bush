@@ -622,5 +622,325 @@ describe("Permission Service Integration Tests", () => {
 
       expect(validation.valid).toBe(true);
     });
+
+    it("should prevent lowering inherited permissions for folders", async () => {
+      // Grant project full_access
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "full_access"
+      );
+
+      // Try to validate lowering folder permission
+      const validation = await permissionService.validatePermissionChange(
+        TEST_IDS.user.member,
+        "folder",
+        TEST_IDS.folder.regular,
+        "view_only"
+      );
+
+      expect(validation.valid).toBe(false);
+      expect(validation.reason).toContain("Cannot lower inherited permission");
+    });
+
+    it("should allow raising inherited permissions for folders", async () => {
+      // Grant project view_only
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "view_only"
+      );
+
+      // Validate raising folder permission
+      const validation = await permissionService.validatePermissionChange(
+        TEST_IDS.user.member,
+        "folder",
+        TEST_IDS.folder.regular,
+        "edit"
+      );
+
+      expect(validation.valid).toBe(true);
+    });
+
+    it("should return valid for workspace resource type (no inheritance check)", async () => {
+      const validation = await permissionService.validatePermissionChange(
+        TEST_IDS.user.member,
+        "workspace",
+        TEST_IDS.workspace,
+        "edit"
+      );
+
+      expect(validation.valid).toBe(true);
+    });
+
+    it("should return valid when no inherited permission exists", async () => {
+      // No permissions granted - validate should pass
+      const validation = await permissionService.validatePermissionChange(
+        TEST_IDS.user.member,
+        "project",
+        TEST_IDS.project.regular,
+        "edit"
+      );
+
+      expect(validation.valid).toBe(true);
+    });
+  });
+
+  describe("Grant and Revoke Permissions", () => {
+    it("should grant project permission", async () => {
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      const result = await permissionService.getProjectPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.project.regular
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.permission).toBe("edit");
+      expect(result?.source).toBe("direct");
+    });
+
+    it("should update project permission on conflict", async () => {
+      // Grant initial permission
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "view_only"
+      );
+
+      // Update to higher permission
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      const result = await permissionService.getProjectPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.project.regular
+      );
+
+      expect(result?.permission).toBe("edit");
+    });
+
+    it("should revoke project permission", async () => {
+      // Grant then revoke
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      await permissionService.revokeProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member
+      );
+
+      const result = await permissionService.getProjectPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.project.regular
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should grant folder permission", async () => {
+      await permissionService.grantFolderPermission(
+        TEST_IDS.folder.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      const result = await permissionService.getFolderPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.folder.regular
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.permission).toBe("edit");
+      expect(result?.source).toBe("direct");
+    });
+
+    it("should update folder permission on conflict", async () => {
+      // Grant initial permission
+      await permissionService.grantFolderPermission(
+        TEST_IDS.folder.regular,
+        TEST_IDS.user.member,
+        "view_only"
+      );
+
+      // Update to higher permission
+      await permissionService.grantFolderPermission(
+        TEST_IDS.folder.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      const result = await permissionService.getFolderPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.folder.regular
+      );
+
+      expect(result?.permission).toBe("edit");
+    });
+
+    it("should revoke folder permission", async () => {
+      // Grant then revoke
+      await permissionService.grantFolderPermission(
+        TEST_IDS.folder.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      await permissionService.revokeFolderPermission(
+        TEST_IDS.folder.regular,
+        TEST_IDS.user.member
+      );
+
+      const result = await permissionService.getFolderPermission(
+        TEST_IDS.user.member,
+        TEST_IDS.folder.regular
+      );
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("Resource Not Found Cases", () => {
+    it("should return null for non-existent workspace", async () => {
+      const result = await permissionService.getWorkspacePermission(
+        TEST_IDS.user.member,
+        "ws_nonexistent"
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for non-existent project", async () => {
+      const result = await permissionService.getProjectPermission(
+        TEST_IDS.user.member,
+        "prj_nonexistent"
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for non-existent folder", async () => {
+      const result = await permissionService.getFolderPermission(
+        TEST_IDS.user.member,
+        "fld_nonexistent"
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should return false for canPerformAction on non-existent workspace", async () => {
+      const canView = await permissionService.canPerformAction(
+        TEST_IDS.user.member,
+        "workspace",
+        "ws_nonexistent",
+        "view"
+      );
+
+      expect(canView).toBe(false);
+    });
+
+    it("should return false for canPerformAction on non-existent project", async () => {
+      const canView = await permissionService.canPerformAction(
+        TEST_IDS.user.member,
+        "project",
+        "prj_nonexistent",
+        "view"
+      );
+
+      expect(canView).toBe(false);
+    });
+
+    it("should return false for canPerformAction on non-existent folder", async () => {
+      const canView = await permissionService.canPerformAction(
+        TEST_IDS.user.member,
+        "folder",
+        "fld_nonexistent",
+        "view"
+      );
+
+      expect(canView).toBe(false);
+    });
+  });
+
+  describe("Account Admin Check", () => {
+    it("should identify owner as account admin", async () => {
+      const isAdmin = await permissionService.isAccountAdmin(
+        TEST_IDS.user.owner,
+        TEST_IDS.account
+      );
+
+      expect(isAdmin).toBe(true);
+    });
+
+    it("should identify content_admin as account admin", async () => {
+      const isAdmin = await permissionService.isAccountAdmin(
+        TEST_IDS.user.contentAdmin,
+        TEST_IDS.account
+      );
+
+      expect(isAdmin).toBe(true);
+    });
+
+    it("should not identify member as account admin", async () => {
+      const isAdmin = await permissionService.isAccountAdmin(
+        TEST_IDS.user.member,
+        TEST_IDS.account
+      );
+
+      expect(isAdmin).toBe(false);
+    });
+
+    it("should not identify guest as account admin", async () => {
+      const isAdmin = await permissionService.isAccountAdmin(
+        TEST_IDS.user.guest,
+        TEST_IDS.account
+      );
+
+      expect(isAdmin).toBe(false);
+    });
+  });
+
+  describe("User Project Count", () => {
+    it("should return 0 when user has no project permissions", async () => {
+      const count = await permissionService.getUserProjectCount(TEST_IDS.user.member);
+      expect(count).toBe(0);
+    });
+
+    it("should count direct project permissions", async () => {
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+
+      const count = await permissionService.getUserProjectCount(TEST_IDS.user.member);
+      expect(count).toBe(1);
+    });
+
+    it("should count multiple project permissions", async () => {
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.regular,
+        TEST_IDS.user.member,
+        "edit"
+      );
+      await permissionService.grantProjectPermission(
+        TEST_IDS.project.restricted,
+        TEST_IDS.user.member,
+        "view_only"
+      );
+
+      const count = await permissionService.getUserProjectCount(TEST_IDS.user.member);
+      expect(count).toBe(2);
+    });
   });
 });

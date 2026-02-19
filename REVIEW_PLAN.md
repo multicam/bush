@@ -1,10 +1,11 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 10 (IN PROGRESS)
-**Coverage**: 21.26% statements (target: 80%)
-**Tests**: 492 passing, 0 failing (vitest)
-**Git tag**: v0.0.55
+**Iteration**: 10 (COMPLETE)
+**Iteration**: 11 (IN PROGRESS)
+**Coverage**: 24.37% statements (target: 80%)
+**Tests**: 626 passing, 0 failing (vitest)
+**Git tag**: v0.0.56
 
 ## Issue Tracker
 
@@ -142,39 +143,66 @@
 | `src/transcription/providers/faster-whisper.ts` | 0% | 0% | 0% | HIGH |
 | `src/transcription/export.ts` | 0% | 0% | 0% | MEDIUM |
 
-### Realtime (0% coverage - 464 statements)
+### Realtime (partial coverage)
 
 | File | Statements | Branches | Functions | Priority |
 |------|-----------|----------|-----------|----------|
 | `src/realtime/ws-manager.ts` | 0% | 0% | 0% | CRITICAL |
-| `src/realtime/event-bus.ts` | 0% | 0% | 0% | HIGH |
-| `src/realtime/emit.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/realtime/event-bus.ts` | 97.95% | 100% | 100% | HIGH |
+| `src/realtime/emit.ts` | 97.18% | 100% | 100% | MEDIUM |
 
-### Storage & Infrastructure (low coverage)
+### Storage & Infrastructure (partial coverage)
 
 | File | Statements | Branches | Functions | Priority |
 |------|-----------|----------|-----------|----------|
-| `src/storage/index.ts` | 0% | 0% | 0% | HIGH |
+| `src/storage/index.ts` | 66.67% | 83.33% | 60% | HIGH |
 | `src/storage/s3-provider.ts` | 0% | 0% | 0% | HIGH |
-| `src/redis/index.ts` | 9.3% | 100% | 0% | HIGH |
-| `src/db/index.ts` | 0% | 0% | 0% | MEDIUM |
+| `src/redis/index.ts` | 77.35% | 88.88% | 75% | HIGH |
+| `src/db/index.ts` | 33.33% | 0% | 0% | MEDIUM |
 | `src/scheduled/processor.ts` | 0% | 0% | 0% | HIGH |
 | `src/scheduled/queue.ts` | 0% | 0% | 0% | MEDIUM |
 | `src/scheduled/worker.ts` | 0% | 0% | 0% | MEDIUM |
 
-### Auth & Permissions (partial coverage)
+### Auth & Permissions (high coverage)
 
 | File | Statements | Branches | Functions | Priority |
 |------|-----------|----------|-----------|----------|
-| `src/auth/service.ts` | 14.36% | 50% | 11.11% | CRITICAL |
-| `src/api/auth-middleware.ts` | 0% | 0% | 0% | CRITICAL |
-| `src/permissions/service.ts` | 75.12% | 61.9% | 73.33% | HIGH |
-| `src/permissions/middleware.ts` | 38.85% | 88.23% | 38.46% | HIGH |
-| `src/api/access-control.ts` | 25.84% | 100% | 20% | HIGH |
+| `src/auth/service.ts` | 98.85% | 84.21% | 100% | CRITICAL |
+| `src/auth/session-cache.ts` | 99.55% | 96.15% | 100% | CRITICAL |
+| `src/api/auth-middleware.ts` | 94.85% | 89.09% | 100% | CRITICAL |
+| `src/permissions/service.ts` | 94.92% | 87.71% | 100% | HIGH |
+| `src/permissions/middleware.ts` | 96.57% | 93.75% | 100% | HIGH |
+| `src/api/access-control.ts` | 100% | 100% | 100% | HIGH |
 
 ## Iteration Log
 
-### Iteration 10 -- 2026-02-19 (IN PROGRESS)
+### Iteration 11 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 21.26% -> 24.37% (+3.11pp)
+**Tests**: 492 -> 626 (+134 tests)
+
+**New Tests Added:**
+- `src/permissions/permissions-integration.test.ts`: Expanded from 33 to 41 tests covering grant/revoke operations, permission validation for folders, resource not found cases, account admin check, user project count
+- `src/auth/session-cache.test.ts`: Added 13 tests for getWithValidation, retry logic, signed cookie creation, legacy format parsing
+- `src/realtime/event-bus.test.ts`: Added 33 tests covering all event types, emitEvent, onEvent, unsubscribe, generateEventId
+- `src/realtime/emit.test.ts`: Added 31 tests for all emit helper functions (emitCommentEvent, emitFileEvent, emitUploadProgress, emitProcessingEvent, emitVersionEvent, emitFolderEvent, emitNotificationEvent, emitShareEvent, emitMetadataEvent)
+- `src/storage/index.test.ts`: Added 35 tests for getStorageProvider, disposeStorageProvider, storage operations, storageKeys helpers
+
+**Modules with Improved Coverage:**
+- `src/permissions/service.ts`: 75.12% -> 94.92%
+- `src/auth/session-cache.ts`: 78.47% -> 99.55%
+- `src/realtime/event-bus.ts`: 0% -> 97.95%
+- `src/realtime/emit.ts`: 0% -> 97.18%
+- `src/storage/index.ts`: 0% -> 66.67%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription: 0% coverage - requires external services
+- Realtime (ws-manager.ts): 0% coverage - requires WebSocket infrastructure
+- Storage (s3-provider.ts): 0% coverage - requires S3-compatible service
+
+### Iteration 10 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 18.18% -> 21.26% (+3.08pp)
 **Tests**: 390 -> 492 (+102 tests)
