@@ -57,12 +57,14 @@ const mockReadFile = vi.mocked(readFile);
 
 describe("thumbnail processor", () => {
   const baseJobData = {
+    type: "thumbnail" as const,
     assetId: "asset-123",
     accountId: "account-1",
     projectId: "project-1",
     storageKey: "uploads/video.mp4",
     mimeType: "video/mp4",
-    sizes: ["small", "medium"] as const,
+    sourceFilename: "video.mp4",
+    sizes: ["small", "medium"] as ("small" | "medium" | "large")[],
   };
 
   beforeEach(() => {
@@ -183,7 +185,7 @@ describe("thumbnail processor", () => {
     });
 
     it("uses webp format when configured", async () => {
-      const result = await processThumbnail(baseJobData);
+      await processThumbnail(baseJobData);
 
       // Storage should be called with webp MIME type
       expect(mockStorage.putObject).toHaveBeenCalledWith(
@@ -196,7 +198,7 @@ describe("thumbnail processor", () => {
     it("generates thumbnails for multiple sizes", async () => {
       const multiSizeData = {
         ...baseJobData,
-        sizes: ["small", "medium", "large"] as const,
+        sizes: ["small", "medium", "large"] as ("small" | "medium" | "large")[],
       };
 
       const result = await processThumbnail(multiSizeData);

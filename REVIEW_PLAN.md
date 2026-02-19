@@ -1,10 +1,10 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 15 (COMPLETE)
-**Iteration**: 16 (IN PROGRESS)
-**Coverage**: 41.37% statements (target: 80%)
-**Tests**: 1223 passing, 0 failing (vitest)
+**Iteration**: 16 (COMPLETE)
+**Iteration**: 17 (IN PROGRESS)
+**Coverage**: 42.08% statements (target: 80%)
+**Tests**: 1238 passing, 0 failing (vitest)
 **Git tag**: v0.0.60
 
 ## Issue Tracker
@@ -176,7 +176,33 @@
 
 ## Iteration Log
 
-### Iteration 16 -- 2026-02-19 (IN PROGRESS)
+### Iteration 17 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Fix TypeScript errors, improve coverage
+**Coverage**: 41.37% -> 42.08% (+0.71pp)
+**Tests**: 1223 -> 1238 (+15 tests)
+
+**TypeScript Fixes:**
+- Fixed missing `type` and `sourceFilename` properties in media processor test job data objects
+- Fixed readonly array assignments by removing `as const` from inline arrays
+- Fixed `null` to `undefined` conversions for optional properties
+- Fixed HDR type string literals to use `as const` for type narrowing
+- Removed unused `execFile` import from ffmpeg-utils.test.ts
+
+**New Tests Added:**
+- `src/media/ffmpeg-utils.test.ts`: Added 15 tests for extractMetadata function (basic extraction, missing video stream, missing audio stream, missing duration, frame rate parsing, HDR10 detection, HLG detection, Dolby Vision detection via codec tag, Dolby Vision via side data, HDR10+ detection, SDR detection), buildScaleFilter function (correct filter string, square dimensions), getCodecDisplayName function (known codecs, unknown codecs)
+
+**Modules with Improved Coverage:**
+- `src/media/ffmpeg.ts`: 19.77% -> 75.70% (tested extractMetadata, buildScaleFilter, getCodecDisplayName)
+- Overall: 41.37% -> 42.08%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- API index.ts: 0% coverage - server startup side effects
+- Media worker.ts: 0% coverage - requires BullMQ mocking
+- Scheduled worker.ts/run-purge.ts: 0% - scripts with process.exit calls
+- Transcription processor.ts: 20.15% - requires extensive mocking
+
+### Iteration 16 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 35.99% -> 41.37% (+5.38pp)
 **Tests**: 1161 -> 1223 (+62 tests)

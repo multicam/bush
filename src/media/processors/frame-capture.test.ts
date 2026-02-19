@@ -56,10 +56,13 @@ const mockDb = vi.mocked(db);
 
 describe("frame-capture processor", () => {
   const baseJobData = {
+    type: "frame_capture" as const,
     assetId: "asset-123",
     accountId: "account-1",
     projectId: "project-1",
     storageKey: "uploads/video.mp4",
+    mimeType: "video/mp4",
+    sourceFilename: "video.mp4",
     timestamp: 30, // 30 seconds
   };
 

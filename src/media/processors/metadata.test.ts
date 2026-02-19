@@ -50,9 +50,13 @@ const mockDb = vi.mocked(db);
 
 describe("metadata processor", () => {
   const baseJobData = {
+    type: "metadata" as const,
     assetId: "asset-123",
+    accountId: "account-1",
+    projectId: "project-1",
     storageKey: "uploads/video.mp4",
     mimeType: "video/mp4",
+    sourceFilename: "video.mp4",
   };
 
   const mockMetadata = {
@@ -66,7 +70,7 @@ describe("metadata processor", () => {
     sampleRate: 48000,
     channels: 2,
     isHDR: false,
-    hdrType: null,
+    hdrType: null as ("HDR10" | "HDR10+" | "HLG" | "Dolby Vision") | null,
     colorSpace: "bt709",
     audioBitDepth: null,
     format: "MP4",
@@ -146,7 +150,7 @@ describe("metadata processor", () => {
       const hdrMetadata = {
         ...mockMetadata,
         isHDR: true,
-        hdrType: "HDR10",
+        hdrType: "HDR10" as const,
       };
 
       mockExtractMetadata.mockReturnValue(hdrMetadata);
@@ -161,7 +165,7 @@ describe("metadata processor", () => {
       const dvMetadata = {
         ...mockMetadata,
         isHDR: true,
-        hdrType: "Dolby Vision",
+        hdrType: "Dolby Vision" as const,
       };
 
       mockExtractMetadata.mockReturnValue(dvMetadata);

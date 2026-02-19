@@ -51,11 +51,13 @@ const mockGetFileSize = vi.mocked(getFileSize);
 
 describe("filmstrip processor", () => {
   const baseJobData = {
+    type: "filmstrip" as const,
     assetId: "asset-123",
     accountId: "account-1",
     projectId: "project-1",
     storageKey: "uploads/video.mp4",
     mimeType: "video/mp4",
+    sourceFilename: "video.mp4",
     durationSeconds: 60,
   };
 
@@ -120,15 +122,15 @@ describe("filmstrip processor", () => {
         sampleRate: 48000,
         channels: 2,
         isHDR: false,
-        hdrType: null,
+        hdrType: null as ("HDR10" | "HDR10+" | "HLG" | "Dolby Vision") | null,
         colorSpace: "bt709",
-        audioBitDepth: null,
+        audioBitDepth: null as number | null,
         format: "MP4",
       };
 
       const jobWithoutDuration = {
         ...baseJobData,
-        durationSeconds: null,
+        durationSeconds: 0, // 0 indicates no duration in job data
       };
 
       const result = await processFilmstrip(jobWithoutDuration, metadata);
@@ -140,7 +142,7 @@ describe("filmstrip processor", () => {
     it("skips when no duration available", async () => {
       const noDurationData = {
         ...baseJobData,
-        durationSeconds: null,
+        durationSeconds: 0, // 0 indicates no duration
       };
 
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});

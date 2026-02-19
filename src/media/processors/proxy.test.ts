@@ -66,16 +66,17 @@ const mockDb = vi.mocked(db);
 
 describe("proxy processor", () => {
   const baseJobData = {
+    type: "proxy" as const,
     assetId: "asset-123",
     accountId: "account-1",
     projectId: "project-1",
     storageKey: "uploads/video.mp4",
     mimeType: "video/mp4",
-    resolutions: ["360p", "540p", "720p", "1080p"] as const,
+    sourceFilename: "video.mp4",
+    resolutions: ["360p", "540p", "720p", "1080p"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
     sourceWidth: 1920,
     sourceHeight: 1080,
     isHDR: false,
-    hdrType: null,
   };
 
   beforeEach(() => {
@@ -131,8 +132,8 @@ describe("proxy processor", () => {
     it("uses metadata when source dimensions not provided", async () => {
       const noDimensionData = {
         ...baseJobData,
-        sourceWidth: null,
-        sourceHeight: null,
+        sourceWidth: 0,
+        sourceHeight: 0,
       };
 
       const metadata = {
@@ -146,13 +147,13 @@ describe("proxy processor", () => {
         sampleRate: 48000,
         channels: 2,
         isHDR: false,
-        hdrType: null,
+        hdrType: null as ("HDR10" | "HDR10+" | "HLG" | "Dolby Vision") | null,
         colorSpace: "bt709",
-        audioBitDepth: null,
+        audioBitDepth: null as number | null,
         format: "MP4",
       };
 
-      const result = await processProxy(noDimensionData, metadata);
+      const result = await processProxy(noDimensionData as any, metadata);
 
       expect(result.resolutions.length).toBeGreaterThan(0);
     });
@@ -161,10 +162,10 @@ describe("proxy processor", () => {
       const hdrJobData = {
         ...baseJobData,
         isHDR: true,
-        hdrType: "HDR10",
+        hdrType: "HDR10" as const,
       };
 
-      const result = await processProxy(hdrJobData);
+      const result = await processProxy(hdrJobData as any);
 
       // Should still generate proxies with tone mapping
       expect(result.resolutions).toHaveLength(4);
@@ -173,14 +174,14 @@ describe("proxy processor", () => {
     it("preserves HDR for 4K resolution", async () => {
       const hdr4kData = {
         ...baseJobData,
-        resolutions: ["4k"] as const,
+        resolutions: ["4k"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
         sourceWidth: 3840,
         sourceHeight: 2160,
         isHDR: true,
-        hdrType: "HDR10",
+        hdrType: "HDR10" as const,
       };
 
-      const result = await processProxy(hdr4kData);
+      const result = await processProxy(hdr4kData as any);
 
       expect(result.resolutions).toHaveLength(1);
       // Check that FFmpeg was called with HDR-preserving args
@@ -229,7 +230,7 @@ describe("proxy processor", () => {
     it("filters out resolutions larger than source (4K excluded for 1080p)", async () => {
       const hdJobData = {
         ...baseJobData,
-        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as const,
+        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
         sourceHeight: 1080,
       };
 
@@ -244,7 +245,7 @@ describe("proxy processor", () => {
     it("includes 4K resolution for 4K source", async () => {
       const fourKJobData = {
         ...baseJobData,
-        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as const,
+        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
         sourceWidth: 3840,
         sourceHeight: 2160,
       };
@@ -259,7 +260,7 @@ describe("proxy processor", () => {
     it("excludes 720p for 480p source", async () => {
       const sdJobData = {
         ...baseJobData,
-        resolutions: ["360p", "540p", "720p"] as const,
+        resolutions: ["360p", "540p", "720p"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
         sourceWidth: 854,
         sourceHeight: 480,
       };

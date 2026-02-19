@@ -57,11 +57,14 @@ const mockExecFile = vi.mocked(execFile);
 
 describe("waveform processor", () => {
   const baseJobData = {
+    type: "waveform" as const,
     assetId: "asset-123",
     accountId: "account-1",
     projectId: "project-1",
     storageKey: "uploads/audio.mp3",
     mimeType: "audio/mp3",
+    sourceFilename: "audio.mp3",
+    durationSeconds: 60,
   };
 
   beforeEach(() => {
@@ -72,8 +75,8 @@ describe("waveform processor", () => {
     mockCleanupTempDir.mockResolvedValue(undefined);
 
     // Mock FFprobe for duration
-    mockExecFile.mockImplementation((_cmd: string, args: string[], _options: any, callback: any) => {
-      if (args.includes("-show_format")) {
+    mockExecFile.mockImplementation((_cmd: string, args: readonly string[] | null | undefined, _options: any, callback: any) => {
+      if (args && args.includes("-show_format")) {
         // FFprobe call
         callback(null, {
           stdout: JSON.stringify({ format: { duration: "60" } }),
@@ -164,8 +167,8 @@ describe("waveform processor", () => {
     });
 
     it("skips when no duration found", async () => {
-      mockExecFile.mockImplementation((_cmd: string, args: string[], _options: any, callback: any) => {
-        if (args.includes("-show_format")) {
+      mockExecFile.mockImplementation((_cmd: string, args: readonly string[] | null | undefined, _options: any, callback: any) => {
+        if (args && args.includes("-show_format")) {
           callback(null, { stdout: JSON.stringify({ format: {} }), stderr: "" });
         } else {
           callback(null, { stdout: Buffer.alloc(0), stderr: "" });
