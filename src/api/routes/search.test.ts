@@ -69,6 +69,12 @@ const mockSession = {
   sessionId: "sess_123",
   currentAccountId: "acc_123",
   accountRole: "owner" as const,
+  email: "test@example.com",
+  displayName: "Test User",
+  workosOrganizationId: "org_123",
+  workosUserId: "wusr_123",
+  createdAt: Date.now(),
+  lastActivityAt: Date.now(),
 };
 
 /** Standard file row returned from the files_fts query */
@@ -196,7 +202,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test+video", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toHaveLength(1);
       const item = body.data[0];
@@ -223,7 +229,7 @@ describe("Search Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/at least 2 characters/i);
     });
 
@@ -234,7 +240,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=a", { method: "GET" });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/at least 2 characters/i);
     });
 
@@ -246,7 +252,7 @@ describe("Search Routes", () => {
       const res = await app.request(`/?q=${encodeURIComponent(longQuery)}`, { method: "GET" });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/at most 500 characters/i);
     });
 
@@ -259,7 +265,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test+video", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       expect(body.meta.total).toBe(0);
       expect(body.meta.has_more).toBe(false);
@@ -275,7 +281,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test+video&project_id=prj_other", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       expect(body.meta.total).toBe(0);
     });
@@ -291,7 +297,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test+video&project_id=prj_123", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(1);
       expect(body.data[0].id).toBe("file_1");
 
@@ -311,7 +317,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test&type=video", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(1);
 
       // Verify the SQL for file search contains a MIME filter
@@ -331,7 +337,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=audio+clip&type=audio", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.mimeType).toBe("audio/mp3");
     });
 
@@ -347,7 +353,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=photo&type=image", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.mimeType).toBe("image/png");
     });
 
@@ -363,7 +369,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=report&type=document", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.mimeType).toBe("application/pdf");
     });
 
@@ -396,7 +402,7 @@ describe("Search Routes", () => {
       expect(res.status).toBe(200);
       // Only one prepare call - file search only
       expect(sqlite.prepare).toHaveBeenCalledTimes(1);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(1);
     });
 
@@ -415,7 +421,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(1);
 
       const item = body.data[0];
@@ -442,7 +448,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].meta.timestamp.formatted).toBe("1:02:03.456");
     });
 
@@ -457,7 +463,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const item = body.data[0];
       // matchContext should include the word "test" from the full_text
       expect(typeof item.meta.matchContext).toBe("string");
@@ -476,7 +482,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].meta.timestamp).toBeNull();
     });
 
@@ -501,7 +507,7 @@ describe("Search Routes", () => {
       const res = await app.request("/?q=test", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       // Despite two results from different queries, only one entry for file_1
       expect(body.data.filter((d: any) => d.id === "file_1")).toHaveLength(1);
     });
@@ -525,7 +531,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(2);
       // Lower (more negative) relevance should appear first
       expect(body.data[0].id).toBe("file_more");
@@ -543,7 +549,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test+video", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.createdAt).toBe("2024-01-01T00:00:00.000Z");
     });
 
@@ -563,7 +569,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test+video", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.createdAt).toBe("2024-01-01T00:00:00.000Z");
     });
 
@@ -583,7 +589,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test+video", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].attributes.createdAt).toBeNull();
     });
 
@@ -627,7 +633,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/?q=test+video", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].relationships.folder).toBeNull();
     });
 
@@ -685,7 +691,7 @@ describe("Search Routes", () => {
       const res = await app.request("/suggestions?q=test", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(2);
       expect(body.data[0]).toEqual({ name: "test-video.mp4", type: "video" });
       expect(body.data[1]).toEqual({ name: "test-audio.mp3", type: "audio" });
@@ -702,7 +708,7 @@ describe("Search Routes", () => {
 
       const res = await app.request("/suggestions?q=repo", { method: "GET" });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data[0].type).toBe("application");
     });
 
@@ -713,7 +719,7 @@ describe("Search Routes", () => {
       const res = await app.request("/suggestions?q=a", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       // SQLite should NOT have been called
       expect(sqlite.prepare).not.toHaveBeenCalled();
@@ -726,7 +732,7 @@ describe("Search Routes", () => {
       const res = await app.request("/suggestions", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
     });
 
@@ -738,7 +744,7 @@ describe("Search Routes", () => {
       const res = await app.request(`/suggestions?q=${encodeURIComponent(longQuery)}`, { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       expect(sqlite.prepare).not.toHaveBeenCalled();
     });
@@ -752,7 +758,7 @@ describe("Search Routes", () => {
       const res = await app.request("/suggestions?q=test", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       expect(sqlite.prepare).not.toHaveBeenCalled();
     });

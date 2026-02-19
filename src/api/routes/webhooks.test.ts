@@ -165,17 +165,6 @@ function mockSelectJoinChain(rows: unknown[]) {
 }
 
 /** Mock a select chain: .from().where().orderBy().limit() */
-function mockSelectWhereOrderLimit(rows: unknown[]) {
-  vi.mocked(db.select).mockReturnValue({
-    from: () => ({
-      where: () => ({
-        orderBy: () => ({
-          limit: vi.fn().mockResolvedValue(rows),
-        }),
-      }),
-    }),
-  } as never);
-}
 
 /** Mock a select chain: .from().innerJoin().where().limit() */
 function mockSelectJoinWhereLimit(rows: unknown[]) {
@@ -249,7 +238,7 @@ describe("Webhooks Routes", () => {
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -263,7 +252,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs.name).toBe("My Webhook");
@@ -276,7 +265,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs).not.toHaveProperty("secret");
@@ -287,7 +276,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -299,7 +288,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain([]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data).toEqual([]);
@@ -352,7 +341,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain(rows);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toHaveLength(50);
       expect(body.meta.has_more).toBe(false);
@@ -363,7 +352,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinChain([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs.createdAt).toBe("2024-01-15T10:00:00.000Z");
@@ -394,7 +383,7 @@ describe("Webhooks Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("wh_001");
       expect(body.data.type).toBe("webhook");
     });
@@ -412,7 +401,7 @@ describe("Webhooks Routes", () => {
         }),
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       // The WEBHOOK_ROW fixture has secret "whsec_abc123" which gets returned via select
       expect(body.data.attributes).toHaveProperty("secret");
     });
@@ -703,7 +692,7 @@ describe("Webhooks Routes", () => {
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("wh_001");
       expect(body.data.type).toBe("webhook");
       expect(body.data.attributes.name).toBe("My Webhook");
@@ -714,7 +703,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinWhereLimit([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes).not.toHaveProperty("secret");
     });
@@ -743,7 +732,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinWhereLimit([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data.attributes.updatedAt).toBe("2024-01-15T10:00:00.000Z");
@@ -766,7 +755,7 @@ describe("Webhooks Routes", () => {
       mockSelectJoinWhereLimit([WEBHOOK_WITH_CREATOR]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.creator).toBeDefined();
       expect(body.data.attributes.creator.id).toBe("usr_abc");
@@ -810,7 +799,7 @@ describe("Webhooks Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("webhook");
     });
 
@@ -1231,7 +1220,7 @@ describe("Webhooks Routes", () => {
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
     });
@@ -1257,7 +1246,7 @@ describe("Webhooks Routes", () => {
         } as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs.eventType).toBe("file.created");
@@ -1287,7 +1276,7 @@ describe("Webhooks Routes", () => {
         } as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs).not.toHaveProperty("payload");
@@ -1333,7 +1322,7 @@ describe("Webhooks Routes", () => {
         } as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
       expect(body.meta.total_count).toBe(0);
@@ -1360,7 +1349,7 @@ describe("Webhooks Routes", () => {
         } as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].type).toBe("webhook_delivery");
     });
@@ -1387,7 +1376,7 @@ describe("Webhooks Routes", () => {
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data).toHaveProperty("success");
     });
@@ -1397,7 +1386,7 @@ describe("Webhooks Routes", () => {
       mockSelectWhereLimit([WEBHOOK_ROW]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.success).toBe(true);
       expect(body.data.status_code).toBe(200);
@@ -1412,7 +1401,7 @@ describe("Webhooks Routes", () => {
       }));
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.success).toBe(false);
       expect(body.data.status_code).toBe(400);
@@ -1424,7 +1413,7 @@ describe("Webhooks Routes", () => {
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Connection refused")));
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.success).toBe(false);
       expect(body.data.response).toBe("Connection refused");
@@ -1499,7 +1488,7 @@ describe("Webhooks Routes", () => {
       vi.mocked(generateId).mockReturnValue("whdel_test456");
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.delivery_id).toBeDefined();
     });

@@ -183,7 +183,7 @@ describe("Notifications Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -198,7 +198,7 @@ describe("Notifications Routes", () => {
       mockSelectForList([mockNotification], { count: 1, unreadCount: 1 });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs.notification_type).toBe("mention");
@@ -214,7 +214,7 @@ describe("Notifications Routes", () => {
       mockSelectForList([mockNotification], { count: 5, unreadCount: 2 });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(5);
@@ -226,7 +226,7 @@ describe("Notifications Routes", () => {
       mockSelectForList([], { count: 0, unreadCount: 0 });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.links).toBeDefined();
       expect(body.links.self).toBe("/v4/users/me/notifications");
@@ -236,7 +236,7 @@ describe("Notifications Routes", () => {
       mockSelectForList([], { count: 0, unreadCount: 0 });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data).toEqual([]);
@@ -256,11 +256,11 @@ describe("Notifications Routes", () => {
       const readNotification = {
         ...mockNotification,
         readAt: new Date("2024-01-02"),
-      };
+      } as typeof mockNotification & { readAt: Date };
       mockSelectForList([readNotification], { count: 1, unreadCount: 0 });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const attrs = body.data[0].attributes;
       expect(attrs.read).toBe(true);
@@ -327,7 +327,7 @@ describe("Notifications Routes", () => {
       });
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.meta.total_count).toBe(0);
@@ -345,7 +345,7 @@ describe("Notifications Routes", () => {
       const res = await app.request("/unread-count", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("unread-count");
@@ -357,7 +357,7 @@ describe("Notifications Routes", () => {
       mockSelectForCount(0);
 
       const res = await app.request("/unread-count", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.unread_count).toBe(0);
     });
@@ -389,7 +389,7 @@ describe("Notifications Routes", () => {
       const res = await app.request("/read-all", { method: "PUT" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("read-all");
@@ -401,7 +401,7 @@ describe("Notifications Routes", () => {
       mockSelectAndUpdateForReadAll(0);
 
       const res = await app.request("/read-all", { method: "PUT" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.updated_count).toBe(0);
     });
@@ -468,7 +468,7 @@ describe("Notifications Routes", () => {
       const res = await app.request("/ntf_123/read", { method: "PUT" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("ntf_123");
       expect(body.data.type).toBe("notification");
@@ -579,7 +579,7 @@ describe("Notifications Routes", () => {
       } as never);
 
       const res = await app.request("/ntf_123/read", { method: "PUT" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const readAt = body.data.attributes.read_at;
       expect(typeof readAt).toBe("string");

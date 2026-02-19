@@ -176,7 +176,7 @@ describe("Custom Fields Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -198,7 +198,7 @@ describe("Custom Fields Routes", () => {
         method: "GET",
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
       expect(body.meta.page_size).toBe(50);
@@ -215,7 +215,7 @@ describe("Custom Fields Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       expect(body.meta.total_count).toBe(0);
     });
@@ -249,7 +249,7 @@ describe("Custom Fields Routes", () => {
       const res = await app.request("/accounts/acc_123/custom_fields", {
         method: "GET",
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.createdAt).toBe("2024-01-01T00:00:00.000Z");
       expect(body.data[0].attributes.updatedAt).toBe("2024-01-01T00:00:00.000Z");
@@ -304,7 +304,7 @@ describe("Custom Fields Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("cf_123");
       expect(body.data.type).toBe("custom_field");
       expect(body.data.attributes.name).toBe("Priority");
@@ -559,7 +559,7 @@ describe("Custom Fields Routes", () => {
       const res = await app.request("/custom_fields/cf_123", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("cf_123");
       expect(body.data.type).toBe("custom_field");
@@ -573,7 +573,7 @@ describe("Custom Fields Routes", () => {
         .mockReturnValueOnce(makeSelectChain([{ id: "mem_123" }]));
 
       const res = await app.request("/custom_fields/cf_123", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.createdAt).toBe("2024-01-01T00:00:00.000Z");
       expect(body.data.attributes.updatedAt).toBe("2024-01-01T00:00:00.000Z");
@@ -649,7 +649,7 @@ describe("Custom Fields Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("cf_123");
       expect(body.data.type).toBe("custom_field");
     });
@@ -917,7 +917,7 @@ describe("Custom Fields Routes", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("cf_123");
       expect(body.data.type).toBe("custom_field_visibility");
       expect(body.data.attributes.project_id).toBe("prj_123");
@@ -963,7 +963,7 @@ describe("Custom Fields Routes", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.is_visible).toBe(false);
     });
 
@@ -980,7 +980,7 @@ describe("Custom Fields Routes", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.is_visible).toBe(true);
     });
 

@@ -139,6 +139,12 @@ const mockSession = {
   sessionId: "sess_123",
   currentAccountId: "acc_123",
   accountRole: "owner" as const,
+  email: "test@example.com",
+  displayName: "Test User",
+  workosOrganizationId: "org_123",
+  workosUserId: "wusr_123",
+  createdAt: Date.now(),
+  lastActivityAt: Date.now(),
 };
 
 const mockFile = {
@@ -218,7 +224,7 @@ function mockSelectList(rows: Record<string, unknown>[]) {
 }
 
 function mockTransaction() {
-  vi.mocked(db.transaction).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+  (vi.mocked(db.transaction) as any).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
     const tx = {
       select: vi.fn().mockReturnValue({
         from: () => ({
@@ -293,7 +299,7 @@ describe("File Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data[0].id).toBe("fil_001");
@@ -306,7 +312,7 @@ describe("File Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(0);
       expect(body.meta.total_count).toBe(0);
     });
@@ -315,7 +321,7 @@ describe("File Routes", () => {
       mockSelectList([mockFile]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -327,7 +333,7 @@ describe("File Routes", () => {
       mockSelectList([mockFile]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.links).toBeDefined();
       expect(body.links.self).toContain("files");
@@ -390,7 +396,7 @@ describe("File Routes", () => {
       mockSelectList([mockFile]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.thumbnailUrl).toBeNull();
     });
@@ -399,7 +405,7 @@ describe("File Routes", () => {
       mockSelectList([mockImageFile]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.thumbnailUrl).toBe("https://example.com/download");
     });
@@ -408,7 +414,7 @@ describe("File Routes", () => {
       mockSelectList([{ ...mockImageFile, status: "uploading" }]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.thumbnailUrl).toBeNull();
     });
@@ -421,7 +427,7 @@ describe("File Routes", () => {
       mockSelectList([fileWithCustomThumb]);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(storage.getDownloadUrl).toHaveBeenCalledWith("custom/thumb/key", 3600);
       expect(body.data[0].attributes.thumbnailUrl).toBe("https://example.com/download");
@@ -432,7 +438,7 @@ describe("File Routes", () => {
       vi.mocked(storage.getDownloadUrl).mockRejectedValue(new Error("Not found"));
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.thumbnailUrl).toBeNull();
     });
@@ -448,7 +454,7 @@ describe("File Routes", () => {
       const res = await req("/fil_001");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("fil_001");
       expect(body.data.type).toBe("file");
     });
@@ -481,7 +487,7 @@ describe("File Routes", () => {
       mockSelectSingle(mockImageFile);
 
       const res = await req("/fil_img");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes).toHaveProperty("thumbnailUrl");
     });
@@ -490,7 +496,7 @@ describe("File Routes", () => {
       mockSelectSingle(mockFile); // PDF
 
       const res = await req("/fil_001");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBeNull();
     });
@@ -499,7 +505,7 @@ describe("File Routes", () => {
       mockSelectSingle(mockFile);
 
       const res = await req("/fil_001");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(typeof body.data.attributes.createdAt).toBe("string");
       expect(typeof body.data.attributes.updatedAt).toBe("string");
@@ -534,7 +540,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toBeDefined();
       expect(body.data.type).toBe("file");
       expect(body.meta).toBeDefined();
@@ -553,7 +559,7 @@ describe("File Routes", () => {
         }),
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.storage_key).toBeDefined();
       expect(body.meta.chunk_size).toBeDefined();
     });
@@ -711,7 +717,7 @@ describe("File Routes", () => {
     });
 
     it("returns 500 when storage quota is exceeded", async () => {
-      vi.mocked(db.transaction).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+      (vi.mocked(db.transaction) as any).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
         const tx = {
           select: vi.fn().mockReturnValue({
             from: () => ({
@@ -814,7 +820,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("file");
     });
 
@@ -1086,7 +1092,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toBeDefined();
       expect(body.meta.message).toBe("Upload confirmed, processing started");
     });
@@ -1189,7 +1195,7 @@ describe("File Routes", () => {
       const res = await req("/fil_001/download");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toBeDefined();
       expect(body.meta.download_url).toBe("https://example.com/download");
       expect(body.meta.download_expires_at).toBeDefined();
@@ -1339,7 +1345,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.upload_url).toBeDefined();
       expect(body.meta.upload_expires_at).toBeDefined();
     });
@@ -1527,7 +1533,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("file");
     });
 
@@ -1573,7 +1579,7 @@ describe("File Routes", () => {
     });
 
     it("returns 500 when storage quota is exceeded during copy", async () => {
-      vi.mocked(db.transaction).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+      (vi.mocked(db.transaction) as any).mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
         const tx = {
           select: vi.fn().mockReturnValue({
             from: () => ({
@@ -1643,7 +1649,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("file");
     });
 
@@ -1877,7 +1883,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.upload_id).toBe("upload_abc");
     });
 
@@ -1958,7 +1964,7 @@ describe("File Routes", () => {
       const res = await req("/fil_001/multipart/parts?upload_id=upload_abc&chunk_count=2");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.parts).toHaveLength(2);
       expect(body.meta.parts[0].part_number).toBe(1);
       expect(body.meta.parts[0].upload_url).toBe("https://example.com/part/1");
@@ -2027,7 +2033,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.message).toBe("Upload completed successfully");
     });
 
@@ -2292,7 +2298,7 @@ describe("File Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.meta.job_id).toBe("job_abc123");
       expect(body.meta.timestamp).toBe(30);
       expect(body.meta.message).toBe("Frame capture job enqueued");
@@ -2414,7 +2420,7 @@ describe("File Routes", () => {
       mockSelectSingle({ ...mockImageFile, status: "processing" });
 
       const res = await req("/fil_img");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBeNull();
     });
@@ -2423,7 +2429,7 @@ describe("File Routes", () => {
       mockSelectSingle({ ...mockFile, mimeType: "application/pdf", status: "ready" });
 
       const res = await req("/fil_001");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBeNull();
     });
@@ -2432,7 +2438,7 @@ describe("File Routes", () => {
       mockSelectSingle({ ...mockVideoFile, status: "ready" });
 
       const res = await req("/fil_vid");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBe("https://example.com/download");
     });
@@ -2441,7 +2447,7 @@ describe("File Routes", () => {
       mockSelectSingle({ ...mockImageFile, status: "ready" });
 
       const res = await req("/fil_img");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBe("https://example.com/download");
     });
@@ -2476,7 +2482,7 @@ describe("File Routes", () => {
       vi.mocked(storage.getDownloadUrl).mockRejectedValue(new Error("NoSuchKey"));
 
       const res = await req("/fil_img");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.thumbnailUrl).toBeNull();
     });

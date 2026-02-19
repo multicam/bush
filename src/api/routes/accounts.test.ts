@@ -90,7 +90,6 @@ vi.mock("../../auth/service.js", () => ({
 }));
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hono } from "hono";
 import app from "./accounts.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
@@ -157,7 +156,7 @@ describe("Account Routes", () => {
     vi.mocked(requireAuth).mockReturnValue(SESSION as never);
     vi.mocked(parseLimit).mockReturnValue(50);
     vi.mocked(generateId).mockReturnValue("acc_test123");
-    vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined);
+    vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined as never);
     vi.mocked(getEmailService).mockReturnValue({
       sendTemplate: vi.fn().mockResolvedValue(undefined),
     } as never);
@@ -181,7 +180,7 @@ describe("Account Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -205,7 +204,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -226,7 +225,7 @@ describe("Account Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
       expect(body.meta.total_count).toBe(0);
@@ -260,7 +259,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.role).toBe("owner");
     });
@@ -277,7 +276,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data[0].attributes.updatedAt).toBe("2024-01-15T10:00:00.000Z");
@@ -318,7 +317,7 @@ describe("Account Routes", () => {
       const res = await app.request("/acc_001", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("acc_001");
@@ -354,7 +353,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.slug).toBe("test-account");
     });
@@ -371,7 +370,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
     });
@@ -420,7 +419,7 @@ describe("Account Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("acc_001");
       expect(body.data.type).toBe("account");
@@ -563,7 +562,7 @@ describe("Account Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("acc_001");
       expect(body.data.type).toBe("account");
@@ -748,7 +747,7 @@ describe("Account Routes", () => {
       const res = await app.request("/acc_001/storage", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("storage");
       expect(body.data.id).toBe("acc_001");
@@ -770,7 +769,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001/storage", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.available_bytes).toBe(1500000000);
     });
@@ -789,7 +788,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001/storage", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.usage_percent).toBe(50);
     });
@@ -808,7 +807,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001/storage", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.usage_percent).toBe(0);
     });
@@ -846,7 +845,7 @@ describe("Account Routes", () => {
       const res = await app.request("/acc_001/switch", { method: "POST" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("account");
       expect(body.data.id).toBe("acc_001");
@@ -891,7 +890,7 @@ describe("Account Routes", () => {
       const res = await app.request("/acc_001/members", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -914,7 +913,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001/members", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const member = body.data[0];
       expect(member.attributes.role).toBe("member");
@@ -970,7 +969,7 @@ describe("Account Routes", () => {
       } as never);
 
       const res = await app.request("/acc_001/members", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
     });
@@ -1309,7 +1308,7 @@ describe("Account Routes", () => {
 
     beforeEach(() => {
       vi.mocked(verifyAccountMembership).mockResolvedValue("owner" as never);
-      vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined);
+      vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined as never);
 
       vi.mocked(db.update).mockReturnValue({
         set: () => ({
@@ -1353,7 +1352,7 @@ describe("Account Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.role).toBe("content_admin");
     });
@@ -1528,7 +1527,7 @@ describe("Account Routes", () => {
 
     beforeEach(() => {
       vi.mocked(verifyAccountMembership).mockResolvedValue("owner" as never);
-      vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined);
+      vi.mocked(sessionCache.invalidateOnRoleChange).mockResolvedValue(undefined as never);
 
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({

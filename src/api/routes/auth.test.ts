@@ -6,7 +6,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
-import { errorHandler } from "../router.js";
 
 // ---- Hoisted mutable state for middleware session injection ----
 const { mockSessionRef } = vi.hoisted(() => ({
@@ -150,7 +149,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("token");
       expect(body.data.id).toBe("sess_456");
@@ -171,7 +170,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Unsupported grant_type/i);
     });
 
@@ -183,7 +182,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Unsupported grant_type/i);
     });
 
@@ -195,7 +194,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/refresh_token is required/i);
     });
 
@@ -210,7 +209,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid refresh token format/i);
     });
 
@@ -225,7 +224,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid refresh token format/i);
     });
 
@@ -242,7 +241,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid or expired refresh token/i);
     });
 
@@ -274,7 +273,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("sess_456");
       expect(body.data.type).toBe("token");
       expect(body.data.attributes.revoked).toBe(true);
@@ -291,7 +290,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("sess_456");
       expect(body.data.attributes.revoked).toBe(true);
       expect(sessionCache.delete).toHaveBeenCalledWith("usr_123", "sess_456");
@@ -307,7 +306,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("sess_456");
       expect(body.data.attributes.revoked).toBe(true);
       expect(sessionCache.delete).toHaveBeenCalledWith("usr_123", "sess_456");
@@ -323,7 +322,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.id).toBe("sess_456");
       expect(body.data.attributes.revoked).toBe(true);
       expect(sessionCache.delete).toHaveBeenCalledWith("usr_123", "sess_456");
@@ -337,7 +336,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(422);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/token is required/i);
     });
 
@@ -349,7 +348,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid token format/i);
     });
 
@@ -361,7 +360,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid token format/i);
     });
 
@@ -373,7 +372,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/Invalid token format/i);
     });
 
@@ -400,20 +399,6 @@ describe("Auth Routes", () => {
   // GET /me
   // =========================================================
   describe("GET /me", () => {
-    function mockDbChain(resolvedValue: any) {
-      const chainObj: any = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue(resolvedValue),
-        innerJoin: vi.fn().mockReturnThis(),
-      };
-      // Allow the chain to also resolve directly (for queries without .limit())
-      chainObj.innerJoin.mockImplementation(() => ({
-        where: vi.fn().mockResolvedValue(resolvedValue),
-      }));
-      return chainObj;
-    }
-
     function setupRequireAuth(sessionOverrides: Record<string, unknown> = {}) {
       const session = makeSession(sessionOverrides);
       vi.mocked(requireAuth).mockReturnValue(session as any);
@@ -421,7 +406,7 @@ describe("Auth Routes", () => {
     }
 
     it("returns full user data with accounts and workspaces", async () => {
-      const session = setupRequireAuth();
+      setupRequireAuth();
 
       const mockUser = {
         id: "usr_123",
@@ -491,7 +476,7 @@ describe("Auth Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       // Verify top-level structure
       expect(body.data.id).toBe("usr_123");
@@ -580,7 +565,7 @@ describe("Auth Routes", () => {
       const res = await app.request("/me", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.relationships.current_account.data).toBeNull();
     });
 
@@ -598,7 +583,7 @@ describe("Auth Routes", () => {
       const res = await app.request("/me", { method: "GET" });
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.errors[0].detail).toMatch(/User not found/i);
     });
 
@@ -644,7 +629,7 @@ describe("Auth Routes", () => {
         } as any);
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.display_name).toBe("Alice Smith");
     });
 
@@ -690,7 +675,7 @@ describe("Auth Routes", () => {
         } as any);
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.display_name).toBeNull();
     });
 
@@ -758,7 +743,7 @@ describe("Auth Routes", () => {
 
       const res = await app.request("/me", { method: "GET" });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       // Both accounts should be in relationships.accounts
       expect(body.data.relationships.accounts.data).toHaveLength(2);

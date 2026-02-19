@@ -163,19 +163,6 @@ const FILE_ROW = {
  * Mock a select chain that ends with .limit() returning rows.
  * Chain: .from().innerJoin().where().orderBy().limit()
  */
-function mockSelectWithInnerJoinOrderByLimit(rows: unknown[]) {
-  vi.mocked(db.select).mockReturnValue({
-    from: () => ({
-      innerJoin: () => ({
-        where: () => ({
-          orderBy: () => ({
-            limit: vi.fn().mockResolvedValue(rows),
-          }),
-        }),
-      }),
-    }),
-  } as never);
-}
 
 /**
  * Mock a select chain that ends with .where().groupBy() for asset counts.
@@ -220,21 +207,6 @@ function mockSelectEndingWithWhere(rows: unknown[]) {
  * Mock a select chain for collectionAssets with innerJoin then where then orderBy then limit.
  * Chain: .from().innerJoin().innerJoin().where().orderBy().limit()
  */
-function mockSelectAssetsChain(rows: unknown[]) {
-  return {
-    from: () => ({
-      innerJoin: () => ({
-        innerJoin: () => ({
-          where: () => ({
-            orderBy: () => ({
-              limit: vi.fn().mockResolvedValue(rows),
-            }),
-          }),
-        }),
-      }),
-    }),
-  } as never;
-}
 
 /**
  * Mock multiple sequential db.select() calls using mockReturnValueOnce.
@@ -292,7 +264,7 @@ describe("Collections Routes", () => {
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -321,7 +293,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.assetCount).toBe(5);
     });
@@ -343,7 +315,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.assetCount).toBe(0);
     });
@@ -366,7 +338,7 @@ describe("Collections Routes", () => {
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
       // db.select should be called only once (no asset count query)
       expect(vi.mocked(db.select)).toHaveBeenCalledTimes(1);
@@ -389,7 +361,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -445,7 +417,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data[0].attributes.updatedAt).toBe("2024-01-15T10:00:00.000Z");
@@ -501,7 +473,7 @@ describe("Collections Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("coll_001");
       expect(body.data.type).toBe("collection");
@@ -745,7 +717,7 @@ describe("Collections Routes", () => {
       const res = await testApp.request("/projects/proj_001/collections/coll_001", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toBeDefined();
       expect(body.data.id).toBe("coll_001");
@@ -787,7 +759,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections/coll_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.relationships.assets.data).toHaveLength(1);
       expect(body.data.relationships.assets.data[0].id).toBe("file_001");
@@ -828,7 +800,7 @@ describe("Collections Routes", () => {
       );
 
       const res = await testApp.request("/projects/proj_001/collections/coll_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.assetCount).toBe(2);
     });
@@ -971,7 +943,7 @@ describe("Collections Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("coll_001");
       expect(body.data.type).toBe("collection");
@@ -1214,7 +1186,7 @@ describe("Collections Routes", () => {
         body: JSON.stringify({ name: "Updated" }),
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.assetCount).toBe(2);
     });
   });
@@ -1342,7 +1314,7 @@ describe("Collections Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toBeDefined();
       expect(Array.isArray(body.data.added)).toBe(true);
@@ -1368,7 +1340,7 @@ describe("Collections Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.added).toContain("file_001");
       const failedIds = body.data.failed.map((f: { id: string }) => f.id);

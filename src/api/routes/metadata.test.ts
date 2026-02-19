@@ -216,7 +216,7 @@ describe("Metadata Routes", () => {
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("file_123");
       expect(body.data.type).toBe("metadata");
@@ -230,7 +230,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.technical).toEqual({ width: 1920, height: 1080, duration: 120 });
     });
@@ -243,7 +243,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const builtin = body.data.attributes.builtin;
 
       expect(builtin.rating).toBe(3);
@@ -260,7 +260,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const assignee = body.data.attributes.builtin.assignee;
 
       expect(assignee).not.toBeNull();
@@ -279,7 +279,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.builtin.assignee).toBeNull();
     });
@@ -305,7 +305,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const fileInfo = body.data.attributes.file;
 
       expect(fileInfo.id).toBe("file_123");
@@ -343,7 +343,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([])); // no overrides
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const custom = body.data.attributes.custom;
 
       expect(custom).toHaveProperty("cf_visible");
@@ -361,7 +361,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([visibilityOverride]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const custom = body.data.attributes.custom;
 
       // Field should be visible due to override
@@ -379,7 +379,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([visibilityOverride]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const custom = body.data.attributes.custom;
 
       // Field should be hidden due to override
@@ -395,7 +395,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const custom = body.data.attributes.custom;
 
       expect(custom[mockCustomField.id].value).toBeNull();
@@ -410,7 +410,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const custom = body.data.attributes.custom;
 
       expect(custom["cf_1"].value).toBe("stored-value");
@@ -449,7 +449,7 @@ describe("Metadata Routes", () => {
         .mockReturnValueOnce(makeSelectChain([]));
 
       const res = await app.request("/files/file_123/metadata", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.builtin.keywords).toEqual([]);
     });
@@ -459,24 +459,6 @@ describe("Metadata Routes", () => {
   // PUT /files/:fileId/metadata - Update all metadata
   // -------------------------------------------------------------------------
   describe("PUT /files/:fileId/metadata - update all metadata", () => {
-    function setupUpdateAllMocks(overrides?: {
-      fileExists?: boolean;
-      customFields?: unknown[];
-      updatedFile?: typeof mockFile;
-    }) {
-      const {
-        fileExists = true,
-        customFields = [mockCustomField],
-        updatedFile = mockFile,
-      } = overrides ?? {};
-
-      vi.mocked(db.select)
-        .mockReturnValueOnce(makeSelectChain(fileExists ? [mockFile] : []))
-        .mockReturnValueOnce(makeSelectChain(customFields))
-        .mockReturnValueOnce(makeSelectChain([updatedFile]));
-
-      vi.mocked(db.update).mockReturnValue(makeUpdateChain());
-    }
 
     it("returns 200 with updated file after updating rating", async () => {
       vi.mocked(db.select)
@@ -726,7 +708,8 @@ describe("Metadata Routes", () => {
       });
 
       expect(vi.mocked(db.update)).toHaveBeenCalledTimes(1);
-      const updates = setCalled.mock.calls[0][0] as Record<string, unknown>;
+      const calls = setCalled.mock.calls as unknown[][][];
+      const updates = (calls[0]?.[0] as unknown as Record<string, unknown>) ?? {};
       expect(updates.rating).toBe(4);
     });
 
@@ -744,7 +727,8 @@ describe("Metadata Routes", () => {
         body: JSON.stringify({ notes: "test" }),
       });
 
-      const updates = setCalled.mock.calls[0][0] as Record<string, unknown>;
+      const calls = setCalled.mock.calls as unknown[][][];
+      const updates = (calls[0]?.[0] as unknown as Record<string, unknown>) ?? {};
       expect(updates.updatedAt).toBeInstanceOf(Date);
     });
 
@@ -760,7 +744,7 @@ describe("Metadata Routes", () => {
         body: JSON.stringify({ notes: "test" }),
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("file");
     });
   });
@@ -839,7 +823,7 @@ describe("Metadata Routes", () => {
     });
 
     it("returns 200 after clearing assignee_id to null", async () => {
-      setupUpdateFieldMocks({ ...mockFile, assigneeId: null });
+      setupUpdateFieldMocks({ ...mockFile, assigneeId: null } as any);
 
       const res = await app.request("/files/file_123/metadata/assignee_id", {
         method: "PUT",
@@ -1061,7 +1045,8 @@ describe("Metadata Routes", () => {
         body: JSON.stringify({ value: null }),
       });
 
-      const updates = setCalled.mock.calls[0][0] as Record<string, Record<string, unknown>>;
+      const calls = setCalled.mock.calls as unknown[][][];
+      const updates = (calls[0]?.[0] as unknown as Record<string, Record<string, unknown>>) ?? {};
       expect(updates.customMetadata).not.toHaveProperty("cf_1");
     });
 
@@ -1099,7 +1084,7 @@ describe("Metadata Routes", () => {
         body: JSON.stringify({ value: "some note" }),
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("file");
     });
 

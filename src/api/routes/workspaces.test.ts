@@ -86,14 +86,6 @@ const WORKSPACE_ROW = {
 };
 
 // Formatted version (dates as ISO strings, as formatDates produces)
-const WORKSPACE_FORMATTED = {
-  id: "ws_001",
-  name: "Design Team",
-  description: "Our design workspace",
-  accountId: "acc_xyz",
-  createdAt: "2024-01-15T10:00:00.000Z",
-  updatedAt: "2024-01-15T10:00:00.000Z",
-};
 
 // ---------------------------------------------------------------------------
 // Helper: set up a two-call select mock chain.
@@ -158,7 +150,7 @@ describe("Workspace Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -175,7 +167,7 @@ describe("Workspace Routes", () => {
       mockSelectForList([WORKSPACE_ROW], 1);
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -189,7 +181,7 @@ describe("Workspace Routes", () => {
       const res = await app.request("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
       expect(body.meta.total_count).toBe(0);
@@ -215,7 +207,7 @@ describe("Workspace Routes", () => {
       mockSelectForList(rows, 60);
 
       const res = await app.request("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       // Route slices to limit before sendCollection, so has_more is always false
       expect(body.meta.has_more).toBe(false);
@@ -249,7 +241,7 @@ describe("Workspace Routes", () => {
       const res = await app.request("/ws_001", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("ws_001");
@@ -281,7 +273,7 @@ describe("Workspace Routes", () => {
       vi.mocked(verifyWorkspaceAccess).mockResolvedValue(WORKSPACE_ROW as never);
 
       const res = await app.request("/ws_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data.attributes.updatedAt).toBe("2024-01-15T10:00:00.000Z");
@@ -310,7 +302,7 @@ describe("Workspace Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("ws_001");
       expect(body.data.type).toBe("workspace");
@@ -443,7 +435,7 @@ describe("Workspace Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("ws_001");
       expect(body.data.type).toBe("workspace");

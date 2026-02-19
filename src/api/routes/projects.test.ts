@@ -77,6 +77,12 @@ const mockSession = {
   sessionId: "sess_123",
   currentAccountId: "acc_123",
   accountRole: "owner" as const,
+  email: "test@example.com",
+  displayName: "Test User",
+  workosOrganizationId: "org_123",
+  workosUserId: "wusr_123",
+  createdAt: Date.now(),
+  lastActivityAt: Date.now(),
 };
 
 // Representative project record returned by the database
@@ -122,7 +128,7 @@ describe("Project Routes", () => {
       const res = await app.request("/?workspace_id=ws_123");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data[0].id).toBe("prj_123");
@@ -149,7 +155,7 @@ describe("Project Routes", () => {
       const res = await app.request("/?workspace_id=ws_123");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(0);
       expect(body.meta?.total_count).toBe(0);
     });
@@ -171,7 +177,7 @@ describe("Project Routes", () => {
       } as never);
 
       const res = await app.request("/?workspace_id=ws_123");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("meta");
       expect(body.meta).toHaveProperty("total_count");
@@ -251,7 +257,7 @@ describe("Project Routes", () => {
       const res = await app.request("/prj_123");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("prj_123");
       expect(body.data.type).toBe("project");
@@ -284,7 +290,7 @@ describe("Project Routes", () => {
       } as never);
 
       const res = await app.request("/prj_123");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(typeof body.data.attributes.createdAt).toBe("string");
       expect(typeof body.data.attributes.updatedAt).toBe("string");
@@ -331,7 +337,7 @@ describe("Project Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("prj_test1");
       expect(body.data.type).toBe("project");
@@ -563,7 +569,7 @@ describe("Project Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.name).toBe("Updated Name");
     });
 
@@ -596,7 +602,7 @@ describe("Project Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.description).toBe("Updated description");
     });
 
@@ -629,7 +635,7 @@ describe("Project Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.isRestricted).toBe(true);
     });
 

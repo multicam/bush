@@ -124,15 +124,6 @@ const FILE_ROW = {
   updatedAt: new Date("2024-01-15T10:00:00.000Z"),
 };
 
-const FILE_ROW_2 = {
-  ...FILE_ROW,
-  id: "file_002",
-  name: "video.mp4",
-  originalName: "video.mp4",
-  mimeType: "video/mp4",
-  fileSizeBytes: 5 * 1024 * 1024, // 5 MB
-};
-
 const FOLDER_ROW = {
   id: "folder_001",
   projectId: "proj_001",
@@ -227,7 +218,7 @@ function mockDeleteSuccess() {
  * Set up db.transaction to call the callback with a mock tx object.
  */
 function mockTransactionSuccess() {
-  vi.mocked(db.transaction).mockImplementation(async (cb: (tx: unknown) => Promise<void>) => {
+  (vi.mocked(db.transaction) as any).mockImplementation(async (cb: (tx: unknown) => Promise<void>) => {
     const tx = {
       update: () => ({
         set: () => ({
@@ -274,7 +265,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed).toHaveLength(0);
   });
@@ -295,7 +286,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed).toHaveLength(0);
   });
@@ -315,7 +306,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
   });
 
@@ -420,7 +411,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toHaveLength(0);
     expect(body.data.failed).toHaveLength(1);
     expect(body.data.failed[0].id).toBe("file_missing");
@@ -445,7 +436,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied to source project");
   });
 
@@ -477,7 +468,7 @@ describe("POST /files/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed[0].id).toBe("file_002");
   });
@@ -512,28 +503,6 @@ describe("POST /files/copy", () => {
     vi.mocked(storage.copyObject).mockResolvedValue(undefined as never);
   });
 
-  function setupCopyMocks(fileRows: unknown[] = [FILE_ROW]) {
-    // select calls: for each file in fileIds, then account lookup
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      let result: unknown[];
-      if (callCount < fileRows.length) {
-        result = [fileRows[callCount]];
-      } else {
-        // account lookup
-        result = [ACCOUNT_ROW];
-      }
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(result),
-          }),
-        }),
-      } as never;
-    });
-  }
-
   it("returns 200 with succeeded list on successful copy to project", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
     // select: account, file
@@ -562,7 +531,7 @@ describe("POST /files/copy", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed).toHaveLength(0);
     expect(body.data.copies).toHaveLength(1);
@@ -770,7 +739,7 @@ describe("POST /files/copy", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toHaveLength(0);
     expect(body.data.failed[0].error).toBe("Insufficient storage quota");
   });
@@ -802,7 +771,7 @@ describe("POST /files/copy", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("File not found");
   });
 
@@ -834,7 +803,7 @@ describe("POST /files/copy", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied to source project");
   });
 
@@ -897,7 +866,7 @@ describe("POST /files/copy", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     // Should still succeed because storage errors don't fail the record creation
     expect(body.data.succeeded).toContain("file_001");
   });
@@ -956,7 +925,7 @@ describe("POST /files/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed).toHaveLength(0);
   });
@@ -1003,7 +972,7 @@ describe("POST /files/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("File not found or already deleted");
     expect(body.data.succeeded).toHaveLength(0);
   });
@@ -1019,7 +988,7 @@ describe("POST /files/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied");
   });
 
@@ -1035,7 +1004,7 @@ describe("POST /files/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toHaveLength(0);
     expect(body.data.failed[0].error).toBe("DB error");
   });
@@ -1090,7 +1059,7 @@ describe("POST /files/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("file_001");
     expect(body.data.failed[0].id).toBe("file_missing");
   });
@@ -1127,7 +1096,7 @@ describe("POST /files/download", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toHaveLength(1);
     expect(body.data.succeeded[0].id).toBe("file_001");
     expect(body.data.succeeded[0].download_url).toBe("https://example.com/download/photo.jpg");
@@ -1177,7 +1146,7 @@ describe("POST /files/download", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("File not found");
   });
 
@@ -1192,7 +1161,7 @@ describe("POST /files/download", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied");
   });
 
@@ -1208,7 +1177,7 @@ describe("POST /files/download", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toContain("File not ready");
     expect(body.data.failed[0].error).toContain("processing");
   });
@@ -1241,7 +1210,7 @@ describe("POST /files/download", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Storage failure");
   });
 });
@@ -1272,7 +1241,7 @@ describe("POST /folders/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("folder_001");
     expect(body.data.failed).toHaveLength(0);
   });
@@ -1293,7 +1262,7 @@ describe("POST /folders/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("folder_001");
   });
 
@@ -1387,7 +1356,7 @@ describe("POST /folders/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Folder not found");
   });
 
@@ -1408,7 +1377,7 @@ describe("POST /folders/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied to source project");
   });
 
@@ -1429,7 +1398,7 @@ describe("POST /folders/move", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Cannot move folder into itself");
   });
 
@@ -1475,7 +1444,7 @@ describe("POST /folders/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("folder_001");
     expect(body.data.failed).toHaveLength(0);
   });
@@ -1522,7 +1491,7 @@ describe("POST /folders/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Folder not found");
   });
 
@@ -1537,7 +1506,7 @@ describe("POST /folders/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("Access denied");
   });
 
@@ -1588,7 +1557,7 @@ describe("POST /folders/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.failed[0].error).toBe("DB delete error");
   });
 
@@ -1618,7 +1587,7 @@ describe("POST /folders/delete", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("folder_001");
     expect(body.data.failed[0].id).toBe("folder_missing");
   });

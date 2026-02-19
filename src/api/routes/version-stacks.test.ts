@@ -248,7 +248,7 @@ describe("Version Stack Routes", () => {
 
     // Re-set response mocks since resetAllMocks wipes them
     vi.mocked(sendSingle).mockImplementation((c, data, type) =>
-      (c as { json: (v: unknown) => unknown }).json({ data: { id: (data as Record<string, unknown>).id, type, attributes: data } })
+      (c as { json: (v: unknown) => unknown }).json({ data: { id: (data as Record<string, unknown>).id, type, attributes: data } }) as any
     );
     vi.mocked(sendCollection).mockImplementation((c, items, type, opts) =>
       (c as { json: (v: unknown) => unknown }).json({
@@ -261,10 +261,10 @@ describe("Version Stack Routes", () => {
             ((opts as { limit?: number })?.limit ?? 50),
         },
         links: { self: (opts as { basePath?: string })?.basePath ?? "/" },
-      })
+      }) as any
     );
     vi.mocked(sendNoContent).mockImplementation((c) =>
-      (c as { body: (b: null, s: number) => unknown }).body(null, 204)
+      (c as { body: (b: null, s: number) => unknown }).body(null, 204) as any
     );
     vi.mocked(formatDates).mockImplementation((obj) => {
       const result: Record<string, unknown> = { ...(obj as object) };
@@ -278,10 +278,10 @@ describe("Version Stack Routes", () => {
 
     // Re-set comments mocks
     vi.mocked(getVersionStackComments).mockImplementation(async (c) =>
-      (c as { json: (v: unknown) => unknown }).json({ data: [] })
+      (c as { json: (v: unknown) => unknown }).json({ data: [] }) as any
     );
     vi.mocked(createVersionStackComment).mockImplementation(async (c) =>
-      (c as { json: (v: unknown) => unknown }).json({ data: { id: "cmt_001", type: "comment" } })
+      (c as { json: (v: unknown) => unknown }).json({ data: { id: "cmt_001", type: "comment" } }) as any
     );
   });
 
@@ -296,7 +296,7 @@ describe("Version Stack Routes", () => {
       const res = await app.request("/vstack_001", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("vstack_001");
@@ -308,7 +308,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.relationships.files.data).toHaveLength(1);
       expect(body.data.relationships.files.data[0].id).toBe("file_001");
@@ -320,7 +320,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.relationships.current_file.data).not.toBeNull();
       expect(body.data.relationships.current_file.data.id).toBe("file_001");
@@ -332,7 +332,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.relationships.current_file.data).toBeNull();
     });
@@ -342,7 +342,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.included).toHaveLength(2);
       expect(body.included[0].type).toBe("file");
@@ -410,7 +410,7 @@ describe("Version Stack Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toBeDefined();
       expect(body.data.type).toBe("version_stack");
@@ -539,7 +539,7 @@ describe("Version Stack Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toBeDefined();
       expect(body.data.type).toBe("version_stack");
@@ -872,7 +872,7 @@ describe("Version Stack Routes", () => {
       const res = await app.request("/vstack_001/files", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -904,7 +904,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001/files", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toHaveLength(0);
     });
@@ -982,7 +982,7 @@ describe("Version Stack Routes", () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue({ role: "member" } as never);
 
       const res = await app.request("/vstack_001/files", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.links.self).toBe("/v4/version-stacks/vstack_001/files");
     });
@@ -1041,7 +1041,7 @@ describe("Version Stack Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("file");
     });
@@ -1382,7 +1382,7 @@ describe("Version Stack Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("version_stack");
     });
@@ -1503,7 +1503,7 @@ describe("Version Stack Routes", () => {
       const res = await app.request("/vstack_001/comments", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
       expect(vi.mocked(getVersionStackComments)).toHaveBeenCalledTimes(1);
@@ -1522,7 +1522,7 @@ describe("Version Stack Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("comment");
       expect(vi.mocked(createVersionStackComment)).toHaveBeenCalledTimes(1);

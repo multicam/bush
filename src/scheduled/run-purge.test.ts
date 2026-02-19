@@ -24,10 +24,10 @@ import { purgeExpiredFiles } from "./processor.js";
 // ---------------------------------------------------------------------------
 
 function setupProcessMocks() {
-  const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: number) => {
+  const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: string | number | null) => {
     // Prevent the test process from actually exiting
     return undefined as never;
-  });
+  }) as typeof process.exit);
   const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   return { exitSpy, logSpy, errorSpy };

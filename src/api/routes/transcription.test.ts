@@ -325,10 +325,10 @@ describe("Transcription Routes", () => {
     vi.mocked(sendSingle).mockImplementation((c, data, type) =>
       (c as { json: (v: unknown) => unknown }).json({
         data: { id: (data as Record<string, unknown>).id, type, attributes: data },
-      })
+      }) as any
     );
     vi.mocked(sendNoContent).mockImplementation((c) =>
-      (c as { body: (b: null, s: number) => unknown }).body(null, 204)
+      (c as { body: (b: null, s: number) => unknown }).body(null, 204) as any
     );
     vi.mocked(formatDates).mockImplementation((obj) => {
       const result: Record<string, unknown> = { ...(obj as object) };
@@ -354,7 +354,7 @@ describe("Transcription Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("tr_001");
@@ -369,7 +369,7 @@ describe("Transcription Routes", () => {
       mockSelectSequence([FILE_ROW], [transcriptNoSpeakers]);
 
       const res = await transcriptionReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.speaker_names).toEqual({});
     });
@@ -391,7 +391,7 @@ describe("Transcription Routes", () => {
       mockSelectSequence([FILE_ROW], [editedTranscript], [USER_ROW]);
 
       const res = await transcriptionReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.edited_by_user_id).toBe("usr_abc");
       expect(body.data.attributes.attributes.edited_by_user).not.toBeNull();
@@ -401,7 +401,7 @@ describe("Transcription Routes", () => {
       mockSelectSequence([FILE_ROW], [TRANSCRIPT_ROW]);
 
       const res = await transcriptionReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.edited_by_user).toBeNull();
     });
@@ -447,7 +447,7 @@ describe("Transcription Routes", () => {
       mockSelectSequence([FILE_ROW], [TRANSCRIPT_ROW]);
 
       const res = await transcriptionReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.created_at).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data.attributes.attributes.updated_at).toBe("2024-01-15T10:00:00.000Z");
@@ -479,7 +479,7 @@ describe("Transcription Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.type).toBe("transcript");
       expect(body.data.attributes.attributes.status).toBe("pending");
@@ -506,7 +506,7 @@ describe("Transcription Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toMatch(/^tr_/);
     });
@@ -522,7 +522,7 @@ describe("Transcription Routes", () => {
 
       expect(res.status).toBe(200);
       expect(vi.mocked(db.update)).toHaveBeenCalledTimes(1);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.attributes.status).toBe("pending");
     });
 
@@ -705,7 +705,7 @@ describe("Transcription Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("transcript");
     });
 
@@ -1085,7 +1085,7 @@ describe("Transcription Routes", () => {
       const res = await transcriptionReq("/words", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -1100,7 +1100,7 @@ describe("Transcription Routes", () => {
       ]);
 
       const res = await transcriptionReq("/words", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const word = body.data[0];
 
       expect(word.id).toBe("tw_001");
@@ -1121,7 +1121,7 @@ describe("Transcription Routes", () => {
       ]);
 
       const res = await transcriptionReq("/words", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
     });
@@ -1191,10 +1191,10 @@ describe("Captions Routes", () => {
     vi.mocked(sendSingle).mockImplementation((c, data, type) =>
       (c as { json: (v: unknown) => unknown }).json({
         data: { id: (data as Record<string, unknown>).id, type, attributes: data },
-      })
+      }) as any
     );
     vi.mocked(sendNoContent).mockImplementation((c) =>
-      (c as { body: (b: null, s: number) => unknown }).body(null, 204)
+      (c as { body: (b: null, s: number) => unknown }).body(null, 204) as any
     );
     vi.mocked(formatDates).mockImplementation((obj) => {
       const result: Record<string, unknown> = { ...(obj as object) };
@@ -1223,7 +1223,7 @@ describe("Captions Routes", () => {
       const res = await captionsReq("/", { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -1239,7 +1239,7 @@ describe("Captions Routes", () => {
       });
 
       const res = await captionsReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
       const caption = body.data[0];
 
       expect(caption.id).toBe("cap_001");
@@ -1260,7 +1260,7 @@ describe("Captions Routes", () => {
       });
 
       const res = await captionsReq("/", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
     });
@@ -1332,7 +1332,7 @@ describe("Captions Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("caption");
       expect(body.data.attributes.attributes.language).toBe("en");
     });
@@ -1384,7 +1384,7 @@ describe("Captions Routes", () => {
         method: "POST",
         body: formData,
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.format).toBe("vtt");
     });
@@ -1400,7 +1400,7 @@ describe("Captions Routes", () => {
         method: "POST",
         body: formData,
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.format).toBe("srt");
     });
@@ -1416,7 +1416,7 @@ describe("Captions Routes", () => {
         method: "POST",
         body: formData,
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.attributes.label).toBe("fr");
     });
@@ -1432,7 +1432,7 @@ describe("Captions Routes", () => {
         method: "POST",
         body: formData,
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toMatch(/^cap_/);
     });

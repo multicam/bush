@@ -305,7 +305,7 @@ describe("Comments Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
     });
@@ -359,7 +359,7 @@ describe("Comments Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
     });
 
@@ -395,7 +395,6 @@ describe("Comments Routes", () => {
     it("returns meta with has_more false when items equal limit", async () => {
       mockSelectSingle(FILE_ROW);
       vi.mocked(verifyProjectAccess).mockResolvedValue(ACCESS_ROW as never);
-      const commentResult = { comment: COMMENT_ROW, user: USER_ROW };
       // Return exactly limit items (50), so has_more should be false
       const rows = Array.from({ length: 50 }, (_, i) => ({
         comment: { ...COMMENT_ROW, id: `cmt_${i}` },
@@ -404,7 +403,7 @@ describe("Comments Routes", () => {
       mockSelectJoinList(rows);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta.has_more).toBe(false);
       expect(body.meta.page_size).toBe(50);
@@ -433,7 +432,7 @@ describe("Comments Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 
@@ -666,7 +665,7 @@ describe("Comments Routes", () => {
       const res = await reqDirect("/cmt_001");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 
@@ -733,7 +732,7 @@ describe("Comments Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 
@@ -974,7 +973,7 @@ describe("Comments Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 
@@ -1111,7 +1110,7 @@ describe("Comments Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 
@@ -1251,7 +1250,7 @@ describe("Comments Routes", () => {
       const res = await reqDirect("/cmt_001/replies");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
     });
@@ -1292,7 +1291,7 @@ describe("Comments Routes", () => {
       const res = await reqDirect("/cmt_001/replies");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toEqual([]);
     });
 
@@ -1336,7 +1335,7 @@ describe("Comments Routes", () => {
       const res = await stackApp.request("/version-stacks/stack_001/comments");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(Array.isArray(body.data)).toBe(true);
     });
 
@@ -1430,7 +1429,7 @@ describe("Comments Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.type).toBe("comment");
     });
 

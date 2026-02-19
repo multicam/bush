@@ -97,6 +97,12 @@ const mockSession = {
   sessionId: "sess_123",
   currentAccountId: "acc_123",
   accountRole: "owner" as const,
+  email: "test@example.com",
+  displayName: "Test User",
+  workosOrganizationId: "org_123",
+  workosUserId: "wusr_123",
+  createdAt: Date.now(),
+  lastActivityAt: Date.now(),
 };
 
 const mockFolder = {
@@ -170,7 +176,7 @@ describe("Folder Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data[0].id).toBe("fld_123");
@@ -197,7 +203,7 @@ describe("Folder Routes", () => {
       const res = await req("/");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(0);
       expect(body.meta?.total_count).toBe(0);
     });
@@ -219,7 +225,7 @@ describe("Folder Routes", () => {
       } as never);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("meta");
       expect(body.meta).toHaveProperty("total_count");
@@ -275,7 +281,7 @@ describe("Folder Routes", () => {
       } as never);
 
       const res = await req("/");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(typeof body.data[0].attributes.createdAt).toBe("string");
       expect(typeof body.data[0].attributes.updatedAt).toBe("string");
@@ -296,7 +302,7 @@ describe("Folder Routes", () => {
       const res = await req("/fld_123");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.id).toBe("fld_123");
       expect(body.data.type).toBe("folder");
@@ -332,7 +338,7 @@ describe("Folder Routes", () => {
       } as never);
 
       const res = await req("/fld_123");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(typeof body.data.attributes.createdAt).toBe("string");
       expect(typeof body.data.attributes.updatedAt).toBe("string");
@@ -374,7 +380,7 @@ describe("Folder Routes", () => {
       const res = await req("/fld_123/children");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.meta.folders_count).toBe(1);
@@ -410,7 +416,7 @@ describe("Folder Routes", () => {
         } as never);
 
       const res = await req("/fld_123/children");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       const folderItem = body.data.find((item: any) => item.id === "fld_456");
       const fileItem = body.data.find((item: any) => item.id === "fil_abc");
@@ -449,7 +455,7 @@ describe("Folder Routes", () => {
       const res = await req("/fld_123/children");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(0);
       expect(body.meta.folders_count).toBe(0);
       expect(body.meta.files_count).toBe(0);
@@ -492,7 +498,7 @@ describe("Folder Routes", () => {
         } as never);
 
       const res = await req("/fld_123/children");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toHaveProperty("page_size");
       expect(typeof body.meta.page_size).toBe("number");
@@ -538,7 +544,7 @@ describe("Folder Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.type).toBe("folder");
       expect(body.data.attributes.name).toBe("My Folder");
@@ -755,7 +761,7 @@ describe("Folder Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.type).toBe("folder");
     });
@@ -938,7 +944,7 @@ describe("Folder Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data.attributes.name).toBe("Renamed Folder");
     });
 
@@ -1221,7 +1227,7 @@ describe("Folder Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(body.data.type).toBe("folder");
     });
@@ -1444,7 +1450,7 @@ describe("Folder Routes", () => {
       const res = await req("/fld_123/files");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data[0].id).toBe("fil_abc");
@@ -1472,7 +1478,7 @@ describe("Folder Routes", () => {
       const res = await req("/fld_123/files");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.data).toHaveLength(0);
       expect(body.meta?.total_count).toBe(0);
     });
@@ -1503,7 +1509,7 @@ describe("Folder Routes", () => {
       } as never);
 
       const res = await req("/fld_123/files");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("meta");
       expect(body.meta).toHaveProperty("total_count");
@@ -1574,7 +1580,7 @@ describe("Folder Routes", () => {
       } as never);
 
       const res = await req("/fld_123/files");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(typeof body.data[0].attributes.createdAt).toBe("string");
       expect(typeof body.data[0].attributes.updatedAt).toBe("string");

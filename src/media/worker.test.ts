@@ -327,7 +327,7 @@ describe("media/worker.ts", () => {
       const jobData = {
         ...baseJobData,
         type: "thumbnail" as const,
-        sizes: ["small", "medium"] as const,
+        sizes: ["small", "medium"] as ("small" | "medium")[],
       };
       await processJob(jobData);
       expect(processThumbnail).toHaveBeenCalledWith(jobData);
@@ -343,7 +343,7 @@ describe("media/worker.ts", () => {
       const jobData = {
         ...baseJobData,
         type: "proxy" as const,
-        resolutions: ["720p"] as const,
+        resolutions: ["720p"] as ("720p" | "1080p" | "4k")[],
         sourceWidth: 1280,
         sourceHeight: 720,
         isHDR: true,

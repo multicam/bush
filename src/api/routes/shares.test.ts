@@ -348,7 +348,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(ACCOUNT_SHARES, { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -365,7 +365,7 @@ describe("Shares Routes", () => {
       mockSelectJoinList([{ share: SHARE_ROW, user: USER_ROW }]);
 
       const res = await testApp.request(ACCOUNT_SHARES, { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -379,7 +379,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(ACCOUNT_SHARES, { method: "GET" });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
       expect(body.meta.total_count).toBe(0);
@@ -446,7 +446,7 @@ describe("Shares Routes", () => {
       mockSelectJoinList([{ share: SHARE_ROW, user: USER_ROW }]);
 
       const res = await testApp.request(ACCOUNT_SHARES, { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data[0].attributes.created_by).toBeDefined();
       expect(body.data[0].attributes.created_by.id).toBe("usr_abc");
@@ -481,7 +481,7 @@ describe("Shares Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("share_001");
       expect(body.data.type).toBe("share");
@@ -712,7 +712,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001`);
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("share_001");
       expect(body.data.type).toBe("share");
@@ -744,7 +744,7 @@ describe("Shares Routes", () => {
       mockSelectCount(3);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001`);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.asset_count).toBe(3);
     });
@@ -755,7 +755,7 @@ describe("Shares Routes", () => {
       mockSelectCount(0);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001`);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.created_by).toBeDefined();
       expect(body.data.attributes.created_by.id).toBe("usr_abc");
@@ -767,7 +767,7 @@ describe("Shares Routes", () => {
       mockSelectCount(0);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001`);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.createdAt).toBe("2024-01-15T10:00:00.000Z");
       expect(body.data.attributes.updatedAt).toBe("2024-01-15T10:00:00.000Z");
@@ -799,7 +799,7 @@ describe("Shares Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("share_001");
       expect(body.data.type).toBe("share");
@@ -1109,7 +1109,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets`);
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -1125,7 +1125,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets`);
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
     });
@@ -1173,7 +1173,7 @@ describe("Shares Routes", () => {
       mockSelectAssetJoinList([{ shareAsset: SHARE_ASSET_ROW, file: FILE_ROW }]);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets`);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -1388,7 +1388,7 @@ describe("Shares Routes", () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("share_001");
       expect(body.data.type).toBe("share");
@@ -1497,7 +1497,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity`);
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body).toHaveProperty("data");
       expect(Array.isArray(body.data)).toBe(true);
@@ -1512,7 +1512,7 @@ describe("Shares Routes", () => {
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity`);
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data).toEqual([]);
     });
@@ -1573,7 +1573,7 @@ describe("Shares Routes", () => {
       mockSelectActivityList([SHARE_ACTIVITY_ROW]);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity`);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.meta).toBeDefined();
       expect(body.meta.total_count).toBe(1);
@@ -1597,7 +1597,7 @@ describe("Shares Routes", () => {
       const res = await slugApp.request("/shares/slug/abc123xyz0");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.id).toBe("share_001");
       expect(body.data.attributes.passphrase_required).toBe(false);
@@ -1610,7 +1610,7 @@ describe("Shares Routes", () => {
       const res = await slugApp.request("/shares/slug/abc123xyz0");
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.passphrase_required).toBe(true);
     });
@@ -1620,7 +1620,7 @@ describe("Shares Routes", () => {
       mockSelectShareSingle(protectedShare);
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.passphrase).toBeUndefined();
     });
@@ -1675,7 +1675,7 @@ describe("Shares Routes", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.passphrase_required).toBe(false);
     });
@@ -1701,7 +1701,7 @@ describe("Shares Routes", () => {
       mockSelectAssetJoinNoLimit([]);
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.passphrase).toBeUndefined();
     });
@@ -1711,7 +1711,7 @@ describe("Shares Routes", () => {
       mockSelectAssetJoinNoLimit([{ shareAsset: SHARE_ASSET_ROW, file: FILE_ROW }]);
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(Array.isArray(body.data.attributes.assets)).toBe(true);
       expect(body.data.attributes.assets).toHaveLength(1);

@@ -146,15 +146,6 @@ function selectMembershipCheckReturning(rows: unknown[]) {
 }
 
 /** db.select() chain that uses a projection object ({...}) before from(). */
-function selectProjectionReturning(rows: unknown[]) {
-  return {
-    from: () => ({
-      innerJoin: () => ({
-        where: vi.fn().mockResolvedValue(rows),
-      }),
-    }),
-  } as never;
-}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -184,7 +175,7 @@ describe("User Routes", () => {
       );
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
 
@@ -231,7 +222,7 @@ describe("User Routes", () => {
       );
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.relationships.accounts.data).toHaveLength(0);
@@ -252,7 +243,7 @@ describe("User Routes", () => {
       );
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data.attributes.display_name).toBe("Test");
@@ -268,7 +259,7 @@ describe("User Routes", () => {
       );
 
       const res = await app.request("/me", { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data.attributes.display_name).toBeNull();
@@ -314,7 +305,7 @@ describe("User Routes", () => {
       const res = await app.request(`/${mockSession.userId}`, {
         method: "GET",
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data.id).toBe(mockUser.id);
@@ -338,7 +329,7 @@ describe("User Routes", () => {
       vi.mocked(db.select).mockReturnValueOnce(selectReturning([otherUser]));
 
       const res = await app.request(`/${otherUserId}`, { method: "GET" });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data.id).toBe(otherUserId);
@@ -415,7 +406,7 @@ describe("User Routes", () => {
       const res = await app.request(`/${mockSession.userId}`, {
         method: "GET",
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.display_name).toBe("Test User");
     });
@@ -452,7 +443,7 @@ describe("User Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patchBody),
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(res.status).toBe(200);
       expect(body.data.id).toBe(mockUpdatedUser.id);
@@ -667,7 +658,7 @@ describe("User Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patchBody),
       });
-      const body = await res.json();
+      const body = (await res.json()) as any;
 
       expect(body.data.attributes.display_name).toBe("Updated Name");
     });
