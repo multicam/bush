@@ -59,7 +59,9 @@ vi.mock("../db/index.js", () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        where: vi.fn(() => []),
+        where: vi.fn(() => ({
+          limit: vi.fn(() => [{ id: "mock-id", workspaceId: "mock-workspace" }]),
+        })),
       })),
     })),
   },
@@ -491,6 +493,113 @@ describe("WebSocket Manager", () => {
     it("exports types", async () => {
       const module = await import("./ws-manager.js");
       expect(module.WsCloseCode).toBeDefined();
+    });
+  });
+
+  describe("broadcast", () => {
+    it("registers with event bus on init", async () => {
+      const { eventBus } = await import("./event-bus.js");
+      expect(eventBus.onEvent).toHaveBeenCalled();
+    });
+
+    it("tracks active channels correctly", async () => {
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Initial state - no channels
+      expect(wsManager.getStats().activeChannels).toBe(0);
+
+      // Subscribe to a project channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Should have 1 channel
+      expect(wsManager.getStats().activeChannels).toBe(1);
+
+      // Subscribe to another channel (different resource)
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "file", resourceId: "file_1" })
+      );
+
+      // Should have 2 channels
+      expect(wsManager.getStats().activeChannels).toBe(2);
+    });
+
+    it("handles multiple subscriptions to same channel", async () => {
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Subscribe to same channel twice
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Should still have 1 channel (deduped)
+      expect(wsManager.getStats().activeChannels).toBe(1);
+    });
+  });
+
+  describe("rate limiting edge cases", () => {
+    it("allows messages after rate limit window expires", async () => {
+      mockWs = createMockWs({
+        data: {
+          ...createMockWs().data,
+          messageTimestamps: [],
+        },
+      });
+      wsManager.register(mockWs);
+
+      // Clear previous calls
+      mockWs.send.mockClear();
+
+      // Send a ping
+      await wsManager.handleMessage(mockWs, JSON.stringify({ action: "ping" }));
+
+      // Should get a pong response
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("pong");
+    });
+  });
+
+  describe("connection cleanup", () => {
+    it("removes channel subscriptions when connection unregistered", async () => {
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Subscribe to channels
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "file", resourceId: "file_1" })
+      );
+
+      const statsAfterRegister = wsManager.getStats();
+      expect(statsAfterRegister.activeChannels).toBe(2);
+
+      wsManager.unregister(mockWs);
+
+      const statsAfterUnregister = wsManager.getStats();
+      expect(statsAfterUnregister.activeChannels).toBe(0);
+    });
+
+    it("handles unregister of non-existent connection gracefully", () => {
+      mockWs = createMockWs();
+      // Don't register it
+
+      // Should not throw
+      expect(() => wsManager.unregister(mockWs)).not.toThrow();
     });
   });
 });

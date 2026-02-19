@@ -5,9 +5,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock the queue module
 vi.mock("./queue.js", () => ({
-  getQueue: vi.fn().mockReturnValue({
+  getQueue: vi.fn(() => ({
     add: vi.fn().mockResolvedValue({ id: "job-123" }),
-  }),
+  })),
   addJob: vi.fn().mockResolvedValue(undefined),
   closeQueues: vi.fn().mockResolvedValue(undefined),
   QUEUE_NAMES: {
@@ -22,12 +22,18 @@ vi.mock("./queue.js", () => ({
 // Mock the database
 vi.mock("../db/index.js", () => ({
   db: {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue([]),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn().mockResolvedValue([]),
+        })),
+      })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      })),
+    })),
   },
 }));
 
@@ -125,6 +131,36 @@ describe("media processing service", () => {
       expect(firstCall.type).toBe("metadata");
     });
 
+    it("enqueues metadata job for PDF documents", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/doc.pdf",
+        "application/pdf",
+        "doc.pdf"
+      );
+
+      expect(addJob).toHaveBeenCalled();
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.type).toBe("metadata");
+    });
+
+    it("enqueues metadata job for unknown MIME types", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/file.xyz",
+        "application/unknown",
+        "file.xyz"
+      );
+
+      expect(addJob).toHaveBeenCalled();
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.type).toBe("metadata");
+    });
+
     it("uses bulk upload priority when isBulkUpload is true", async () => {
       await enqueueProcessingJobs(
         "asset-123",
@@ -186,6 +222,58 @@ describe("media processing service", () => {
       expect(firstCall.storageKey).toBe("path/to/video.mp4");
       expect(firstCall.mimeType).toBe("video/mp4");
       expect(firstCall.sourceFilename).toBe("video.mp4");
+    });
+  });
+
+  describe("reprocessAsset", () => {
+    it("throws error when asset not found", async () => {
+      // Need to reset modules and reimport to get fresh mock state
+      vi.resetModules();
+
+      // Re-setup mocks
+      vi.doMock("./queue.js", () => ({
+        getQueue: vi.fn(() => ({
+          add: vi.fn().mockResolvedValue({ id: "job-123" }),
+        })),
+        addJob: vi.fn().mockResolvedValue(undefined),
+        closeQueues: vi.fn().mockResolvedValue(undefined),
+        QUEUE_NAMES: {
+          METADATA: "media:metadata",
+          THUMBNAIL: "media:thumbnail",
+          FILMSTRIP: "media:filmstrip",
+          PROXY: "media:proxy",
+          WAVEFORM: "media:waveform",
+        },
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                limit: vi.fn().mockResolvedValue([]),
+              })),
+            })),
+          })),
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+        },
+      }));
+
+      vi.doMock("../db/schema.js", () => ({
+        files: { id: "files.id" },
+      }));
+
+      const { reprocessAsset: freshReprocess } = await import("./index.js");
+
+      await expect(freshReprocess("nonexistent")).rejects.toThrow("Asset not found: nonexistent");
+
+      vi.doUnmock("./queue.js");
+      vi.doUnmock("../db/index.js");
+      vi.doUnmock("../db/schema.js");
     });
   });
 });

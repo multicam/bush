@@ -1,10 +1,10 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 12 (COMPLETE)
-**Iteration**: 13 (IN PROGRESS)
-**Coverage**: 31.77% statements (target: 80%)
-**Tests**: 984 passing, 0 failing (vitest)
+**Iteration**: 13 (COMPLETE)
+**Iteration**: 14 (IN PROGRESS)
+**Coverage**: 33.23% statements (target: 80%)
+**Tests**: 1053 passing, 0 failing (vitest)
 **Git tag**: v0.0.58
 
 ## Issue Tracker
@@ -176,7 +176,41 @@
 
 ## Iteration Log
 
-### Iteration 13 -- 2026-02-19 (IN PROGRESS)
+### Iteration 14 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 31.77% -> 33.23% (+1.46pp)
+**Tests**: 984 -> 1053 (+69 tests)
+
+**New Tests Added:**
+- `src/transcription/transcription-export.test.ts`: Added 7 more tests for VTT parsing functions (parseVtt edge cases, empty content, multi-line text, speaker tags, sequential indices)
+- `src/media/media-queue.test.ts`: Added 16 tests for media queue functions (getQueue, getQueueEvents, addJob, createWorker, closeQueues, getQueueStats, getRedisOptions, QUEUE_NAMES export)
+- `src/media/media-index.test.ts`: Added 4 more tests for enqueueProcessingJobs (PDF documents, unknown MIME types, bulk upload priority, reprocessAsset error handling)
+- `src/shared/file-types.test.ts`: Added 16 tests for additional file type functions (getSupportedMimeTypes, getSupportedExtensions, getFileTypesByCategory, getFileTypeByExtension, getFileTypeByMime)
+- `src/realtime/ws-manager.test.ts`: Added 6 tests for broadcast and connection cleanup (broadcast tracking, multiple subscriptions, connection cleanup)
+- `src/redis/index.test.ts`: Added 9 tests for Redis error handling (retry strategy, max retries exceeded, error event handling, connect logging in development environment)
+- `src/api/rate-limit.test.ts`: Added 3 tests for getDefaultIdentifier (X-Forwarded-For with TRUST_PROXY, socket remote address, fallback to 'unknown')
+- `src/config/env.test.ts`: Added 5 tests for scrubSecrets function (scrub secrets, short secrets, no secrets, empty message, undefined secret)
+- `src/transcription/transcription-processor.test.ts`: Added 6 tests for transcription processor (getProvider, createTranscriptionWorker, exports, processTranscriptionJob duration validation)
+
+**Modules with Improved Coverage:**
+- `src/transcription/export.ts`: 88.26% -> 100%
+- `src/media/queue.ts`: 5.94% -> ~99%
+- `src/shared/file-types.ts`: 97.18% -> ~100%
+- `src/realtime/ws-manager.ts`: 79.93% -> 82.67%
+- `src/redis/index.ts`: 79.24% -> ~100%
+- `src/api/rate-limit.ts`: 93.45% -> 100%
+- `src/config/env.ts`: 87.71% -> 92.98%
+- `src/transcription/processor.ts`: 1.14% -> ~5%
+- Overall: 31.77% -> 33.23%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- API index.ts: 0% coverage - server startup side effects
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription providers: 0% coverage - requires external services
+- Media index.ts: 77.46% - reprocessAsset and enqueueFrameCapture need more mocking
+
+### Iteration 13 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 28.73% -> 31.77% (+3.04pp)
 **Tests**: 713 -> 984 (+271 tests)

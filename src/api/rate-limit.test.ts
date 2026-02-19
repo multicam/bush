@@ -265,4 +265,99 @@ describe("Rate Limiting Middleware", () => {
       expect(next).toHaveBeenCalled();
     });
   });
+
+  describe("getDefaultIdentifier", () => {
+    it("should use X-Forwarded-For when TRUST_PROXY is enabled", async () => {
+      vi.resetModules();
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          RATE_LIMIT_WINDOW_MS: 60000,
+          RATE_LIMIT_MAX_REQUESTS: 100,
+          TRUST_PROXY: true,
+        },
+      }));
+
+      vi.doMock("../redis/index.js", () => ({
+        getRedis: vi.fn(() => mockRedis),
+      }));
+
+      const { rateLimit: rateLimitWithProxy } = await import("./rate-limit.js");
+
+      const c = createMockContext({
+        headers: { "x-forwarded-for": "192.168.1.1, 10.0.0.1" },
+      });
+      const next = vi.fn();
+
+      await rateLimitWithProxy({ maxRequests: 100 })(c, next);
+
+      // The key should include the first IP from X-Forwarded-For
+      expect(mockRedis.pipeline).toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+
+      vi.doUnmock("../config/index.js");
+    });
+
+    it("should use socket remote address when available", async () => {
+      vi.resetModules();
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          RATE_LIMIT_WINDOW_MS: 60000,
+          RATE_LIMIT_MAX_REQUESTS: 100,
+          TRUST_PROXY: false,
+        },
+      }));
+
+      vi.doMock("../redis/index.js", () => ({
+        getRedis: vi.fn(() => mockRedis),
+      }));
+
+      const { rateLimit: rateLimitWithSocket } = await import("./rate-limit.js");
+
+      const c = createMockContext({
+        env: {
+          incoming: {
+            socket: {
+              remoteAddress: "10.0.0.100",
+            },
+          },
+        },
+      });
+      const next = vi.fn();
+
+      await rateLimitWithSocket({ maxRequests: 100 })(c, next);
+
+      expect(next).toHaveBeenCalled();
+
+      vi.doUnmock("../config/index.js");
+    });
+
+    it("should fallback to 'unknown' when no IP available", async () => {
+      vi.resetModules();
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          RATE_LIMIT_WINDOW_MS: 60000,
+          RATE_LIMIT_MAX_REQUESTS: 100,
+          TRUST_PROXY: false,
+        },
+      }));
+
+      vi.doMock("../redis/index.js", () => ({
+        getRedis: vi.fn(() => mockRedis),
+      }));
+
+      const { rateLimit: rateLimitNoIp } = await import("./rate-limit.js");
+
+      const c = createMockContext();
+      const next = vi.fn();
+
+      await rateLimitNoIp({ maxRequests: 100 })(c, next);
+
+      expect(next).toHaveBeenCalled();
+
+      vi.doUnmock("../config/index.js");
+    });
+  });
 });

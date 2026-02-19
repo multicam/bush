@@ -7,6 +7,11 @@ import {
   isSupportedExtension,
   detectMimeType,
   formatFileSize,
+  getSupportedMimeTypes,
+  getSupportedExtensions,
+  getFileTypesByCategory,
+  getFileTypeByExtension,
+  getFileTypeByMime,
 } from "./file-types.js";
 
 describe("File Type Registry", () => {
@@ -160,6 +165,138 @@ describe("File Type Registry", () => {
       const result = formatFileSize(tb);
       // Implementation supports TB
       expect(result).toBe("1.0 TB");
+    });
+  });
+
+  describe("getSupportedMimeTypes", () => {
+    it("should return an array of supported MIME types", () => {
+      const mimeTypes = getSupportedMimeTypes();
+
+      expect(Array.isArray(mimeTypes)).toBe(true);
+      expect(mimeTypes.length).toBeGreaterThan(0);
+      expect(mimeTypes).toContain("video/mp4");
+      expect(mimeTypes).toContain("image/jpeg");
+      expect(mimeTypes).toContain("application/pdf");
+    });
+
+    it("should return unique MIME types", () => {
+      const mimeTypes = getSupportedMimeTypes();
+      const uniqueTypes = new Set(mimeTypes);
+
+      expect(mimeTypes.length).toBe(uniqueTypes.size);
+    });
+  });
+
+  describe("getSupportedExtensions", () => {
+    it("should return an array of supported extensions", () => {
+      const extensions = getSupportedExtensions();
+
+      expect(Array.isArray(extensions)).toBe(true);
+      expect(extensions.length).toBeGreaterThan(0);
+      expect(extensions).toContain(".mp4");
+      expect(extensions).toContain(".jpg");
+      expect(extensions).toContain(".pdf");
+    });
+
+    it("should return unique extensions", () => {
+      const extensions = getSupportedExtensions();
+      const uniqueExtensions = new Set(extensions);
+
+      expect(extensions.length).toBe(uniqueExtensions.size);
+    });
+  });
+
+  describe("getFileTypesByCategory", () => {
+    it("should return file types for video category", () => {
+      const videoTypes = getFileTypesByCategory("video");
+
+      expect(Array.isArray(videoTypes)).toBe(true);
+      expect(videoTypes.length).toBeGreaterThan(0);
+      expect(videoTypes.every((def) => def.category === "video")).toBe(true);
+    });
+
+    it("should return file types for audio category", () => {
+      const audioTypes = getFileTypesByCategory("audio");
+
+      expect(Array.isArray(audioTypes)).toBe(true);
+      expect(audioTypes.length).toBeGreaterThan(0);
+      expect(audioTypes.every((def) => def.category === "audio")).toBe(true);
+    });
+
+    it("should return file types for image category", () => {
+      const imageTypes = getFileTypesByCategory("image");
+
+      expect(Array.isArray(imageTypes)).toBe(true);
+      expect(imageTypes.length).toBeGreaterThan(0);
+      expect(imageTypes.every((def) => def.category === "image")).toBe(true);
+    });
+
+    it("should return file types for document category", () => {
+      const documentTypes = getFileTypesByCategory("document");
+
+      expect(Array.isArray(documentTypes)).toBe(true);
+      expect(documentTypes.length).toBeGreaterThan(0);
+      expect(documentTypes.every((def) => def.category === "document")).toBe(true);
+    });
+
+    it("should return empty array for unknown category", () => {
+      const unknownTypes = getFileTypesByCategory("unknown" as any);
+
+      expect(Array.isArray(unknownTypes)).toBe(true);
+      expect(unknownTypes.length).toBe(0);
+    });
+  });
+
+  describe("getFileTypeByExtension", () => {
+    it("should return file type definition for valid extension", () => {
+      const mp4Type = getFileTypeByExtension(".mp4");
+
+      expect(mp4Type).toBeDefined();
+      expect(mp4Type?.mime).toBe("video/mp4");
+      expect(mp4Type?.category).toBe("video");
+    });
+
+    it("should return undefined for unknown extension", () => {
+      const unknownType = getFileTypeByExtension(".xyz");
+
+      expect(unknownType).toBeUndefined();
+    });
+
+    it("should handle extension without dot", () => {
+      const mp4Type = getFileTypeByExtension("mp4");
+
+      expect(mp4Type).toBeDefined();
+      expect(mp4Type?.mime).toBe("video/mp4");
+    });
+
+    it("should handle uppercase extensions", () => {
+      const mp4Type = getFileTypeByExtension(".MP4");
+
+      expect(mp4Type).toBeDefined();
+      expect(mp4Type?.mime).toBe("video/mp4");
+    });
+  });
+
+  describe("getFileTypeByMime", () => {
+    it("should return file type definition for valid MIME type", () => {
+      const mp4Type = getFileTypeByMime("video/mp4");
+
+      expect(mp4Type).toBeDefined();
+      expect(mp4Type?.extensions).toContain(".mp4");
+      expect(mp4Type?.category).toBe("video");
+    });
+
+    it("should return undefined for unknown MIME type", () => {
+      const unknownType = getFileTypeByMime("application/unknown");
+
+      expect(unknownType).toBeUndefined();
+    });
+
+    it("should handle case-insensitive MIME types", () => {
+      const mp4Type = getFileTypeByMime("VIDEO/MP4");
+
+      expect(mp4Type).toBeDefined();
+      expect(mp4Type?.extensions).toContain(".mp4");
     });
   });
 });
