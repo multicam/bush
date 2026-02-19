@@ -1,10 +1,10 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 14 (COMPLETE)
-**Iteration**: 15 (IN PROGRESS)
-**Coverage**: 35.99% statements (target: 80%)
-**Tests**: 1161 passing, 0 failing (vitest)
+**Iteration**: 15 (COMPLETE)
+**Iteration**: 16 (IN PROGRESS)
+**Coverage**: 41.37% statements (target: 80%)
+**Tests**: 1223 passing, 0 failing (vitest)
 **Git tag**: v0.0.60
 
 ## Issue Tracker
@@ -176,7 +176,35 @@
 
 ## Iteration Log
 
-### Iteration 15 -- 2026-02-19 (IN PROGRESS)
+### Iteration 16 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 35.99% -> 41.37% (+5.38pp)
+**Tests**: 1161 -> 1223 (+62 tests)
+
+**New Tests Added:**
+- `src/media/processors/thumbnail.test.ts`: Added 10 tests for thumbnail processor (processThumbnail for video/image, metadata duration, unsupported mime types, file not created, animated images, cleanup, webp format, multiple sizes)
+- `src/media/processors/proxy.test.ts`: Added 14 tests for proxy processor (processProxy for video, skip non-video, metadata dimensions, HDR handling, resolution filtering, individual failures, database updates, cleanup, partial success)
+- `src/media/processors/filmstrip.test.ts`: Added 11 tests for filmstrip processor (generate filmstrip, skip non-video, metadata duration, no duration, zero duration, generation failure, cleanup, frame calculation, manifest upload)
+- `src/media/processors/waveform.test.ts`: Added 8 tests for waveform processor (extract waveform, process video, skip non-audio/video, metadata duration, no duration, cleanup, JSON structure, peak normalization)
+- `src/media/processors/metadata.test.ts`: Added 8 tests for metadata processor (extract metadata, audio files, HDR content, Dolby Vision, database updates, cleanup, logging, MOV/image files)
+- `src/media/processors/frame-capture.test.ts`: Added 11 tests for frame capture processor (capture frame, timestamp handling, single frame, quality settings, failure handling, database update, cleanup, dimensions)
+
+**Modules with Improved Coverage:**
+- `src/media/processors/thumbnail.ts`: 0% -> ~50% (tested main processor logic)
+- `src/media/processors/proxy.ts`: 0% -> ~45% (tested main processor logic)
+- `src/media/processors/filmstrip.ts`: 0% -> ~55% (tested main processor logic)
+- `src/media/processors/waveform.ts`: 0% -> ~45% (tested main processor logic)
+- `src/media/processors/metadata.ts`: 0% -> ~50% (tested main processor logic)
+- `src/media/processors/frame-capture.ts`: 0% -> ~55% (tested main processor logic)
+- Overall: 35.99% -> 41.37%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- API index.ts: 0% coverage - server startup side effects
+- Media worker.ts: 0% coverage - requires BullMQ mocking
+- Scheduled worker.ts/run-purge.ts: 0% - scripts with process.exit calls
+
+### Iteration 15 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 33.23% -> 35.99% (+2.76pp)
 **Tests**: 1053 -> 1161 (+108 tests)
