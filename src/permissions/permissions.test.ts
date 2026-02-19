@@ -219,4 +219,65 @@ describe("Guest Constraints", () => {
   it("should not allow guests to delete", () => {
     expect(GUEST_CONSTRAINTS.CAN_DELETE).toBe(false);
   });
+
+  it("should have all required constraint fields", () => {
+    expect(GUEST_CONSTRAINTS).toHaveProperty("MAX_PROJECTS");
+    expect(GUEST_CONSTRAINTS).toHaveProperty("CAN_INVITE");
+    expect(GUEST_CONSTRAINTS).toHaveProperty("CAN_DELETE");
+  });
+});
+
+describe("Permission Edge Cases", () => {
+  describe("maxPermission edge cases", () => {
+    it("should handle full_access with any permission", () => {
+      expect(maxPermission("full_access", "view_only")).toBe("full_access");
+      expect(maxPermission("full_access", "comment_only")).toBe("full_access");
+      expect(maxPermission("full_access", "edit")).toBe("full_access");
+      expect(maxPermission("full_access", "edit_and_share")).toBe("full_access");
+    });
+
+    it("should work in both directions", () => {
+      expect(maxPermission("view_only", "full_access")).toBe("full_access");
+      expect(maxPermission("edit", "full_access")).toBe("full_access");
+    });
+  });
+
+  describe("minPermission edge cases", () => {
+    it("should handle view_only with any permission", () => {
+      expect(minPermission("view_only", "full_access")).toBe("view_only");
+      expect(minPermission("view_only", "edit")).toBe("view_only");
+    });
+
+    it("should work in both directions", () => {
+      expect(minPermission("full_access", "view_only")).toBe("view_only");
+      expect(minPermission("edit", "view_only")).toBe("view_only");
+    });
+  });
+
+  describe("canPerformAction edge cases", () => {
+    it("should allow edit to view and comment", () => {
+      expect(canPerformAction("edit", "view")).toBe(true);
+      expect(canPerformAction("edit", "comment")).toBe(true);
+    });
+
+    it("should allow edit_and_share to edit", () => {
+      expect(canPerformAction("edit_and_share", "edit")).toBe(true);
+    });
+
+    it("should not allow view_only to edit", () => {
+      expect(canPerformAction("view_only", "edit")).toBe(false);
+    });
+
+    it("should allow full_access to create_project", () => {
+      expect(canPerformAction("full_access", "create_project")).toBe(true);
+    });
+
+    it("should allow edit_and_share to create_project", () => {
+      expect(canPerformAction("edit_and_share", "create_project")).toBe(true);
+    });
+
+    it("should not allow edit to create_restricted_project", () => {
+      expect(canPerformAction("edit", "create_restricted_project")).toBe(false);
+    });
+  });
 });

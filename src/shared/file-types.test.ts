@@ -36,6 +36,11 @@ describe("File Type Registry", () => {
     it("should return other for unknown MIME types", () => {
       expect(getFileCategory("application/unknown")).toBe("other");
     });
+
+    it("should handle case-insensitive MIME types", () => {
+      expect(getFileCategory("VIDEO/MP4")).toBe("video");
+      expect(getFileCategory("Audio/MPEG")).toBe("audio");
+    });
   });
 
   describe("getViewerType", () => {
@@ -51,6 +56,15 @@ describe("File Type Registry", () => {
     it("should return unsupported for unknown types", () => {
       expect(getViewerType("application/unknown")).toBe("unsupported");
     });
+
+    it("should return image for image files", () => {
+      expect(getViewerType("image/jpeg")).toBe("image");
+      expect(getViewerType("image/png")).toBe("image");
+    });
+
+    it("should return pdf for PDF files", () => {
+      expect(getViewerType("application/pdf")).toBe("pdf");
+    });
   });
 
   describe("getProcessingPipeline", () => {
@@ -60,6 +74,14 @@ describe("File Type Registry", () => {
 
     it("should return none for unknown types", () => {
       expect(getProcessingPipeline("application/unknown")).toBe("none");
+    });
+
+    it("should return image for image files", () => {
+      expect(getProcessingPipeline("image/jpeg")).toBe("image");
+    });
+
+    it("should return audio for audio files", () => {
+      expect(getProcessingPipeline("audio/mpeg")).toBe("audio");
     });
   });
 
@@ -72,6 +94,10 @@ describe("File Type Registry", () => {
 
     it("should return false for unsupported MIME types", () => {
       expect(isSupportedMimeType("application/unknown")).toBe(false);
+    });
+
+    it("should handle case-insensitive MIME types", () => {
+      expect(isSupportedMimeType("VIDEO/MP4")).toBe(true);
     });
   });
 
@@ -86,6 +112,11 @@ describe("File Type Registry", () => {
     it("should return false for unsupported extensions", () => {
       expect(isSupportedExtension(".xyz")).toBe(false);
     });
+
+    it("should handle uppercase extensions", () => {
+      expect(isSupportedExtension(".MP4")).toBe(true);
+      expect(isSupportedExtension("JPG")).toBe(true);
+    });
   });
 
   describe("detectMimeType", () => {
@@ -98,6 +129,16 @@ describe("File Type Registry", () => {
     it("should return undefined for unknown extensions", () => {
       expect(detectMimeType("file.xyz")).toBeUndefined();
     });
+
+    it("should handle uppercase extensions", () => {
+      expect(detectMimeType("video.MP4")).toBe("video/mp4");
+      expect(detectMimeType("image.JPG")).toBe("image/jpeg");
+    });
+
+    it("should handle paths with directories", () => {
+      expect(detectMimeType("/path/to/video.mp4")).toBe("video/mp4");
+      expect(detectMimeType("C:\\Users\\test\\file.mov")).toBe("video/quicktime");
+    });
   });
 
   describe("formatFileSize", () => {
@@ -107,6 +148,18 @@ describe("File Type Registry", () => {
       expect(formatFileSize(1024)).toBe("1.0 KB");
       expect(formatFileSize(1024 * 1024)).toBe("1.0 MB");
       expect(formatFileSize(1024 * 1024 * 1024)).toBe("1.0 GB");
+    });
+
+    it("should format fractional sizes correctly", () => {
+      expect(formatFileSize(1536)).toBe("1.5 KB");
+      expect(formatFileSize(2560000)).toBe("2.4 MB");
+    });
+
+    it("should handle very large files", () => {
+      const tb = 1024 * 1024 * 1024 * 1024;
+      const result = formatFileSize(tb);
+      // Implementation supports TB
+      expect(result).toBe("1.0 TB");
     });
   });
 });

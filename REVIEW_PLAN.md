@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 8 (COMPLETE)
-**Coverage**: 16.26% statements (target: 80%)
-**Tests**: 303 passing, 0 failing (vitest)
+**Iteration**: 9 (IN PROGRESS)
+**Coverage**: 18.18% statements (target: 80%)
+**Tests**: 390 passing, 0 failing (vitest)
 **Git tag**: v0.0.55
 
 ## Issue Tracker
@@ -173,6 +173,39 @@
 | `src/api/access-control.ts` | 25.84% | 100% | 20% | HIGH |
 
 ## Iteration Log
+
+### Iteration 9 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 16.26% -> 18.18% (+1.92pp)
+**Tests**: 303 -> 390 (+87 tests)
+
+**New Tests Added:**
+- `src/api/auth-middleware.test.ts`: 11 tests for auth middleware helpers (requireAuth, getCurrentUserId, getCurrentAccountId, getCurrentUserRole)
+- `src/redis/index.test.ts`: 6 tests for Redis client singleton and health check
+- `src/api/access-control.test.ts`: 10 new tests for verifyProjectAccess, verifyFolderAccess, verifyWorkspaceAccess, verifyAccountAccess
+- `src/api/rate-limit.test.ts`: 17 new tests for rate limiting middleware, presets, and error handling
+- `src/api/router.test.ts`: 16 new tests for createRouter, errorHandler, notFoundHandler
+- `src/auth/session-cache.test.ts`: 5 new tests for parseSessionCookie edge cases
+- `src/permissions/permissions.test.ts`: 11 new tests for permission edge cases
+- `src/shared/file-types.test.ts`: 11 new tests for file type utilities
+
+**Test Infrastructure Improvements:**
+- Added bun:sqlite mock to vitest.setup.ts for testing modules that depend on SQLite
+- Updated vitest.config.ts with deps.external for bun:sqlite compatibility
+
+**Modules with Improved Coverage:**
+- `src/api/access-control.ts`: 25.84% -> 100%
+- `src/api/rate-limit.ts`: 39.25% -> 93.45%
+- `src/api/router.ts`: 38.29% -> ~70%
+- `src/redis/index.ts`: 9.3% -> 77.35%
+- `src/api/auth-middleware.ts`: 0% -> 17.64%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription: 0% coverage - requires external services
+- Realtime (ws-manager.ts): 0% coverage - requires WebSocket infrastructure
+- Storage (s3-provider.ts): 0% coverage - requires S3-compatible service
 
 ### Iteration 8 -- 2026-02-18 (COMPLETE)
 **Triaged**: 59 issues (10 critical, 16 high, 24 medium, 9 low)

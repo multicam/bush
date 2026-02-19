@@ -7,6 +7,11 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", "dist", ".next"],
+    deps: {
+      // Mock bun:sqlite since we're running under vitest/node
+      external: ["bun:sqlite"],
+      interopDefault: true,
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

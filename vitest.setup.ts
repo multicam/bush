@@ -6,6 +6,23 @@
  */
 import { vi } from "vitest";
 
+// Mock bun:sqlite for vitest/node environment
+vi.mock("bun:sqlite", () => {
+  const mockDb = {
+    prepare: vi.fn(() => ({
+      get: vi.fn(),
+      all: vi.fn(() => []),
+      run: vi.fn(() => ({ changes: 0 })),
+    })),
+    exec: vi.fn(),
+    close: vi.fn(),
+  };
+  return {
+    default: mockDb,
+    Database: vi.fn(() => mockDb),
+  };
+});
+
 // Set test environment variables
 vi.stubEnv("NODE_ENV", "test");
 vi.stubEnv("APP_URL", "https://test.local");

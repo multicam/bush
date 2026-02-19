@@ -326,4 +326,37 @@ describe("parseSessionCookie", () => {
 
     expect(result).toBeNull();
   });
+
+  it("should return null for empty cookie header", () => {
+    const result = parseSessionCookie("");
+    expect(result).toBeNull();
+  });
+
+  it("should return null when cookie value has no colon separator", () => {
+    const cookieHeader = `${SESSION_COOKIE_NAME}=invalidnocolon`;
+    const result = parseSessionCookie(cookieHeader);
+    expect(result).toBeNull();
+  });
+
+  it("should handle cookie with special characters in values", () => {
+    const cookieHeader = `${SESSION_COOKIE_NAME}=usr_abc-123:session_xyz-789`;
+    const result = parseSessionCookie(cookieHeader);
+    expect(result).toEqual({
+      userId: "usr_abc-123",
+      sessionId: "session_xyz-789",
+    });
+  });
+
+  it("should handle cookie with only colon", () => {
+    const cookieHeader = `${SESSION_COOKIE_NAME}=:`;
+    const result = parseSessionCookie(cookieHeader);
+    // Empty userId or sessionId - implementation returns empty strings
+    expect(result).toEqual({ userId: "", sessionId: "" });
+  });
+});
+
+describe("SESSION_COOKIE_NAME", () => {
+  it("should be 'bush_session'", () => {
+    expect(SESSION_COOKIE_NAME).toBe("bush_session");
+  });
 });
