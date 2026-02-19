@@ -1,11 +1,11 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 11 (COMPLETE)
-**Iteration**: 12 (IN PROGRESS)
-**Coverage**: 28.73% statements (target: 80%)
-**Tests**: 713 passing, 0 failing (vitest)
-**Git tag**: v0.0.57
+**Iteration**: 12 (COMPLETE)
+**Iteration**: 13 (IN PROGRESS)
+**Coverage**: 31.77% statements (target: 80%)
+**Tests**: 984 passing, 0 failing (vitest)
+**Git tag**: v0.0.58
 
 ## Issue Tracker
 
@@ -176,7 +176,44 @@
 
 ## Iteration Log
 
-### Iteration 12 -- 2026-02-19 (IN PROGRESS)
+### Iteration 13 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 28.73% -> 31.77% (+3.04pp)
+**Tests**: 713 -> 984 (+271 tests)
+
+**New Tests Added:**
+- `src/media/media-types.test.ts`: Added 70 tests for media processing types and constants (QUEUE_NAMES, JOB_PRIORITY, JOB_TIMEOUTS, RETRY_CONFIG, THUMBNAIL_DIMENSIONS, PROXY_CONFIGS, FILMSTRIP_CONFIG, WAVEFORM_CONFIG, type definitions)
+- `src/transcription/transcription-types.test.ts`: Added 43 tests for transcription types and constants (QUEUE_NAME, JOB_TIMEOUT, RETRY_CONFIG, MAX_DURATION_SECONDS, type definitions)
+- `src/scheduled/scheduled-queue.test.ts`: Added 11 tests for scheduled queue functions (getMaintenanceQueue, getMaintenanceQueueEvents, schedulePurgeExpiredFiles, closeScheduledQueues, getRedisOptions)
+- `src/realtime/realtime-index.test.ts`: Added 35 tests for realtime module index exports (eventBus, generateEventId, emit functions, wsManager, WsCloseCode)
+- `src/auth/auth-index.test.ts`: Added 32 tests for auth module index exports (sessionCache, generateSessionId, authService, type exports)
+- `src/permissions/permissions-index.test.ts`: Added 26 tests for permissions module index exports (permissionService, type exports)
+- `src/transcription/transcription-export.test.ts`: Added 22 tests for caption export functions (groupWordsIntoSegments, exportToSrt, exportToVtt, exportToTxt, exportTranscription, parseSrt, parseVtt)
+- `src/media/media-index.test.ts`: Added 11 tests for media processing service (enqueueProcessingJobs, module exports)
+- `src/storage/storage-types.test.ts`: Added 23 tests for storage types (buildStorageKey, parseStorageKey, type definitions)
+- `src/scheduled/scheduled-index.test.ts`: Added 8 tests for scheduled module index exports
+- `src/transcription/transcription-index.test.ts`: Added 18 tests for transcription module index exports
+
+**Modules with Improved Coverage:**
+- `src/media/types.ts`: 0% -> 100%
+- `src/transcription/types.ts`: 0% -> 100%
+- `src/scheduled/queue.ts`: 0% -> 100%
+- `src/storage/types.ts`: 94.44% -> 100%
+- `src/auth/index.ts`: 0% -> 100%
+- `src/permissions/index.ts`: 0% -> 100%
+- `src/realtime/index.ts`: 0% -> 100%
+- `src/transcription/export.ts`: 0% -> 100%
+- `src/scheduled/index.ts`: 0% -> 100%
+- `src/transcription/index.ts`: 0% -> 100%
+- Overall: 28.73% -> 31.77%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- API index.ts: 0% coverage - server startup side effects
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription providers: 0% coverage - requires external services
+
+### Iteration 12 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 24.37% -> 28.73% (+4.36pp)
 **Tests**: 626 -> 713 (+87 tests)

@@ -1,0 +1,191 @@
+/**
+ * Tests for media processing service
+ */
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// Mock the queue module
+vi.mock("./queue.js", () => ({
+  getQueue: vi.fn().mockReturnValue({
+    add: vi.fn().mockResolvedValue({ id: "job-123" }),
+  }),
+  addJob: vi.fn().mockResolvedValue(undefined),
+  closeQueues: vi.fn().mockResolvedValue(undefined),
+  QUEUE_NAMES: {
+    METADATA: "media:metadata",
+    THUMBNAIL: "media:thumbnail",
+    FILMSTRIP: "media:filmstrip",
+    PROXY: "media:proxy",
+    WAVEFORM: "media:waveform",
+  },
+}));
+
+// Mock the database
+vi.mock("../db/index.js", () => ({
+  db: {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+  },
+}));
+
+// Mock schema
+vi.mock("../db/schema.js", () => ({
+  files: { id: "files.id" },
+}));
+
+import {
+  QUEUE_NAMES,
+  JOB_PRIORITY,
+  THUMBNAIL_DIMENSIONS,
+  PROXY_CONFIGS,
+} from "./types.js";
+import { enqueueProcessingJobs } from "./index.js";
+import { addJob } from "./queue.js";
+
+describe("media processing service", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  describe("module exports", () => {
+    it("exports QUEUE_NAMES from types", () => {
+      expect(QUEUE_NAMES).toBeDefined();
+      expect(QUEUE_NAMES.METADATA).toBe("media:metadata");
+    });
+
+    it("exports JOB_PRIORITY from types", () => {
+      expect(JOB_PRIORITY).toBeDefined();
+      expect(JOB_PRIORITY.STANDARD).toBe(5);
+    });
+
+    it("exports THUMBNAIL_DIMENSIONS from types", () => {
+      expect(THUMBNAIL_DIMENSIONS).toBeDefined();
+      expect(THUMBNAIL_DIMENSIONS.small).toEqual({ width: 320, height: 180 });
+    });
+
+    it("exports PROXY_CONFIGS from types", () => {
+      expect(PROXY_CONFIGS).toBeDefined();
+      expect(PROXY_CONFIGS["720p"]).toBeDefined();
+    });
+  });
+
+  describe("enqueueProcessingJobs", () => {
+    it("enqueues metadata job for video files", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/video.mp4",
+        "video/mp4",
+        "video.mp4"
+      );
+
+      // Should call addJob at least for metadata
+      expect(addJob).toHaveBeenCalled();
+
+      // First call should be metadata job
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.type).toBe("metadata");
+    });
+
+    it("enqueues metadata job for audio files", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/audio.mp3",
+        "audio/mp3",
+        "audio.mp3"
+      );
+
+      expect(addJob).toHaveBeenCalled();
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.type).toBe("metadata");
+    });
+
+    it("enqueues metadata job for image files", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/image.jpg",
+        "image/jpeg",
+        "image.jpg"
+      );
+
+      expect(addJob).toHaveBeenCalled();
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.type).toBe("metadata");
+    });
+
+    it("uses bulk upload priority when isBulkUpload is true", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/video.mp4",
+        "video/mp4",
+        "video.mp4",
+        { isBulkUpload: true }
+      );
+
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.priority).toBe(JOB_PRIORITY.BULK_UPLOAD);
+    });
+
+    it("uses custom priority when provided", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/video.mp4",
+        "video/mp4",
+        "video.mp4",
+        { priority: 1 }
+      );
+
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.priority).toBe(1);
+    });
+
+    it("uses standard priority by default", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/video.mp4",
+        "video/mp4",
+        "video.mp4"
+      );
+
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.priority).toBe(JOB_PRIORITY.STANDARD);
+    });
+
+    it("includes correct asset data in jobs", async () => {
+      await enqueueProcessingJobs(
+        "asset-123",
+        "account-123",
+        "project-123",
+        "path/to/video.mp4",
+        "video/mp4",
+        "video.mp4"
+      );
+
+      const firstCall = vi.mocked(addJob).mock.calls[0][0];
+      expect(firstCall.assetId).toBe("asset-123");
+      expect(firstCall.accountId).toBe("account-123");
+      expect(firstCall.projectId).toBe("project-123");
+      expect(firstCall.storageKey).toBe("path/to/video.mp4");
+      expect(firstCall.mimeType).toBe("video/mp4");
+      expect(firstCall.sourceFilename).toBe("video.mp4");
+    });
+  });
+});
