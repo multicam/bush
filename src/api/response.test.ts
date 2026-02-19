@@ -1,7 +1,7 @@
 /**
  * Bush Platform - Response Utilities Tests
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   encodeCursor,
   decodeCursor,
@@ -9,6 +9,10 @@ import {
   collectionResponse,
   formatDates,
   RESOURCE_TYPES,
+  sendSingle,
+  sendCollection,
+  sendNoContent,
+  sendAccepted,
 } from "./response.js";
 
 describe("encodeCursor / decodeCursor", () => {
@@ -136,5 +140,108 @@ describe("RESOURCE_TYPES", () => {
     expect(RESOURCE_TYPES.WORKSPACE).toBe("workspace");
     expect(RESOURCE_TYPES.ACCOUNT).toBe("account");
     expect(RESOURCE_TYPES.USER).toBe("user");
+    expect(RESOURCE_TYPES.VERSION_STACK).toBe("version_stack");
+    expect(RESOURCE_TYPES.COMMENT).toBe("comment");
+    expect(RESOURCE_TYPES.SHARE).toBe("share");
+    expect(RESOURCE_TYPES.NOTIFICATION).toBe("notification");
+    expect(RESOURCE_TYPES.CUSTOM_FIELD).toBe("custom_field");
+    expect(RESOURCE_TYPES.COLLECTION).toBe("collection");
+    expect(RESOURCE_TYPES.WEBHOOK).toBe("webhook");
+    expect(RESOURCE_TYPES.TRANSCRIPT).toBe("transcript");
+    expect(RESOURCE_TYPES.CAPTION).toBe("caption");
+  });
+});
+
+describe("sendSingle", () => {
+  it("should send JSON response for single resource", () => {
+    const mockJson = vi.fn();
+    const c = { json: mockJson } as any;
+
+    sendSingle(c, { id: "1", name: "Test" }, "file");
+
+    expect(mockJson).toHaveBeenCalledWith({
+      data: {
+        id: "1",
+        type: "file",
+        attributes: { name: "Test" },
+      },
+    });
+  });
+
+  it("should pass options to singleResponse", () => {
+    const mockJson = vi.fn();
+    const c = { json: mockJson } as any;
+
+    sendSingle(c, { id: "1", name: "Test" }, "file", {
+      selfLink: "/v4/files/1",
+    });
+
+    expect(mockJson).toHaveBeenCalledWith({
+      data: {
+        id: "1",
+        type: "file",
+        attributes: { name: "Test" },
+        links: { self: "/v4/files/1" },
+      },
+    });
+  });
+});
+
+describe("sendCollection", () => {
+  it("should send JSON response for collection", () => {
+    const mockJson = vi.fn();
+    const c = { json: mockJson } as any;
+
+    sendCollection(
+      c,
+      [
+        { id: "1", name: "A" },
+        { id: "2", name: "B" },
+      ],
+      "file",
+      { basePath: "/v4/files" }
+    );
+
+    expect(mockJson).toHaveBeenCalled();
+    const call = mockJson.mock.calls[0][0];
+    expect(call.data).toHaveLength(2);
+    expect(call.data[0].type).toBe("file");
+  });
+});
+
+describe("sendNoContent", () => {
+  it("should send 204 response with null body", () => {
+    const mockBody = vi.fn();
+    const c = { body: mockBody } as any;
+
+    sendNoContent(c);
+
+    expect(mockBody).toHaveBeenCalledWith(null, 204);
+  });
+});
+
+describe("sendAccepted", () => {
+  it("should send 202 response with default message", () => {
+    const mockJson = vi.fn();
+    const c = { json: mockJson } as any;
+
+    sendAccepted(c);
+
+    expect(mockJson).toHaveBeenCalledWith(
+      { message: "Request accepted for processing" },
+      202
+    );
+  });
+
+  it("should send 202 response with custom message", () => {
+    const mockJson = vi.fn();
+    const c = { json: mockJson } as any;
+
+    sendAccepted(c, "File deletion in progress");
+
+    expect(mockJson).toHaveBeenCalledWith(
+      { message: "File deletion in progress" },
+      202
+    );
   });
 });

@@ -44,6 +44,13 @@ import {
   requireAccountAdmin,
   requireAccountOwner,
   checkGuestConstraints,
+  getRequestContext,
+  requirePermission,
+  requirePermissionLevel,
+  requireNotGuest,
+  permissions,
+  SESSION_KEY,
+  REQUEST_CONTEXT_KEY,
 } from "./middleware.js";
 import { permissionService } from "./service.js";
 import type { SessionData } from "../auth/types.js";
@@ -258,6 +265,363 @@ describe("Permission Middleware", () => {
       vi.mocked(permissionService.hasGuestReachedProjectLimit).mockResolvedValue(false);
 
       await expect(checkGuestConstraints(c, "create_project")).resolves.toBeUndefined();
+    });
+  });
+
+  describe("SESSION_KEY and REQUEST_CONTEXT_KEY", () => {
+    it("should export correct session key", () => {
+      expect(SESSION_KEY).toBe("session");
+    });
+
+    it("should export correct request context key", () => {
+      expect(REQUEST_CONTEXT_KEY).toBe("requestContext");
+    });
+  });
+
+  describe("getRequestContext", () => {
+    it("should return request context from context", () => {
+      const requestContext = { requestId: "req_123", userId: "usr_123", accountId: "acc_123" };
+      const c = {
+        get: vi.fn().mockReturnValue(requestContext),
+      } as unknown as Context;
+
+      const result = getRequestContext(c);
+
+      expect(result).toEqual(requestContext);
+    });
+
+    it("should return default context when not set", () => {
+      const c = {
+        get: vi.fn().mockReturnValue(undefined),
+      } as unknown as Context;
+
+      const result = getRequestContext(c);
+
+      expect(result).toEqual({ requestId: "unknown" });
+    });
+  });
+
+  describe("requirePermission", () => {
+    it("should throw NotFoundError when resource ID is missing", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: {} });
+      const next = vi.fn();
+
+      const middleware = requirePermission({
+        resourceType: "project",
+        resourceIdSource: "projectId",
+        action: "edit",
+      });
+
+      await expect(middleware(c, next)).rejects.toThrow("Resource not found");
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("should throw NotFoundError when resource ID from function is undefined", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session });
+      const next = vi.fn();
+
+      const middleware = requirePermission({
+        resourceType: "folder",
+        resourceIdSource: () => undefined,
+        action: "delete",
+      });
+
+      await expect(middleware(c, next)).rejects.toThrow("Resource not found");
+    });
+
+    it("should call next when permission is granted", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { projectId: "proj_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      const middleware = requirePermission({
+        resourceType: "project",
+        resourceIdSource: "projectId",
+        action: "edit",
+      });
+
+      await middleware(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "project",
+        "proj_123",
+        "edit"
+      );
+      expect(next).toHaveBeenCalled();
+    });
+
+    it("should throw AuthorizationError when permission denied", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { folderId: "fld_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(false);
+
+      const middleware = requirePermission({
+        resourceType: "folder",
+        resourceIdSource: "folderId",
+        action: "delete",
+      });
+
+      await expect(middleware(c, next)).rejects.toThrow("do not have permission");
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("should use function to get resource ID", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { customId: "ws_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      const middleware = requirePermission({
+        resourceType: "workspace",
+        resourceIdSource: (ctx) => ctx.req.param("customId"),
+        action: "view",
+      });
+
+      await middleware(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "workspace",
+        "ws_123",
+        "view"
+      );
+    });
+  });
+
+  describe("requirePermissionLevel", () => {
+    it("should throw NotFoundError when resource ID is missing", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: {} });
+      const next = vi.fn();
+
+      const middleware = requirePermissionLevel("workspace", "workspaceId", "full_access");
+
+      await expect(middleware(c, next)).rejects.toThrow("Resource not found");
+    });
+
+    it("should throw AuthorizationError when no permission result", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { workspaceId: "ws_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue(null);
+
+      const middleware = requirePermissionLevel("workspace", "workspaceId", "full_access");
+
+      await expect(middleware(c, next)).rejects.toThrow("do not have access");
+    });
+
+    it("should call next when permission level is sufficient for workspace", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { workspaceId: "ws_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        permission: "full_access",
+        allowed: true,
+        source: "direct",
+      });
+
+      const middleware = requirePermissionLevel("workspace", "workspaceId", "edit");
+
+      await middleware(c, next);
+
+      expect(permissionService.getWorkspacePermission).toHaveBeenCalledWith(
+        session.userId,
+        "ws_123"
+      );
+      expect(next).toHaveBeenCalled();
+    });
+
+    it("should call next when permission level is sufficient for project", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { projectId: "proj_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.getProjectPermission).mockResolvedValue({
+        permission: "full_access",
+        allowed: true,
+        source: "direct",
+      });
+
+      const middleware = requirePermissionLevel("project", "projectId", "edit");
+
+      await middleware(c, next);
+
+      expect(permissionService.getProjectPermission).toHaveBeenCalledWith(
+        session.userId,
+        "proj_123"
+      );
+      expect(next).toHaveBeenCalled();
+    });
+
+    it("should call next when permission level is sufficient for folder", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { folderId: "fld_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.getFolderPermission).mockResolvedValue({
+        permission: "full_access",
+        allowed: true,
+        source: "direct",
+      });
+
+      const middleware = requirePermissionLevel("folder", "folderId", "view_only");
+
+      await middleware(c, next);
+
+      expect(permissionService.getFolderPermission).toHaveBeenCalledWith(
+        session.userId,
+        "fld_123"
+      );
+      expect(next).toHaveBeenCalled();
+    });
+
+    it("should throw AuthorizationError when permission level is insufficient", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { workspaceId: "ws_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        permission: "view_only",
+        allowed: true,
+        source: "direct",
+      });
+
+      const middleware = requirePermissionLevel("workspace", "workspaceId", "full_access");
+
+      await expect(middleware(c, next)).rejects.toThrow("need full_access permission");
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("requireNotGuest", () => {
+    it("should call next for non-guest user on delete", async () => {
+      const session = createMockSession({ accountRole: "member" });
+      const c = createMockContext({ session });
+      const next = vi.fn();
+
+      const middleware = requireNotGuest("delete");
+      await middleware(c, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    it("should throw for guest user on delete", async () => {
+      const session = createMockSession({ accountRole: "guest" });
+      const c = createMockContext({ session });
+      const next = vi.fn();
+
+      const middleware = requireNotGuest("delete");
+
+      await expect(middleware(c, next)).rejects.toThrow("Guests cannot delete content");
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("should throw for guest user on invite", async () => {
+      const session = createMockSession({ accountRole: "guest" });
+      const c = createMockContext({ session });
+      const next = vi.fn();
+
+      const middleware = requireNotGuest("invite");
+
+      await expect(middleware(c, next)).rejects.toThrow("Guests cannot invite other users");
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("permissions helpers", () => {
+    it("should create viewWorkspace middleware", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { workspaceId: "ws_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      await permissions.viewWorkspace()(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "workspace",
+        "ws_123",
+        "view"
+      );
+    });
+
+    it("should create editProject middleware with default param", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { projectId: "proj_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      await permissions.editProject()(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "project",
+        "proj_123",
+        "edit"
+      );
+    });
+
+    it("should create editProject middleware with custom param", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { customProjectId: "proj_456" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      await permissions.editProject("customProjectId")(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "project",
+        "proj_456",
+        "edit"
+      );
+    });
+
+    it("should create deleteProject middleware", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { projectId: "proj_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      await permissions.deleteProject()(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "project",
+        "proj_123",
+        "delete"
+      );
+    });
+
+    it("should create shareFolder middleware", async () => {
+      const session = createMockSession();
+      const c = createMockContext({ session, param: { folderId: "fld_123" } });
+      const next = vi.fn();
+
+      vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+
+      await permissions.shareFolder()(c, next);
+
+      expect(permissionService.canPerformAction).toHaveBeenCalledWith(
+        session.userId,
+        "folder",
+        "fld_123",
+        "share"
+      );
     });
   });
 });

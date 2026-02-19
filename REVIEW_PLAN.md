@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 9 (IN PROGRESS)
-**Coverage**: 18.18% statements (target: 80%)
-**Tests**: 390 passing, 0 failing (vitest)
+**Iteration**: 10 (IN PROGRESS)
+**Coverage**: 21.26% statements (target: 80%)
+**Tests**: 492 passing, 0 failing (vitest)
 **Git tag**: v0.0.55
 
 ## Issue Tracker
@@ -174,7 +174,37 @@
 
 ## Iteration Log
 
-### Iteration 9 -- 2026-02-19 (IN PROGRESS)
+### Iteration 10 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 18.18% -> 21.26% (+3.08pp)
+**Tests**: 390 -> 492 (+102 tests)
+
+**New Tests Added:**
+- `src/auth/service.test.ts`: Expanded from 7 to 28 tests covering findOrCreateUser, getUserAccounts, getUserRole, createSession, getSession, invalidateSession, invalidateAllSessions, switchAccount, checkPermission
+- `src/api/auth-middleware.test.ts`: Expanded from 11 to 36 tests covering authMiddleware, optionalAuthMiddleware, extractSession, WorkOS session extraction, bearer token edge cases
+- `src/permissions/middleware.test.ts`: Expanded from 15 to 49 tests covering requirePermission, requirePermissionLevel, requireNotGuest, permissions helpers, getRequestContext
+- `src/lib/email/email.test.ts`: Expanded from 24 to 36 tests covering ConsoleEmailProvider cc/bcc/replyTo/headers, template email attachments, non-Error error handling
+- `src/api/response.test.ts`: Added 6 tests for sendSingle, sendCollection, sendNoContent, sendAccepted
+- `src/auth/auth.test.ts`: Added 8 tests for isRoleAtLeast and hasCapability edge cases
+- `src/auth/session-cache.test.ts`: Added 4 tests for signed cookie format handling
+
+**Modules with Improved Coverage:**
+- `src/auth/service.ts`: 14.36% -> ~50% (major improvement in auth service coverage)
+- `src/api/auth-middleware.ts`: 17.64% -> 94.85%
+- `src/permissions/middleware.ts`: 38.85% -> 96.57%
+- `src/lib/email.ts`: 92.63% -> 100%
+- `src/lib/email/console.ts`: 76.85% -> 100%
+- `src/api/response.ts`: 86.46% -> 100%
+- `src/auth/types.ts`: Already high coverage, more edge cases added
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription: 0% coverage - requires external services
+- Realtime (ws-manager.ts): 0% coverage - requires WebSocket infrastructure
+- Storage (s3-provider.ts): 0% coverage - requires S3-compatible service
+
+### Iteration 9 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 16.26% -> 18.18% (+1.92pp)
 **Tests**: 303 -> 390 (+87 tests)

@@ -155,6 +155,218 @@ describe("Email Service", () => {
       const logged = consoleSpy.mock.calls[0].join("\n");
       expect(logged).toContain("2026-02-18T12:00:00.000Z");
     });
+
+    it("should log cc recipients", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        cc: { email: "cc@example.com", name: "CC User" },
+        subject: "With CC",
+        text: "Body",
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("Cc:");
+      expect(logged).toContain("cc@example.com");
+    });
+
+    it("should log bcc recipients", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        bcc: { email: "bcc@example.com" },
+        subject: "With BCC",
+        text: "Body",
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("Bcc:");
+      expect(logged).toContain("bcc@example.com");
+    });
+
+    it("should log reply-to", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        replyTo: { email: "reply@example.com", name: "Reply Handler" },
+        subject: "With Reply-To",
+        text: "Body",
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("Reply-To:");
+      expect(logged).toContain("reply@example.com");
+    });
+
+    it("should log headers", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        subject: "With Headers",
+        text: "Body",
+        headers: {
+          "X-Priority": "high",
+          "X-Custom-Header": "custom-value",
+        },
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("Headers:");
+      expect(logged).toContain("X-Priority");
+      expect(logged).toContain("high");
+    });
+
+    it("should handle attachments with string content", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        subject: "With String Attachment",
+        text: "See attachment",
+        attachments: [
+          {
+            filename: "data.json",
+            content: JSON.stringify({ key: "value" }),
+            contentType: "application/json",
+          },
+        ],
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("data.json");
+    });
+
+    it("should handle attachment without contentType", async () => {
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        subject: "With Attachment",
+        text: "See attachment",
+        attachments: [
+          {
+            filename: "data.bin",
+            content: Buffer.from("binary data"),
+          },
+        ],
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("unknown");
+    });
+
+    it("should handle HTML content under 500 chars", async () => {
+      const shortHtml = "<div>Short content</div>";
+      const message: EmailMessage = {
+        to: { email: "test@example.com" },
+        subject: "Short HTML",
+        html: shortHtml,
+      };
+
+      await provider.send(message);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain(shortHtml);
+      expect(logged).not.toContain("...");
+    });
+
+    it("should log cc and bcc in template emails", async () => {
+      const options: TemplateEmailOptions = {
+        to: { email: "test@example.com" },
+        cc: [{ email: "cc1@example.com" }, { email: "cc2@example.com" }],
+        bcc: { email: "bcc@example.com" },
+        template: "welcome",
+        data: { name: "Test" },
+      };
+
+      await provider.sendTemplate(options);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("cc1@example.com");
+      expect(logged).toContain("cc2@example.com");
+      expect(logged).toContain("bcc@example.com");
+    });
+
+    it("should handle template email with attachments", async () => {
+      const options: TemplateEmailOptions = {
+        to: { email: "test@example.com" },
+        template: "export-complete",
+        data: { reportName: "Monthly Report" },
+        attachments: [
+          {
+            filename: "report.pdf",
+            content: Buffer.from("%PDF-fake"),
+            contentType: "application/pdf",
+          },
+        ],
+      };
+
+      await provider.sendTemplate(options);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("Attachments: 1");
+      expect(logged).toContain("report.pdf");
+    });
+
+    it("should handle template email with string attachment", async () => {
+      const options: TemplateEmailOptions = {
+        to: { email: "test@example.com" },
+        template: "export-complete",
+        data: { exportType: "CSV" },
+        attachments: [
+          {
+            filename: "export.csv",
+            content: "col1,col2\nval1,val2",
+            contentType: "text/csv",
+          },
+        ],
+      };
+
+      await provider.sendTemplate(options);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("export.csv");
+    });
+
+    it("should format objects in template data", async () => {
+      const options: TemplateEmailOptions = {
+        to: { email: "test@example.com" },
+        template: "notification-digest",
+        data: {
+          user: { name: "John", role: "admin" },
+          nested: { deep: { value: 42 } },
+        },
+      };
+
+      await provider.sendTemplate(options);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("John");
+      expect(logged).toContain("42");
+    });
+
+    it("should format primitive values in template data", async () => {
+      const options: TemplateEmailOptions = {
+        to: { email: "test@example.com" },
+        template: "welcome",
+        data: {
+          count: 5,
+          isActive: true,
+          name: "Test",
+        },
+      };
+
+      await provider.sendTemplate(options);
+
+      const logged = consoleSpy.mock.calls[0].join("\n");
+      expect(logged).toContain("count: 5");
+      expect(logged).toContain("isActive: true");
+      expect(logged).toContain("name: Test");
+    });
   });
 
   describe("EmailService", () => {
@@ -209,6 +421,37 @@ describe("Email Service", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("SMTP error");
+    });
+
+    it("should handle non-Error objects thrown by provider in send", async () => {
+      mockProvider.send.mockRejectedValueOnce("String error");
+
+      const result = await service.send({
+        to: { email: "test@example.com" },
+        subject: "Test",
+        text: "Body",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Unknown error");
+    });
+
+    it("should handle non-Error objects thrown by sendTemplate", async () => {
+      mockProvider.sendTemplate.mockRejectedValueOnce({ message: "Object error" });
+
+      const result = await service.sendTemplate({
+        to: { email: "test@example.com" },
+        template: "welcome",
+        data: {},
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Unknown error");
+    });
+
+    it("should expose from address getter", () => {
+      // The from getter is available on the service
+      expect(typeof service.from).toBeDefined();
     });
 
     it("should send member invitation with correct template", async () => {

@@ -86,5 +86,47 @@ describe("Auth Types", () => {
       expect(isRoleAtLeast("member", "member")).toBe(true);
       expect(isRoleAtLeast("reviewer", "reviewer")).toBe(true);
     });
+
+    it("should handle content_admin role", () => {
+      expect(isRoleAtLeast("content_admin", "content_admin")).toBe(true);
+      expect(isRoleAtLeast("content_admin", "guest")).toBe(true);
+      expect(isRoleAtLeast("content_admin", "reviewer")).toBe(true);
+    });
+
+    it("should handle reviewer role", () => {
+      expect(isRoleAtLeast("reviewer", "reviewer")).toBe(true);
+      expect(isRoleAtLeast("reviewer", "guest")).toBe(false);
+    });
+  });
+
+  describe("hasCapability edge cases", () => {
+    it("should return true for guest with content:read", () => {
+      expect(hasCapability("guest", "content:read")).toBe(true);
+    });
+
+    it("should return false for guest with any write capability", () => {
+      expect(hasCapability("guest", "content:write")).toBe(false);
+      expect(hasCapability("guest", "shares:write")).toBe(false);
+      expect(hasCapability("guest", "users:write")).toBe(false);
+    });
+
+    it("should return true for content_admin with content capabilities", () => {
+      expect(hasCapability("content_admin", "content:read")).toBe(true);
+      expect(hasCapability("content_admin", "content:write")).toBe(true);
+      expect(hasCapability("content_admin", "content:delete")).toBe(true);
+    });
+
+    it("should return false for content_admin with billing capabilities", () => {
+      expect(hasCapability("content_admin", "billing:read")).toBe(false);
+      expect(hasCapability("content_admin", "billing:write")).toBe(false);
+    });
+
+    it("should return true for reviewer with read capabilities", () => {
+      expect(hasCapability("reviewer", "content:read")).toBe(true);
+    });
+
+    it("should return false for unknown capability", () => {
+      expect(hasCapability("owner", "unknown:capability")).toBe(false);
+    });
   });
 });
