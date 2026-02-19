@@ -94,4 +94,42 @@ describe("Config Env Module", () => {
       expect(scrubbed).toBe(message);
     });
   });
+
+  describe("SECRET_KEYS", () => {
+    it("contains expected secret keys", async () => {
+      const { SECRET_KEYS } = await import("./env.js");
+
+      expect(SECRET_KEYS).toContain("WORKOS_API_KEY");
+      expect(SECRET_KEYS).toContain("WORKOS_WEBHOOK_SECRET");
+      expect(SECRET_KEYS).toContain("WORKOS_COOKIE_PASSWORD");
+      expect(SECRET_KEYS).toContain("STORAGE_ACCESS_KEY");
+      expect(SECRET_KEYS).toContain("STORAGE_SECRET_KEY");
+      expect(SECRET_KEYS).toContain("CDN_SIGNING_KEY");
+      expect(SECRET_KEYS).toContain("SMTP_PASS");
+      expect(SECRET_KEYS).toContain("SESSION_SECRET");
+      expect(SECRET_KEYS).toContain("DEEPGRAM_API_KEY");
+      expect(SECRET_KEYS).toContain("ASSEMBLYAI_API_KEY");
+    });
+  });
+
+  describe("config exports", () => {
+    it("exports config object with expected properties", async () => {
+      const { config } = await import("./env.js");
+
+      expect(config.NODE_ENV).toBe("test");
+      expect(config.PORT).toBe(3001);
+      expect(config.HOST).toBe("0.0.0.0");
+      expect(config.LOG_LEVEL).toBe("info");
+      expect(typeof config.APP_URL).toBe("string");
+      expect(typeof config.API_URL).toBe("string");
+    });
+
+    it("exports environment mode helpers", async () => {
+      const { isDev, isTest, isProd } = await import("./env.js");
+
+      expect(isTest).toBe(true);
+      expect(isDev).toBe(false);
+      expect(isProd).toBe(false);
+    });
+  });
 });

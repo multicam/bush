@@ -180,4 +180,49 @@ describe("Transcription Processor", () => {
       ).rejects.toThrow("exceeds maximum allowed");
     });
   });
+
+  describe("enqueueTranscriptionJob", () => {
+    it("creates a queue and adds a job with correct parameters", async () => {
+      const mockAdd = vi.fn().mockResolvedValue({ id: "job-123" });
+      const mockClose = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock("bullmq", () => ({
+        Worker: vi.fn(),
+        Queue: vi.fn().mockImplementation(() => ({
+          add: mockAdd,
+          close: mockClose,
+        })),
+      }));
+
+      vi.doMock("../media/queue.js", () => ({
+        getRedisOptions: vi.fn(() => ({
+          host: "localhost",
+          port: 6379,
+        })),
+      }));
+
+      const { enqueueTranscriptionJob } = await import("./processor.js");
+
+      await enqueueTranscriptionJob({
+        fileId: "file_123",
+        storageKey: "path/to/audio.mp3",
+        durationSeconds: 60,
+        accountId: "account_123",
+        projectId: "project_123",
+        mimeType: "audio/mp3",
+      });
+
+      expect(mockAdd).toHaveBeenCalledWith(
+        "transcription-file_123",
+        expect.objectContaining({
+          type: "transcription",
+          fileId: "file_123",
+        })
+      );
+      expect(mockClose).toHaveBeenCalled();
+
+      vi.doUnmock("bullmq");
+      vi.doUnmock("../media/queue.js");
+    });
+  });
 });

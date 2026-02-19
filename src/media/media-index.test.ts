@@ -275,5 +275,206 @@ describe("media processing service", () => {
       vi.doUnmock("../db/index.js");
       vi.doUnmock("../db/schema.js");
     });
+
+    it("successfully reprocesses an existing asset", async () => {
+      vi.resetModules();
+
+      const mockFile = {
+        id: "asset-123",
+        projectId: "project-123",
+        name: "video.mp4",
+        mimeType: "video/mp4",
+        originalName: "original-video.mp4",
+      };
+
+      vi.doMock("./queue.js", () => ({
+        getQueue: vi.fn(() => ({
+          add: vi.fn().mockResolvedValue({ id: "job-123" }),
+        })),
+        addJob: vi.fn().mockResolvedValue(undefined),
+        closeQueues: vi.fn().mockResolvedValue(undefined),
+        QUEUE_NAMES: {
+          METADATA: "media:metadata",
+          THUMBNAIL: "media:thumbnail",
+          FILMSTRIP: "media:filmstrip",
+          PROXY: "media:proxy",
+          WAVEFORM: "media:waveform",
+        },
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                limit: vi.fn().mockResolvedValue([mockFile]),
+              })),
+            })),
+          })),
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+        },
+      }));
+
+      vi.doMock("../db/schema.js", () => ({
+        files: { id: "files.id" },
+      }));
+
+      const { reprocessAsset: freshReprocess } = await import("./index.js");
+      const { addJob: freshAddJob } = await import("./queue.js");
+
+      // Should not throw
+      await freshReprocess("asset-123");
+
+      // Should have called addJob
+      expect(freshAddJob).toHaveBeenCalled();
+
+      vi.doUnmock("./queue.js");
+      vi.doUnmock("../db/index.js");
+      vi.doUnmock("../db/schema.js");
+    });
+  });
+
+  describe("enqueueFrameCapture", () => {
+    it("enqueues frame capture job with correct parameters", async () => {
+      vi.resetModules();
+
+      const mockAdd = vi.fn().mockResolvedValue({ id: "frame-job-123" });
+
+      vi.doMock("./queue.js", () => ({
+        getQueue: vi.fn(() => ({
+          add: mockAdd,
+        })),
+        addJob: vi.fn().mockResolvedValue(undefined),
+        closeQueues: vi.fn().mockResolvedValue(undefined),
+        QUEUE_NAMES: {
+          METADATA: "media:metadata",
+          THUMBNAIL: "media:thumbnail",
+          FILMSTRIP: "media:filmstrip",
+          PROXY: "media:proxy",
+          WAVEFORM: "media:waveform",
+        },
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                limit: vi.fn().mockResolvedValue([]),
+              })),
+            })),
+          })),
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+        },
+      }));
+
+      vi.doMock("../db/schema.js", () => ({
+        files: { id: "files.id" },
+      }));
+
+      const { enqueueFrameCapture } = await import("./index.js");
+
+      const jobId = await enqueueFrameCapture({
+        assetId: "asset-123",
+        accountId: "account-123",
+        projectId: "project-123",
+        storageKey: "path/to/video.mp4",
+        mimeType: "video/mp4",
+        sourceFilename: "video.mp4",
+        priority: 1,
+        timestamp: 30,
+      });
+
+      expect(jobId).toBe("frame-job-123");
+      expect(mockAdd).toHaveBeenCalledWith(
+        "frame_capture",
+        expect.objectContaining({
+          type: "frame_capture",
+          assetId: "asset-123",
+          timestamp: 30,
+        }),
+        expect.objectContaining({
+          priority: 1,
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 5000,
+          },
+        })
+      );
+
+      vi.doUnmock("./queue.js");
+      vi.doUnmock("../db/index.js");
+      vi.doUnmock("../db/schema.js");
+    });
+
+    it("returns empty string when job id is null", async () => {
+      vi.resetModules();
+
+      const mockAdd = vi.fn().mockResolvedValue({ id: null });
+
+      vi.doMock("./queue.js", () => ({
+        getQueue: vi.fn(() => ({
+          add: mockAdd,
+        })),
+        addJob: vi.fn().mockResolvedValue(undefined),
+        closeQueues: vi.fn().mockResolvedValue(undefined),
+        QUEUE_NAMES: {
+          METADATA: "media:metadata",
+          THUMBNAIL: "media:thumbnail",
+          FILMSTRIP: "media:filmstrip",
+          PROXY: "media:proxy",
+          WAVEFORM: "media:waveform",
+        },
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                limit: vi.fn().mockResolvedValue([]),
+              })),
+            })),
+          })),
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+        },
+      }));
+
+      vi.doMock("../db/schema.js", () => ({
+        files: { id: "files.id" },
+      }));
+
+      const { enqueueFrameCapture } = await import("./index.js");
+
+      const jobId = await enqueueFrameCapture({
+        assetId: "asset-123",
+        accountId: "account-123",
+        projectId: "project-123",
+        storageKey: "path/to/video.mp4",
+        mimeType: "video/mp4",
+        sourceFilename: "video.mp4",
+        priority: 1,
+        timestamp: 30,
+      });
+
+      expect(jobId).toBe("");
+
+      vi.doUnmock("./queue.js");
+      vi.doUnmock("../db/index.js");
+      vi.doUnmock("../db/schema.js");
+    });
   });
 });
