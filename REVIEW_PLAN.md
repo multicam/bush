@@ -1,11 +1,10 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 16 (COMPLETE)
-**Iteration**: 17 (IN PROGRESS)
-**Coverage**: 42.08% statements (target: 80%)
-**Tests**: 1238 passing, 0 failing (vitest)
-**Git tag**: v0.0.60
+**Iteration**: 19 (COMPLETE)
+**Coverage**: 92.92% statements (target: 80%) -- TARGET EXCEEDED
+**Tests**: 2514 passing, 0 failing (vitest)
+**Git tag**: v0.0.61
 
 ## Issue Tracker
 
@@ -176,7 +175,70 @@
 
 ## Iteration Log
 
-### Iteration 17 -- 2026-02-19 (IN PROGRESS)
+### Iteration 19 -- 2026-02-19 (COMPLETE)
+**Focus**: Complete API route coverage + workers -- TARGET EXCEEDED (92.92%)
+**Coverage**: 56.66% -> 92.92% (+36.26pp)
+**Tests**: 1626 -> 2514 (+888 tests)
+
+**New Tests Added (Batch 1 - 6 route files):**
+- `src/api/routes/accounts.test.ts`: 69 tests (GET list, GET/:id, POST create, PATCH update, GET storage, POST switch, GET/POST/PATCH/DELETE members)
+- `src/api/routes/comments.test.ts`: 79 tests (GET list, POST create, GET/:id, PUT update, DELETE, POST replies, PUT complete, GET replies, getVersionStackComments, createVersionStackComment)
+- `src/api/routes/collections.test.ts`: 76 tests (GET list, POST create, GET/:id, PUT update, DELETE, POST items, DELETE items)
+- `src/api/routes/webhooks.test.ts`: 88 tests (GET list, POST create, GET/:id, PUT update, DELETE, GET deliveries, POST test, isValidWebhookUrl, emitWebhookEvent)
+- `src/api/routes/version-stacks.test.ts`: 70 tests (GET/:id, POST create, PATCH update, DELETE, GET files, POST files, DELETE files, POST set-current, comments delegation)
+- `src/api/routes/bulk.test.ts`: 71 tests (POST files/move, POST files/copy, POST files/delete, POST files/download, POST folders/move, POST folders/delete)
+
+**New Tests Added (Batch 2 - remaining routes + workers):**
+- `src/api/routes/files.test.ts`: 163 tests (getThumbnailUrl, GET list, GET/:id, POST create, PATCH update, DELETE, POST confirm-upload, GET download, POST thumbnail, POST copy, POST restore, multipart)
+- `src/api/routes/shares.test.ts`: 87 tests (GET list, POST create, GET/:id, PATCH update, DELETE, GET/POST/DELETE assets, POST duplicate, GET activity, getShareBySlug)
+- `src/api/routes/transcription.test.ts`: 90 tests (GET/POST/PUT/DELETE transcription, GET export, GET words, GET/POST/DELETE captions)
+- `src/media/worker.test.ts`: 47 tests (QUEUE_NAMES, processJob routing, Worker config, event handlers, graceful shutdown)
+- `src/scheduled/worker.test.ts`: 28 tests (processJob routing, Worker config, event handlers, graceful shutdown)
+- `src/scheduled/run-purge.test.ts`: 20 tests (success, partial error, catastrophic failure, edge cases)
+
+**Modules with Improved Coverage:**
+- `src/api/routes/accounts.ts`: 0% -> ~95%
+- `src/api/routes/comments.ts`: 0% -> ~95%
+- `src/api/routes/collections.ts`: 0% -> ~96%
+- `src/api/routes/webhooks.ts`: 0% -> ~98%
+- `src/api/routes/version-stacks.ts`: 0% -> ~97%
+- `src/api/routes/bulk.ts`: 0% -> ~95%
+- `src/api/routes/files.ts`: 0% -> ~90%
+- `src/api/routes/shares.ts`: 0% -> ~92%
+- `src/api/routes/transcription.ts`: 0% -> ~90%
+- `src/media/worker.ts`: 0% -> ~85%
+- `src/scheduled/worker.ts`: 0% -> ~85%
+- `src/scheduled/run-purge.ts`: 0% -> ~90%
+- Overall: 56.66% -> 92.92%
+
+### Iteration 18 -- 2026-02-19 (COMPLETE)
+**Focus**: API route coverage - first 9 route files + search/metadata/folders
+**Coverage**: 42.08% -> 56.66% (+14.58pp)
+**Tests**: 1238 -> 1626 (+388 tests)
+
+**New Tests Added:**
+- `src/api/routes/workspaces.test.ts`: 34 tests (GET list, GET by ID, POST create, PATCH update, DELETE)
+- `src/api/routes/users.test.ts`: 23 tests (GET /me, GET /:id, PATCH /:id)
+- `src/api/routes/projects.test.ts`: 33 tests (GET list, GET by ID, POST create, PATCH update, DELETE archive)
+- `src/api/routes/auth.test.ts`: 24 tests (POST /token, POST /revoke, GET /me)
+- `src/api/routes/notifications.test.ts`: 66 tests (GET list, GET unread-count, PUT read-all, PUT /:id/read, DELETE, createNotification, createNotifications, NOTIFICATION_TYPES)
+- `src/api/routes/custom-fields.test.ts`: 53 tests (GET list, POST create, GET by ID, PUT update, DELETE, PUT visibility)
+
+**Modules with Improved Coverage:**
+- `src/api/routes/workspaces.ts`: 0% -> 100%
+- `src/api/routes/users.ts`: 0% -> 100%
+- `src/api/routes/projects.ts`: 0% -> 100%
+- `src/api/routes/auth.ts`: 0% -> 100%
+- `src/api/routes/notifications.ts`: 0% -> 100%
+- `src/api/routes/custom-fields.ts`: 0% -> 96.86%
+- Overall: 42.08% -> 50.12%
+
+**Outstanding Coverage Gaps:**
+- API routes (files.ts, shares.ts, accounts.ts, comments.ts, etc.): 0% coverage
+- Media worker.ts: 0% coverage
+- Scheduled worker.ts/run-purge.ts: 0%
+
+### Iteration 17 -- 2026-02-19 (COMPLETE)
 **Focus**: Fix TypeScript errors, improve coverage
 **Coverage**: 41.37% -> 42.08% (+0.71pp)
 **Tests**: 1223 -> 1238 (+15 tests)
