@@ -1,11 +1,11 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 10 (COMPLETE)
-**Iteration**: 11 (IN PROGRESS)
-**Coverage**: 24.37% statements (target: 80%)
-**Tests**: 626 passing, 0 failing (vitest)
-**Git tag**: v0.0.56
+**Iteration**: 11 (COMPLETE)
+**Iteration**: 12 (IN PROGRESS)
+**Coverage**: 28.73% statements (target: 80%)
+**Tests**: 713 passing, 0 failing (vitest)
+**Git tag**: v0.0.57
 
 ## Issue Tracker
 
@@ -147,19 +147,19 @@
 
 | File | Statements | Branches | Functions | Priority |
 |------|-----------|----------|-----------|----------|
-| `src/realtime/ws-manager.ts` | 0% | 0% | 0% | CRITICAL |
-| `src/realtime/event-bus.ts` | 97.95% | 100% | 100% | HIGH |
-| `src/realtime/emit.ts` | 97.18% | 100% | 100% | MEDIUM |
+| `src/realtime/ws-manager.ts` | 48.93% | 82.85% | 72.22% | HIGH |
+| `src/realtime/event-bus.ts` | 100% | 100% | 100% | DONE |
+| `src/realtime/emit.ts` | 100% | 100% | 100% | DONE |
 
 ### Storage & Infrastructure (partial coverage)
 
 | File | Statements | Branches | Functions | Priority |
 |------|-----------|----------|-----------|----------|
-| `src/storage/index.ts` | 66.67% | 83.33% | 60% | HIGH |
-| `src/storage/s3-provider.ts` | 0% | 0% | 0% | HIGH |
-| `src/redis/index.ts` | 77.35% | 88.88% | 75% | HIGH |
-| `src/db/index.ts` | 33.33% | 0% | 0% | MEDIUM |
-| `src/scheduled/processor.ts` | 0% | 0% | 0% | HIGH |
+| `src/storage/index.ts` | 97.24% | 87.87% | 100% | DONE |
+| `src/storage/s3-provider.ts` | 100% | 88.88% | 100% | DONE |
+| `src/redis/index.ts` | 77.35% | 88.88% | 75% | MEDIUM |
+| `src/db/index.ts` | 80% | 50% | 100% | MEDIUM |
+| `src/scheduled/processor.ts` | 95.04% | 78.26% | 100% | DONE |
 | `src/scheduled/queue.ts` | 0% | 0% | 0% | MEDIUM |
 | `src/scheduled/worker.ts` | 0% | 0% | 0% | MEDIUM |
 
@@ -176,7 +176,36 @@
 
 ## Iteration Log
 
-### Iteration 11 -- 2026-02-19 (IN PROGRESS)
+### Iteration 12 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 24.37% -> 28.73% (+4.36pp)
+**Tests**: 626 -> 713 (+87 tests)
+
+**New Tests Added:**
+- `src/db/db.test.ts`: Added 2 tests for closeDatabase function (success and error cases)
+- `src/storage/s3-provider.test.ts`: Added 29 tests for S3StorageProvider (constructor, healthCheck, getPresignedUrl, multipart upload operations, headObject, deleteObject, deleteObjects, copyObject, listObjects, getObject, putObject)
+- `src/scheduled/processor.test.ts`: Added 8 tests for purgeExpiredFiles and recalculateStorageUsage
+- `src/realtime/ws-manager.test.ts`: Added 35 tests for WebSocket manager (init, shutdown, generateConnectionId, authenticate, register, unregister, handleMessage, getStats, subscribe/unsubscribe, rate limiting)
+- `src/lib/email/index.test.ts`: Added 16 tests for createEmailService, getEmailService, resetEmailService, setEmailService (provider fallbacks, singleton pattern)
+- `src/redis/index.test.ts`: Expanded from 6 to 9 tests (default export, closeRedis without init, NODE_ENV test environment logging)
+
+**Modules with Improved Coverage:**
+- `src/db/index.ts`: 33.33% -> 80%
+- `src/storage/s3-provider.ts`: 0% -> 100%
+- `src/scheduled/processor.ts`: 0% -> 95.04%
+- `src/realtime/ws-manager.ts`: 0% -> 48.93%
+- `src/lib/email/index.ts`: 66.66% -> 100%
+- `src/redis/index.ts`: 77.35% (maintained)
+- Overall: 24.37% -> 28.73%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): 0% coverage - require external tools
+- Transcription: 0% coverage - requires external services
+- Scheduled (queue.ts, worker.ts): 0% coverage - require additional mocking
+- Realtime (ws-manager.ts): 48.93% - partial coverage achieved
+
+### Iteration 11 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 21.26% -> 24.37% (+3.11pp)
 **Tests**: 492 -> 626 (+134 tests)

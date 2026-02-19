@@ -55,6 +55,26 @@ describe("Redis Client", () => {
 
       expect(redis1).toBe(redis2);
     });
+
+    it("should not log in test environment", async () => {
+      const { getRedis: freshGetRedis } = await import("./index.js");
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      freshGetRedis();
+
+      // Find the connect callback and call it
+      const connectCall = mockRedis.on.mock.calls.find(
+        (call: any[]) => call[0] === "connect"
+      );
+      if (connectCall) {
+        connectCall[1](); // Call the connect handler
+      }
+
+      // Should not log in test environment
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("closeRedis", () => {
@@ -67,6 +87,13 @@ describe("Redis Client", () => {
       await freshCloseRedis();
 
       expect(mockRedis.quit).toHaveBeenCalled();
+    });
+
+    it("should do nothing if client not initialized", async () => {
+      const { closeRedis: freshCloseRedis } = await import("./index.js");
+
+      // Should not throw
+      await expect(freshCloseRedis()).resolves.toBeUndefined();
     });
   });
 
@@ -103,6 +130,15 @@ describe("Redis Client", () => {
       const result = await freshHealthCheck();
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("default export", () => {
+    it("should export getRedis as default", async () => {
+      const freshModule = await import("./index.js");
+      const defaultExport = freshModule.default;
+
+      expect(defaultExport).toBe(freshModule.getRedis);
     });
   });
 });
