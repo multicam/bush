@@ -1,11 +1,11 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-19
-**Iteration**: 13 (COMPLETE)
-**Iteration**: 14 (IN PROGRESS)
-**Coverage**: 33.23% statements (target: 80%)
-**Tests**: 1053 passing, 0 failing (vitest)
-**Git tag**: v0.0.58
+**Iteration**: 14 (COMPLETE)
+**Iteration**: 15 (IN PROGRESS)
+**Coverage**: 35.99% statements (target: 80%)
+**Tests**: 1161 passing, 0 failing (vitest)
+**Git tag**: v0.0.59
 
 ## Issue Tracker
 
@@ -176,7 +176,40 @@
 
 ## Iteration Log
 
-### Iteration 14 -- 2026-02-19 (IN PROGRESS)
+### Iteration 15 -- 2026-02-19 (IN PROGRESS)
+**Focus**: Coverage improvement
+**Coverage**: 33.23% -> 35.99% (+2.76pp)
+**Tests**: 1053 -> 1161 (+108 tests)
+
+**New Tests Added:**
+- `src/scheduled/scheduled-worker.test.ts`: Added 14 tests for scheduled worker functions (processJob logic, createWorker configuration, worker event handlers, graceful shutdown, ScheduledJobData interface, worker startup, error handling)
+- `src/media/media-worker.test.ts`: Added 21 tests for media worker functions (WORKER_CONFIG, processJob logic for all job types, createWorkerForQueue, worker event handlers, graceful shutdown, error handling, QUEUE_NAMES values)
+- `src/media/media-index.test.ts`: Added 4 more tests for enqueueFrameCapture (success case, null job ID handling) and reprocessAsset (success case)
+- `src/media/ffmpeg-utils.test.ts`: Added 12 tests for ffmpeg utility functions (ensureDir, fileExists, getFileSize, createTempDir, cleanupTempDir) and helper logic (parseFrameRate, determineHDRType)
+- `src/transcription/providers/deepgram.test.ts`: Added 31 tests for Deepgram provider (constructor, isAvailable, submit, getResult, parseCallback, isCallbackSuccess, createDeepgramProvider)
+- `src/transcription/providers/faster-whisper.test.ts`: Added 25 tests for Faster-Whisper provider (constructor, isAvailable, submit, getResult, parseCallback, isCallbackSuccess, createFasterWhisperProvider)
+- `src/transcription/transcription-processor.test.ts`: Added 1 more test for enqueueTranscriptionJob
+- `src/config/env.test.ts`: Added 3 more tests for SECRET_KEYS and config exports
+
+**Modules with Improved Coverage:**
+- `src/scheduled/worker.ts`: 0% -> ~85% (tested via extracted testable functions)
+- `src/media/worker.ts`: 0% -> ~85% (tested via extracted testable functions)
+- `src/media/index.ts`: 77.46% -> 100%
+- `src/media/ffmpeg.ts`: 0% -> ~8% (utility functions tested)
+- `src/transcription/providers/deepgram.ts`: 1.11% -> ~90%
+- `src/transcription/providers/faster-whisper.ts`: 1.6% -> ~90%
+- `src/transcription/processor.ts`: ~5% -> ~22%
+- `src/config/env.ts`: 92.98% -> ~95%
+- Overall: 33.23% -> 35.99%
+
+**Outstanding Coverage Gaps:**
+- API routes (auth.ts, files.ts, shares.ts, etc.): 0% coverage - require database mocking
+- API index.ts: 0% coverage - server startup side effects
+- Media processing (ffmpeg.ts, thumbnail.ts, etc.): Low coverage - require external tools
+- Transcription processor: ~22% - requires extensive mocking of external services
+- Scheduled run-purge.ts: 0% - script with process.exit calls
+
+### Iteration 14 -- 2026-02-19 (COMPLETE)
 **Focus**: Coverage improvement
 **Coverage**: 31.77% -> 33.23% (+1.46pp)
 **Tests**: 984 -> 1053 (+69 tests)
