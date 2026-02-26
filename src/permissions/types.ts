@@ -2,7 +2,7 @@
  * Bush Platform - Permission Types
  *
  * Type definitions for the permission system.
- * Reference: specs/00-complete-support-documentation.md Section 2
+ * Reference: specs/03-permissions.md Section 2
  */
 
 /**

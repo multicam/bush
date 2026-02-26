@@ -2,7 +2,7 @@
  * Bush Platform - Transcript Panel Component
  *
  * Sidebar panel for displaying and interacting with transcripts.
- * Reference: specs/06-transcription-and-captions.md Section 7
+ * Reference: specs/08-transcription.md Section 7
  */
 "use client";
 

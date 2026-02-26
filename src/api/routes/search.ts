@@ -2,8 +2,8 @@
  * Bush Platform - Search Routes
  *
  * API routes for file search using FTS5.
- * Reference: specs/00-atomic-features.md Section 12
- * Reference: specs/06-transcription-and-captions.md Section 3.6
+ * Reference: specs/00-product-reference.md Section 12
+ * Reference: specs/08-transcription.md Section 3.6
  */
 import { Hono } from "hono";
 import { db, sqlite } from "../../db/index.js";

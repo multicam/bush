@@ -2,7 +2,7 @@
  * Bush Platform - Annotation Canvas Component
  *
  * Canvas overlay for drawing annotations on viewers.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

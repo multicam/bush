@@ -2,7 +2,7 @@
  * Bush Platform - Transcription Types
  *
  * Type definitions for the transcription service.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 
 import type { TranscriptionProvider, TranscriptionStatus, SpeakerNames } from "../db/schema.js";

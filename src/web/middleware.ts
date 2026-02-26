@@ -3,7 +3,7 @@
  *
  * Route protection and authentication middleware.
  * Uses WorkOS AuthKit for session validation.
- * Reference: specs/12-authentication.md
+ * Reference: specs/02-authentication.md
  */
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
 

@@ -2,7 +2,7 @@
  * Bush Platform - Comment Thread Component
  *
  * Thread view with parent comment and expandable replies.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

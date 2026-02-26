@@ -2,7 +2,7 @@
  * Bush Platform - Error Handling Utilities
  *
  * Standardized error classes and utilities for API responses.
- * Reference: specs/17-api-complete.md Section 3.4-3.5
+ * Reference: specs/04-api-reference.md Section 3.4-3.5
  * Reference: IMPLEMENTATION_PLAN.md QW4
  */
 import { generateId } from "../shared/id.js";

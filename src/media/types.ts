@@ -2,7 +2,7 @@
  * Bush Platform - Media Processing Types
  *
  * Type definitions for the media processing pipeline.
- * Reference: specs/15-media-processing.md
+ * Reference: specs/07-media-processing.md
  */
 
 /**

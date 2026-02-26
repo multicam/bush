@@ -2,7 +2,7 @@
  * Bush Platform - Annotation Components
  *
  * Export all annotation components for drawing on viewers.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 
 // Types

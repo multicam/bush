@@ -2,7 +2,7 @@
  * Bush Platform - Notifications Routes
  *
  * API routes for user notifications management.
- * Reference: specs/17-api-complete.md Section 6.15
+ * Reference: specs/04-api-reference.md Section 6.15
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

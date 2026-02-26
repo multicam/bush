@@ -5,7 +5,7 @@
  * processing rules, and icons. Used by upload validation, processing pipeline,
  * asset browser icons, and viewer component selection.
  *
- * Reference: specs/00-atomic-features.md Section 4.3
+ * Reference: specs/00-product-reference.md Section 4.3
  */
 
 /**

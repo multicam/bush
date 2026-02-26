@@ -2,8 +2,8 @@
  * Bush Platform - Rate Limiting Middleware
  *
  * Redis-backed rate limiting using sliding window algorithm.
- * Reference: specs/17-api-complete.md Section 5
- * Reference: specs/00-complete-support-documentation.md Section 21.2
+ * Reference: specs/04-api-reference.md Section 5
+ * Reference: specs/03-permissions.md Section 21.2
  */
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { getRedis } from "../redis/index.js";
@@ -40,7 +40,7 @@ interface RateLimitHeaders {
 
 /**
  * Default rate limit configurations per endpoint type
- * Reference: specs/17-api-complete.md Section 5.2
+ * Reference: specs/04-api-reference.md Section 5.2
  */
 export const RATE_LIMIT_PRESETS = {
   /** Standard API endpoints - 100 req/min */

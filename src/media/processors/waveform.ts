@@ -2,7 +2,7 @@
  * Bush Platform - Waveform Generation Processor
  *
  * Extracts audio waveform data for visualization.
- * Reference: specs/15-media-processing.md Section 5
+ * Reference: specs/07-media-processing.md Section 5
  */
 import { storage, storageKeys } from "../../storage/index.js";
 import { config } from "../../config/index.js";

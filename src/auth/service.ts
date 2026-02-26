@@ -2,7 +2,7 @@
  * Bush Platform - Authentication Service
  *
  * High-level authentication operations that integrate WorkOS with Bush.
- * Reference: specs/12-authentication.md
+ * Reference: specs/02-authentication.md
  */
 import { db } from "../db/index.js";
 import { accounts, users, accountMemberships } from "../db/schema.js";

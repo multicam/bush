@@ -2,7 +2,7 @@
  * Bush Platform - Version Stack Routes
  *
  * API routes for version stack management.
- * Reference: specs/17-api-complete.md Section 6.6
+ * Reference: specs/04-api-reference.md Section 6.6
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

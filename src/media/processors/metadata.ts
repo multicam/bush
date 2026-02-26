@@ -2,7 +2,7 @@
  * Bush Platform - Metadata Extraction Processor
  *
  * Extracts metadata from media files using FFprobe.
- * Reference: specs/15-media-processing.md Section 6
+ * Reference: specs/07-media-processing.md Section 6
  */
 import { db } from "../../db/index.js";
 import { files } from "../../db/schema.js";

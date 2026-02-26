@@ -3,7 +3,7 @@
  *
  * Implementation of CDN provider for Bunny CDN.
  * Uses Bunny's token-based URL signing for secure content delivery.
- * Reference: specs/16-storage-and-data.md Section 5
+ * Reference: specs/06-storage.md Section 5
  */
 import type {
   ICDNProvider,

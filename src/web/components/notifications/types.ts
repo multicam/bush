@@ -2,7 +2,7 @@
  * Bush Platform - Notification Types
  *
  * Type definitions for the notifications system.
- * Reference: specs/17-api-complete.md Section 6.15
+ * Reference: specs/04-api-reference.md Section 6.15
  */
 
 import type { NotificationType, NotificationAttributes } from "@/web/lib/api";

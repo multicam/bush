@@ -2,7 +2,7 @@
  * Bush Platform - Auth Routes
  *
  * API routes for authentication operations.
- * Reference: specs/17-api-complete.md Section 2.3
+ * Reference: specs/04-api-reference.md Section 2.3
  */
 import { Hono } from "hono";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
@@ -79,7 +79,7 @@ app.post("/token", async (c) => {
       attributes: {
         access_token: accessToken,
         token_type: "Bearer",
-        expires_in: 300, // 5 minutes per specs/12-authentication.md
+        expires_in: 300, // 5 minutes per specs/02-authentication.md
         refresh_token: newRefreshToken,
       },
     },

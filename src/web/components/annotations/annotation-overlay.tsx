@@ -2,7 +2,7 @@
  * Bush Platform - Annotation Overlay Component
  *
  * Complete annotation system with canvas and toolbar.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

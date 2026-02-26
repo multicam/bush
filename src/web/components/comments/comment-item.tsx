@@ -2,7 +2,7 @@
  * Bush Platform - Comment Item Component
  *
  * Individual comment display with user info, actions, and timestamped/annotation support.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

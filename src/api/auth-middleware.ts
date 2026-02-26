@@ -4,8 +4,8 @@
  * Hono middleware for authenticating requests using sessions or bearer tokens.
  * Supports WorkOS session cookie (wos-session) for browser access and
  * bush_session cookie / bearer tokens for API access.
- * Reference: specs/12-authentication.md
- * Reference: specs/17-api-complete.md Section 2
+ * Reference: specs/02-authentication.md
+ * Reference: specs/04-api-reference.md Section 2
  */
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { unsealData } from "iron-session";

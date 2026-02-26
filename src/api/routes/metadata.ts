@@ -2,7 +2,7 @@
  * Bush Platform - Metadata Routes
  *
  * API routes for file metadata management (built-in and custom fields).
- * Reference: specs/17-api-complete.md Section 6.10
+ * Reference: specs/04-api-reference.md Section 6.10
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

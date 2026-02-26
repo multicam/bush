@@ -2,7 +2,7 @@
  * Bush Platform - Global Search Component
  *
  * Global search bar with Cmd+K shortcut for searching across all accessible files.
- * Reference: specs/00-atomic-features.md Section 12
+ * Reference: specs/00-product-reference.md Section 12
  */
 "use client";
 

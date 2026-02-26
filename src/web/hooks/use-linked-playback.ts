@@ -4,7 +4,7 @@
  * Synchronizes playback between two VideoViewer components.
  * Used by ComparisonViewer for side-by-side video comparison.
  *
- * Reference: specs/00-atomic-features.md Section 9.7 Comparison Viewer
+ * Reference: specs/00-product-reference.md Section 9.7 Comparison Viewer
  */
 "use client";
 

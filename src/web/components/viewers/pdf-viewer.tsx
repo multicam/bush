@@ -2,7 +2,7 @@
  * Bush Platform - PDF Viewer Component
  *
  * Full-featured PDF viewer with multi-page navigation, zoom, and text selection.
- * Reference: specs/00-atomic-features.md Section 9.5
+ * Reference: specs/00-product-reference.md Section 9.5
  * Reference: IMPLEMENTATION_PLAN.md Section 2.8b
  */
 "use client";

@@ -2,7 +2,7 @@
  * Bush Platform - Comment Types
  *
  * Type definitions for comment components.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 
 import type { CommentAttributes, CommentUserAttributes, CommentAnnotation } from "../../lib/api";

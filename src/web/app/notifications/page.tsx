@@ -2,7 +2,7 @@
  * Bush Platform - Notifications Page
  *
  * Full page for viewing and managing all notifications.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 "use client";
 

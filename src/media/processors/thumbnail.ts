@@ -2,7 +2,7 @@
  * Bush Platform - Thumbnail Generation Processor
  *
  * Generates thumbnails for images and videos.
- * Reference: specs/15-media-processing.md Section 2
+ * Reference: specs/07-media-processing.md Section 2
  */
 import { storage, storageKeys } from "../../storage/index.js";
 import { config } from "../../config/index.js";

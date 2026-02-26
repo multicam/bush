@@ -2,7 +2,7 @@
  * Bush Platform - Notification List Component
  *
  * Scrollable list of notifications with loading state.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 "use client";
 

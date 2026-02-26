@@ -2,7 +2,7 @@
  * Bush Platform - Transcription Routes
  *
  * API routes for transcription and caption management.
- * Reference: specs/17-api-complete.md Section 6.12
+ * Reference: specs/04-api-reference.md Section 6.12
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

@@ -2,7 +2,7 @@
  * Bush Platform - Transcription Service
  *
  * High-level API for transcription operations.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 
 // Types

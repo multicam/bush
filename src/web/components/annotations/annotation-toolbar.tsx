@@ -2,7 +2,7 @@
  * Bush Platform - Annotation Toolbar Component
  *
  * Toolbar for selecting annotation tools and colors.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

@@ -2,7 +2,7 @@
  * Bush Platform - Proxy Transcoding Processor
  *
  * Generates proxy videos for streaming at multiple resolutions.
- * Reference: specs/15-media-processing.md Section 4
+ * Reference: specs/07-media-processing.md Section 4
  */
 import { storage, storageKeys } from "../../storage/index.js";
 import { config } from "../../config/index.js";
@@ -259,7 +259,7 @@ function buildToneMappingFilter(
   _hdrType: string | null
 ): string {
   // Hable tone mapping with proper color space conversion
-  // Reference: specs/15-media-processing.md Section 7
+  // Reference: specs/07-media-processing.md Section 7
   const toneMapFilter =
     `zscale=t=linear:npl=100,format=gbrpf32le,` +
     `zscale=p=bt709,tonemap=hable:desat=0,` +

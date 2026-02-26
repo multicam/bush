@@ -2,7 +2,7 @@
  * Bush Platform - Faster-Whisper Transcription Provider
  *
  * Self-hosted fallback provider using faster-whisper.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 import type {
   ITranscriptionProvider,

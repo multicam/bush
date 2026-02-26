@@ -2,7 +2,7 @@
  * Bush Platform - Chunked Upload Client
  *
  * Browser library for chunked/resumable file uploads.
- * Reference: specs/16-storage-and-data.md Section 2
+ * Reference: specs/06-storage.md Section 2
  * Reference: IMPLEMENTATION_PLAN.md 2.1
  *
  * Features:

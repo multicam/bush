@@ -3,7 +3,7 @@
  *
  * Redis-backed session cache for storing Bush-specific session data.
  * Avoids decoding JWTs on every request and stores account context.
- * Reference: specs/12-authentication.md Section "Redis Session Cache"
+ * Reference: specs/02-authentication.md Section "Redis Session Cache"
  */
 import { getRedis } from "../redis/index.js";
 import { config } from "../config/index.js";

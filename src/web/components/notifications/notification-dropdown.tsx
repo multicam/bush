@@ -2,7 +2,7 @@
  * Bush Platform - Notification Dropdown Component
  *
  * Dropdown panel for displaying notifications from the header bell icon.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 "use client";
 

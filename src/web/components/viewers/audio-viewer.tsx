@@ -2,7 +2,7 @@
  * Bush Platform - Audio Viewer Component
  *
  * Full-featured audio player with waveform visualization.
- * Reference: specs/00-atomic-features.md Section 9, specs/15-media-processing.md Section 5
+ * Reference: specs/00-product-reference.md Section 9, specs/07-media-processing.md Section 5
  */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";

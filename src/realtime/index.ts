@@ -2,7 +2,7 @@
  * Bush Platform - Real-time Module Entry Point
  *
  * Exports all real-time infrastructure components.
- * Reference: specs/14-realtime-collaboration.md
+ * Reference: specs/05-realtime.md
  */
 
 // Event bus and types

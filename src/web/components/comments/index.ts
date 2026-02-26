@@ -2,7 +2,7 @@
  * Bush Platform - Comments Components
  *
  * Components for displaying and managing comments and annotations.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 
 // Types

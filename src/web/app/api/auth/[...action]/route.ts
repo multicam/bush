@@ -3,7 +3,7 @@
  *
  * API routes for authentication operations in the Next.js app.
  * Uses WorkOS AuthKit for authentication with Bush-specific session management.
- * Reference: specs/12-authentication.md
+ * Reference: specs/02-authentication.md
  *
  * NOTE: We use dynamic imports for database-dependent modules to avoid
  * bundling bun:sqlite during Next.js build (Node.js doesn't have bun:sqlite).

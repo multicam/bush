@@ -2,7 +2,7 @@
  * Bush Platform - FFmpeg Utilities
  *
  * Helper functions for running FFmpeg/FFprobe commands.
- * Reference: specs/15-media-processing.md
+ * Reference: specs/07-media-processing.md
  */
 import { execFile } from "child_process";
 import { promisify } from "util";

@@ -2,7 +2,7 @@
  * Bush Platform - Metadata Inspector Types
  *
  * Type definitions for the metadata inspector component.
- * Reference: specs/00-atomic-features.md Section 6
+ * Reference: specs/00-product-reference.md Section 6
  */
 
 import type { CustomFieldAttributes } from "../../lib/api";

@@ -5,7 +5,7 @@
  * pause/resume/cancel controls, and retry functionality.
  *
  * Reference: IMPLEMENTATION_PLAN.md 2.1 [P1] Upload Queue UI
- * Reference: specs/03-file-management.md Bulk Uploads
+ * Reference: specs/04-api-reference.md Bulk Uploads
  */
 "use client";
 

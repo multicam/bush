@@ -4,7 +4,7 @@
  * Synchronizes zoom and pan between two ImageViewer components.
  * Used by ComparisonViewer for side-by-side image comparison.
  *
- * Reference: specs/00-atomic-features.md Section 9.7 Comparison Viewer
+ * Reference: specs/00-product-reference.md Section 9.7 Comparison Viewer
  */
 "use client";
 

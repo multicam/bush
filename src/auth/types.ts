@@ -2,7 +2,7 @@
  * Bush Platform - Authentication Types
  *
  * Type definitions for authentication, sessions, and roles.
- * Reference: specs/12-authentication.md
+ * Reference: specs/02-authentication.md
  */
 
 /**

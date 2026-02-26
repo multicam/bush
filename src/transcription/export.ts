@@ -2,7 +2,7 @@
  * Bush Platform - Caption Export
  *
  * Export transcriptions to SRT, VTT, and TXT formats.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 import type { CaptionFormat, CaptionSegment } from "./types.js";
 import type { SpeakerNames } from "../db/schema.js";

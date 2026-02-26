@@ -4,7 +4,7 @@
  * Worker process for processing media jobs from BullMQ queues.
  * Run with: tsx src/media/worker.ts
  *
- * Reference: specs/15-media-processing.md
+ * Reference: specs/07-media-processing.md
  */
 import { Worker, Job } from "bullmq";
 import { config } from "../config/index.js";

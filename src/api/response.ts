@@ -2,7 +2,7 @@
  * Bush Platform - JSON:API Response Formatter
  *
  * Utilities for formatting responses in JSON:API specification format.
- * Reference: specs/17-api-complete.md Section 3
+ * Reference: specs/04-api-reference.md Section 3
  */
 import type { Context } from "hono";
 

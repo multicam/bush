@@ -2,7 +2,7 @@
  * Bush Platform - Media Processing Queue
  *
  * BullMQ queue setup for media processing jobs.
- * Reference: specs/15-media-processing.md
+ * Reference: specs/07-media-processing.md
  */
 import { Queue, QueueEvents, Worker } from "bullmq";
 import { config } from "../config/index.js";

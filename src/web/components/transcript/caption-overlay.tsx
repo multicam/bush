@@ -2,7 +2,7 @@
  * Bush Platform - Caption Overlay Component
  *
  * Displays captions overlaid on video/audio players.
- * Reference: specs/06-transcription-and-captions.md Section 7
+ * Reference: specs/08-transcription.md Section 7
  */
 "use client";
 

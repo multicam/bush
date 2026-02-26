@@ -2,7 +2,7 @@
  * Bush Platform - Real-time Event Emission Helper
  *
  * Convenience functions for emitting real-time events from route handlers.
- * Reference: specs/14-realtime-collaboration.md
+ * Reference: specs/05-realtime.md
  * Reference: specs/README.md "Realtime Architecture"
  */
 import { eventBus, generateEventId, type RealtimeEvent, type EventType } from "./event-bus.js";

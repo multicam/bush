@@ -2,7 +2,7 @@
  * Bush Platform - Transcript Component Types
  *
  * Types for transcript panel, word display, and caption components.
- * Reference: specs/06-transcription-and-captions.md Section 7
+ * Reference: specs/08-transcription.md Section 7
  */
 
 import type {

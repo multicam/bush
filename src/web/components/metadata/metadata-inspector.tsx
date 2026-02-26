@@ -3,7 +3,7 @@
  *
  * Sidebar panel for viewing and editing file metadata.
  * Displays technical metadata (read-only) and built-in/custom editable fields.
- * Reference: specs/00-atomic-features.md Section 6
+ * Reference: specs/00-product-reference.md Section 6
  */
 "use client";
 

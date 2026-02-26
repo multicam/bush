@@ -3,7 +3,7 @@
  *
  * Drag-and-drop zone for file uploads with MIME validation.
  * Reference: IMPLEMENTATION_PLAN.md 2.1 [P1] Drag-and-Drop UI
- * Reference: specs/03-file-management.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

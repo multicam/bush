@@ -3,10 +3,40 @@ description: Establish @IMPLEMENTATION_PLAN.md based on @specs/*
 model: glm-5
 ---
 
-0a. Study `specs/*` with up to 250 parallel subagents to learn the application specifications.
-0b. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
-0c. Study `src/lib/*` with up to 250 parallel subagents to understand shared utilities & components.
-0d. For reference, the application source code is in `src/*`.
+## Phase 0: Spec-to-Implementation Gap Analysis
+
+Before planning, run this 4-step verification to detect drift between specs and code:
+
+**0a. Specs Analysis** — Use up to 250 parallel subagents to extract all requirements from `specs/*`. Catalog each spec file, its requirements, and cross-references. Note any specs that have been added/modified since last plan run.
+
+**0b. Source Inventory** — Use up to 250 parallel subagents to catalog everything actually implemented in `src/*`. Map: modules → functions/classes → features.
+
+**0c. Gap Finder** — Use subagents to search for:
+- TODO/FIXME comments
+- Placeholder implementations (stub functions, `throw new Error('not implemented')`)
+- Skipped tests (`.skip`, `xit`)
+- Hardcoded values that should be configurable
+- Missing error handling
+
+**0d. Reference Checker** — Detect stale spec references in:
+- IMPLEMENTATION_PLAN.md (references to renamed/deleted specs)
+- Source code comments referencing old spec sections
+- Doc strings with outdated spec links
+
+**0e. Deep Analysis (conditional)** — If specs/ have changed since last plan run, use a GLM-5 subagent with deep thinking (`thinking.type=enabled`) to analyze impact:
+- Which implemented features are now orphaned or conflict with new specs?
+- Which code needs deletion vs rewriting?
+- Draft concrete deletion/rewrite tasks for IMPLEMENTATION_PLAN.md
+
+**0f. Update IMPLEMENTATION_PLAN.md** — Add a "Spec Gaps & Analysis" section at the top containing:
+- List of gaps found (TODOs, placeholders, skipped tests)
+- Stale reference fix tasks (with file:line details)
+- Deletion tasks for code that no longer matches specs
+- Rewrite tasks for code that partially matches new specs
+
+---
+
+## Phase 1: Implementation Planning
 
 1. Study @IMPLEMENTATION_PLAN.md (if present; it may be incorrect) and use up to 500 subagents to study existing source code in `src/*` and compare it against `specs/*`. Use a GLM-5 subagent with deep thinking enabled (`thinking.type=enabled`) to analyze findings, prioritize tasks, and create/update @IMPLEMENTATION_PLAN.md as a bullet point list sorted in priority of items yet to be implemented. Deep think. Consider searching for TODO, minimal implementations, placeholders, skipped/flaky tests, and inconsistent patterns. Study @IMPLEMENTATION_PLAN.md to determine starting point for research and keep it up to date with items considered complete/incomplete using subagents.
 
@@ -19,12 +49,14 @@ IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is 
 - Multi-step reasoning tasks
 - Technical solution design and architecture
 - Strategy planning and decision-making
+- Impact analysis when specs change
 
 For simple searches and reads, use faster subagents. Reserve GLM-5 with deep thinking for:
 - Debugging complex issues
 - Architectural decisions
 - Analyzing findings from parallel subagents
 - Prioritizing tasks
+- Spec-to-code impact analysis
 
 **Sampling Parameters** (GLM-5 defaults):
 - `temperature`: 1.0 (default)

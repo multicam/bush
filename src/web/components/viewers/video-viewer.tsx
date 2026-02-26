@@ -2,7 +2,7 @@
  * Bush Platform - Video Viewer Component
  *
  * Full-featured video player with professional controls.
- * Reference: specs/00-atomic-features.md Section 9.1-9.3
+ * Reference: specs/00-product-reference.md Section 9.1-9.3
  * Reference: IMPLEMENTATION_PLAN.md Section 2.6
  */
 "use client";

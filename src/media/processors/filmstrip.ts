@@ -2,7 +2,7 @@
  * Bush Platform - Filmstrip Generation Processor
  *
  * Generates hover-scrub filmstrip sprite sheets for video files.
- * Reference: specs/15-media-processing.md Section 3
+ * Reference: specs/07-media-processing.md Section 3
  */
 import { storage, storageKeys } from "../../storage/index.js";
 import type {

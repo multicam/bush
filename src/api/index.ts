@@ -3,8 +3,8 @@
  *
  * Node.js + Hono backend server with CORS, health checks, API routes, and WebSocket.
  * Uses Bun.serve() for native performance.
- * Reference: specs/17-api-complete.md
- * Reference: specs/14-realtime-collaboration.md
+ * Reference: specs/04-api-reference.md
+ * Reference: specs/05-realtime.md
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -141,7 +141,7 @@ app.get("/", (c) => {
 });
 
 // API V4 Routes
-// Reference: specs/17-api-complete.md
+// Reference: specs/04-api-reference.md
 const v4 = new Hono();
 
 // Apply rate limiting to all V4 routes

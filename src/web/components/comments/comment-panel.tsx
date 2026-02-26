@@ -2,8 +2,8 @@
  * Bush Platform - Comment Panel Component
  *
  * Sidebar panel for displaying and managing comments on files/assets.
- * Reference: specs/04-review-and-approval.md
- * Reference: specs/17-api-complete.md Section 6.8
+ * Reference: specs/04-api-reference.md
+ * Reference: specs/04-api-reference.md Section 6.8
  */
 "use client";
 

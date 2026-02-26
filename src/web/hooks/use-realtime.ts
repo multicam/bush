@@ -2,7 +2,7 @@
  * Bush Platform - React Real-time Hook
  *
  * React hooks for subscribing to real-time events via WebSocket.
- * Reference: specs/14-realtime-collaboration.md Section 11.2
+ * Reference: specs/05-realtime.md Section 11.2
  */
 "use client";
 

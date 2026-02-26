@@ -2,7 +2,7 @@
  * Bush Platform - Collections Routes
  *
  * API routes for collection management.
- * Reference: specs/17-api-complete.md Section 6.11
+ * Reference: specs/04-api-reference.md Section 6.11
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

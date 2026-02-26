@@ -2,7 +2,7 @@
  * Bush Platform - Transcription Job Processor
  *
  * BullMQ job processor for transcription jobs.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 import { db, sqlite } from "../db/index.js";
 import { transcripts, transcriptWords, files } from "../db/schema.js";

@@ -2,7 +2,7 @@
  * Bush Platform - Bulk Operations Routes
  *
  * API routes for bulk file and folder operations.
- * Reference: specs/17-api-complete.md Section 7
+ * Reference: specs/04-api-reference.md Section 7
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

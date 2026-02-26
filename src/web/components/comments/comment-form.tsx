@@ -2,7 +2,7 @@
  * Bush Platform - Comment Form Component
  *
  * Form for creating and editing comments with internal toggle.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 "use client";
 

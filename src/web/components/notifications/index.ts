@@ -2,7 +2,7 @@
  * Bush Platform - Notifications Components
  *
  * Export all notification-related components.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 
 export { NotificationBell } from "./notification-bell";

@@ -2,7 +2,7 @@
  * Bush Platform - Deepgram Transcription Provider
  *
  * Implementation of transcription using Deepgram Nova-2.
- * Reference: specs/06-transcription-and-captions.md
+ * Reference: specs/08-transcription.md
  */
 import type {
   ITranscriptionProvider,

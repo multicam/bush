@@ -1,284 +1,231 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.83 - Plan Mode Verification Iteration 4)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (26 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (136 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
+**Last updated**: 2026-02-27 (v0.0.84 - Deep Research Audit)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. New audit identified production-readiness gaps (P2/P3) from deep codebase analysis.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
-
----
-
-## ~~CRITICAL BLOCKER: Database Migration Drift (P1)~~ -- RESOLVED
-
-This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 26 tables, all columns, and all indexes defined in `schema.ts`. Fresh database deployments will work correctly.
 
 ---
 
 ## IMPLEMENTATION STATISTICS
 
-### Verification (2026-02-27)
+**Verified via comprehensive code analysis (2026-02-27):**
 
-**Verified via comprehensive code analysis:**
-- All tests pass (81 test files)
-- API endpoints: 136 total across 18 route modules (excluding index.ts and test files)
-- Database schema: 26 tables defined in schema.ts
-- Database migration: 26 tables in migrate.ts (100% coverage - migration drift resolved)
-- Media processing: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
-- Frontend viewers: 4 implemented (video, audio, image, pdf)
-- Frontend components: 52 TSX components (non-test)
-- Web pages: 16 Next.js pages
-
-| Metric | Status | Notes |
-|--------|--------|-------|
-| **API Endpoints** | 136 (100%) | 18 route modules: accounts(10), auth(3), bulk(7), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(10), search(2), shares(11), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
-| **Database Schema (schema.ts)** | 26 tables (100%) | All tables defined with proper indexes |
-| **Database Migration (migrate.ts)** | 26 tables (100%) | All tables, columns, and indexes now included |
-| **Test Files** | 81 | Comprehensive coverage across all modules |
-| **Spec Files** | 19 | Comprehensive specifications exist |
-| **TODO Comments** | 10 | See detailed breakdown below |
-| **Media Processing** | 100% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
-| **Real-time (WebSocket)** | 100% | Event bus, WebSocket manager, browser client, React hooks, all 26 event types wired |
-| **Email Service** | 100% | SMTP provider implemented, API providers fallback to SMTP |
-| **Member Management** | 100% | List/invite/update/remove members with role checks |
-| **Notifications** | 100% | API + UI with real-time updates |
-| **Upload System** | 100% | Chunked upload, resumable, folder preservation |
-| **Annotation Tools** | 100% | Canvas overlay, drawing tools, color/stroke picker, undo/redo |
-| **Share System** | 100% | API + UI (list, detail, new, public pages) |
-| **Folder Navigation** | 100% | FolderTree sidebar, Breadcrumbs, create folder modal |
-| **Collections** | 100% | API + UI (list, detail pages) |
-| **Transcription** | 100% | API + Deepgram/faster-whisper providers |
-| **Viewers** | 100% | Video, Audio, Image, PDF |
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **API Endpoints** | 136 | 18 route modules: accounts(10), auth(3), bulk(7), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(10), search(2), shares(11), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
+| **Database Tables** | 26 | schema.ts and migrate.ts in sync (100% coverage) |
+| **Test Files** | 81 | 80 .test.ts + 1 .test.tsx |
+| **Spec Files** | 18 | Comprehensive specifications (+ README.md index) |
+| **Frontend Components** | 52 | TSX components (non-test) |
+| **Web Pages** | 16 | Next.js pages |
+| **Media Processors** | 5 | metadata, thumbnail, proxy, waveform, filmstrip |
+| **Email Templates** | 10 | All implemented via SMTP provider |
+| **WebSocket Events** | 26 | All event types wired |
+| **TODO Comments** | 10 | 1 minor (PDF text layer), 9 informational |
 
 ---
 
-## TODO COMMENTS ANALYSIS (10 total)
-
-### Important Severity (0)
-
-All previously important TODOs have been resolved.
-
-### Minor Severity (1)
-
-These are nice-to-fix but not blocking:
-
-1. **PDF Viewer Text Layer** - `src/web/components/viewers/pdf-viewer.tsx:253`
-   - Issue: pdf.js v4+ API changes for text layer
-   - Impact: Cannot select/copy text from PDFs
-
-### Informational (9)
-
-These TODOs are documentation/placeholder comments, not implementation gaps:
-
-2-6. **Email Provider API Implementations (5 TODOs)** - `src/lib/email/index.ts:73-97`
-   - SendGrid, SES, Postmark, Resend providers have placeholder switch cases
-   - **Status**: These now fallback to the fully implemented SMTP provider
-   - **Impact**: No production issue - SMTP provider handles all email delivery
-   - **Future**: Optional to implement native API integrations for specific providers
-
-7. ~~**Collection File Viewer** - `src/web/app/projects/[id]/collections/[collectionId]/page.tsx:364`~~ -- RESOLVED (v0.0.76)
-   - Now navigates to file viewer page when clicking files in collection view
-
-8-10. **Email Provider Documentation (3 TODOs)** - `src/lib/email/index.ts:8-11`
-   - These are JSDoc comments listing supported providers
-   - **Status**: Documentation only, not implementation gaps
-
----
-
-## PRIORITY TASK LIST - PRODUCTION READINESS
-
-**MVP features are functionally complete**, but the following items must be addressed before production deployment.
+## PRIORITY TASK LIST
 
 ### Legend
-- **P1**: Critical - Blocks fresh deployments or has security implications
-- **P2**: Important - Should be fixed before production launch
-- **P3**: Minor - Nice-to-have, can be deferred
+- **P1**: Critical -- blocks deployment or has security implications
+- **P2**: Important -- should fix before production launch
+- **P3**: Minor -- can defer post-launch
 
 ---
 
-## P1 - CRITICAL (Must Fix Before Fresh Deployment)
+## P1 - CRITICAL
 
-**All P1 items have been resolved.**
+**All P1 items resolved.** Database migration drift fixed in v0.0.56.
 
 ---
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-### ~~[P2] Permission Validation Before Grant [2h]~~ -- COMPLETED (v0.0.70)
+### [P2] Stale Spec References in Source Code [2h] -- NOT STARTED
 
-- `validatePermissionChange()` is now called from `grantProjectPermission()` and `grantFolderPermission()`
-- Prevents granting permissions that would lower inherited permissions
-- Location: `src/permissions/service.ts`
+- **Problem**: 107 stale spec references across ~60 source files (comments pointing to old spec filenames like `specs/17-api-complete.md`, `specs/12-authentication.md`, `specs/16-storage-and-data.md`, etc.)
+- **Impact**: Developer confusion; comments point to non-existent files
+- **Solution**: Mass find/replace across codebase:
+  - `specs/17-api-complete.md` → `specs/04-api-reference.md`
+  - `specs/12-authentication.md` → `specs/02-authentication.md`
+  - `specs/16-storage-and-data.md` → `specs/06-storage.md`
+  - `specs/15-media-processing.md` → `specs/07-media-processing.md`
+  - `specs/14-realtime-collaboration.md` → `specs/05-realtime.md`
+  - `specs/06-transcription-and-captions.md` → `specs/08-transcription.md`
+  - `specs/13-billing-and-plans.md` → `specs/13-billing.md`
+  - `specs/00-complete-support-documentation.md` → `specs/03-permissions.md` (or relevant spec)
+  - `specs/00-atomic-features.md` → `specs/00-product-reference.md`
+  - `specs/04-review-and-approval.md` → `specs/04-api-reference.md` (comments section)
+  - `specs/03-file-management.md` → `specs/04-api-reference.md` (files section)
+  - `specs/05-sharing-and-presentations.md` → `specs/04-api-reference.md` (shares section)
 
-### ~~[P2] Transcription Permission Checks [2h]~~ -- COMPLETED (v0.0.69)
+### [P2] CORS Hardcoded Localhost Origin [30m] -- NOT STARTED
 
-- `hasEditAccess` and `hasShareAccess` now use `permissionService.getProjectPermission()` for proper access checks
-- Location: `src/api/routes/transcription.ts`
+- **Problem**: `src/api/index.ts:51` — `http://localhost:3000` is always added to CORS allowed origins, including production
+- **Impact**: Security — localhost origin accepted in production
+- **Solution**: Conditionally add localhost only when `NODE_ENV !== 'production'`
 
-### ~~[P2] Redis Cache Invalidation for Role Changes [30m]~~ -- COMPLETED (v0.0.69)
+### [P2] Webhook Events Never Emitted [2h] -- NOT STARTED
 
-- `invalidateOnRoleChange()` is called at lines 596 and 667 in `src/api/routes/accounts.ts`
-- Role changes now immediately invalidate affected sessions
+- **Problem**: `emitWebhookEvent` is exported from `src/api/routes/webhooks.ts` and re-exported from `routes/index.ts`, but no production code ever calls it. 7 webhook registration endpoints work, but events are never delivered.
+- **Impact**: Users can register webhooks but will never receive events
+- **Solution**: Wire `emitWebhookEvent` calls into file, comment, share, project, and member route handlers per the 19 event types in `specs/04-api-reference.md`
 
-### ~~[P2] Share Channel Permission Check [2h]~~ -- COMPLETED (v0.0.71)
+### [P2] Notifications Never Created From Routes [2h] -- NOT STARTED
 
-- Proper account access check now implemented
-- Location: `src/realtime/ws-manager.ts`
+- **Problem**: `createNotification` and `NOTIFICATION_TYPES` are exported from `src/api/routes/notifications.ts` but never called from any route handler. The full notification system exists (API, UI, real-time delivery) but nothing triggers it.
+- **Impact**: Users see an empty notification panel — the feature appears broken
+- **Solution**: Add `createNotification` calls to comment routes (mentions, replies), share routes, file processing completion, member invitation, assignment changes
 
-### ~~[P2] File Channel Permission Check [1h]~~ -- COMPLETED (v0.0.71)
+### [P2] AssemblyAI Provider Will Crash at Runtime [30m] -- NOT STARTED
 
-- Proper project access check now implemented
-- Location: `src/realtime/ws-manager.ts`
+- **Problem**: `assemblyai` is a valid option in `TRANSCRIPTION_PROVIDER` config enum (`src/config/env.ts:93`) and DB schema (`src/db/schema.ts:587`), but no provider class exists. `src/transcription/processor.ts:40-51` hits the `default` case and throws.
+- **Impact**: Runtime crash if `TRANSCRIPTION_PROVIDER=assemblyai` is set
+- **Solution**: Remove `assemblyai` from the config enum and DB schema, or add a clear "not implemented" error with guidance
 
-### ~~[P2] Comment Permission Check [1h]~~ -- COMPLETED (v0.0.72)
+### Previously Completed P2 Items
 
-- Comment deletion now properly checks for owner, account admin, or full_access permission
-- Location: `src/api/routes/comments.ts`
-
-### ~~[P2] Email Provider Implementation [4h]~~ -- COMPLETED (v0.0.73)
-
-- SMTP provider is now fully implemented with template rendering
-- All 10 email templates implemented (member-invitation, password-reset, welcome, comment-mention, comment-reply, share-created, email-verification, file-processed, export-complete, notification-digest)
-- Configuration via `EMAIL_PROVIDER` environment variable
-- Nodemailer dependency added
-- Location: `src/lib/email/smtp.ts`
-- Tests: 75 passing tests across email module
-
-### ~~[P2] CDN Provider Interface [4h]~~ -- COMPLETED (v0.0.74)
-
-- `CDNProvider` interface implemented with `getDeliveryUrl()`, `invalidate()`, `invalidatePrefix()` methods
-- Bunny CDN provider implementation with token-based URL signing
-- No-op provider for when CDN is disabled
-- Configuration via `CDN_PROVIDER`, `CDN_BASE_URL`, `CDN_SIGNING_KEY` environment variables
-- Support for content-type-specific cache TTLs (thumbnails: 30 days, proxies: 7 days, HLS playlists: 5 min)
-- Location: `src/storage/cdn-types.ts`, `src/storage/cdn-provider.ts`
-- Spec refs: `specs/16-storage-and-data.md` Section 5
-
-### ~~[P2] Session Limits Enforcement [4h]~~ -- COMPLETED (v0.0.74)
-
-- Max 10 concurrent sessions per user now enforced
-- Oldest sessions evicted when limit exceeded
-- Configuration via `MAX_CONCURRENT_SESSIONS` environment variable (default: 10)
-- Location: `src/auth/session-cache.ts`
-- Spec refs: `specs/12-authentication.md`
-
-### [P2] Grant Permission API Exposure [4h] -- COMPLETED (v0.0.75)
-
-- Implemented member management endpoints for workspaces and projects
-- Workspace endpoints: GET/POST/PUT/DELETE /v4/workspaces/:id/members
-- Project endpoints: GET/POST/PUT/DELETE /v4/projects/:id/members
-- Uses `permissionService.grantWorkspacePermission()` and `permissionService.grantProjectPermission()`
-- Uses `permissionService.revokeWorkspacePermission()` and `permissionService.revokeProjectPermission()`
-- Requires `full_access` permission to add/update/remove members
-- Validates that target users are account members before granting permissions
-- Location: `src/api/routes/workspaces.ts`, `src/api/routes/projects.ts`
-- Spec refs: `specs/17-api-complete.md` Section 6.2, 6.3
+- ~~Permission validation before grant~~ — v0.0.70
+- ~~Transcription permission checks~~ — v0.0.69
+- ~~Redis cache invalidation for role changes~~ — v0.0.69
+- ~~Share channel permission check~~ — v0.0.71
+- ~~File channel permission check~~ — v0.0.71
+- ~~Comment permission check~~ — v0.0.72
+- ~~Email provider implementation (SMTP)~~ — v0.0.73
+- ~~CDN provider interface (Bunny CDN)~~ — v0.0.74
+- ~~Session limits enforcement~~ — v0.0.74
+- ~~Grant permission API exposure~~ — v0.0.75
 
 ---
 
 ## P3 - MINOR (Can Be Deferred)
 
+### [P3] BunnyCDN Purge Is a No-Op Stub [1h] -- NOT STARTED
+
+- `src/storage/cdn-provider.ts:102-155` — `invalidate()` and `invalidatePrefix()` log messages but make no HTTP calls to Bunny's purge API. Cache invalidation does not actually work.
+
+### [P3] Zero Zod Validation in Route Handlers [4h] -- NOT STARTED
+
+- No route uses Zod for request body validation; all validation is manual `if` checks. Zod is only used in `src/config/env.ts`. Inconsistent error messages across routes.
+
+### [P3] Email Provider Stubs [4h] -- NOT STARTED
+
+- SendGrid, SES, Postmark, Resend fall back to SMTP with `console.warn` (`src/lib/email/index.ts:72-108`). SMTP works; native API integrations deferred.
+
+### [P3] Auth Context Swallows Errors [30m] -- NOT STARTED
+
+- `src/web/context/auth-context.tsx:92-100` catches errors and silently returns unauthenticated state. No logging — auth failures invisible in browser console.
+
+### [P3] SMTP Defaults Are Dev-Only [15m] -- NOT STARTED
+
+- `src/config/env.ts:101-105` defaults: port 1025 (Mailpit), host `localhost`, from `noreply@bush.local`. Production should require explicit config or fail loudly.
+
+### [P3] Media Job Duration/Dimension Placeholders [1h] -- NOT STARTED
+
+- `src/media/index.ts:100-125` — filmstrip, proxy, waveform jobs enqueued with `durationSeconds: 0`, `sourceWidth: 0`, `sourceHeight: 0`. Processors handle gracefully (skip if 0) but initial job records have wrong data.
+
+### [P3] Dead Exports and Config [15m] -- NOT STARTED
+
+- `cdn` export from `src/storage/index.ts:359` never imported
+- `BACKUP_STORAGE_BUCKET` defined in env.ts but never referenced
+- `createNotifications` (plural) exported but not re-exported
+
+### [P3] Missing /docs Endpoint [2h] -- NOT STARTED
+
+- `src/api/index.ts:134` references `/docs` but the endpoint returns a 404
+
+### [P3] Body Parsing Error Swallowing [30m] -- NOT STARTED
+
+- Several routes use `.catch(() => ({}))` for body parsing (`auth.ts:28,95`, `projects.ts:229`, `transcription.ts:165`, `shares.ts:905`). Malformed requests silently treated as empty objects.
+- `transcription.ts:859` — caption storage delete errors silently swallowed with `.catch(() => {})`
+
+### [P3] Permissions Integration Test Conditionally Skipped [15m] -- NOT STARTED
+
+- `src/permissions/permissions-integration.test.ts:86` — entire suite skipped when `better-sqlite3` unavailable. Ensure CI always has the native module.
+
 ### [P3] PDF Viewer Text Layer [4h] -- NOT STARTED
 
-- **Problem**: TODO at `src/web/components/viewers/pdf-viewer.tsx:253`
-- **Impact**: Cannot select/copy text from PDFs
-- **Cause**: pdf.js v4+ API changes
-
-### ~~[P3] Collection Detail File Viewer Integration [2h]~~ -- COMPLETED (v0.0.76)
-
-- Fixed: Clicking files in collection view now navigates to file viewer page
-- Location: `src/web/app/projects/[id]/collections/[collectionId]/page.tsx`
+- `src/web/components/viewers/pdf-viewer.tsx:253` — pdf.js v4+ API changes broke text layer; cannot select/copy text from PDFs
 
 ### [P3] Document Processing [4d] -- DEFERRED
 
-- PDF thumbnail/previews
-- DOCX/PPTX/XLSX conversion (LibreOffice headless)
-- Interactive ZIP viewer (sandboxed iframe)
-- **Dependencies**: Worker process - DONE
+- PDF thumbnails, DOCX/PPTX/XLSX conversion (LibreOffice headless), interactive ZIP viewer
 
 ### [P3] Image Format Support [4h] -- DEFERRED
 
-- RAW via proxy (libraw/dcraw binary required)
-- Adobe format proxy (ImageMagick required)
-- HDR via tone-mapped proxy
-- **Dependencies**: 2.2 (image processing) - DONE
+- RAW (requires libraw/dcraw), Adobe formats (requires ImageMagick), HDR tone mapping
 
 ### [P3] Access Groups [3d] -- DEFERRED
 
-- Bulk permission management via groups
-- Group CRUD, member assignment
-- Plan-gate check for Team+ tier
-- **Dependencies**: specs/13-billing-and-plans.md (deferred)
+- Bulk permission management via groups; depends on `specs/13-billing.md`
 
 ### [P3] API Key Token Type [1d] -- DEFERRED
 
-- Generate/validate `bush_key_` prefixed tokens
-- API key management CRUD endpoints
-- Key scoping (read-only, read-write, admin)
-- **Spec refs**: `specs/17-api-complete.md` Section 2.2
+- `bush_key_` prefixed tokens, key management CRUD, scoping. Spec: `specs/04-api-reference.md` Section 2.2
 
 ### [P3] OpenAPI Spec Generation [1d] -- DEFERRED
 
-- Generate OpenAPI 3.1 spec from Hono routes
-- Serve at `/v4/openapi.json`
-- **Dependencies**: Routes complete - DONE
+- Generate OpenAPI 3.1 spec from Hono routes, serve at `/v4/openapi.json`
 
-### [P3] Missing API Endpoints (Lower Priority) [1d] -- PARTIALLY COMPLETED
+### [P3] Route Test Coverage [2d] -- DEFERRED
 
-- ~~`POST /v4/projects/:id/duplicate` - Project duplication~~ -- COMPLETED (v0.0.77)
-- ~~`POST /v4/bulk/files/metadata` - Bulk metadata update~~ -- COMPLETED (v0.0.77)
-- ~~`GET/PUT /v4/users/me/notifications/settings` - User notification preferences~~ -- COMPLETED (v0.0.76)
-- ~~`POST /v4/shares/:id/invite` - Share invitation email~~ -- COMPLETED (v0.0.77)
-- `GET /v4/projects/:project_id/shares` - List shares for project -- NOT STARTED (use `/accounts/:accountId/shares?project_id=...`)
+- API routes (18 files), media processing (9 files), realtime (3 files), transcription (5 files) have 0% coverage
+
+### [P3] WebSocket Rate Limit Configuration [30m] -- DEFERRED
+
+- Rate limiting constants hardcoded in `ws-manager.ts`; should be configurable via env
+
+### [P3] Missing API Endpoint [30m] -- DEFERRED
+
+- `GET /v4/projects/:project_id/shares` — use `/accounts/:accountId/shares?project_id=...` as workaround
 
 ---
 
 ## CORRECTLY DEFERRED (No Action Needed)
 
-The following are correctly deferred per spec/README.md:
-
-- Document Processing (PDF thumb, DOCX/PPTX/XLSX) - P3
-- RAW/Adobe Format Thumbnails - P3 (requires dcraw and ImageMagick binaries)
-- Access Groups - P3 (depends on billing)
-- API Key Token Type (`bush_key_`) - P3
-- HLS Generation - Using MP4 proxies with CDN delivery instead
-- AssemblyAI Provider - Deepgram + faster-whisper cover needs
-- Enhanced Search (Visual/Semantic) - Requires AI/ML provider decision
+Per specs/README.md:
+- Document Processing (PDF thumb, DOCX/PPTX/XLSX) — P3
+- RAW/Adobe Format Thumbnails — requires dcraw/ImageMagick binaries
+- Access Groups — depends on billing
+- API Key Token Type (`bush_key_`) — P3
+- HLS Generation — using MP4 proxies with CDN delivery
+- AssemblyAI Provider — Deepgram + faster-whisper cover needs (config enum cleanup is P2)
+- Enhanced Search (Visual/Semantic) — requires AI/ML provider decision
 
 ---
 
-## COMPLETED FEATURES (Historical Reference)
+## COMPLETED FEATURES
 
-### Phase 1: Foundation (100% Complete)
+### Phase 1: Foundation (100%)
 
-- **Authentication**: WorkOS AuthKit, session cache, token refresh
-- **Permissions**: 5-level hierarchy (owner, content_admin, member, guest, reviewer)
-- **API Foundation**: 123 endpoints across 18 route modules
-- **Object Storage**: R2/B2/S3-compatible with pre-signed URLs
-- **Database**: 25 tables defined (migration drift is deployment issue, not schema issue)
+- **Authentication**: WorkOS AuthKit, session cache, token refresh, session limits (max 10)
+- **Permissions**: 5-level hierarchy (owner, content_admin, member, guest, reviewer), validation before grant
+- **API Foundation**: 136 endpoints across 18 route modules
+- **Object Storage**: R2/B2/S3-compatible with pre-signed URLs, CDN provider interface
+- **Database**: 26 tables, migration in sync
 
-### Phase 2: Core Features (100% Complete)
+### Phase 2: Core Features (100%)
 
-- **File Upload**: Chunked, resumable, folder preservation
+- **File Upload**: Chunked, resumable, folder structure preservation
 - **Media Processing**: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
 - **Asset Browser**: Grid/list views, virtualized, folder navigation
 - **Asset Operations**: Copy/move/delete/recover, download
 - **Version Stacking**: Stack management, comparison viewer
-- **Video Player**: JKL shuttle, frame-accurate seek, filmstrip preview
-- **Image Viewer**: Zoom/pan, mini-map
-- **Audio Player**: Waveform visualization, markers
-- **PDF Viewer**: Multi-page, zoom
+- **Viewers**: Video (JKL shuttle, filmstrip), Image (zoom/pan, mini-map), Audio (waveform, markers), PDF (multi-page, zoom)
 - **Comments**: API + UI, annotations, threading
 - **Metadata**: Built-in fields, custom fields API + UI
-- **Notifications**: API + UI, real-time
+- **Notifications**: API + UI, real-time updates
 - **Search**: FTS5 for files and transcripts
 
-### Phase 3: Advanced Features (100% Complete)
+### Phase 3: Advanced Features (100%)
 
 - **Sharing**: API + UI, public pages, passphrase protection
 - **Collections**: API + UI, team/private
 - **Comparison Viewer**: Side-by-side, linked playback/zoom
 - **Transcription**: Deepgram/faster-whisper, FTS5 search, SRT/VTT/TXT export
-- **Real-time**: WebSocket, event bus, all 26 event types
-- **Email Service**: Interface + console provider
+- **Real-time**: WebSocket + event bus, 26 event types
+- **Email**: SMTP provider, 10 templates
 - **Member Management**: Full CRUD with role checks
 
 ---
@@ -290,561 +237,107 @@ The following are correctly deferred per spec/README.md:
 | R1: SQLite at Scale | SQLite WAL for <50 users | DONE |
 | R2: Deployment | Hetzner VPS + systemd + Caddy | DONE |
 | R3: Video Player | Custom HTML5 | DONE |
-| R4: Media Transcoding | FFmpeg validated | DONE |
+| R4: Media Transcoding | FFmpeg | DONE |
 | R5: Large File Upload | Chunked + tus.io | DONE |
 | R6: Transcription | Deepgram + faster-whisper | DONE |
 | R7: Real-time | Bun WebSocket + EventEmitter | DONE |
-| R9: Email | Provider interface | DONE |
-| R10: CDN | Bunny CDN (deferred implementation) | DECIDED |
+| R9: Email | SMTP provider interface | DONE |
+| R10: CDN | Bunny CDN | DONE |
 
 ---
 
-## SUMMARY: ACTION ITEMS FOR PRODUCTION
+## SPEC INCONSISTENCIES
 
-### Must Fix (P1) - Before Any Fresh Deployment
+1. **Token TTL Mismatch** — RESOLVED
+   - `specs/02-authentication.md`: 5 min access / 7 days refresh
+   - Code uses `expires_in: 300` (correct). No further action needed.
 
-**All P1 items have been resolved.** ✅
-
-1. ~~**Database Migration Drift**~~ -- COMPLETED in v0.0.56
-
-### Should Fix (P2) - Before Production Launch
-
-**All P2 items have been resolved.** ✅
-
-2. ~~Permission validation before grant~~ -- COMPLETED v0.0.70
-3. ~~Transcription permission checks~~ -- COMPLETED v0.0.69
-4. ~~Session cache invalidation on role changes~~ -- COMPLETED v0.0.69
-5. ~~Share channel permission check~~ -- COMPLETED v0.0.71
-6. ~~File channel permission check~~ -- COMPLETED v0.0.71
-7. ~~Comment deletion permission check~~ -- COMPLETED v0.0.72
-8. ~~Email provider implementation (SMTP with nodemailer)~~ -- COMPLETED v0.0.73
-9. ~~Session limits enforcement~~ -- COMPLETED v0.0.74
-10. ~~CDN provider implementation (Bunny CDN per specs)~~ -- COMPLETED v0.0.74
-11. ~~Grant permission API exposure~~ -- COMPLETED v0.0.75
-
-### Can Defer (P3)
-
-12. PDF text layer
-13. ~~Collection file viewer integration~~ -- COMPLETED v0.0.76
-14. Document processing
-15. RAW/Adobe image support
-16. Access groups
-17. API key token type
-18. OpenAPI spec generation
-19. Route test coverage (currently minimal)
-20. WebSocket rate limit configuration
-21. ~~Notification settings API~~ -- COMPLETED v0.0.76
+2. **README Deferral Labels** — INFORMATIONAL
+   - `specs/README.md` correctly defers billing to Phase 5, accessibility to Phase 3+
 
 ---
 
-## PRODUCTION READINESS CHECKLIST
+## PRODUCTION READINESS
 
 | Category | Status | Notes |
 |----------|--------|-------|
-| **Core Features** | ✅ Complete | All MVP features implemented |
-| **API Endpoints** | ✅ Complete | 136 endpoints across 18 modules |
-| **Database** | ✅ Complete | 26 tables, migration sync verified |
-| **Authentication** | ✅ Complete | WorkOS AuthKit integration |
-| **Permissions** | ✅ Complete | 5-level hierarchy, all checks wired |
-| **File Storage** | ✅ Complete | S3-compatible with CDN support |
-| **Media Processing** | ✅ Complete | 5 processors (metadata, thumbnail, proxy, waveform, filmstrip) |
-| **Real-time** | ✅ Complete | WebSocket + EventEmitter |
-| **Email** | ✅ Complete | SMTP provider with templates |
-| **Security** | ✅ Complete | Session limits, permission validation |
-| **Testing** | ⚠️ Partial | Core modules tested, route coverage minimal |
-| **Documentation** | ⚠️ Partial | Specs complete, API docs needed |
+| **Core Features** | DONE | All MVP features implemented |
+| **API Endpoints** | DONE | 136 endpoints across 18 modules |
+| **Database** | DONE | 26 tables, migration in sync |
+| **Authentication** | DONE | WorkOS AuthKit, session limits |
+| **Permissions** | DONE | 5-level hierarchy, all checks wired |
+| **File Storage** | DONE | S3-compatible with CDN support |
+| **Media Processing** | DONE | 5 processors |
+| **Real-time** | DONE | WebSocket + EventEmitter |
+| **Email** | DONE | SMTP provider with 10 templates |
+| **Security** | PARTIAL | Session limits and permissions done; CORS localhost issue open (P2) |
+| **Webhooks** | STUB | Registration works but events never emitted (P2) |
+| **Notifications** | STUB | API/UI works but nothing triggers notifications (P2) |
+| **Testing** | PARTIAL | Core modules tested; route/media/realtime coverage 0% |
+| **Documentation** | PARTIAL | Specs complete; 107 stale spec refs in source (P2) |
 
-**Verdict**: Platform is **PRODUCTION READY** for initial deployment.
+**Verdict**: Platform is functionally complete. Five P2 items (stale refs, CORS, webhooks, notifications, AssemblyAI) should be addressed before production.
 
 ---
 
 ## CHANGE LOG
 
-### v0.0.83 (2026-02-27) - Plan Mode Verification Iteration 4
+### v0.0.84 (2026-02-27) - Deep Research Audit
 
-**Analysis Performed:**
-- Direct code analysis via Grep, Glob, Read, and Bash tools
-- Verified all metrics against IMPLEMENTATION_PLAN.md claims
-- Confirmed specs alignment with implementation
-- No subagents available (model configuration issue) - performed analysis directly
+Four parallel research agents analyzed the full codebase against refactored specs. Found: 107 stale spec references in source, webhook/notification dead code paths, AssemblyAI runtime crash risk, CORS localhost in production, BunnyCDN purge stubs, zero Zod validation, silent error swallowing. Rewrote IMPLEMENTATION_PLAN.md with corrected references, compressed changelog, new P2/P3 items.
 
-**Verified Findings:**
-- Database tables: **26** (schema.ts and migrate.ts in sync - 100% coverage)
-- API endpoints: **136** across 18 route modules
-  - accounts(10), auth(3), bulk(7), collections(7), comments(8)
-  - custom-fields(6), files(17), folders(9), metadata(3), notifications(7)
-  - projects(10), search(2), shares(11), transcription(6+3 captions), users(3)
-  - version-stacks(11), webhooks(7), workspaces(9)
-- Test files: **81** (80 *.test.ts + 1 *.test.tsx) - verified via `find` command
-- No skipped tests found (no `.skip()` or `.todo()` patterns)
-- No "Not implemented" errors found
-- Frontend components: **52** TSX component files (non-test)
-- Web pages: **16** Next.js pages
-- Media processors: **5** (metadata, thumbnail, proxy, waveform, filmstrip)
-- Storage layer: S3-compatible provider + CDN provider interface
-- Email: SMTP provider with all templates implemented
+### v0.0.78-v0.0.83 (2026-02-27) - Verification Iterations
 
-**TODO Comments Analysis (10 total):**
-- 5 email provider switch cases (fallback to SMTP - working)
-- 1 PDF text layer (minor - pdf.js v4+ API changes)
-- 4 documentation/JSDoc comments (informational only)
+Six plan-mode verification passes confirmed: 26 tables, 136 endpoints, 81 test files, 52 components, 16 pages, 5 media processors. All prior P1/P2 items confirmed resolved.
 
-**Security Implementations Verified:**
-- WebSocket permission checks for all channel types ✅
-- Session limit enforcement ✅
-- Permission validation before grant ✅
-- Session cache invalidation on role changes ✅
-- CDN provider with token-based signing ✅
+### v0.0.77 (2026-02-27) - Missing API Endpoints
 
-**Spec Alignment:**
-- specs/00-product-reference.md: All MVP features implemented
-- specs/01-data-model.md: 26 tables match schema
-- specs/02-authentication.md: WorkOS AuthKit + session management
-- specs/03-permissions.md: 5-level hierarchy + inheritance
-- specs/README.md: Tech stack confirmed
-
-**Status Summary:**
-- All P1 (Critical) items: **RESOLVED** ✅
-- All P2 (Important) items: **RESOLVED** ✅
-- P3 (Minor) items: Deferred (as expected)
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- Ready for production deployment
-
-### v0.0.82 (2026-02-27) - Plan Mode Verification Iteration 3
-
-**Analysis Performed:**
-- Comprehensive verification via direct file system analysis
-- Verified all metrics against IMPLEMENTATION_PLAN.md claims
-- Confirmed specs alignment with implementation
-
-**Verified Findings:**
-- Database tables: **26** (schema.ts and migrate.ts in sync - 100% coverage)
-- API endpoints: **136** across 18 route modules
-  - accounts(10), auth(3), bulk(7), collections(7), comments(8)
-  - custom-fields(6), files(17), folders(9), metadata(3), notifications(7)
-  - projects(10), search(2), shares(11), transcription(6), users(3)
-  - version-stacks(11), webhooks(7), workspaces(9)
-- Test files: **81** (verified count)
-- Frontend components: **52** TSX component files (non-test)
-- Web pages: **16** Next.js pages
-- Media processors: **5** (metadata, thumbnail, proxy, waveform, filmstrip)
-- Storage layer: S3-compatible provider + CDN provider interface
-- Email: SMTP provider with all templates implemented
-
-**TODO Comments (10 total):**
-- 5 email provider switch cases in src/lib/email/index.ts (fallback to SMTP - working)
-- 1 PDF text layer in src/web/components/viewers/pdf-viewer.tsx (nice-to-have, pdf.js v4+ API changes)
-- 4 documentation comments in src/lib/email/index.ts (JSDoc comments)
-
-**Security Implementations Verified:**
-- WebSocket permission checks for all channel types ✅
-- Session limit enforcement ✅
-- Permission validation before grant ✅
-- Session cache invalidation on role changes ✅
-- CDN provider with token-based signing ✅
-
-**Spec Alignment:**
-- specs/00-product-reference.md: All MVP features implemented
-- specs/01-data-model.md: 26 tables match schema
-- specs/02-authentication.md: WorkOS AuthKit + session management
-- specs/03-permissions.md: 5-level hierarchy + inheritance
-- specs/README.md: Tech stack confirmed
-
-**Status Summary:**
-- All P1 (Critical) items: **RESOLVED** ✅
-- All P2 (Important) items: **RESOLVED** ✅
-- P3 (Minor) items: Deferred (as expected)
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- Ready for production deployment
-
-### v0.0.81 (2026-02-27) - Plan Mode Verification Iteration 2
-
-**Analysis Performed:**
-- Direct code analysis via Grep, Glob, and Read tools
-- Re-verified all metrics against IMPLEMENTATION_PLAN.md claims
-- Confirmed specs/README.md test file count updated (80 → 81)
-
-**Verified Findings:**
-- Database tables: **26** (schema.ts and migrate.ts in sync - 100% coverage)
-- API endpoints: **136** across 18 route modules
-  - accounts(10), auth(3), bulk(7), collections(7), comments(8)
-  - custom-fields(6), files(17), folders(9), metadata(3), notifications(7)
-  - projects(10), search(2), shares(11), transcription(6), users(3)
-  - version-stacks(11), webhooks(7), workspaces(9)
-- Test files: **81**
-- Frontend components: **52** TSX component files (non-test)
-- Web pages: **16** Next.js pages
-- Media processors: **5** (metadata, thumbnail, proxy, waveform, filmstrip)
-- Storage layer: S3-compatible provider + CDN provider interface
-- Email: SMTP provider with all templates implemented
-
-**TODO Comments (10 total):**
-- 5 email provider switch cases (fallback to SMTP - working)
-- 1 PDF text layer (nice-to-have, pdf.js v4+ API changes)
-- 4 documentation comments
-
-**Security Implementations Verified:**
-- WebSocket permission checks for all channel types ✅
-- Session limit enforcement ✅
-- Permission validation before grant ✅
-- Session cache invalidation on role changes ✅
-- CDN provider with token-based signing ✅
-
-**Status Summary:**
-- All P1 (Critical) items: **RESOLVED** ✅
-- All P2 (Important) items: **RESOLVED** ✅
-- P3 (Minor) items: Deferred (as expected)
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- Ready for production deployment
-
-### v0.0.80 (2026-02-27) - Plan Mode Verification Re-confirmed
-
-**Analysis Performed:**
-- Comprehensive specs and source code analysis via direct tool usage
-- Verified all database tables (26 in schema.ts, 26 in migrate.ts - 100% sync)
-- Confirmed API endpoint count (136 across 18 route modules)
-- Updated test file count: 80 → 81 (actual count via find)
-- Verified TODO comment count (10 total, all minor/informational)
-
-**Verified Findings:**
-- Database migration: **26 tables** (100% coverage, no drift)
-- API endpoints: **136** (18 route modules)
-- Test files: **81** (comprehensive coverage)
-- Frontend: **53 components**, **16 pages**
-- TODO comments: **10** (5 email providers, 1 PDF text layer, 4 documentation)
-- Skipped tests: **1 conditional** (permissions integration - runs when SQLite available)
-
-**Status Summary:**
-- All P1 (Critical) items: **RESOLVED** ✅
-- All P2 (Important) items: **RESOLVED** ✅
-- P3 (Minor) items: Deferred (as expected)
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- Ready for production deployment
-
-### v0.0.79 (2026-02-27) - Verification Complete
-
-**Analysis Performed:**
-- Comprehensive codebase verification via grep and file analysis
-- Verified all security implementations (WebSocket permissions, session limits, permission validation)
-- Confirmed CDN provider implementation (Bunny CDN with token-based signing)
-- Verified SMTP email provider with all 10 templates
-- Updated test file count: 25 → 80 (actual count via find)
-- Updated page count: 17 → 16 (actual count via find)
-
-**Verified Implementations:**
-- WebSocket permission checks for all channel types (project, file, user, share)
-- Session limit enforcement with eviction of oldest sessions
-- Permission validation called before granting permissions
-- Session cache invalidation on role changes
-- CDN provider interface with Bunny CDN implementation
-- SMTP provider with inline template rendering
-
-**Status Summary:**
-- All P1 (Critical) items: **RESOLVED** ✅
-- All P2 (Important) items: **RESOLVED** ✅
-- P3 (Minor) items: Deferred (as expected)
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- Ready for production deployment
-
-### v0.0.78 (2026-02-27) - Comprehensive Analysis Verification
-
-**Analysis Performed:**
-- Complete codebase review comparing implementation against specs
-- Verified all API endpoint counts (136 total across 18 modules)
-- Confirmed database schema and migration sync (26 tables, 100% coverage)
-- Reviewed all TODO comments (10 total, 1 minor severity remaining)
-- Verified frontend component count (53 components, 17 pages)
-
-**Verified Findings:**
-- API endpoint count: **136** (confirmed via grep pattern match)
-- Database tables: **26** (schema.ts and migrate.ts in sync)
-- TODO comments: **10 total** (9 informational, 1 minor)
-  - 5 email provider switch cases (fallback to SMTP - working)
-  - 1 PDF text layer (nice-to-have)
-  - 4 documentation comments
-- All P1 (Critical) and P2 (Important) items: **RESOLVED**
-
-**Status Summary:**
-- Project status: **MVP FUNCTIONALLY COMPLETE**
-- All Phase 1, 2, and 3 features implemented
-- Ready for production deployment
-
-### v0.0.77 (2026-02-27) - Missing API Endpoints Implementation
-
-**Bulk Metadata Update:**
-- Added `POST /v4/bulk/files/metadata` - Update metadata on multiple files
-- Supports built-in fields (rating, status, keywords, notes, assignee_id)
-- Supports custom field values with validation
-- Validates all fields before making any changes
-- Location: `src/api/routes/bulk.ts`
-- Spec refs: `specs/04-api-reference.md` Section 7
-
-**Project Duplication:**
-- Added `POST /v4/projects/:id/duplicate` - Duplicate a project
-- Copies project settings, folder structure, and file records
-- Creates new IDs for all duplicated resources
-- Updates storage usage for the account
-- Optional `name` parameter to customize duplicated project name
-- Location: `src/api/routes/projects.ts`
-- Spec refs: `specs/04-api-reference.md` Section 6.3
-
-**Share Invitation:**
-- Added `POST /v4/shares/:id/invite` - Send share invitation email
-- Sends emails to multiple recipients (max 50)
-- Uses existing `sendShareCreated` email template
-- Logs share activity for each invitation sent
-- Location: `src/api/routes/shares.ts`
-- Spec refs: `specs/04-api-reference.md` Section 6.9
-
-**API Endpoint Count:** 133 → 136 (3 new endpoints)
-- bulk: 6 → 7 (added metadata)
-- projects: 9 → 10 (added duplicate)
-- shares: 10 → 11 (added invite)
+Added `POST /v4/bulk/files/metadata`, `POST /v4/projects/:id/duplicate`, `POST /v4/shares/:id/invite`. Count: 133 → 136.
 
 ### v0.0.76 (2026-02-27) - Notification Settings & Collection File Viewer
 
-**Notification Settings API:**
-- Added `GET /v4/users/me/notifications/settings` - Get notification preferences
-- Added `PUT /v4/users/me/notifications/settings` - Update notification preferences
-- Added `notification_settings` database table with 22 preference fields
-- Preferences grouped into email, in_app, and digest categories
-- Auto-creates default settings on first access
-- Location: `src/api/routes/notifications.ts`
-- Location: `src/db/schema.ts`, `src/db/migrate.ts`
-- Spec refs: `specs/17-api-complete.md` Section 6.15
+Added notification settings API (GET/PUT), `notification_settings` table (26th table). Fixed collection file click navigation. Count: 131 → 133.
 
-**Collection File Viewer Integration:**
-- Fixed file click handler in collection detail page
-- Clicking files now navigates to file viewer page instead of logging to console
-- Location: `src/web/app/projects/[id]/collections/[collectionId]/page.tsx`
+### v0.0.75 (2026-02-27) - Member Management API
 
-**WebSocket Manager Test Fix:**
-- Fixed mock for `../db/schema.js` to include all required tables
-- Fixed mock for `../db/index.js` to support innerJoin queries
-- Location: `src/realtime/ws-manager.test.ts`
-
-**API Endpoint Count:** 131 → 133 (2 new notification settings endpoints)
-**Database Table Count:** 25 → 26 (notification_settings table)
-
-### v0.0.75 (2026-02-27) - Grant Permission API Exposure
-
-**Workspace Member Management:**
-- Added `GET /v4/workspaces/:id/members` - List workspace members
-- Added `POST /v4/workspaces/:id/members` - Add member to workspace
-- Added `PUT /v4/workspaces/:id/members/:user_id` - Update member permission
-- Added `DELETE /v4/workspaces/:id/members/:user_id` - Remove member from workspace
-- Uses `permissionService.grantWorkspacePermission()` and `revokeWorkspacePermission()`
-- Requires `full_access` permission for add/update/delete operations
-- Location: `src/api/routes/workspaces.ts`
-
-**Project Member Management:**
-- Added `GET /v4/projects/:id/members` - List project members
-- Added `POST /v4/projects/:id/members` - Add member to project
-- Added `PUT /v4/projects/:id/members/:user_id` - Update member permission
-- Added `DELETE /v4/projects/:id/members/:user_id` - Remove member from project
-- Uses `permissionService.grantProjectPermission()` and `revokeProjectPermission()`
-- Requires `full_access` permission for add/update/delete operations
-- Location: `src/api/routes/projects.ts`
-
-**API Endpoint Count:** 123 → 131 (8 new member management endpoints)
-
-**Spec refs:** `specs/17-api-complete.md` Sections 6.2, 6.3
+Added 8 workspace/project member management endpoints. Count: 123 → 131.
 
 ### v0.0.74 (2026-02-26) - Session Limits & CDN Provider
 
-**Session Limits Enforcement:**
-- Implemented max concurrent sessions enforcement (default: 10 sessions per user)
-- Oldest sessions automatically evicted when limit exceeded
-- Added `MAX_CONCURRENT_SESSIONS` environment variable for configuration
-- Added `enforceSessionLimit()` and `getSessionCount()` methods to session cache
-- Session limits enforced during `sessionCache.set()` operation
-- Location: `src/auth/session-cache.ts`, `src/config/env.ts`
-- Spec refs: `specs/12-authentication.md` (Session Limits section)
+Session limit enforcement (max 10, oldest evicted). Bunny CDN with token-based URL signing.
 
-**CDN Provider Interface:**
-- Created `ICDNProvider` interface with `getDeliveryUrl()`, `invalidate()`, `invalidatePrefix()` methods
-- Implemented Bunny CDN provider with token-based URL signing
-- Added NoCDNProvider for when CDN is disabled
-- Configuration via `CDN_PROVIDER`, `CDN_BASE_URL`, `CDN_SIGNING_KEY` environment variables
-- Content-type-specific cache TTLs (thumbnails: 30 days, proxies: 7 days, HLS playlists: 5 min)
-- Added comprehensive tests for CDN providers
-- Location: `src/storage/cdn-types.ts`, `src/storage/cdn-provider.ts`
-- Spec refs: `specs/16-storage-and-data.md` Section 5
+### v0.0.73 (2026-02-26) - SMTP Email Provider
 
-### v0.0.73 (2026-02-26) - SMTP Email Provider Implementation
-
-**Completed:**
-- Implemented full SMTP email provider with nodemailer
-- Added local template rendering for all 10 email templates:
-  - member-invitation, password-reset, welcome
-  - comment-mention, comment-reply, share-created
-  - email-verification, file-processed, export-complete
-  - notification-digest
-- Added `EMAIL_PROVIDER` environment variable to config
-- Installed nodemailer and @types/nodemailer dependencies
-- Updated email factory to use SMTP by default in production
-- Added comprehensive tests (75 total email tests passing)
-- Location: `src/lib/email/smtp.ts`, `src/lib/email/index.ts`
-
-**Note:** API-based providers (SendGrid, SES, Postmark, Resend) now fall back to SMTP provider instead of console.
+Full SMTP provider via nodemailer, 10 templates, 75 email tests. API providers fall back to SMTP.
 
 ### v0.0.72 (2026-02-26) - Comment Permission Check
 
-**Completed:**
-- Implemented proper permission check for comment deletion
-- Non-owners can now delete comments if they are account admin or have full_access permission on the project
-- Location: `src/api/routes/comments.ts`
+Comment deletion checks for owner, account admin, or `full_access` permission.
 
-### v0.0.71 (2026-02-26) - WebSocket Channel Permission Checks
+### v0.0.71 (2026-02-26) - WebSocket Channel Permissions
 
-**Completed:**
-- Implemented proper permission checks for WebSocket file and share channels
-- File channel now verifies project access before allowing subscription
-- Share channel now verifies account access before allowing subscription
-- Location: `src/realtime/ws-manager.ts`
+File and share channel subscription verifies project/account access.
 
 ### v0.0.70 (2026-02-26) - Permission Validation Before Grant
 
-**Completed:**
-- Added permission validation before granting project and folder permissions
-- `validatePermissionChange()` is now called to prevent lowering inherited permissions
-- Location: `src/permissions/service.ts`
+`validatePermissionChange()` prevents lowering inherited permissions on grant.
 
-### v0.0.69 (2026-02-26) - Session Cache & Transcription Permissions Completed
+### v0.0.69 (2026-02-26) - Session Cache & Transcription Permissions
 
-**Completed:**
-- Session cache invalidation on role changes - `invalidateOnRoleChange()` is called at lines 596 and 667 in accounts.ts (was already implemented)
-- Transcription permission checks - `hasEditAccess` and `hasShareAccess` now use `permissionService.getProjectPermission()` for proper project-level access control
-
-**Impact:**
-- Role changes now immediately invalidate affected user sessions
-- Transcription operations properly verify project-level permissions
+`invalidateOnRoleChange()` wired in accounts.ts. Transcription uses project-level permission checks.
 
 ### v0.0.56 (2026-02-26) - Database Migration Drift Fixed
 
-**Fixed:**
-- Updated `migrate.ts` to include all 25 tables from `schema.ts` (was 11 tables, 44% coverage)
-- Added 14 missing tables: custom_fields, custom_field_visibility, share_assets, share_activity, workspace_permissions, project_permissions, folder_permissions, collections, collection_assets, webhooks, webhook_deliveries, transcripts, transcript_words, captions
-- Added 8 missing columns to files table: technical_metadata, rating, asset_status, keywords, notes, assignee_id, custom_metadata, custom_thumbnail_key
-- Added 3 missing columns to shares table: show_all_versions, show_transcription, featured_field
-- Added all missing indexes (61 total indexes now included)
+migrate.ts updated from 11 to 25 tables. Added 14 missing tables, 8 missing file columns, 3 missing share columns, 61 indexes.
 
-**Impact:**
-- Fresh database deployments now work correctly
-- All features requiring database tables are functional on new installations
+### v0.0.55 (2026-02-18) - Deep Analysis
 
-### v0.0.55 (2026-02-18) - Deep Analysis with 250+ Parallel Subagents
-
-**Analysis Performed:**
-- Launched 10 parallel subagent teams to analyze specs, API routes, shared utilities, database layer, frontend, realtime/storage/media modules, TODO comments, and test coverage
-- Deep thinking Opus analysis to synthesize findings and prioritize tasks
-- Cross-referenced all findings with direct code examination
-
-**Verified Findings:**
-- API endpoint count: **123** (confirmed: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) = 123)
-- Database migration drift: **14 tables missing** (44% coverage)
-- TODO comments: **12 total** (7 important, 3 security-related, 2 minor)
-- Test coverage: **16.08% statements** (high on core modules, 0% on routes/media/realtime)
-
-**New Findings:**
-- Grant permission API not exposed - `grantProjectPermission()` etc. not available via API
-- Spec inconsistency: `specs/17-api-complete.md:93` example JSON shows `expires_in: 3600` (1 hour) but text says 5 minutes
-- WebSocket rate limiting constants hardcoded (should be configurable)
-
-**Confirmed Existing Findings:**
-- `invalidateOnRoleChange()` function EXISTS in session-cache.ts - just needs calling from accounts.ts
-- ~~Both file AND share channel WebSocket permission checks are permissive stubs returning `true`~~ -- Fixed in v0.0.71
-
-**Updates:**
-- Added "ADDITIONAL GAPS IDENTIFIED" section for grant permission API exposure
-- Fixed spec inconsistency status (was marked RESOLVED but doc not fixed)
-- No changes to P1/P2/P3 priorities - existing analysis was accurate
+250+ parallel subagents confirmed 123 endpoints, 14 missing migration tables, 12 TODOs. Found grant permission API gap, WebSocket permission stubs.
 
 ### v0.0.54 (2026-02-18) - Comprehensive Codebase Analysis
 
-**Analysis Performed:**
-- Parallel subagent analysis of all specs (21 files), src/lib, src/api, src/web, src/db, src/storage, src/permissions, src/realtime, src/media
-- Corrected API endpoint count from 118 to **123** (files module has 17, not 14)
-- Found additional missing columns in shares table (3 columns)
-- Identified ~40+ missing indexes (not just 7)
-- Added File Channel Permission Check as P2 item (was only share channel)
-- Verified session cache invalidation function exists - just needs to be wired
+Corrected endpoint count to 123. Found share table columns, ~40 missing indexes, file channel permission stub.
 
-**Key Findings:**
-- `validatePermissionChange()` exists but is never called from grant methods
-- `invalidateOnRoleChange()` function already exists in session-cache.ts - just needs calling
-- Both share AND file channel permission checks are placeholder stubs
-- Grant permission methods not wired to API routes (permission granting UI may be incomplete)
+### v0.0.53 (2026-02-18) - Migration Drift Identified
 
-**Updates:**
-- Updated endpoint counts in statistics section
-- Added shares table columns to migration drift section
-- Expanded missing indexes documentation
-- Added File Channel Permission Check as P2 item
-- Updated time estimate for session cache invalidation (function exists)
-- Updated P2 summary list with 10 items (was 9)
-
-### v0.0.53 (2026-02-18) - Critical Migration Drift Identified
-
-**Analysis Performed:**
-- Comprehensive codebase review comparing `schema.ts` vs `migrate.ts`
-- Found 14 tables missing from migrations (44% coverage)
-- Found 8 columns missing from files table
-- Found 7 indexes missing from migrations
-- Cataloged 12 TODO comments with severity ratings
-- Verified API endpoint counts (118 total)
-
-**Critical Finding:**
-- Fresh database deployments will FAIL
-- Features relying on missing tables will not work
-- Existing databases work because they were created incrementally
-
-**Status Update:**
-- Project status: MVP COMPLETE → MVP FUNCTIONALLY COMPLETE (with critical migration drift)
-- Added new section: "CRITICAL BLOCKER: Database Migration Drift"
-- Reorganized priority list based on actual severity
-- Updated TODO analysis with file locations and impact
-
-### v0.0.52 (2026-02-18) - Gap Analysis Complete
-
-(Previous changelog entries preserved in file history)
-
----
-
-## SPEC INCONSISTENCIES TO RESOLVE
-
-1. **Token TTL Mismatch** -- RESOLVED (needs doc fix)
-   - `specs/12-authentication.md`: 5 min access / 7 days refresh
-   - `specs/17-api-complete.md`: Example JSON shows `expires_in: 3600` (1 hour) which contradicts text saying "5 minutes"
-   - **Resolution**: Use 5 min/7 days per auth spec (more secure)
-   - **Action needed**: Fix example in `specs/17-api-complete.md:93` to show `expires_in: 300`
-
-2. **README Deferral Labels** -- INFORMATIONAL
-   - `specs/README.md` correctly defers billing to Phase 5 and accessibility to Phase 3+
-   - Update when specs are written
-
----
-
-## ADDITIONAL GAPS IDENTIFIED (v0.0.55)
-
-### Grant Permission API Not Exposed
-
-- **Problem**: `permissionService` has `grantProjectPermission()`, `grantFolderPermission()`, and `grantWorkspacePermission()` methods that are implemented and tested but NOT exposed via API routes
-- **Impact**: Permission granting UI may be incomplete - users cannot manage permissions through the API
-- **Location**: `src/permissions/service.ts:384-455`
-- **Solution**: Add API endpoints for permission management or verify UI handles this differently
-- **Priority**: P2
-
-### Test Coverage Gaps
-
-- **Problem**: API routes (18 files), media processing (9 files), realtime (3 files), and transcription (5 files) have **0% test coverage**
-- **Impact**: Regressions may go undetected; refactoring is risky
-- **Solution**: Prioritize tests for critical paths: file upload, permissions, sharing
-- **Priority**: P3 (post-launch)
-
-### Rate Limiting Configuration Hardcoded
-
-- **Problem**: WebSocket rate limiting constants are hardcoded in `ws-manager.ts`
-- **Impact**: Cannot tune without code changes
-- **Solution**: Move to configuration
-- **Priority**: P3
+First identification of 14 missing tables in migrate.ts (44% coverage). Cataloged 12 TODOs.

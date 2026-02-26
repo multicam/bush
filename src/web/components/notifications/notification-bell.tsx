@@ -2,7 +2,7 @@
  * Bush Platform - Notification Bell Component
  *
  * Bell icon with unread badge for the header.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 "use client";
 

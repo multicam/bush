@@ -3,7 +3,7 @@
  *
  * Client for connecting to the Bush real-time WebSocket server.
  * Handles connection management, reconnection, and subscription management.
- * Reference: specs/14-realtime-collaboration.md Section 11
+ * Reference: specs/05-realtime.md Section 11
  */
 
 // ============================================================================

@@ -2,7 +2,7 @@
  * Bush Platform - Annotation Types
  *
  * Type definitions for annotation tools and canvas overlays.
- * Reference: specs/04-review-and-approval.md
+ * Reference: specs/04-api-reference.md
  */
 
 import type { CommentAnnotation } from "../../lib/api";

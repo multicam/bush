@@ -2,7 +2,7 @@
  * Bush Platform - Shares Routes
  *
  * API routes for share link management.
- * Reference: specs/17-api-complete.md, specs/05-sharing-and-presentations.md
+ * Reference: specs/04-api-reference.md, specs/04-api-reference.md
  */
 import { Hono, type Context } from "hono";
 import { db } from "../../db/index.js";

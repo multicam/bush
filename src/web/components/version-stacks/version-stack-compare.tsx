@@ -5,7 +5,7 @@
  * Supports linked playback for videos and linked zoom/pan for images.
  *
  * Reference: IMPLEMENTATION_PLAN.md 2.5 [P1] Version Stack UI
- * Reference: specs/00-atomic-features.md Section 9.7 Comparison Viewer
+ * Reference: specs/00-product-reference.md Section 9.7 Comparison Viewer
  */
 "use client";
 

@@ -2,7 +2,7 @@
  * Bush Platform - Notification Item Component
  *
  * Single notification item for display in dropdown or page.
- * Reference: specs/00-atomic-features.md Section 13
+ * Reference: specs/00-product-reference.md Section 13
  */
 "use client";
 

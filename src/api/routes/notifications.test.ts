@@ -2,7 +2,7 @@
  * Bush Platform - Notifications Routes Tests
  *
  * Comprehensive unit tests for notification API routes and helper functions.
- * Reference: specs/17-api-complete.md Section 6.15
+ * Reference: specs/04-api-reference.md Section 6.15
  */
 
 // Mock all dependencies BEFORE any imports

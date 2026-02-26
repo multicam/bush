@@ -2,7 +2,7 @@
  * Bush Platform - Comments Routes
  *
  * API routes for comment management on files and version stacks.
- * Reference: specs/17-api-complete.md Section 6.8
+ * Reference: specs/04-api-reference.md Section 6.8
  */
 import { Hono, type Context } from "hono";
 import { db } from "../../db/index.js";

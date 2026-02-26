@@ -2,7 +2,7 @@
  * Bush Platform - Permission Service
  *
  * Handles permission checks, inheritance, and access control.
- * Reference: specs/00-complete-support-documentation.md Section 2
+ * Reference: specs/03-permissions.md Section 2
  */
 import { db } from "../db/index.js";
 import {

@@ -2,7 +2,7 @@
  * Bush Platform - File Routes
  *
  * API routes for file management.
- * Reference: specs/17-api-complete.md
+ * Reference: specs/04-api-reference.md
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

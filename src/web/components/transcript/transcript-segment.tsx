@@ -2,7 +2,7 @@
  * Bush Platform - Transcript Segment Component
  *
  * Displays a group of words from the same speaker with speaker label.
- * Reference: specs/06-transcription-and-captions.md Section 7
+ * Reference: specs/08-transcription.md Section 7
  */
 "use client";
 

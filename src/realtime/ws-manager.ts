@@ -3,7 +3,7 @@
  *
  * Manages WebSocket connections for real-time updates.
  * Handles authentication, subscription management, and event broadcasting.
- * Reference: specs/14-realtime-collaboration.md
+ * Reference: specs/05-realtime.md
  * Reference: specs/README.md "Realtime Architecture"
  */
 import type { ServerWebSocket } from "bun";

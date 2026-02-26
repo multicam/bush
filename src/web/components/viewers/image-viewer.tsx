@@ -2,7 +2,7 @@
  * Bush Platform - Image Viewer Component
  *
  * Full-featured image viewer with zoom, pan, and mini-map navigation.
- * Reference: specs/00-atomic-features.md Section 9.4
+ * Reference: specs/00-product-reference.md Section 9.4
  *
  * Note: This component uses setState in effects to initialize zoom level
  * when the image and container dimensions become available. This is a

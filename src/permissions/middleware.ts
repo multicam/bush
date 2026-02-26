@@ -3,7 +3,7 @@
  *
  * Hono middleware for checking permissions on API routes.
  * Integrates with the permission service for resource-level access control.
- * Reference: specs/00-complete-support-documentation.md Section 2
+ * Reference: specs/03-permissions.md Section 2
  */
 import type { Context, Next } from "hono";
 import { permissionService } from "./service.js";

@@ -3,7 +3,7 @@
  *
  * In-process EventEmitter for MVP real-time infrastructure.
  * Events are broadcast to WebSocket clients via the ws-manager.
- * Reference: specs/14-realtime-collaboration.md
+ * Reference: specs/05-realtime.md
  * Reference: specs/README.md "Realtime Architecture"
  */
 import { EventEmitter } from "events";

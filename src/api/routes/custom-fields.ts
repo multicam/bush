@@ -2,7 +2,7 @@
  * Bush Platform - Custom Fields Routes
  *
  * API routes for custom metadata field management.
- * Reference: specs/17-api-complete.md Section 6.10
+ * Reference: specs/04-api-reference.md Section 6.10
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";

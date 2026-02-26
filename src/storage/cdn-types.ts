@@ -3,7 +3,7 @@
  *
  * Provider-agnostic types for CDN operations.
  * Supports Bunny CDN (preferred), CloudFront, Fastly, or any pull-based CDN.
- * Reference: specs/16-storage-and-data.md Section 5
+ * Reference: specs/06-storage.md Section 5
  */
 
 /**

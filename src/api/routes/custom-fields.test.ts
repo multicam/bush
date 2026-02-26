@@ -2,7 +2,7 @@
  * Bush Platform - Custom Fields Routes Tests
  *
  * Comprehensive unit tests for custom field API routes.
- * Reference: specs/17-api-complete.md Section 6.10
+ * Reference: specs/04-api-reference.md Section 6.10
  */
 
 // Mock all dependencies BEFORE any imports
