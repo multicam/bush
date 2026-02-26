@@ -19,6 +19,7 @@ export const SECRET_KEYS = [
   "STORAGE_ACCESS_KEY",
   "STORAGE_SECRET_KEY",
   "CDN_SIGNING_KEY",
+  "CDN_API_KEY",
   "SMTP_PASS",
   "SESSION_SECRET",
   "DEEPGRAM_API_KEY",
@@ -67,6 +68,7 @@ const envSchema = z.object({
   CDN_PROVIDER: z.enum(["none", "bunny", "cloudfront", "fastly"]).default("none"),
   CDN_BASE_URL: z.string().url().optional().or(z.literal("")),
   CDN_SIGNING_KEY: z.string().optional(),
+  CDN_API_KEY: z.string().optional(), // API key for purge operations (separate from signing key)
 
   // Media Processing
   FFMPEG_PATH: z.string().default("/usr/bin/ffmpeg"),
@@ -192,6 +194,7 @@ function loadConfig(): Env {
       CDN_PROVIDER: "none",
       CDN_BASE_URL: "",
       CDN_SIGNING_KEY: "",
+      CDN_API_KEY: "",
       SESSION_SECRET: "placeholder-for-build-at-least-32-characters",
       SESSION_MAX_AGE: 604800,
       MAX_CONCURRENT_SESSIONS: 10,

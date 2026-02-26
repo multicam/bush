@@ -50,6 +50,7 @@ describe("BunnyCDNProvider", () => {
     provider: "bunny",
     baseUrl: "https://cdn.test.bush.app",
     signingKey: "test-signing-key-123",
+    apiKey: "test-api-key-456",
     storageBucket: "test-bucket",
   };
 
@@ -201,19 +202,39 @@ describe("BunnyCDNProvider", () => {
   });
 
   describe("invalidate", () => {
-    it("should return success when signing key exists", async () => {
+    it("should call Bunny purge API and return success when API key exists", async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("OK"),
+      } as Response);
+
       const result = await provider.invalidate("account/project/asset/thumbnail/thumb_320.jpg");
 
       expect(result.success).toBe(true);
       expect(result.invalidationId).toBeDefined();
       expect(result.estimatedTime).toBe(5000);
+
+      // Verify API call was made with correct parameters
+      expect(fetch).toHaveBeenCalledWith("https://api.bunny.net/purge", {
+        method: "POST",
+        headers: {
+          "AccessKey": "test-api-key-456",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostname: "cdn.test.bush.app",
+          purgePath: "/test-bucket/account/project/asset/thumbnail/thumb_320.jpg",
+        }),
+      });
     });
 
-    it("should return failure when no signing key", async () => {
+    it("should return failure when no API key configured", async () => {
       const noKeyConfig: CDNConfig = {
         provider: "bunny",
         baseUrl: "https://cdn.test.bush.app",
-        signingKey: undefined,
+        signingKey: "test-signing-key",
+        apiKey: undefined,
         storageBucket: "test-bucket",
       };
       const noKeyProvider = new BunnyCDNProvider(noKeyConfig);
@@ -221,22 +242,61 @@ describe("BunnyCDNProvider", () => {
       const result = await noKeyProvider.invalidate("test/key.jpg");
       expect(result.success).toBe(false);
     });
+
+    it("should return failure when purge API returns error", async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: () => Promise.resolve("Unauthorized"),
+      } as Response);
+
+      const result = await provider.invalidate("test/key.jpg");
+      expect(result.success).toBe(false);
+    });
+
+    it("should return failure when fetch throws", async () => {
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
+
+      const result = await provider.invalidate("test/key.jpg");
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("invalidatePrefix", () => {
-    it("should return success when signing key exists", async () => {
+    it("should call Bunny purge API with async flag and return success", async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("OK"),
+      } as Response);
+
       const result = await provider.invalidatePrefix("account/project/asset/");
 
       expect(result.success).toBe(true);
       expect(result.invalidationId).toBeDefined();
       expect(result.estimatedTime).toBe(30000);
+
+      // Verify API call was made with correct parameters including async flag
+      expect(fetch).toHaveBeenCalledWith("https://api.bunny.net/purge", {
+        method: "POST",
+        headers: {
+          "AccessKey": "test-api-key-456",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostname: "cdn.test.bush.app",
+          purgePath: "/test-bucket/account/project/asset/",
+          async: true,
+        }),
+      });
     });
 
-    it("should return failure when no signing key", async () => {
+    it("should return failure when no API key configured", async () => {
       const noKeyConfig: CDNConfig = {
         provider: "bunny",
         baseUrl: "https://cdn.test.bush.app",
-        signingKey: undefined,
+        signingKey: "test-signing-key",
+        apiKey: undefined,
         storageBucket: "test-bucket",
       };
       const noKeyProvider = new BunnyCDNProvider(noKeyConfig);

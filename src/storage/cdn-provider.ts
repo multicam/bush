@@ -21,16 +21,28 @@ import crypto from "crypto";
  *
  * Uses pull zones configured to pull from object storage origin.
  * Signed URLs use Bunny's token authentication format.
+ * Purge API uses Bunny's REST API endpoint.
  */
 export class BunnyCDNProvider implements ICDNProvider {
   readonly providerType: CDNProviderType = "bunny";
   private baseUrl: string;
+  private hostname: string;
   private signingKey: string | null;
+  private apiKey: string | null;
   private storageBucket: string;
 
   constructor(config: CDNConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, ""); // Remove trailing slash
+    // Extract hostname from URL (e.g., "https://cdn.bush.app" -> "cdn.bush.app")
+    try {
+      const url = new URL(this.baseUrl);
+      this.hostname = url.hostname;
+    } catch {
+      // If baseUrl is invalid, use as-is
+      this.hostname = this.baseUrl.replace(/^https?:\/\//, "").split("/")[0];
+    }
     this.signingKey = config.signingKey || null;
+    this.apiKey = config.apiKey || null;
     this.storageBucket = config.storageBucket || "";
   }
 
@@ -90,10 +102,11 @@ export class BunnyCDNProvider implements ICDNProvider {
 
   /**
    * Invalidate a single file from CDN cache
-   * Uses Bunny CDN's purge API
+   * Uses Bunny CDN's purge API: POST https://api.bunny.net/purge
    */
   async invalidate(storageKey: string): Promise<CDNInvalidationResult> {
-    if (!this.signingKey) {
+    if (!this.apiKey) {
+      console.warn("[CDN] Cannot purge: CDN_API_KEY not configured");
       return {
         success: false,
       };
@@ -101,16 +114,30 @@ export class BunnyCDNProvider implements ICDNProvider {
 
     try {
       const urlPath = `/${this.storageBucket}/${storageKey}`;
-      const purgeUrl = `${this.baseUrl}${urlPath}`;
 
-      // Bunny CDN purge API endpoint
-      // Note: This requires the Bunny CDN API key, not the signing key
-      // For now, we use a simple cache-busting approach via query param
-      // Full implementation would use Bunny's Purge API: POST https://api.bunny.net/purge
+      // Bunny CDN purge API
+      // Reference: https://docs.bunny.net/reference/purge_get
+      const response = await fetch("https://api.bunny.net/purge", {
+        method: "POST",
+        headers: {
+          "AccessKey": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostname: this.hostname,
+          purgePath: urlPath,
+        }),
+      });
 
-      // For immediate implementation, we mark as successful
-      // The actual purge would be done via Bunny's API or webhook
-      console.log(`[CDN] Purge requested for: ${purgeUrl}`);
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error(`[CDN] Purge failed for ${urlPath}: ${response.status} ${errorText}`);
+        return {
+          success: false,
+        };
+      }
+
+      console.log(`[CDN] Purged: ${this.hostname}${urlPath}`);
 
       return {
         success: true,
@@ -127,9 +154,11 @@ export class BunnyCDNProvider implements ICDNProvider {
 
   /**
    * Invalidate all files matching a prefix from CDN cache
+   * Uses Bunny CDN's purge API with prefix option
    */
   async invalidatePrefix(prefix: string): Promise<CDNInvalidationResult> {
-    if (!this.signingKey) {
+    if (!this.apiKey) {
+      console.warn("[CDN] Cannot purge prefix: CDN_API_KEY not configured");
       return {
         success: false,
       };
@@ -138,9 +167,30 @@ export class BunnyCDNProvider implements ICDNProvider {
     try {
       const prefixPath = `/${this.storageBucket}/${prefix}`;
 
-      // Bunny CDN supports prefix-based purge via API
-      // POST https://api.bunny.net/purge with { Hostname: "...", PrefixPath: "..." }
-      console.log(`[CDN] Prefix purge requested for: ${prefixPath}`);
+      // Bunny CDN purge API with prefix
+      // Reference: https://docs.bunny.net/reference/purge_get
+      const response = await fetch("https://api.bunny.net/purge", {
+        method: "POST",
+        headers: {
+          "AccessKey": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hostname: this.hostname,
+          purgePath: prefixPath,
+          async: true, // Async prefix purge is recommended for large batches
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error(`[CDN] Prefix purge failed for ${prefixPath}: ${response.status} ${errorText}`);
+        return {
+          success: false,
+        };
+      }
+
+      console.log(`[CDN] Purged prefix: ${this.hostname}${prefixPath}`);
 
       return {
         success: true,
@@ -193,7 +243,7 @@ export class NoCDNProvider implements ICDNProvider {
 
   async getDeliveryUrl(
     storageKey: string,
-    options: CDNDeliveryOptions
+    _options: CDNDeliveryOptions
   ): Promise<CDNDeliveryResult> {
     // Return a placeholder URL - actual URLs should come from storage provider
     return {
@@ -202,13 +252,13 @@ export class NoCDNProvider implements ICDNProvider {
     };
   }
 
-  async invalidate(storageKey: string): Promise<CDNInvalidationResult> {
+  async invalidate(_storageKey: string): Promise<CDNInvalidationResult> {
     return {
       success: true,
     };
   }
 
-  async invalidatePrefix(prefix: string): Promise<CDNInvalidationResult> {
+  async invalidatePrefix(_prefix: string): Promise<CDNInvalidationResult> {
     return {
       success: true,
     };

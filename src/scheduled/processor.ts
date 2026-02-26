@@ -6,7 +6,7 @@
 import { db } from "../db/index.js";
 import { files, accounts, projects, workspaces } from "../db/schema.js";
 import { and, isNotNull, lt, sql, eq } from "drizzle-orm";
-import { storage, storageKeys } from "../storage/index.js";
+import { storage, storageKeys, getCDNProvider } from "../storage/index.js";
 
 /**
  * Days to retain soft-deleted files before permanent deletion
@@ -98,6 +98,15 @@ export async function purgeExpiredFiles(): Promise<{
               // Ignore - derived assets may not exist
             }
           }
+
+          // Invalidate CDN cache for this asset's derivatives
+          // This is important since we're permanently deleting the storage objects
+          const cdn = getCDNProvider();
+          const cdnPrefix = `${file.accountId}/${file.projectId}/${file.id}/`;
+          await cdn.invalidatePrefix(cdnPrefix).catch((err) => {
+            // Log but don't fail if CDN invalidation fails
+            console.warn(`[scheduled] CDN invalidation failed for ${cdnPrefix}:`, err);
+          });
 
           // Delete from database
           await db.delete(files).where(sql`${files.id} = ${file.id}`);

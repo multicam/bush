@@ -14,7 +14,7 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { config } from "../../config/index.js";
 import { verifyProjectAccess } from "../access-control.js";
-import { storage, storageKeys } from "../../storage/index.js";
+import { storage, storageKeys, getCDNProvider } from "../../storage/index.js";
 import { enqueueProcessingJobs } from "../../media/index.js";
 import { emitWebhookEvent } from "./index.js";
 
@@ -472,6 +472,14 @@ app.delete("/:id", async (c) => {
       updatedAt: new Date(),
     })
     .where(eq(files.id, fileId));
+
+  // Invalidate CDN cache for this asset's derivatives
+  const cdn = getCDNProvider();
+  const cdnPrefix = `${access.workspace.accountId}/${projectId}/${fileId}/`;
+  await cdn.invalidatePrefix(cdnPrefix).catch((err) => {
+    // Log but don't fail the deletion if CDN invalidation fails
+    console.error(`[CDN] Failed to invalidate ${cdnPrefix}:`, err);
+  });
 
   // Emit webhook event for file deletion
   await emitWebhookEvent(session.currentAccountId, "file.deleted", {

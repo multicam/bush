@@ -108,6 +108,8 @@ export interface CDNConfig {
   baseUrl: string;
   /** Signing key for generating signed URLs */
   signingKey?: string;
+  /** API key for purge operations (separate from signing key) */
+  apiKey?: string;
   /** Storage bucket name (for constructing origin URLs) */
   storageBucket?: string;
 }

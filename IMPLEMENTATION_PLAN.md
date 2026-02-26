@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.90 - Auth Error Logging & Production SMTP Safety)
+**Last updated**: 2026-02-26 (v0.0.91 - BunnyCDN Purge Implementation)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -106,9 +106,13 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P3 - MINOR (Can Be Deferred)
 
-### [P3] BunnyCDN Purge Is a No-Op Stub [1h] -- NOT STARTED
+### [P3] BunnyCDN Purge Is a No-Op Stub [1h] -- RESOLVED (v0.0.91)
 
-- `src/storage/cdn-provider.ts:102-155` — `invalidate()` and `invalidatePrefix()` log messages but make NO HTTP calls to Bunny's purge API. Cache invalidation does not actually work. (CONFIRMED)
+- Implemented actual HTTP calls to Bunny CDN's purge API (`POST https://api.bunny.net/purge`)
+- Added `CDN_API_KEY` environment variable (separate from signing key for security)
+- `invalidate()` and `invalidatePrefix()` now make real API calls to purge CDN cache
+- Wired CDN invalidation into file deletion routes (`files.ts`) and scheduled purge (`processor.ts`)
+- Updated tests to verify API calls are made with correct parameters
 
 ### [P3] Transcription Export VTT Round-Trip Test Skipped [30m] -- NOT STARTED
 
@@ -308,6 +312,16 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.91 (2026-02-26) - BunnyCDN Purge Implementation
+
+Implemented actual Bunny CDN purge API calls, replacing the previous no-op stub implementation. Added `CDN_API_KEY` environment variable (separate from signing key) for purge operations. The `invalidate()` and `invalidatePrefix()` methods now make real HTTP POST requests to `https://api.bunny.net/purge` with proper authentication.
+
+Wired CDN cache invalidation into file deletion routes:
+- Soft delete in `files.ts` now invalidates the asset's CDN prefix after marking as deleted
+- Scheduled purge in `processor.ts` now invalidates CDN cache when permanently deleting expired files
+
+Updated tests to verify the API calls are made with correct parameters (hostname, purgePath, async flag for prefix purges).
 
 ### v0.0.90 (2026-02-26) - Security & Error Handling Improvements
 

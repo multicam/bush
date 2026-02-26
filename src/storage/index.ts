@@ -117,6 +117,7 @@ export function getCDNProvider(): ICDNProvider {
     provider: config.CDN_PROVIDER as CDNProviderType,
     baseUrl: config.CDN_BASE_URL || "",
     signingKey: config.CDN_SIGNING_KEY,
+    apiKey: config.CDN_API_KEY,
     storageBucket: config.STORAGE_BUCKET_DERIVATIVES || config.STORAGE_BUCKET,
   };
 
