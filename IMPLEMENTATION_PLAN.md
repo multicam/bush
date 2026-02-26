@@ -37,7 +37,6 @@
 | **Placeholder Implementations** | 4 | SendGrid, SES, Postmark, Resend → fallback to SMTP |
 | **Skipped Tests** | 2 | permissions-integration (conditional), VTT round-trip (bug) |
 | **Dead Code Paths** | 2 | emitWebhookEvent, createNotification (P2) |
-| **Runtime Crash Risks** | 1 | AssemblyAI provider enum option (P2) |
 | **Missing Endpoints** | 1 | /docs referenced but returns 404 (P3) |
 
 ### Code-to-Spec Alignment Status
@@ -51,7 +50,7 @@
 | Realtime | 05-realtime.md | MVP events ✓ (Phase 2: Redis, presence) |
 | Storage | 06-storage.md | S3 + CDN ✓ |
 | Media Processing | 07-media-processing.md | 6 processors ✓ (HLS deferred) |
-| Transcription | 08-transcription.md | Deepgram + faster-whisper ✓ (AssemblyAI: P2) |
+| Transcription | 08-transcription.md | Deepgram + faster-whisper ✓ |
 | Search | 09-search.md | FTS5 ✓ |
 | Notifications | 10-notifications.md | API + UI ✓ (trigger wiring: P2) |
 | Email | 11-email.md | SMTP ✓ (API providers: P3) |
@@ -96,14 +95,9 @@ All implemented features have corresponding spec documentation. No code was foun
 - **Impact**: Users see an empty notification panel — the feature appears broken
 - **Solution**: Add `createNotification` calls to comment routes (mentions, replies), share routes, file processing completion, member invitation, assignment changes
 
-### [P2] AssemblyAI Provider Will Crash at Runtime [30m] -- NOT STARTED
-
-- **Problem**: `assemblyai` is a valid option in `TRANSCRIPTION_PROVIDER` config enum (`src/config/env.ts:93`) and DB schema (`src/db/schema.ts:587`), but no provider class exists. `src/transcription/processor.ts:40-51` hits the `default` case and throws. (CONFIRMED - will CRASH at runtime)
-- **Impact**: Runtime crash if `TRANSCRIPTION_PROVIDER=assemblyai` is set
-- **Solution**: Remove `assemblyai` from the config enum and DB schema, or add a clear "not implemented" error with guidance
-
 ### Previously Completed P2 Items
 
+- ~~AssemblyAI Provider Will Crash at Runtime~~ — v0.0.89
 - ~~CORS hardcoded localhost origin~~ — v0.0.89
 - ~~Permission validation before grant~~ — v0.0.70
 - ~~Transcription permission checks~~ — v0.0.69
@@ -229,7 +223,6 @@ Per specs/README.md:
 - Access Groups — depends on billing
 - API Key Token Type (`bush_key_`) — P3
 - HLS Generation — using MP4 proxies with CDN delivery
-- AssemblyAI Provider — Deepgram + faster-whisper cover needs (config enum cleanup is P2)
 - Enhanced Search (Visual/Semantic) — requires AI/ML provider decision
 
 ---
@@ -309,14 +302,14 @@ Per specs/README.md:
 | **Media Processing** | DONE | 6 processors (HLS not implemented) |
 | **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
 | **Email** | DONE | SMTP provider with 10 templates (API providers fall back to SMTP) |
-| **Transcription** | PARTIAL | Deepgram + faster-whisper work; AssemblyAI will crash (P2) |
+| **Transcription** | DONE | Deepgram + faster-whisper work; AssemblyAI removed from config enum |
 | **Security** | DONE | Session limits, permissions, and CORS configuration complete |
 | **Webhooks** | STUB | Registration works but events never emitted (P2) |
 | **Notifications** | STUB | API/UI works but nothing triggers notifications (P2) |
 | **Testing** | PARTIAL | 95 test files; route/media/realtime coverage 0%; 2 tests skipped |
 | **Documentation** | DONE | Specs complete; /docs endpoint missing (P3) |
 
-**Verdict**: Platform is functionally complete. Three P2 items (webhooks, notifications, AssemblyAI) should be addressed before production.
+**Verdict**: Platform is functionally complete. Two P2 items (webhooks, notifications) should be addressed before production.
 
 ---
 
@@ -325,6 +318,8 @@ Per specs/README.md:
 ### v0.0.89 (2026-02-26) - CORS Security Fix
 
 Fixed CORS configuration to conditionally add localhost origin only in non-production environments. The `isDev` helper from config is now used to check `NODE_ENV !== 'production'` before adding `http://localhost:3000` to CORS allowed origins. This prevents localhost origins from being accepted in production, improving security posture.
+
+Also fixed the AssemblyAI provider crash risk by removing `assemblyai` from the `TRANSCRIPTION_PROVIDER` config enum (users can no longer select it) and adding an explicit error case in the transcription processor with helpful guidance. The `assemblyai` value remains in the DB schema for backward compatibility with existing records.
 
 ### v0.0.88 (2026-02-26) - Statistics Corrected
 

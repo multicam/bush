@@ -90,7 +90,7 @@ const envSchema = z.object({
   WORKER_METADATA_CONCURRENCY: z.coerce.number().int().positive().default(8),
 
   // Transcription
-  TRANSCRIPTION_PROVIDER: z.enum(["deepgram", "assemblyai", "faster-whisper"]).optional().default("deepgram"),
+  TRANSCRIPTION_PROVIDER: z.enum(["deepgram", "faster-whisper"]).optional().default("deepgram"),
   TRANSCRIPTION_MAX_DURATION: z.coerce.number().int().positive().default(7200),
   DEEPGRAM_API_KEY: z.string().optional(),
   ASSEMBLYAI_API_KEY: z.string().optional(),

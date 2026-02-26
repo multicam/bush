@@ -45,6 +45,12 @@ function getProvider(): ITranscriptionProvider {
       return new DeepgramProvider(process.env.DEEPGRAM_API_KEY);
     case "faster-whisper":
       return new FasterWhisperProvider(process.env.FASTER_WHISPER_URL);
+    case "assemblyai":
+      throw new Error(
+        "AssemblyAI transcription provider is not yet implemented. " +
+        "Please use 'deepgram' or 'faster-whisper' instead. " +
+        "See specs/08-transcription.md for provider options."
+      );
     default:
       throw new Error(`Unknown transcription provider: ${providerName}`);
   }
