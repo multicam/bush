@@ -18,7 +18,7 @@ IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is 
 - Complex problem analysis and solving
 - Multi-step reasoning tasks
 - Technical solution design and architecture
-- Strategy planning and decision making
+- Strategy planning and decision-making
 
 For simple searches and reads, use faster subagents. Reserve GLM-5 with deep thinking for:
 - Debugging complex issues
@@ -35,4 +35,4 @@ For simple searches and reads, use faster subagents. Reserve GLM-5 with deep thi
 - Maximum context: 200K tokens
 - Maximum output: 128K tokens (default 65536)
 
-ULTIMATE GOAL: We want to achieve [Project Goal](specs/01-overview.md). Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.
+ULTIMATE GOAL: We want to achieve [Project Goals](specs/00-product-reference.md). Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.

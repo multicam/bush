@@ -19,7 +19,7 @@ model: glm-5
 - Multi-step reasoning tasks
 - Technical solution design and architecture
 - Debugging complex issues
-- Strategy planning and decision making
+- Strategy planning and decision-making
 
 **Streaming Tool Calls** (`tool_stream=true` + `stream=true`):
 - GLM-5 supports streaming output during tool calling
@@ -40,7 +40,7 @@ model: glm-5
 - Use `glm-5` (Opus equivalent) for complex reasoning tasks
 - Use `glm-4.6-FlashX` (Haiku equivalent) for quick searches/reads
 
-99999. Important: When authoring documentation, capture the why -- tests and implementation importance.
+99999. Important: When authoring documentation, capture the "why" -- tests and implementation importance.
 999999. Important: Single sources of truth, no migrations/adapters. If tests unrelated to your work fail, resolve them as part of the increment.
 9999999. As soon as there are no build or test errors create a git tag. If there are no git tags start at 0.0.0 and increment patch by 1 for example 0.0.1 if 0.0.0 does not exist.
 99999999. You may add extra logging if required to debug issues.
