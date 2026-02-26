@@ -173,6 +173,10 @@ function loadConfig(): Env {
       STORAGE_ACCESS_KEY: "placeholder",
       STORAGE_SECRET_KEY: "placeholder",
       STORAGE_BUCKET: "placeholder",
+      // CDN
+      CDN_PROVIDER: "none",
+      CDN_BASE_URL: "",
+      CDN_SIGNING_KEY: "",
       SESSION_SECRET: "placeholder-for-build-at-least-32-characters",
       SESSION_MAX_AGE: 604800,
       MAX_CONCURRENT_SESSIONS: 10,

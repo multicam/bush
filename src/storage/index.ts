@@ -3,9 +3,11 @@
  *
  * High-level storage operations for the Bush platform.
  * Uses the storage provider abstraction for S3-compatible storage.
+ * Includes CDN provider for optimized content delivery.
  */
 import { config } from "../config/index.js";
 import { S3StorageProvider } from "./s3-provider.js";
+import { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
 import type {
   IStorageProvider,
   StorageKey,
@@ -17,12 +19,23 @@ import type {
   ListObjectsResult,
 } from "./types.js";
 import { buildStorageKey, parseStorageKey } from "./types.js";
+import type {
+  ICDNProvider,
+  CDNProviderType,
+  CDNDeliveryOptions,
+  CDNDeliveryResult,
+  CDNInvalidationResult,
+  CDNContentType,
+} from "./cdn-types.js";
 
 // Singleton storage provider instance
 let _storageProvider: IStorageProvider | null = null;
 
 // Lock for thread-safe initialization
 let _initializationPromise: Promise<IStorageProvider> | null = null;
+
+// Singleton CDN provider instance
+let _cdnProvider: ICDNProvider | null = null;
 
 /**
  * Get the configured storage provider instance (thread-safe lazy initialization)
@@ -93,6 +106,52 @@ export async function disposeStorageProvider(): Promise<void> {
     _storageProvider = null;
     _initializationPromise = null;
     console.log("[Storage] Provider disposed");
+  }
+}
+
+/**
+ * Get the configured CDN provider instance (lazy initialization)
+ */
+export function getCDNProvider(): ICDNProvider {
+  if (_cdnProvider) {
+    return _cdnProvider;
+  }
+
+  const cdnConfig = {
+    provider: config.CDN_PROVIDER as CDNProviderType,
+    baseUrl: config.CDN_BASE_URL || "",
+    signingKey: config.CDN_SIGNING_KEY,
+    storageBucket: config.STORAGE_BUCKET_DERIVATIVES || config.STORAGE_BUCKET,
+  };
+
+  switch (cdnConfig.provider) {
+    case "bunny":
+      _cdnProvider = new BunnyCDNProvider(cdnConfig);
+      break;
+    case "cloudfront":
+    case "fastly":
+      // Placeholder - fall through to no CDN for now
+      console.warn(
+        `[Storage] CDN provider '${cdnConfig.provider}' not yet implemented, using no CDN`
+      );
+      _cdnProvider = new NoCDNProvider();
+      break;
+    case "none":
+    default:
+      _cdnProvider = new NoCDNProvider();
+      break;
+  }
+
+  return _cdnProvider;
+}
+
+/**
+ * Dispose of the CDN provider (for graceful shutdown)
+ */
+export async function disposeCDNProvider(): Promise<void> {
+  if (_cdnProvider) {
+    _cdnProvider = null;
+    console.log("[Storage] CDN provider disposed");
   }
 }
 
@@ -294,6 +353,54 @@ export const storage = {
   },
 };
 
+/**
+ * High-level CDN operations
+ */
+export const cdn = {
+  /**
+   * Check CDN health
+   */
+  async healthCheck(): Promise<boolean> {
+    return getCDNProvider().healthCheck();
+  },
+
+  /**
+   * Get CDN delivery URL for a storage key
+   */
+  async getDeliveryUrl(
+    storageKey: string,
+    options: CDNDeliveryOptions
+  ): Promise<CDNDeliveryResult> {
+    return getCDNProvider().getDeliveryUrl(storageKey, options);
+  },
+
+  /**
+   * Invalidate a single file from CDN cache
+   */
+  async invalidate(storageKey: string): Promise<CDNInvalidationResult> {
+    return getCDNProvider().invalidate(storageKey);
+  },
+
+  /**
+   * Invalidate all files matching a prefix from CDN cache
+   */
+  async invalidatePrefix(prefix: string): Promise<CDNInvalidationResult> {
+    return getCDNProvider().invalidatePrefix(prefix);
+  },
+
+  /**
+   * Invalidate all derivatives for an asset
+   */
+  async invalidateAsset(
+    accountId: string,
+    projectId: string,
+    assetId: string
+  ): Promise<CDNInvalidationResult> {
+    const prefix = `${accountId}/${projectId}/${assetId}`;
+    return getCDNProvider().invalidatePrefix(prefix);
+  },
+};
+
 // Re-export types
 export { buildStorageKey, parseStorageKey };
 export type {
@@ -310,3 +417,16 @@ export type {
   StorageConfig,
 } from "./types.js";
 export { S3StorageProvider } from "./s3-provider.js";
+
+// CDN exports
+export type {
+  ICDNProvider,
+  CDNProviderType,
+  CDNConfig,
+  CDNContentType,
+  CDNDeliveryOptions,
+  CDNDeliveryResult,
+  CDNInvalidationResult,
+} from "./cdn-types.js";
+export { DEFAULT_CACHE_TTL, SIGNED_CONTENT_TYPES } from "./cdn-types.js";
+export { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
