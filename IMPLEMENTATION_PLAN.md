@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.56 - Database Migration Drift Fixed)
+**Last updated**: 2026-02-26 (v0.0.69 - Session Cache & Transcription Permissions Completed)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -34,7 +34,7 @@ This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 
 | **Database Migration (migrate.ts)** | 25 tables (100%) | All tables, columns, and indexes now included |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
-| **TODO Comments** | 12 | See detailed breakdown below |
+| **TODO Comments** | 10 | See detailed breakdown below |
 | **Media Processing** | 100% | BullMQ + Worker infrastructure, metadata extraction, thumbnail generation, proxy transcoding, waveform extraction, filmstrip sprites |
 | **Real-time (WebSocket)** | 100% | Event bus, WebSocket manager, browser client, React hooks, all 26 event types wired |
 | **Email Service** | Partial | Provider interface done, all providers are console stubs |
@@ -50,9 +50,9 @@ This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 
 
 ---
 
-## TODO COMMENTS ANALYSIS (12 total)
+## TODO COMMENTS ANALYSIS (10 total)
 
-### Important Severity (10)
+### Important Severity (8)
 
 These should be addressed for production readiness:
 
@@ -65,16 +65,11 @@ These should be addressed for production readiness:
    - **Impact**: No production email capability; only console logging works
    - **Recommendation**: Implement SendGrid provider first
 
-2. **Permission Checks (3 TODOs)** - `src/api/routes/transcription.ts:42,66`
-   - TODO at line 42: Project-level permission check for getting transcription
-   - TODO at line 66: Project-level permission check for creating transcription
-   - **Impact**: Any account member can transcribe any file
-   - **Solution**: Add `requirePermission()` middleware
+2. ~~**Permission Checks (3 TODOs)** - `src/api/routes/transcription.ts:42,66`~~ -- RESOLVED
+   - Now uses `permissionService.getProjectPermission()` for proper access checks
 
-3. **Session Cache Invalidation (2 TODOs)** - `src/api/routes/accounts.ts:594,664`
-   - TODO at line 594: Invalidate sessions on role update
-   - TODO at line 664: Invalidate sessions on member removal
-   - **Impact**: Role changes take up to 5 minutes to take effect (access token TTL)
+3. ~~**Session Cache Invalidation (2 TODOs)** - `src/api/routes/accounts.ts:594,664`~~ -- RESOLVED
+   - `invalidateOnRoleChange()` is now called at lines 596 and 667
 
 ### Minor Severity (2)
 
@@ -116,18 +111,15 @@ These are nice-to-fix but not blocking:
 - **Location**: `src/permissions/service.ts`
 - **Solution**: Call validation before `grantProjectPermission()`, `grantFolderPermission()`
 
-### [P2] Transcription Permission Checks [2h] -- NOT STARTED
+### ~~[P2] Transcription Permission Checks [2h]~~ -- COMPLETED (v0.0.69)
 
-- **Problem**: TODOs at `src/api/routes/transcription.ts:42,66` - no project permission checks
-- **Impact**: Any account member can transcribe any file
-- **Solution**: Add `requirePermission()` middleware to transcription routes
+- `hasEditAccess` and `hasShareAccess` now use `permissionService.getProjectPermission()` for proper access checks
+- Location: `src/api/routes/transcription.ts`
 
-### [P2] Redis Cache Invalidation for Role Changes [30m] -- NOT STARTED
+### ~~[P2] Redis Cache Invalidation for Role Changes [30m]~~ -- COMPLETED (v0.0.69)
 
-- **Problem**: TODOs at `src/api/routes/accounts.ts:594,664`
-- **Impact**: Role changes take up to 5 minutes to take effect (access token TTL)
-- **Solution**: Call existing `sessionCache.invalidateOnRoleChange()` function from `src/auth/session-cache.ts`
-- **Note**: The function already exists (lines 147-165), just needs to be wired up
+- `invalidateOnRoleChange()` is called at lines 596 and 667 in `src/api/routes/accounts.ts`
+- Role changes now immediately invalidate affected sessions
 
 ### [P2] Share Channel Permission Check [2h] -- NOT STARTED
 
@@ -311,8 +303,8 @@ The following are correctly deferred per spec/README.md:
 ### Should Fix (P2) - Before Production Launch
 
 2. Permission validation before grant
-3. Transcription permission checks
-4. Session cache invalidation on role changes (function exists, just wire it up)
+3. ~~Transcription permission checks~~ -- COMPLETED v0.0.69
+4. ~~Session cache invalidation on role changes~~ -- COMPLETED v0.0.69
 5. Share channel permission check
 6. File channel permission check
 7. Comment completion permission check
@@ -336,6 +328,16 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.69 (2026-02-26) - Session Cache & Transcription Permissions Completed
+
+**Completed:**
+- Session cache invalidation on role changes - `invalidateOnRoleChange()` is called at lines 596 and 667 in accounts.ts (was already implemented)
+- Transcription permission checks - `hasEditAccess` and `hasShareAccess` now use `permissionService.getProjectPermission()` for proper project-level access control
+
+**Impact:**
+- Role changes now immediately invalidate affected user sessions
+- Transcription operations properly verify project-level permissions
 
 ### v0.0.56 (2026-02-26) - Database Migration Drift Fixed
 
