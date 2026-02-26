@@ -6,8 +6,8 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { projects, projectPermissions, folders, users, accountMemberships } from "../../db/schema.js";
-import { eq, desc, and } from "drizzle-orm";
+import { projects, projectPermissions, folders, users, accountMemberships, files, accounts } from "../../db/schema.js";
+import { eq, desc, and, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
@@ -210,6 +210,212 @@ app.delete("/:id", async (c) => {
     .where(eq(projects.id, projectId));
 
   return sendNoContent(c);
+});
+
+/**
+ * POST /v4/projects/:id/duplicate - Duplicate a project
+ *
+ * Creates a copy of a project with:
+ * - Same workspace
+ * - Same folder structure (new IDs)
+ * - Same files (new IDs, same storage)
+ * - Same project-level permissions
+ *
+ * Storage is counted again for the duplicated files.
+ */
+app.post("/:id/duplicate", async (c) => {
+  const session = requireAuth(c);
+  const sourceProjectId = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+
+  // Verify source project access
+  const access = await verifyProjectAccess(sourceProjectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", sourceProjectId);
+  }
+
+  const sourceProject = access.project;
+
+  // Check storage quota before duplicating
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, session.currentAccountId))
+    .limit(1);
+
+  if (!account) {
+    throw new NotFoundError("account", session.currentAccountId);
+  }
+
+  // Calculate total size of files in source project
+  const [{ totalSize }] = await db
+    .select({ totalSize: sql<number>`coalesce(sum(file_size_bytes), 0)` })
+    .from(files)
+    .where(
+      and(
+        eq(files.projectId, sourceProjectId),
+        isNull(files.deletedAt)
+      )
+    );
+
+  const totalFileSize = Number(totalSize);
+
+  // Check quota
+  if (account.storageUsedBytes + totalFileSize > account.storageQuotaBytes) {
+    throw new ValidationError("Insufficient storage quota to duplicate project", {
+      pointer: "/data/attributes/storage",
+    });
+  }
+
+  const now = new Date();
+  const newProjectId = generateId("prj");
+  const projectName = body.name || `${sourceProject.name} (Copy)`;
+
+  // Create ID mappings for folders (old -> new)
+  const folderIdMap = new Map<string, string>();
+
+  // Create ID mappings for files (old -> new)
+  const fileIdMap = new Map<string, string>();
+
+  // Start transaction for atomic duplication
+  await db.transaction(async (tx) => {
+    // 1. Create new project
+    await tx.insert(projects).values({
+      id: newProjectId,
+      workspaceId: sourceProject.workspaceId,
+      name: projectName,
+      description: sourceProject.description,
+      isRestricted: sourceProject.isRestricted,
+      archivedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 2. Get all folders in source project
+    const sourceFolders = await tx
+      .select()
+      .from(folders)
+      .where(eq(folders.projectId, sourceProjectId));
+
+    // Sort folders by depth to ensure parents are created before children
+    sourceFolders.sort((a, b) => a.depth - b.depth);
+
+    // 3. Create new folders with mapped parent IDs
+    for (const folder of sourceFolders) {
+      const newFolderId = generateId("fld");
+      folderIdMap.set(folder.id, newFolderId);
+
+      // Map parent ID if exists
+      let newParentId: string | null = null;
+      if (folder.parentId) {
+        newParentId = folderIdMap.get(folder.parentId) || null;
+      }
+
+      await tx.insert(folders).values({
+        id: newFolderId,
+        projectId: newProjectId,
+        parentId: newParentId,
+        name: folder.name,
+        path: folder.path, // Path may need updating, but keeping structure same
+        depth: folder.depth,
+        isRestricted: folder.isRestricted,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // 4. Get all files in source project
+    const sourceFiles = await tx
+      .select()
+      .from(files)
+      .where(
+        and(
+          eq(files.projectId, sourceProjectId),
+          isNull(files.deletedAt)
+        )
+      );
+
+    // 5. Create new files with mapped folder IDs
+    for (const file of sourceFiles) {
+      const newFileId = generateId("file");
+      fileIdMap.set(file.id, newFileId);
+
+      // Map folder ID if exists
+      const newFolderId = file.folderId ? folderIdMap.get(file.folderId) || null : null;
+
+      // Map version stack ID if exists (will update later)
+      let newVersionStackId = file.versionStackId;
+      // For now, don't copy version stack membership - files start unstacked
+      newVersionStackId = null;
+
+      await tx.insert(files).values({
+        id: newFileId,
+        projectId: newProjectId,
+        folderId: newFolderId,
+        versionStackId: newVersionStackId,
+        name: file.name,
+        originalName: file.originalName,
+        mimeType: file.mimeType,
+        fileSizeBytes: file.fileSizeBytes,
+        checksum: file.checksum,
+        status: file.status,
+        technicalMetadata: file.technicalMetadata,
+        rating: file.rating,
+        assetStatus: file.assetStatus,
+        keywords: file.keywords,
+        notes: file.notes,
+        assigneeId: file.assigneeId,
+        customMetadata: file.customMetadata,
+        customThumbnailKey: file.customThumbnailKey,
+        deletedAt: null,
+        expiresAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // 6. Copy project permissions
+    const sourcePermissions = await tx
+      .select()
+      .from(projectPermissions)
+      .where(eq(projectPermissions.projectId, sourceProjectId));
+
+    for (const perm of sourcePermissions) {
+      await tx.insert(projectPermissions).values({
+        id: generateId("pp"),
+        projectId: newProjectId,
+        userId: perm.userId,
+        permission: perm.permission,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // 7. Update storage usage
+    if (totalFileSize > 0) {
+      await tx
+        .update(accounts)
+        .set({
+          storageUsedBytes: account.storageUsedBytes + totalFileSize,
+          updatedAt: now,
+        })
+        .where(eq(accounts.id, session.currentAccountId));
+    }
+  });
+
+  // Fetch and return the created project
+  const [newProject] = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, newProjectId))
+    .limit(1);
+
+  return sendSingle(c, {
+    ...formatDates(newProject!),
+    duplicated_from: sourceProjectId,
+    files_copied: fileIdMap.size,
+    folders_copied: folderIdMap.size,
+  }, RESOURCE_TYPES.PROJECT);
 });
 
 // ============================================================================

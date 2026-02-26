@@ -22,6 +22,8 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 import { randomBytes } from "crypto";
+import { getEmailService } from "../../lib/email/index.js";
+import { config } from "../../config/env.js";
 
 // Use Bun's built-in password hashing (bcrypt)
 async function hashPassphrase(passphrase: string): Promise<string> {
@@ -704,6 +706,125 @@ app.post("/:id/duplicate", async (c) => {
     },
     RESOURCE_TYPES.SHARE
   );
+});
+
+/**
+ * POST /v4/shares/:id/invite - Send share invitation email
+ *
+ * Sends an email to one or more recipients inviting them to view a share.
+ * Permission: Edit & Share+
+ */
+app.post("/:id/invite", async (c) => {
+  const session = requireAuth(c);
+  const shareId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Get share
+  const [share] = await db
+    .select()
+    .from(shares)
+    .where(eq(shares.id, shareId))
+    .limit(1);
+
+  if (!share) {
+    throw new NotFoundError("share", shareId);
+  }
+
+  // Verify account access
+  const hasAccess = await verifyAccountAccess(share.accountId, session.currentAccountId);
+  if (!hasAccess) {
+    throw new NotFoundError("share", shareId);
+  }
+
+  // Validate recipients
+  const recipients = body.recipients as string[] | undefined;
+  if (!Array.isArray(recipients) || recipients.length === 0) {
+    throw new ValidationError("recipients must be a non-empty array of email addresses", {
+      pointer: "/data/attributes/recipients",
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  for (const email of recipients) {
+    if (typeof email !== "string" || !emailRegex.test(email)) {
+      throw new ValidationError(`Invalid email address: ${email}`, {
+        pointer: "/data/attributes/recipients",
+      });
+    }
+  }
+
+  // Limit recipients per request
+  if (recipients.length > 50) {
+    throw new ValidationError("Maximum 50 recipients per invite request", {
+      pointer: "/data/attributes/recipients",
+    });
+  }
+
+  // Get sender info
+  const [sender] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  // Get asset count
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(shareAssets)
+    .where(eq(shareAssets.shareId, shareId));
+
+  // Build share URL
+  const shareUrl = `${config.APP_URL}/s/${share.slug}`;
+
+  // Get email service
+  const emailService = getEmailService();
+
+  const succeeded: string[] = [];
+  const failed: { email: string; error: string }[] = [];
+
+  // Send invitation to each recipient
+  for (const recipientEmail of recipients) {
+    try {
+      const result = await emailService.sendShareCreated(
+        { email: recipientEmail },
+        {
+          creatorName: sender ? `${sender.firstName || ""} ${sender.lastName || ""}`.trim() || sender.email : "Someone",
+          shareName: share.name,
+          shareLink: shareUrl,
+          assetCount: Number(count),
+          expiresAt: share.expiresAt ? new Date(share.expiresAt) : undefined,
+        }
+      );
+
+      if (result.success) {
+        succeeded.push(recipientEmail);
+
+        // Log share activity
+        await db.insert(shareActivity).values({
+          id: generateId("share_activity"),
+          shareId,
+          type: "view", // Using 'view' as closest proxy for invite sent
+          viewerIp: c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown",
+          userAgent: c.req.header("user-agent") || "unknown",
+          createdAt: new Date(),
+        });
+      } else {
+        failed.push({ email: recipientEmail, error: result.error || "Failed to send email" });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      failed.push({ email: recipientEmail, error: message });
+    }
+  }
+
+  return c.json({
+    data: {
+      succeeded,
+      failed,
+      share_url: shareUrl,
+    },
+  });
 });
 
 /**
