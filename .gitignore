@@ -4,6 +4,7 @@
 
 # -- PHPStorm --
 .idea
+thought/
 
 # -- Claude settings --
 .claude/settings.local.json
