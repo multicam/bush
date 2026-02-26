@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.85 - Comprehensive Audit Verification)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. Comprehensive audit verified production-readiness gaps (P2/P3); stale spec references already fixed.
+**Last updated**: 2026-02-26 (v0.0.86 - Comprehensive Spec-to-Code Gap Analysis)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. Spec-to-code gap analysis verified plan accuracy (P2/P3 items remain valid); minor reference corrections applied.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -16,12 +16,61 @@
 | **Database Tables** | 26 | schema.ts and migrate.ts in sync (100% coverage) |
 | **Test Files** | 81 | 80 .test.ts + 1 .test.tsx |
 | **Spec Files** | 18 | Comprehensive specifications (+ README.md index) |
-| **Frontend Components** | 52 | TSX components (non-test) |
+| **Frontend Components** | 53 | TSX components (non-test) |
 | **Web Pages** | 16 | Next.js pages |
 | **Media Processors** | 5 | metadata, thumbnail, proxy, waveform, filmstrip |
 | **Email Templates** | 10 | All implemented via SMTP provider |
 | **WebSocket Events** | 26 | All event types wired |
 | **TODO Comments** | 9 | 1 minor (PDF text layer), 8 informational (email provider stubs) |
+
+---
+
+## SPEC GAPS & ANALYSIS
+
+**Verified via 40+ parallel research agents (2026-02-26):**
+
+### Gaps Found (Already Documented in P2/P3 Sections)
+
+| Category | Count | Details |
+|----------|-------|---------|
+| **TODO Comments** | 9 | 8 email provider stubs (P3), 1 PDF text layer (P3) |
+| **Placeholder Implementations** | 4 | SendGrid, SES, Postmark, Resend → fallback to SMTP |
+| **Skipped Tests** | 2 | permissions-integration (conditional), VTT round-trip (bug) |
+| **Dead Code Paths** | 2 | emitWebhookEvent, createNotification (P2) |
+| **Runtime Crash Risks** | 1 | AssemblyAI provider enum option (P2) |
+
+### Stale Reference Fixes Applied (v0.0.86)
+
+| Location | Issue | Correction |
+|----------|-------|------------|
+| Line 55 | Webhook event count: 19 | → 18 event types |
+| Line 167 | API Keys reference: Section 2.2 | → Section 2.1 |
+| Line 258 | Billing phase: Phase 5 | → Phase 2 |
+
+### Code-to-Spec Alignment Status
+
+| Component | Spec Coverage | Implementation Status |
+|-----------|---------------|----------------------|
+| API Endpoints | 04-api-reference.md | 142/142+ documented ✓ |
+| Database Schema | 01-data-model.md | 26/26 tables ✓ |
+| Authentication | 02-authentication.md | WorkOS + sessions ✓ |
+| Permissions | 03-permissions.md | 5-level hierarchy ✓ |
+| Realtime | 05-realtime.md | MVP events ✓ (Phase 2: Redis, presence) |
+| Storage | 06-storage.md | S3 + CDN ✓ |
+| Media Processing | 07-media-processing.md | 5 processors ✓ (HLS deferred) |
+| Transcription | 08-transcription.md | Deepgram + faster-whisper ✓ (AssemblyAI: P2) |
+| Search | 09-search.md | FTS5 ✓ |
+| Notifications | 10-notifications.md | API + UI ✓ (trigger wiring: P2) |
+| Email | 11-email.md | SMTP ✓ (API providers: P3) |
+| Security | 12-security.md | Headers + rate limits ✓ |
+| Billing | 13-billing.md | Free tier limits ✓ (Stripe: Phase 2) |
+
+### No Orphaned Code Detected
+
+All implemented features have corresponding spec documentation. No code was found that:
+- Lacks spec documentation
+- Conflicts with spec requirements
+- Implements deprecated/removed spec features
 
 ---
 
@@ -52,7 +101,7 @@
 
 - **Problem**: `emitWebhookEvent` is exported from `src/api/routes/webhooks.ts` and re-exported from `routes/index.ts`, but no production code ever calls it. 7 webhook registration endpoints work, but events are never delivered. (CONFIRMED - NEVER called from any route handler)
 - **Impact**: Users can register webhooks but will never receive events
-- **Solution**: Wire `emitWebhookEvent` calls into file, comment, share, project, and member route handlers per the 19 event types in `specs/04-api-reference.md`
+- **Solution**: Wire `emitWebhookEvent` calls into file, comment, share, project, and member route handlers per the 18 event types in `specs/04-api-reference.md`
 
 ### [P2] Notifications Never Created From Routes [2h] -- NOT STARTED
 
@@ -164,7 +213,7 @@
 
 ### [P3] API Key Token Type [1d] -- DEFERRED
 
-- `bush_key_` prefixed tokens, key management CRUD, scoping. Spec: `specs/04-api-reference.md` Section 2.2
+- `bush_key_` prefixed tokens, key management CRUD, scoping. Spec: `specs/04-api-reference.md` Section 2.1 (API Keys subsection)
 
 ### [P3] OpenAPI Spec Generation [1d] -- DEFERRED
 
@@ -255,7 +304,7 @@ Per specs/README.md:
    - Code uses `expires_in: 300` (correct). No further action needed.
 
 2. **README Deferral Labels** — INFORMATIONAL
-   - `specs/README.md` correctly defers billing to Phase 5, accessibility to Phase 3+
+   - `specs/README.md` correctly defers billing to Phase 2
 
 ---
 
@@ -284,6 +333,16 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.86 (2026-02-26) - Comprehensive Spec-to-Code Gap Analysis
+
+Full spec-to-implementation gap analysis using 40+ parallel research agents. Key findings:
+- **Spec coverage**: All 19 spec files analyzed against implementation - no orphaned code found
+- **Reference corrections**: Fixed 3 stale references (webhook count 19→18, API Keys section 2.2→2.1, billing Phase 5→Phase 2)
+- **Statistics verified**: 142 endpoints, 26 tables, 81 tests, 53 components (was 52), 9 TODOs
+- **P2 items confirmed**: All 4 P2 items (CORS, webhooks, notifications, AssemblyAI) remain valid
+- **P3 items confirmed**: All documented P3 items remain accurate
+- **No new gaps identified**: Plan accurately reflects current codebase state
 
 ### v0.0.85 (2026-02-26) - Comprehensive Audit Verification
 
