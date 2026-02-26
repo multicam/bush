@@ -8,10 +8,10 @@ Bush is a professional media review and collaboration platform for video, audio,
 
 | Metric | Count |
 |--------|-------|
-| API Endpoints | 120 across 18 route modules |
-| Database Tables | 25 with proper indexes |
-| Tests | 303 passing (25 test files) |
-| Frontend Components | 49 TSX components |
+| API Endpoints | 136 across 18 route modules |
+| Database Tables | 26 with proper indexes |
+| Tests | 80 test files |
+| Frontend Components | 53 TSX components |
 | Web Pages | 16 Next.js pages |
 
 ---
