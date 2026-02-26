@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.93 - Permission Check Enforcement)
+**Last updated**: 2026-02-26 (v0.0.94 - Zod Validation for API Routes)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -14,7 +14,7 @@
 |--------|-------|-------|
 | **API Endpoints** | 151 | 18 route modules: files(17), projects(11), version-stacks(11), accounts(10), workspaces(10), bulk(9), folders(9), comments(8), collections(7), webhooks(7), transcription(7), notifications(7), shares(6), custom-fields(6), auth(3), metadata(3), users(3), search(2) |
 | **Database Tables** | 34 | schema.ts defines 34 tables with full coverage |
-| **Test Files** | 95 | 94 .test.ts + 1 .test.tsx |
+| **Test Files** | 96 | 95 .test.ts + 1 .test.tsx |
 | **Spec Files** | 19 | Comprehensive specifications (00-30 numbered + README.md index) |
 | **Frontend Components** | 53 | TSX components (non-test) |
 | **Web Pages** | 16 | Next.js App Router pages + 2 API routes |
@@ -121,9 +121,12 @@ All implemented features have corresponding spec documentation. No code was foun
 - Added VTT round-trip tests that verify export and import preserve content and speaker tags
 - All 35 transcription export tests now pass
 
-### [P3] Zero Zod Validation in Route Handlers [4h] -- NOT STARTED
+### [P3] Zero Zod Validation in Route Handlers [4h] -- PARTIALLY COMPLETE (v0.0.94)
 
-- No route uses Zod for request body validation; all validation is manual `if` checks. Zod is only used in `src/config/env.ts`. Inconsistent error messages across routes.
+- Created `src/api/validation.ts` with Zod validation utilities and schemas
+- Migrated priority routes to use Zod: comments.ts, shares.ts, webhooks.ts
+- All validation tests (24) pass
+- Remaining routes still use manual validation (can be migrated incrementally)
 
 ### [P3] Email Provider Stubs [4h] -- NOT STARTED
 
@@ -323,6 +326,30 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.94 (2026-02-26) - Zod Validation for API Routes
+
+Added Zod-based request validation for API routes. Created `src/api/validation.ts` with reusable validation utilities and schemas. Migrated three priority routes (comments, shares, webhooks) to use Zod validation instead of manual `if` checks.
+
+**Features:**
+- `validateBody()` - Validates request body against Zod schema, throws JSON:API-compliant errors
+- `parseBody()` - Parse and validate body, returns undefined for empty bodies
+- `validateQuery()` - Validate query parameters
+- `validateParams()` - Validate path parameters
+
+**Schemas added:**
+- Comment schemas: `createCommentSchema`, `updateCommentSchema`, `markCommentCompleteSchema`
+- Share schemas: `createShareSchema`, `updateShareSchema`, `addShareItemsSchema`, `shareInviteSchema`
+- Webhook schemas: `createWebhookSchema`, `updateWebhookSchema`, `webhookEventTypeSchema`
+- Common schemas: `paginationSchema`, `emailSchema`, `urlSchema`, `webhookUrlSchema`
+
+**Routes migrated:**
+- `src/api/routes/comments.ts` - POST /, PUT /:id, POST /:id/replies, createVersionStackComment
+- `src/api/routes/shares.ts` - POST /, PATCH /:id, POST /:id/assets, POST /:id/invite
+- `src/api/routes/webhooks.ts` - POST /, PUT /:id
+
+**Tests:**
+- Created `src/api/validation.test.ts` with 24 passing tests
 
 ### v0.0.93 (2026-02-26) - Permission Check Enforcement
 

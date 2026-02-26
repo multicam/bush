@@ -11,9 +11,10 @@ import { eq, and, desc } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { NotFoundError } from "../../errors/index.js";
 import { verifyAccountAccess } from "../access-control.js";
 import crypto from "crypto";
+import { validateBody, parseBody, createWebhookSchema, updateWebhookSchema, normalizeWebhookEvents } from "../validation.js";
 
 const app = new Hono();
 
@@ -26,46 +27,6 @@ app.use("*", authMiddleware());
 function generateWebhookSecret(): string {
   return `whsec_${crypto.randomBytes(32).toString("base64url")}`;
 }
-
-/**
- * Validate webhook URL
- */
-function isValidWebhookUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    // Only allow HTTPS in production, allow HTTP for localhost testing
-    if (process.env.NODE_ENV === "production") {
-      return parsed.protocol === "https:";
-    }
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Validate event types
- */
-const VALID_EVENT_TYPES = new Set([
-  "file.created",
-  "file.updated",
-  "file.deleted",
-  "file.status_changed",
-  "file.downloaded",
-  "version.created",
-  "comment.created",
-  "comment.updated",
-  "comment.deleted",
-  "comment.completed",
-  "share.created",
-  "share.viewed",
-  "project.created",
-  "project.updated",
-  "project.deleted",
-  "member.added",
-  "member.removed",
-  "transcription.completed",
-]);
 
 /**
  * GET /v4/accounts/:accountId/webhooks - List webhooks for account
@@ -130,7 +91,9 @@ app.get("/", async (c) => {
 app.post("/", async (c) => {
   const session = requireAuth(c);
   const accountId = c.req.param("accountId") as string;
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, createWebhookSchema);
 
   // Verify account access (owner or content_admin only)
   const access = await verifyAccountAccess(accountId, session.currentAccountId);
@@ -138,42 +101,13 @@ app.post("/", async (c) => {
     throw new NotFoundError("account", accountId);
   }
 
-  // Validate input
-  if (!body.name || typeof body.name !== "string" || body.name.trim() === "") {
-    throw new ValidationError("name is required", { pointer: "/data/attributes/name" });
-  }
-
-  if (!body.url || typeof body.url !== "string") {
-    throw new ValidationError("url is required", { pointer: "/data/attributes/url" });
-  }
-
-  if (!isValidWebhookUrl(body.url)) {
-    throw new ValidationError("url must be a valid HTTP/HTTPS URL", { pointer: "/data/attributes/url" });
-  }
-
-  if (!body.events || !Array.isArray(body.events) || body.events.length === 0) {
-    throw new ValidationError("events must be a non-empty array", { pointer: "/data/attributes/events" });
-  }
-
-  // Validate event types
-  for (const event of body.events) {
-    if (typeof event === "string") {
-      if (!VALID_EVENT_TYPES.has(event)) {
-        throw new ValidationError(`Invalid event type: ${event}`, { pointer: "/data/attributes/events" });
-      }
-    } else if (typeof event === "object" && event.type) {
-      if (!VALID_EVENT_TYPES.has(event.type)) {
-        throw new ValidationError(`Invalid event type: ${event.type}`, { pointer: "/data/attributes/events" });
-      }
-    } else {
-      throw new ValidationError("Each event must be a string or object with type", { pointer: "/data/attributes/events" });
-    }
-  }
-
   // Create webhook
   const webhookId = generateId("wh");
   const secret = body.secret || generateWebhookSecret();
   const now = new Date();
+
+  // Normalize events to WebhookEvent[] format
+  const normalizedEvents = normalizeWebhookEvents(body.events);
 
   await db.insert(webhooks).values({
     id: webhookId,
@@ -182,7 +116,7 @@ app.post("/", async (c) => {
     name: body.name.trim(),
     url: body.url,
     secret,
-    events: body.events,
+    events: normalizedEvents,
     isActive: body.is_active ?? true,
     lastTriggeredAt: null,
     createdAt: now,
@@ -280,7 +214,9 @@ app.get("/:id", async (c) => {
 app.put("/:id", async (c) => {
   const session = requireAuth(c);
   const webhookId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod (allow partial body)
+  const body = await parseBody(c, updateWebhookSchema);
 
   // Get webhook
   const [webhook] = await db
@@ -302,39 +238,19 @@ app.put("/:id", async (c) => {
   // Build updates
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (body.name !== undefined) {
-    if (typeof body.name !== "string" || body.name.trim() === "") {
-      throw new ValidationError("name must be a non-empty string", { pointer: "/data/attributes/name" });
-    }
+  if (body?.name !== undefined) {
     updates.name = body.name.trim();
   }
 
-  if (body.url !== undefined) {
-    if (!isValidWebhookUrl(body.url)) {
-      throw new ValidationError("url must be a valid HTTP/HTTPS URL", { pointer: "/data/attributes/url" });
-    }
+  if (body?.url !== undefined) {
     updates.url = body.url;
   }
 
-  if (body.events !== undefined) {
-    if (!Array.isArray(body.events) || body.events.length === 0) {
-      throw new ValidationError("events must be a non-empty array", { pointer: "/data/attributes/events" });
-    }
-    for (const event of body.events) {
-      if (typeof event === "string") {
-        if (!VALID_EVENT_TYPES.has(event)) {
-          throw new ValidationError(`Invalid event type: ${event}`, { pointer: "/data/attributes/events" });
-        }
-      } else if (typeof event === "object" && event.type) {
-        if (!VALID_EVENT_TYPES.has(event.type)) {
-          throw new ValidationError(`Invalid event type: ${event.type}`, { pointer: "/data/attributes/events" });
-        }
-      }
-    }
-    updates.events = body.events;
+  if (body?.events !== undefined) {
+    updates.events = normalizeWebhookEvents(body.events);
   }
 
-  if (body.is_active !== undefined) {
+  if (body?.is_active !== undefined) {
     updates.isActive = body.is_active;
   }
 

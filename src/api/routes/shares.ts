@@ -25,6 +25,7 @@ import { randomBytes } from "crypto";
 import { getEmailService } from "../../lib/email/index.js";
 import { config } from "../../config/env.js";
 import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
+import { validateBody, createShareSchema, updateShareSchema, addShareItemsSchema, shareInviteSchema } from "../validation.js";
 
 // Use Bun's built-in password hashing (bcrypt)
 async function hashPassphrase(passphrase: string): Promise<string> {
@@ -114,23 +115,14 @@ app.get("/", async (c) => {
 app.post("/", async (c) => {
   const session = requireAuth(c);
   const accountId = c.req.param("accountId")!;
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, createShareSchema);
 
   // Verify account access
   const hasAccess = await verifyAccountAccess(accountId, session.currentAccountId);
   if (!hasAccess) {
     throw new NotFoundError("account", accountId);
-  }
-
-  // Validate input
-  if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
-    throw new ValidationError("Share name is required", { pointer: "/data/attributes/name" });
-  }
-
-  if (body.name.length > 255) {
-    throw new ValidationError("Share name must be 255 characters or less", {
-      pointer: "/data/attributes/name",
-    });
   }
 
   // Validate project access if specified
@@ -141,13 +133,7 @@ app.post("/", async (c) => {
     }
   }
 
-  // Validate layout
   const layout = body.layout || "grid";
-  if (!["grid", "reel", "viewer"].includes(layout)) {
-    throw new ValidationError("Layout must be one of: grid, reel, viewer", {
-      pointer: "/data/attributes/layout",
-    });
-  }
 
   // Generate unique slug
   let slug = generateShareSlug();
@@ -176,7 +162,7 @@ app.post("/", async (c) => {
     accountId,
     projectId: body.project_id || null,
     createdByUserId: session.userId,
-    name: body.name.trim(),
+    name: (body.name || "Untitled Share").trim(),
     slug,
     passphrase: hashedPassphrase,
     expiresAt: body.expires_at ? new Date(body.expires_at) : null,
@@ -184,7 +170,7 @@ app.post("/", async (c) => {
     allowComments: body.allow_comments !== false,
     allowDownloads: body.allow_downloads === true,
     showAllVersions: body.show_all_versions === true,
-    showTranscription: body.show_transcription === true,
+    showTranscription: body.show_transcriptions === true,
     featuredField: body.featured_field || null,
     branding: body.branding || null,
     createdAt: now,
@@ -293,7 +279,9 @@ app.get("/:id", async (c) => {
 app.patch("/:id", async (c) => {
   const session = requireAuth(c);
   const shareId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, updateShareSchema);
 
   // Get share
   const [share] = await db
@@ -315,15 +303,7 @@ app.patch("/:id", async (c) => {
   // Build updates
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (body.name !== undefined) {
-    if (typeof body.name !== "string" || body.name.trim().length === 0) {
-      throw new ValidationError("Share name is required", { pointer: "/data/attributes/name" });
-    }
-    if (body.name.length > 255) {
-      throw new ValidationError("Share name must be 255 characters or less", {
-        pointer: "/data/attributes/name",
-      });
-    }
+  if (body?.name !== undefined) {
     updates.name = body.name.trim();
   }
 
@@ -337,11 +317,6 @@ app.patch("/:id", async (c) => {
   }
 
   if (body.layout !== undefined) {
-    if (!["grid", "reel", "viewer"].includes(body.layout)) {
-      throw new ValidationError("Layout must be one of: grid, reel, viewer", {
-        pointer: "/data/attributes/layout",
-      });
-    }
     updates.layout = body.layout;
   }
 
@@ -357,8 +332,8 @@ app.patch("/:id", async (c) => {
     updates.showAllVersions = body.show_all_versions === true;
   }
 
-  if (body.show_transcription !== undefined) {
-    updates.showTranscription = body.show_transcription === true;
+  if (body.show_transcriptions !== undefined) {
+    updates.showTranscription = body.show_transcriptions === true;
   }
 
   if (body.featured_field !== undefined) {
@@ -497,7 +472,9 @@ app.get("/:id/assets", async (c) => {
 app.post("/:id/assets", async (c) => {
   const session = requireAuth(c);
   const shareId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, addShareItemsSchema);
 
   // Get share
   const [share] = await db
@@ -516,17 +493,12 @@ app.post("/:id/assets", async (c) => {
     throw new NotFoundError("share", shareId);
   }
 
-  // Validate input
-  if (!body.file_ids || !Array.isArray(body.file_ids) || body.file_ids.length === 0) {
-    throw new ValidationError("file_ids array is required", { pointer: "/data/attributes/file_ids" });
-  }
-
   // Verify all files exist and are accessible via the account
   // Using verifyProjectAccess for each file's project ensures proper authorization
   const validFileIds: string[] = [];
   const invalidFileIds: string[] = [];
 
-  for (const fileId of body.file_ids as string[]) {
+  for (const fileId of body.file_ids) {
     // Get the file with its project's workspace to verify access
     const [file] = await db
       .select()
@@ -728,7 +700,9 @@ app.post("/:id/duplicate", async (c) => {
 app.post("/:id/invite", async (c) => {
   const session = requireAuth(c);
   const shareId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, shareInviteSchema);
 
   // Get share
   const [share] = await db
@@ -745,31 +719,6 @@ app.post("/:id/invite", async (c) => {
   const hasAccess = await verifyAccountAccess(share.accountId, session.currentAccountId);
   if (!hasAccess) {
     throw new NotFoundError("share", shareId);
-  }
-
-  // Validate recipients
-  const recipients = body.recipients as string[] | undefined;
-  if (!Array.isArray(recipients) || recipients.length === 0) {
-    throw new ValidationError("recipients must be a non-empty array of email addresses", {
-      pointer: "/data/attributes/recipients",
-    });
-  }
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  for (const email of recipients) {
-    if (typeof email !== "string" || !emailRegex.test(email)) {
-      throw new ValidationError(`Invalid email address: ${email}`, {
-        pointer: "/data/attributes/recipients",
-      });
-    }
-  }
-
-  // Limit recipients per request
-  if (recipients.length > 50) {
-    throw new ValidationError("Maximum 50 recipients per invite request", {
-      pointer: "/data/attributes/recipients",
-    });
   }
 
   // Get sender info
@@ -795,7 +744,7 @@ app.post("/:id/invite", async (c) => {
   const failed: { email: string; error: string }[] = [];
 
   // Send invitation to each recipient
-  for (const recipientEmail of recipients) {
+  for (const recipientEmail of body.recipients) {
     try {
       const result = await emailService.sendShareCreated(
         { email: recipientEmail },

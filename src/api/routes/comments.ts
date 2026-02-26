@@ -23,6 +23,7 @@ import { verifyProjectAccess, verifyAccountMembership } from "../access-control.
 import { permissionService } from "../../permissions/index.js";
 import { emitCommentEvent } from "../../realtime/index.js";
 import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
+import { validateBody, createCommentSchema, updateCommentSchema } from "../validation.js";
 
 const app = new Hono();
 
@@ -108,7 +109,9 @@ app.get("/", async (c) => {
 app.post("/", async (c) => {
   const session = requireAuth(c);
   const fileId = c.req.param("fileId")!;
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, createCommentSchema);
 
   // Get file and verify access
   const [file] = await db
@@ -125,44 +128,6 @@ app.post("/", async (c) => {
   const access = await verifyProjectAccess(file.projectId, session.currentAccountId);
   if (!access) {
     throw new NotFoundError("file", fileId);
-  }
-
-  // Validate input
-  if (!body.text || typeof body.text !== "string" || body.text.trim().length === 0) {
-    throw new ValidationError("Comment text is required", { pointer: "/data/attributes/text" });
-  }
-
-  if (body.text.length > 10000) {
-    throw new ValidationError("Comment text must be 10000 characters or less", {
-      pointer: "/data/attributes/text",
-    });
-  }
-
-  // Validate timestamp for video/audio
-  if (body.timestamp !== undefined) {
-    if (typeof body.timestamp !== "number" || body.timestamp < 0) {
-      throw new ValidationError("Timestamp must be a non-negative number", {
-        pointer: "/data/attributes/timestamp",
-      });
-    }
-  }
-
-  // Validate duration for range annotations
-  if (body.duration !== undefined) {
-    if (typeof body.duration !== "number" || body.duration < 0) {
-      throw new ValidationError("Duration must be a non-negative number", {
-        pointer: "/data/attributes/duration",
-      });
-    }
-  }
-
-  // Validate page for PDFs
-  if (body.page !== undefined) {
-    if (typeof body.page !== "number" || body.page < 1 || !Number.isInteger(body.page)) {
-      throw new ValidationError("Page must be a positive integer", {
-        pointer: "/data/attributes/page",
-      });
-    }
   }
 
   // Validate parent comment if replying
@@ -337,7 +302,9 @@ app.get("/:id", async (c) => {
 app.put("/:id", async (c) => {
   const session = requireAuth(c);
   const commentId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, updateCommentSchema);
 
   // Get comment with file info for project ID
   const [commentResult] = await db
@@ -361,19 +328,6 @@ app.put("/:id", async (c) => {
     throw new ValidationError("You can only edit your own comments", {
       pointer: "/data/relationships/user",
     });
-  }
-
-  // Validate text
-  if (body.text !== undefined) {
-    if (typeof body.text !== "string" || body.text.trim().length === 0) {
-      throw new ValidationError("Comment text is required", { pointer: "/data/attributes/text" });
-    }
-
-    if (body.text.length > 10000) {
-      throw new ValidationError("Comment text must be 10000 characters or less", {
-        pointer: "/data/attributes/text",
-      });
-    }
   }
 
   // Build updates
@@ -527,7 +481,9 @@ app.delete("/:id", async (c) => {
 app.post("/:id/replies", async (c) => {
   const session = requireAuth(c);
   const parentCommentId = c.req.param("id");
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, createCommentSchema);
 
   // Get parent comment
   const [parentComment] = await db
@@ -556,17 +512,6 @@ app.post("/:id/replies", async (c) => {
     if (!access) {
       throw new NotFoundError("comment", parentCommentId);
     }
-  }
-
-  // Validate input
-  if (!body.text || typeof body.text !== "string" || body.text.trim().length === 0) {
-    throw new ValidationError("Comment text is required", { pointer: "/data/attributes/text" });
-  }
-
-  if (body.text.length > 10000) {
-    throw new ValidationError("Comment text must be 10000 characters or less", {
-      pointer: "/data/attributes/text",
-    });
   }
 
   // Create reply
@@ -843,7 +788,9 @@ export async function getVersionStackComments(c: Context) {
 export async function createVersionStackComment(c: Context) {
   const session = requireAuth(c);
   const stackId = c.req.param("stackId")!;
-  const body = await c.req.json();
+
+  // Validate input with Zod
+  const body = await validateBody(c, createCommentSchema);
 
   // Get version stack
   const [stack] = await db
@@ -860,17 +807,6 @@ export async function createVersionStackComment(c: Context) {
   const access = await verifyProjectAccess(stack.projectId, session.currentAccountId);
   if (!access) {
     throw new NotFoundError("version_stack", stackId);
-  }
-
-  // Validate input
-  if (!body.text || typeof body.text !== "string" || body.text.trim().length === 0) {
-    throw new ValidationError("Comment text is required", { pointer: "/data/attributes/text" });
-  }
-
-  if (body.text.length > 10000) {
-    throw new ValidationError("Comment text must be 10000 characters or less", {
-      pointer: "/data/attributes/text",
-    });
   }
 
   // Create comment
