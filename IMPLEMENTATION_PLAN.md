@@ -36,7 +36,7 @@
 | **TODO Comments** | 9 | 8 email provider stubs (P3), 1 PDF text layer (P3) |
 | **Placeholder Implementations** | 4 | SendGrid, SES, Postmark, Resend → fallback to SMTP |
 | **Skipped Tests** | 2 | permissions-integration (conditional), VTT round-trip (bug) |
-| **Dead Code Paths** | 1 | createNotification (P2) |
+| **Dead Code Paths** | 0 | — |
 | **Missing Endpoints** | 1 | /docs referenced but returns 404 (P3) |
 
 ### Code-to-Spec Alignment Status
@@ -83,14 +83,11 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-### [P2] Notifications Never Created From Routes [2h] -- NOT STARTED
-
-- **Problem**: `createNotification` and `NOTIFICATION_TYPES` are exported from `src/api/routes/notifications.ts` but never called from any route handler. The full notification system exists (API, UI, real-time delivery) but nothing triggers it. (CONFIRMED - NEVER called from any route handler)
-- **Impact**: Users see an empty notification panel — the feature appears broken
-- **Solution**: Add `createNotification` calls to comment routes (mentions, replies), share routes, file processing completion, member invitation, assignment changes
+**All P2 items resolved.**
 
 ### Previously Completed P2 Items
 
+- ~~Notifications Never Created From Routes~~ — v0.0.89
 - ~~Webhook Events Never Emitted~~ — v0.0.89
 - ~~AssemblyAI Provider Will Crash at Runtime~~ — v0.0.89
 - ~~CORS hardcoded localhost origin~~ — v0.0.89
@@ -300,11 +297,11 @@ Per specs/README.md:
 | **Transcription** | DONE | Deepgram + faster-whisper work; AssemblyAI removed from config enum |
 | **Security** | DONE | Session limits, permissions, and CORS configuration complete |
 | **Webhooks** | DONE | Registration and delivery now wired |
-| **Notifications** | STUB | API/UI works but nothing triggers notifications (P2) |
+| **Notifications** | DONE | API/UI/real-time works; triggers now wired |
 | **Testing** | PARTIAL | 95 test files; route/media/realtime coverage 0%; 2 tests skipped |
 | **Documentation** | DONE | Specs complete; /docs endpoint missing (P3) |
 
-**Verdict**: Platform is functionally complete. One P2 item (notifications) should be addressed before production.
+**Verdict**: Platform is functionally complete. All P2 items resolved.
 
 ---
 
@@ -317,6 +314,8 @@ Fixed CORS configuration to conditionally add localhost origin only in non-produ
 Also fixed the AssemblyAI provider crash risk by removing `assemblyai` from the `TRANSCRIPTION_PROVIDER` config enum (users can no longer select it) and adding an explicit error case in the transcription processor with helpful guidance. The `assemblyai` value remains in the DB schema for backward compatibility with existing records.
 
 Wired webhook event emissions into all relevant route handlers. Added `emitWebhookEvent` calls to files.ts (file.created, file.updated, file.deleted, file.status_changed), comments.ts (comment.created, comment.updated, comment.deleted, comment.completed), projects.ts (project.created, project.updated, project.deleted), shares.ts (share.created, share.viewed), version-stacks.ts (version.created), workspaces.ts (member.added, member.removed), and transcription/processor.ts (transcription.completed).
+
+Wired notification creation into all relevant route handlers. Added `createNotification` calls to comments.ts (comment_reply notification when someone replies to your comment), shares.ts (share_viewed notification when someone views your share), and workspaces.ts (assignment notification when user is added to a workspace).
 
 ### v0.0.88 (2026-02-26) - Statistics Corrected
 

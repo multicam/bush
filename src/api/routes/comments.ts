@@ -22,7 +22,7 @@ import { NotFoundError, ValidationError, AuthorizationError } from "../../errors
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { permissionService } from "../../permissions/index.js";
 import { emitCommentEvent } from "../../realtime/index.js";
-import { emitWebhookEvent } from "./index.js";
+import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
 
 const app = new Hono();
 
@@ -242,6 +242,32 @@ app.post("/", async (c) => {
     timestamp: createdComment.comment.timestamp || undefined,
     is_internal: createdComment.comment.isInternal,
   });
+
+  // Create notification for reply (if replying to another user's comment)
+  if (body.parent_id) {
+    const [parentComment] = await db
+      .select()
+      .from(comments)
+      .where(eq(comments.id, body.parent_id))
+      .limit(1);
+
+    if (parentComment && parentComment.userId !== session.userId) {
+      const actorName = session.displayName || session.email;
+      await createNotification({
+        userId: parentComment.userId,
+        type: NOTIFICATION_TYPES.COMMENT_REPLY,
+        title: "New reply to your comment",
+        body: `${actorName} replied: "${body.text.slice(0, 100)}${body.text.length > 100 ? "..." : ""}"`,
+        data: {
+          commentId,
+          fileId,
+          projectId: access.project.id,
+          parentCommentId: body.parent_id,
+        },
+        projectId: access.project.id,
+      });
+    }
+  }
 
   return sendSingle(
     c,

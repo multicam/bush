@@ -24,7 +24,7 @@ import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 import { randomBytes } from "crypto";
 import { getEmailService } from "../../lib/email/index.js";
 import { config } from "../../config/env.js";
-import { emitWebhookEvent } from "./index.js";
+import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
 
 // Use Bun's built-in password hashing (bcrypt)
 async function hashPassphrase(passphrase: string): Promise<string> {
@@ -986,6 +986,22 @@ export async function getShareBySlug(c: Context) {
     project_id: share.projectId,
   }).catch((err) => {
     console.warn("[Webhook] Failed to emit share.viewed event:", err);
+  });
+
+  // Notify share creator (fire-and-forget)
+  createNotification({
+    userId: share.createdByUserId,
+    type: NOTIFICATION_TYPES.SHARE_VIEWED,
+    title: "Your share was viewed",
+    body: `Someone viewed your share "${share.name}"`,
+    data: {
+      shareId: share.id,
+      shareName: share.name,
+      projectId: share.projectId,
+    },
+    projectId: share.projectId || undefined,
+  }).catch((err) => {
+    console.warn("[Notification] Failed to create share_viewed notification:", err);
   });
 
   // Build response without exposing the passphrase

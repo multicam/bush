@@ -16,7 +16,7 @@ import { verifyWorkspaceAccess, verifyAccountMembership } from "../access-contro
 import { permissionService } from "../../permissions/service.js";
 import type { PermissionLevel } from "../../permissions/types.js";
 import { isPermissionAtLeast } from "../../permissions/types.js";
-import { emitWebhookEvent } from "./index.js";
+import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
 
 const app = new Hono();
 
@@ -339,6 +339,20 @@ app.post("/:id/members", async (c) => {
     user_id: userId,
     permission: permission,
     added_by_user_id: session.userId,
+  });
+
+  // Notify the added user
+  const actorName = session.displayName || session.email;
+  await createNotification({
+    userId: userId,
+    type: NOTIFICATION_TYPES.ASSIGNMENT,
+    title: "You were added to a workspace",
+    body: `${actorName} added you to "${workspace.name}" with ${permission} permission`,
+    data: {
+      workspaceId,
+      workspaceName: workspace.name,
+      permission,
+    },
   });
 
   return sendSingle(c, {
