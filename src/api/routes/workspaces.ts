@@ -16,6 +16,7 @@ import { verifyWorkspaceAccess, verifyAccountMembership } from "../access-contro
 import { permissionService } from "../../permissions/service.js";
 import type { PermissionLevel } from "../../permissions/types.js";
 import { isPermissionAtLeast } from "../../permissions/types.js";
+import { emitWebhookEvent } from "./index.js";
 
 const app = new Hono();
 
@@ -332,6 +333,14 @@ app.post("/:id/members", async (c) => {
     )
     .limit(1);
 
+  // Emit webhook event for member addition
+  await emitWebhookEvent(session.currentAccountId, "member.added", {
+    workspace_id: workspaceId,
+    user_id: userId,
+    permission: permission,
+    added_by_user_id: session.userId,
+  });
+
   return sendSingle(c, {
     id: newMember!.id,
     permission: newMember!.permission,
@@ -481,6 +490,13 @@ app.delete("/:id/members/:user_id", async (c) => {
 
   // Revoke permission using permission service
   await permissionService.revokeWorkspacePermission(workspaceId, targetUserId);
+
+  // Emit webhook event for member removal
+  await emitWebhookEvent(session.currentAccountId, "member.removed", {
+    workspace_id: workspaceId,
+    user_id: targetUserId,
+    removed_by_user_id: session.userId,
+  });
 
   return sendNoContent(c);
 });

@@ -22,6 +22,7 @@ import { NotFoundError, ValidationError, AuthorizationError } from "../../errors
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { permissionService } from "../../permissions/index.js";
 import { emitCommentEvent } from "../../realtime/index.js";
+import { emitWebhookEvent } from "./index.js";
 
 const app = new Hono();
 
@@ -230,6 +231,18 @@ app.post("/", async (c) => {
     },
   });
 
+  // Emit webhook event for comment creation
+  await emitWebhookEvent(session.currentAccountId, "comment.created", {
+    id: commentId,
+    file_id: fileId,
+    project_id: access.project.id,
+    user_id: session.userId,
+    text: createdComment.comment.text,
+    parent_id: createdComment.comment.parentId || undefined,
+    timestamp: createdComment.comment.timestamp || undefined,
+    is_internal: createdComment.comment.isInternal,
+  });
+
   return sendSingle(
     c,
     {
@@ -384,6 +397,16 @@ app.put("/:id", async (c) => {
         isInternal: updatedComment.comment.isInternal,
       },
     });
+
+    // Emit webhook event for comment update
+    await emitWebhookEvent(session.currentAccountId, "comment.updated", {
+      id: commentId,
+      file_id: comment.fileId,
+      project_id: commentResult.file.projectId,
+      user_id: session.userId,
+      text: updatedComment.comment.text,
+      is_internal: updatedComment.comment.isInternal,
+    });
   }
 
   return sendSingle(
@@ -458,6 +481,14 @@ app.delete("/:id", async (c) => {
       fileId,
       commentId,
       data: {},
+    });
+
+    // Emit webhook event for comment deletion
+    await emitWebhookEvent(session.currentAccountId, "comment.deleted", {
+      id: commentId,
+      file_id: fileId,
+      project_id: projectId,
+      user_id: session.userId,
     });
   }
 
@@ -623,6 +654,16 @@ app.put("/:id/complete", async (c) => {
         isComplete,
         completedAt: completedAt?.toISOString() || null,
       },
+    });
+
+    // Emit webhook event for comment completion
+    await emitWebhookEvent(session.currentAccountId, "comment.completed", {
+      id: commentId,
+      file_id: comment.fileId,
+      project_id: projectId,
+      user_id: session.userId,
+      is_complete: isComplete,
+      completed_at: completedAt?.toISOString() || null,
     });
   }
 

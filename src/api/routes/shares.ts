@@ -24,6 +24,7 @@ import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 import { randomBytes } from "crypto";
 import { getEmailService } from "../../lib/email/index.js";
 import { config } from "../../config/env.js";
+import { emitWebhookEvent } from "./index.js";
 
 // Use Bun's built-in password hashing (bcrypt)
 async function hashPassphrase(passphrase: string): Promise<string> {
@@ -219,6 +220,16 @@ app.post("/", async (c) => {
     .select({ count: sql<number>`count(*)` })
     .from(shareAssets)
     .where(eq(shareAssets.shareId, shareId));
+
+  // Emit webhook event for share creation
+  await emitWebhookEvent(accountId, "share.created", {
+    id: shareId,
+    name: createdShare.share.name,
+    slug: createdShare.share.slug,
+    project_id: createdShare.share.projectId,
+    created_by_user_id: session.userId,
+    asset_count: Number(count),
+  });
 
   return sendSingle(
     c,
@@ -966,6 +977,16 @@ export async function getShareBySlug(c: Context) {
     .innerJoin(files, eq(shareAssets.fileId, files.id))
     .where(eq(shareAssets.shareId, share.id))
     .orderBy(shareAssets.sortOrder);
+
+  // Emit webhook event for share view (fire-and-forget, don't block response)
+  emitWebhookEvent(share.accountId, "share.viewed", {
+    id: share.id,
+    slug: share.slug,
+    name: share.name,
+    project_id: share.projectId,
+  }).catch((err) => {
+    console.warn("[Webhook] Failed to emit share.viewed event:", err);
+  });
 
   // Build response without exposing the passphrase
   const { passphrase: _omitPassphrase, ...shareWithoutPassphrase } = share;

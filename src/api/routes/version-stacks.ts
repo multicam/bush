@@ -17,6 +17,7 @@ import {
   getVersionStackComments,
   createVersionStackComment,
 } from "./comments.js";
+import { emitWebhookEvent } from "./index.js";
 
 const app = new Hono();
 
@@ -360,6 +361,14 @@ app.post("/:id/files", async (c) => {
       .set({ currentFileId: body.file_id, updatedAt: new Date() })
       .where(eq(versionStacks.id, stackId));
   }
+
+  // Emit webhook event for version creation
+  await emitWebhookEvent(session.currentAccountId, "version.created", {
+    id: body.file_id,
+    stack_id: stackId,
+    project_id: stack.projectId,
+    name: file.name,
+  });
 
   // Fetch and return the updated file
   const [updatedFile] = await db

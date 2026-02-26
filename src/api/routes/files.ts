@@ -16,6 +16,7 @@ import { config } from "../../config/index.js";
 import { verifyProjectAccess } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
 import { enqueueProcessingJobs } from "../../media/index.js";
+import { emitWebhookEvent } from "./index.js";
 
 /** Valid file statuses */
 const VALID_FILE_STATUSES = ["uploading", "processing", "ready", "processing_failed", "deleted"] as const;
@@ -312,6 +313,15 @@ app.post("/", async (c) => {
 
   const uploadResult = await storage.getUploadUrl(storageKey);
 
+  // Emit webhook event for file creation
+  await emitWebhookEvent(session.currentAccountId, "file.created", {
+    id: file.id,
+    project_id: projectId,
+    name: file.name,
+    mime_type: file.mimeType,
+    file_size_bytes: file.fileSizeBytes,
+  });
+
   return c.json({
     data: {
       id: file.id,
@@ -402,6 +412,24 @@ app.patch("/:id", async (c) => {
     .where(eq(files.id, fileId))
     .limit(1);
 
+  // Emit webhook event for file update
+  await emitWebhookEvent(session.currentAccountId, "file.updated", {
+    id: updatedFile.id,
+    project_id: projectId,
+    name: updatedFile.name,
+    changes: body,
+  });
+
+  // Emit status change webhook if status was updated
+  if (body.status !== undefined) {
+    await emitWebhookEvent(session.currentAccountId, "file.status_changed", {
+      id: updatedFile.id,
+      project_id: projectId,
+      old_status: file.status,
+      new_status: body.status,
+    });
+  }
+
   return sendSingle(c, formatDates(updatedFile), RESOURCE_TYPES.FILE);
 });
 
@@ -444,6 +472,13 @@ app.delete("/:id", async (c) => {
       updatedAt: new Date(),
     })
     .where(eq(files.id, fileId));
+
+  // Emit webhook event for file deletion
+  await emitWebhookEvent(session.currentAccountId, "file.deleted", {
+    id: fileId,
+    project_id: projectId,
+    name: file.name,
+  });
 
   return sendNoContent(c);
 });

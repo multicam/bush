@@ -16,6 +16,7 @@ import {
   RETRY_CONFIG,
   MAX_DURATION_SECONDS,
 } from "./types.js";
+import { emitWebhookEvent } from "../api/routes/index.js";
 
 /**
  * Maximum number of words to store per transcript
@@ -129,7 +130,7 @@ async function getAudioPresignedUrl(storageKey: string): Promise<string> {
 export async function processTranscriptionJob(
   job: { data: TranscriptionJobData }
 ): Promise<TranscriptionJobResult> {
-  const { fileId, storageKey, durationSeconds, language, speakerIdentification } = job.data;
+  const { fileId, accountId, projectId, storageKey, durationSeconds, language, speakerIdentification } = job.data;
 
   // Check duration limit
   if (durationSeconds > MAX_DURATION_SECONDS) {
@@ -316,6 +317,18 @@ export async function processTranscriptionJob(
       .update(files)
       .set({ status: "ready", updatedAt: new Date() })
       .where(eq(files.id, fileId));
+
+    // Emit webhook event for transcription completion (fire-and-forget)
+    emitWebhookEvent(accountId, "transcription.completed", {
+      id: transcriptId,
+      file_id: fileId,
+      project_id: projectId,
+      word_count: wordsToStore.length,
+      language: result.language || "unknown",
+      duration_seconds: result.durationSeconds || durationSeconds,
+    }).catch((err) => {
+      console.warn("[Webhook] Failed to emit transcription.completed event:", err);
+    });
 
     return {
       transcriptId,

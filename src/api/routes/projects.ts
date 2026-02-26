@@ -16,6 +16,7 @@ import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js
 import { permissionService } from "../../permissions/service.js";
 import type { PermissionLevel } from "../../permissions/types.js";
 import { isPermissionAtLeast } from "../../permissions/types.js";
+import { emitWebhookEvent } from "./index.js";
 
 const app = new Hono();
 
@@ -143,6 +144,14 @@ app.post("/", async (c) => {
     .where(eq(projects.id, projectId))
     .limit(1);
 
+  // Emit webhook event for project creation
+  await emitWebhookEvent(session.currentAccountId, "project.created", {
+    id: projectId,
+    workspace_id: body.workspace_id,
+    name: project.name,
+    description: project.description,
+  });
+
   return sendSingle(c, formatDates(project), RESOURCE_TYPES.PROJECT);
 });
 
@@ -187,6 +196,14 @@ app.patch("/:id", async (c) => {
     .where(eq(projects.id, projectId))
     .limit(1);
 
+  // Emit webhook event for project update
+  await emitWebhookEvent(session.currentAccountId, "project.updated", {
+    id: projectId,
+    name: project.name,
+    description: project.description,
+    changes: body,
+  });
+
   return sendSingle(c, formatDates(project), RESOURCE_TYPES.PROJECT);
 });
 
@@ -208,6 +225,12 @@ app.delete("/:id", async (c) => {
     .update(projects)
     .set({ archivedAt: new Date(), updatedAt: new Date() })
     .where(eq(projects.id, projectId));
+
+  // Emit webhook event for project deletion
+  await emitWebhookEvent(session.currentAccountId, "project.deleted", {
+    id: projectId,
+    name: access.project.name,
+  });
 
   return sendNoContent(c);
 });
