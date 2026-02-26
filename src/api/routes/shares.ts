@@ -21,6 +21,7 @@ import {
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
+import { randomBytes } from "crypto";
 
 // Use Bun's built-in password hashing (bcrypt)
 async function hashPassphrase(passphrase: string): Promise<string> {
@@ -40,15 +41,12 @@ const app = new Hono();
 app.use("*", authMiddleware());
 
 /**
- * Generate a unique slug for a share
+ * Generate a unique slug for a share (cryptographically secure)
  */
 function generateShareSlug(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let slug = "";
-  for (let i = 0; i < 10; i++) {
-    slug += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return slug;
+  // Generate 8 random bytes, encode as base64url (11 chars), take first 10
+  // base64url uses a-z, A-Z, 0-9, -, _ (all URL-safe)
+  return randomBytes(8).toString("base64url").slice(0, 10);
 }
 
 /**

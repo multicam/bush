@@ -4,14 +4,34 @@
  * Integration tests for the permission service with database.
  * Uses an in-memory SQLite database for isolation.
  * Environment variables are set in vitest.setup.ts
+ *
+ * Note: These tests require better-sqlite3 native bindings.
+ * If unavailable, tests are skipped automatically.
  */
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as crypto from "crypto";
+import type { Database as DatabaseType } from "better-sqlite3";
+
+// Check if better-sqlite3 is available and functional
+let DatabaseConstructor: (new (filename: string) => DatabaseType) | undefined;
+let sqliteAvailable = false;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+  const BetterSqlite3 = require("better-sqlite3");
+  // Try to actually instantiate it to verify native bindings work
+  const testDb = new BetterSqlite3(":memory:");
+  testDb.close();
+  DatabaseConstructor = BetterSqlite3;
+  sqliteAvailable = true;
+} catch {
+  // better-sqlite3 not available or native bindings failed, tests will be skipped
+}
+
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
 // Create in-memory database for testing
-let sqlite: Database.Database;
+let sqlite: DatabaseType | undefined;
 let db: ReturnType<typeof drizzle>;
 
 // Import schema
@@ -63,11 +83,15 @@ vi.mock("../db/index.js", () => ({
 
 import { permissionService } from "./service.js";
 
-describe("Permission Service Integration Tests", () => {
+describe.skipIf(!sqliteAvailable)("Permission Service Integration Tests", () => {
   beforeAll(async () => {
+    if (!DatabaseConstructor) {
+      throw new Error("better-sqlite3 not available");
+    }
     // Create in-memory database
-    sqlite = new Database(":memory:");
-    db = drizzle(sqlite, { schema: {
+    const dbInstance = new DatabaseConstructor(":memory:");
+    sqlite = dbInstance;
+    db = drizzle(dbInstance, { schema: {
       accounts,
       users,
       accountMemberships,
@@ -80,7 +104,7 @@ describe("Permission Service Integration Tests", () => {
     }});
 
     // Create tables
-    sqlite.exec(`
+    dbInstance.exec(`
       CREATE TABLE accounts (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -193,12 +217,12 @@ describe("Permission Service Integration Tests", () => {
   });
 
   afterAll(() => {
-    sqlite.close();
+    sqlite?.close();
   });
 
   beforeEach(async () => {
-    // Clear all tables
-    sqlite.exec(`
+    // Clear all tables (sqlite is guaranteed to be defined when tests run)
+    sqlite!.exec(`
       DELETE FROM folder_permissions;
       DELETE FROM project_permissions;
       DELETE FROM workspace_permissions;

@@ -7,6 +7,7 @@
  * Reference: specs/README.md "Realtime Architecture"
  */
 import { EventEmitter } from "events";
+import { randomBytes } from "crypto";
 
 // ============================================================================
 // Event Types
@@ -386,8 +387,8 @@ class RealtimeEventBus extends EventEmitter {
 export const eventBus = new RealtimeEventBus();
 
 /**
- * Generate a unique event ID
+ * Generate a unique event ID (cryptographically secure)
  */
 export function generateEventId(): string {
-  return `evt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  return `evt_${Date.now()}_${randomBytes(6).toString("base64url")}`;
 }

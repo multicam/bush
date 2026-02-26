@@ -131,8 +131,9 @@ describe("WebSocket Manager", () => {
       const id1 = wsManager.generateConnectionId();
       const id2 = wsManager.generateConnectionId();
 
-      expect(id1).toMatch(/^conn_\d+_[a-z0-9]+$/);
-      expect(id2).toMatch(/^conn_\d+_[a-z0-9]+$/);
+      // base64url uses A-Z, a-z, 0-9, -, _
+      expect(id1).toMatch(/^conn_\d+_[A-Za-z0-9_-]+$/);
+      expect(id2).toMatch(/^conn_\d+_[A-Za-z0-9_-]+$/);
       expect(id1).not.toBe(id2);
     });
   });

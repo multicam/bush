@@ -8,6 +8,7 @@
  */
 import type { ServerWebSocket } from "bun";
 import { unsealData } from "iron-session";
+import { randomBytes } from "crypto";
 import { eventBus, type RealtimeEvent, type ChannelType } from "./event-bus.js";
 import { sessionCache, parseSessionCookie } from "../auth/session-cache.js";
 import { authService } from "../auth/service.js";
@@ -158,10 +159,10 @@ class WebSocketManager {
   }
 
   /**
-   * Generate a unique connection ID
+   * Generate a unique connection ID (cryptographically secure)
    */
   generateConnectionId(): string {
-    return `conn_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    return `conn_${Date.now()}_${randomBytes(6).toString("base64url")}`;
   }
 
   /**
