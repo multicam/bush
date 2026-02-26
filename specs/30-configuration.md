@@ -1,8 +1,14 @@
 # Bush - Configuration & Secrets Management
 
-## Central Source of Truth
+## Overview
 
-All configuration flows from **one chain**:
+All configuration flows from a single validated source: the Zod schema in `src/config/env.ts`. Every environment variable is typed, defaulted, and marked required or optional at definition time. The code schema is authoritative — this document is reference documentation. When adding a new env var, update `src/config/env.ts` first, then `.env.example`. The system follows five principles: environment variables only (no config files, no hardcoded values), no secrets in git ever, fail fast at startup with clear error messages, single typed source of truth, and type-safe access through the `config` object (never raw `process.env`).
+
+---
+
+## Specification
+
+### 1. Central Source of Truth
 
 ```
 src/config/env.ts          → Zod schema: defines, validates, types every variable
@@ -12,21 +18,7 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 .env.local                 → Developer overrides (not in git)
 ```
 
-**Rule**: When adding a new env var, update `src/config/env.ts` first, then `.env.example`. The spec below is reference documentation — the code is authoritative.
-
----
-
-## 1. Configuration Philosophy
-
-- **Environment variables only** — no config files, no hardcoded values, no feature flags in code
-- **No secrets in git** — ever. `.env.example` has placeholders only
-- **Fail fast** — validate all config at startup; crash with clear error messages before accepting traffic
-- **Single source of truth** — `src/config/env.ts` Zod schema defines every variable, its type, whether it's required, and its default
-- **Type-safe access** — all config accessed through a typed `config` object, never raw `process.env`
-
----
-
-## 2. Environment Files
+### 2. Environment Files
 
 | File | In Git | Purpose |
 |------|--------|---------|
@@ -35,7 +27,7 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `.env.test` | Yes | Test environment defaults (deterministic, no external services) |
 | `.env.production` | No | Production values, deployed via CI/secrets manager |
 
-### Load Order (highest priority wins)
+#### Load Order (highest priority wins)
 1. Actual environment variables (always win)
 2. `.env.local` (dev only)
 3. `.env.test` (when `NODE_ENV=test`)
@@ -43,9 +35,9 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 
 ---
 
-## 3. Complete Environment Variables
+### 3. Complete Environment Variables
 
-### App & Core
+#### App & Core
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
@@ -56,7 +48,7 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `APP_URL` | url | — | Yes | Next.js frontend URL |
 | `API_URL` | url | — | Yes | Hono backend URL |
 
-### Database (SQLite)
+#### Database (SQLite)
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
@@ -64,14 +56,16 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `DATABASE_WAL_MODE` | boolean | `true` | No | Enable WAL mode |
 | `DATABASE_BUSY_TIMEOUT` | number | `5000` | No | Busy timeout in ms |
 
-### Redis
+#### Redis
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
 | `REDIS_URL` | string | — | Yes | Redis connection string |
 | `REDIS_KEY_PREFIX` | string | `bush:` | No | Key namespace |
 
-### Authentication (WorkOS AuthKit)
+#### Authentication
+
+Bush uses WorkOS AuthKit as the current identity provider. The variables below are WorkOS-specific; the surrounding auth logic is isolated behind a thin adapter interface so the provider can be replaced without touching application code. See `02-authentication.md` for the full auth model.
 
 | Variable | Type | Default | Required | Secret | Description |
 |----------|------|---------|----------|--------|-------------|
@@ -82,7 +76,9 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `WORKOS_WEBHOOK_SECRET` | string | — | Yes | Yes | Webhook signing secret (`whsec_...`) |
 | `WORKOS_COOKIE_PASSWORD` | string | — | No | Yes | Cookie encryption (min 32 chars, falls back to `SESSION_SECRET`) |
 
-### Object Storage (S3-compatible)
+#### Object Storage (S3-compatible interface)
+
+Application code interacts exclusively with the `StorageProvider` interface. The env vars below select and configure the concrete backend. See `06-storage.md` for the full storage model.
 
 | Variable | Type | Default | Required | Secret | Description |
 |----------|------|---------|----------|--------|-------------|
@@ -94,7 +90,7 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `STORAGE_BUCKET` | string | — | Yes | No | Primary bucket name |
 | `STORAGE_BUCKET_DERIVATIVES` | string | — | No | No | Separate bucket for derivatives |
 
-### CDN
+#### CDN
 
 | Variable | Type | Default | Required | Secret | Description |
 |----------|------|---------|----------|--------|-------------|
@@ -102,7 +98,9 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `CDN_BASE_URL` | url | — | No | No | CDN URL (empty for dev) |
 | `CDN_SIGNING_KEY` | string | — | No | Yes | CDN signing key |
 
-### Media Processing: Binaries
+#### Media Processing: Binaries
+
+FFmpeg and ImageMagick are the current processing backends. Paths default to standard system locations. See `07-media-processing.md` for the full processing pipeline.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -110,10 +108,10 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `FFPROBE_PATH` | string | `/usr/bin/ffprobe` | FFprobe binary |
 | `IMAGEMAGICK_PATH` | string | `/usr/bin/convert` | ImageMagick convert |
 | `IDENTIFY_PATH` | string | `/usr/bin/identify` | ImageMagick identify |
-| `DCRAW_PATH` | string | `/usr/bin/dcraw` | RAW processor (deferred) |
-| `LIBREOFFICE_PATH` | string | `/usr/bin/libreoffice` | Doc conversion (deferred) |
+| `DCRAW_PATH` | string | `/usr/bin/dcraw` | RAW processor (Phase 2) |
+| `LIBREOFFICE_PATH` | string | `/usr/bin/libreoffice` | Doc conversion (Phase 2) |
 
-### Media Processing: Behavior
+#### Media Processing: Behavior
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -124,7 +122,7 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `HLS_SEGMENT_DURATION` | number | `6` | HLS segment seconds |
 | `PROXY_PRESET` | string | `medium` | FFmpeg encoding preset |
 
-### Media Processing: Worker Concurrency
+#### Media Processing: Worker Concurrency
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -134,7 +132,9 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `WORKER_WAVEFORM_CONCURRENCY` | number | `4` | Concurrent waveform jobs |
 | `WORKER_METADATA_CONCURRENCY` | number | `8` | Concurrent metadata jobs |
 
-### Transcription
+#### Transcription
+
+Bush abstracts transcription behind a provider interface. The active provider is selected by `TRANSCRIPTION_PROVIDER`; only the credentials for the selected provider are required at runtime. See `08-transcription.md` for the full transcription model.
 
 | Variable | Type | Default | Required | Secret | Description |
 |----------|------|---------|----------|--------|-------------|
@@ -144,18 +144,40 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `ASSEMBLYAI_API_KEY` | string | — | When provider=assemblyai | Yes | AssemblyAI API key |
 | `FASTER_WHISPER_URL` | string | — | When provider=faster-whisper | No | Server URL (e.g., `http://localhost:8080`) |
 
-### Email (SMTP)
+#### Email
 
-| Variable | Type | Default | Secret | Description |
-|----------|------|---------|--------|-------------|
-| `SMTP_HOST` | string | `localhost` | No | SMTP server |
-| `SMTP_PORT` | number | `1025` | No | SMTP port (Mailpit default for dev) |
-| `SMTP_USER` | string | `""` | No | SMTP username |
-| `SMTP_PASS` | string | `""` | Yes | SMTP password |
-| `SMTP_FROM` | email | `noreply@bush.local` | No | From address |
-| `SMTP_SECURE` | boolean | `false` | No | TLS (`true` in production) |
+Bush abstracts email sending behind an `EmailService` interface. The current implementation is a hollow stub; a concrete provider (Resend, SendGrid, SES, Postmark) is injected by selecting `EMAIL_PROVIDER`. SMTP fallback is always available for dev. See `11-email.md` for the full email model.
 
-### Session & Security
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `EMAIL_PROVIDER` | enum | `smtp` | No | No | `smtp` \| `resend` \| `sendgrid` \| `ses` \| `postmark` |
+| `EMAIL_FROM` | email | `noreply@bush.local` | No | No | From address |
+| `EMAIL_REPLY_TO` | email | — | No | No | Reply-to address |
+| `EMAIL_API_KEY` | string | — | When provider != smtp | Yes | Provider API key |
+| `SMTP_HOST` | string | `localhost` | No | No | SMTP server (fallback / dev) |
+| `SMTP_PORT` | number | `1025` | No | No | SMTP port (Mailpit default for dev) |
+| `SMTP_USER` | string | `""` | No | No | SMTP username |
+| `SMTP_PASS` | string | `""` | No | Yes | SMTP password |
+| `SMTP_SECURE` | boolean | `false` | No | No | TLS (`true` in production) |
+
+#### Billing (Phase 2)
+
+Billing variables are required only when billing is enabled. See `13-billing.md` for the full billing model.
+
+| Variable | Type | Default | Required | Secret | Description |
+|----------|------|---------|----------|--------|-------------|
+| `STRIPE_SECRET_KEY` | string | — | When billing enabled | Yes | Stripe secret key (`sk_live_...` / `sk_test_...`) |
+| `STRIPE_WEBHOOK_SECRET` | string | — | When billing enabled | Yes | Stripe webhook signing secret (`whsec_...`) |
+| `STRIPE_PRICE_ID_STORAGE` | string | — | When billing enabled | No | Stripe price ID for storage tier |
+| `STRIPE_PRICE_ID_PROCESSING` | string | — | When billing enabled | No | Stripe price ID for processing tier |
+
+#### Search
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `SEARCH_INDEX_BATCH_SIZE` | number | `100` | Documents per indexing batch |
+
+#### Session & Security
 
 | Variable | Type | Default | Required | Secret | Description |
 |----------|------|---------|----------|--------|-------------|
@@ -163,14 +185,14 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `SESSION_MAX_AGE` | number | `604800` | No | No | Session TTL in seconds (7 days) |
 | `TRUST_PROXY` | boolean | `false` | No | No | Trust X-Forwarded-For (behind Caddy) |
 
-### Rate Limiting
+#### Rate Limiting
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `RATE_LIMIT_WINDOW_MS` | number | `60000` | Window in ms (1 minute) |
 | `RATE_LIMIT_MAX_REQUESTS` | number | `100` | Requests per window per IP |
 
-### Upload
+#### Upload
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -178,16 +200,16 @@ src/config/env.ts          → Zod schema: defines, validates, types every varia
 | `UPLOAD_PRESIGNED_URL_EXPIRY` | number | `3600` | Pre-signed URL TTL (1 hour) |
 | `UPLOAD_MULTIPART_CHUNK_SIZE` | number | `10485760` | Chunk size (10 MB) |
 
-### Backup
+#### Backup
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `BACKUP_STORAGE_BUCKET` | string | `bush-backups` | Backup bucket name |
 | `LITESTREAM_ENABLED` | boolean | `false` | Enable SQLite streaming backup |
 
-### Next.js Public Variables
+#### Next.js Public Variables
 
-These are embedded in the browser bundle — **NOT secrets**.
+These are embedded in the browser bundle — not secrets.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -197,9 +219,9 @@ These are embedded in the browser bundle — **NOT secrets**.
 
 ---
 
-## 4. Secrets Management
+### 4. Secrets Management
 
-### Secret Keys (scrubbed from logs)
+#### Secret Keys (scrubbed from logs)
 
 Defined in `src/config/env.ts` → `SECRET_KEYS` array:
 
@@ -209,19 +231,23 @@ Defined in `src/config/env.ts` → `SECRET_KEYS` array:
 4. `STORAGE_ACCESS_KEY`
 5. `STORAGE_SECRET_KEY`
 6. `CDN_SIGNING_KEY`
-7. `SMTP_PASS`
-8. `SESSION_SECRET`
-9. `DEEPGRAM_API_KEY`
-10. `ASSEMBLYAI_API_KEY`
+7. `EMAIL_API_KEY`
+8. `SMTP_PASS`
+9. `SESSION_SECRET`
+10. `DEEPGRAM_API_KEY`
+11. `ASSEMBLYAI_API_KEY`
+12. `STRIPE_SECRET_KEY`
+13. `STRIPE_WEBHOOK_SECRET`
 
-### Principles
+#### Principles
+
 - **No secrets manager initially** — environment variables on host, sourced from GitHub Secrets via CI/CD
 - **Upgrade path**: migrate to HashiCorp Vault or AWS Secrets Manager when needed
 - **Never log secrets** — `scrubSecrets()` in `src/config/env.ts` replaces values with `[REDACTED:KEY_NAME]`
 - **Never return secrets in API responses**
 - **Rotate without downtime** — secrets are read at startup; rotation requires restart
 
-### Secret Rotation
+#### Secret Rotation
 
 | Secret | Rotation | Procedure |
 |--------|----------|-----------|
@@ -230,13 +256,15 @@ Defined in `src/config/env.ts` → `SECRET_KEYS` array:
 | `CDN_SIGNING_KEY` | On compromise | Rotate in CDN dashboard, update, redeploy |
 | `SESSION_SECRET` | On compromise | Update (invalidates all sessions), redeploy |
 | `DEEPGRAM_API_KEY` | On compromise | Rotate in Deepgram dashboard |
+| `STRIPE_SECRET_KEY` | On compromise or annually | Rotate in Stripe dashboard, update, redeploy |
 
-### Production Secret Sourcing
+#### Production Secret Sourcing
+
 All secrets stored in GitHub repository → Secrets and variables → Actions. CI/CD injects them as environment variables during deployment. Secrets are masked in GitHub Actions logs automatically.
 
 ---
 
-## 5. Dev vs Production
+### 5. Dev vs Production
 
 | Variable | Dev | Production |
 |----------|-----|------------|
@@ -250,14 +278,15 @@ All secrets stored in GitHub repository → Secrets and variables → Actions. C
 | `CDN_PROVIDER` | `none` | `bunny` |
 | `TRANSCRIPTION_PROVIDER` | `faster-whisper` | `deepgram` |
 | `FASTER_WHISPER_URL` | `http://localhost:8080` | — |
-| `SMTP_HOST` | `localhost` (Mailpit) | Production SMTP |
+| `EMAIL_PROVIDER` | `smtp` | `resend` (or preferred provider) |
+| `SMTP_HOST` | `localhost` (Mailpit) | — |
 | `SMTP_SECURE` | `false` | `true` |
 | `TRUST_PROXY` | `false` | `true` |
 | `LITESTREAM_ENABLED` | `false` | `true` |
 
 ---
 
-## 6. Services & Endpoints (Dev)
+### 6. Services & Endpoints (Dev)
 
 | Service | Port | URL | Purpose |
 |---------|------|-----|---------|
@@ -273,9 +302,9 @@ All secrets stored in GitHub repository → Secrets and variables → Actions. C
 
 ---
 
-## 7. Local Development Setup
+### 7. Local Development Setup
 
-### Prerequisites
+#### Prerequisites
 
 | Tool | Version | Install |
 |------|---------|---------|
@@ -286,7 +315,7 @@ All secrets stored in GitHub repository → Secrets and variables → Actions. C
 | MinIO | latest | Binary download |
 | Mailpit | latest | Binary download |
 
-#### Optional (for transcription dev)
+Optional (for transcription dev):
 
 | Tool | Version | Install |
 |------|---------|---------|
@@ -295,7 +324,7 @@ All secrets stored in GitHub repository → Secrets and variables → Actions. C
 | uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | faster-whisper-server | latest | See transcription setup below |
 
-### Step-by-Step
+#### Step-by-Step
 
 ```bash
 # 1. Clone and install
@@ -326,7 +355,7 @@ bun run dev          # API (3001) + web (3000)
 bun run dev:worker   # Media processing worker (separate terminal)
 ```
 
-### Transcription Setup (GPU)
+#### Transcription Setup (GPU)
 
 ```bash
 # Create venv
@@ -344,14 +373,16 @@ TRANSCRIPTION_PROVIDER=faster-whisper
 FASTER_WHISPER_URL=http://localhost:8080
 ```
 
-### WorkOS Dev Account Setup
+#### WorkOS Dev Account Setup
+
 1. Create a free account at [workos.com](https://workos.com)
 2. Create a Development environment
 3. Enable AuthKit, configure redirect URI: `http://localhost:3000/auth/callback`
 4. Copy API Key and Client ID to `.env.local`
 5. Set `SESSION_SECRET` to any 32+ char string
 
-### Verify Setup
+#### Verify Setup
+
 ```bash
 redis-cli ping                                    # PONG
 curl http://localhost:9000/minio/health/live       # 200
@@ -362,9 +393,7 @@ curl http://localhost:8080/health                   # faster-whisper (if running
 
 ---
 
-## 8. Dev Server Architecture
-
-The platform runs as separate processes:
+### 8. Dev Server Architecture
 
 | Process | Command | Port | Description |
 |---------|---------|------|-------------|
@@ -379,7 +408,7 @@ Next.js proxies `/v4/*` requests to Hono via rewrites in `next.config.ts`, so br
 
 ---
 
-## 9. Test Environment
+### 9. Test Environment
 
 `.env.test` provides deterministic, isolated config:
 
@@ -402,6 +431,7 @@ STORAGE_ACCESS_KEY=minioadmin
 STORAGE_SECRET_KEY=minioadmin
 STORAGE_BUCKET=bush-test
 CDN_PROVIDER=none
+EMAIL_PROVIDER=smtp
 SMTP_HOST=localhost
 SMTP_PORT=1025
 SESSION_SECRET=test-session-secret-at-least-32-chars-long
@@ -416,9 +446,10 @@ FASTER_WHISPER_URL=http://localhost:8080
 
 ---
 
-## 10. Config Access in Code
+### 10. Config Access in Code
 
-### Backend (Hono)
+#### Backend (Hono)
+
 ```typescript
 import { config } from "../config/index.js";
 
@@ -426,24 +457,27 @@ const port = config.PORT;           // number, validated
 const redisUrl = config.REDIS_URL;  // string, validated
 ```
 
-### Frontend Server (Next.js Server Components)
+#### Frontend Server (Next.js Server Components)
+
 ```typescript
 import { config } from "../config/index.js";
 const apiKey = config.WORKOS_API_KEY;  // same validated config
 ```
 
-### Frontend Client (Browser)
+#### Frontend Client (Browser)
+
 ```typescript
 // Only NEXT_PUBLIC_ vars available
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
 ```
 
-### Build Phase
-During `NEXT_PHASE=phase-production-build`, validation is skipped and placeholder values are used. Runtime config validated on server start.
+#### Build Phase
+
+During `NEXT_PHASE=phase-production-build`, validation is skipped and placeholder values are used. Runtime config is validated on server start.
 
 ---
 
-## 11. Health Check
+### 11. Health Check
 
 `GET /health` verifies:
 - Config loaded (implicit — server wouldn't start otherwise)
@@ -455,7 +489,7 @@ Returns `200 OK` with status, or `503` if any dependency is down.
 
 ---
 
-## 12. gitignore
+### 12. .gitignore
 
 ```gitignore
 .env.local
@@ -472,4 +506,15 @@ dist/
 *.log
 ```
 
-**Committed**: `.env.example`, `.env.test`, `.gitignore`
+Committed: `.env.example`, `.env.test`, `.gitignore`
+
+---
+
+## Cross-references
+
+- `02-authentication.md` — auth model, session logic, guest/reviewer access
+- `06-storage.md` — storage provider interface, upload flows, CDN delivery
+- `07-media-processing.md` — FFmpeg pipeline, worker configuration
+- `08-transcription.md` — transcription provider interface, API key usage
+- `11-email.md` — email service interface, transactional email templates
+- `13-billing.md` — billing model, plan enforcement, Stripe integration (Phase 2)

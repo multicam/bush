@@ -1,28 +1,33 @@
-# 17 -- Bush API Complete Specification
+# 04 — Bush API Reference
 
-## Version: V4 (Current)
+## Overview
+
+The Bush V4 REST API is a resource-oriented HTTP API using JSON:API-style response envelopes. All endpoints are prefixed with `/v4/` and speak `application/json`. The API enforces cursor-based pagination, per-category sliding-window rate limits backed by Redis, and a stable versioning contract — breaking changes require a new major version. Browser clients authenticate via HTTP-only session cookies; external and server-to-server clients use bearer tokens or API keys. Real-time push updates are delivered over WebSocket (see `05-realtime.md`); the REST API is the source of truth for initial page loads and mutations.
 
 ---
 
-## 1. Design Principles
+## Specification
+
+### 1. Design Principles
 
 - RESTful architecture with JSON:API-style response envelopes
 - All endpoints prefixed with `/v4/`
-- Content-Type: `application/json` for all requests and responses
+- `Content-Type: application/json` for all requests and responses
 - UTF-8 encoding throughout
 - Idempotent operations where possible (PUT, DELETE)
-- Resource-oriented URLs: nouns, not verbs
-- Plural resource names (`/projects`, not `/project`)
+- Resource-oriented URLs: nouns, not verbs; plural resource names (`/projects`, not `/project`)
 - Nested resources for parent-child relationships (`/projects/:id/files`)
 - HATEOAS-lite: `links` object in responses for pagination, not full hypermedia
 
 ---
 
-## 2. Authentication
+### 2. Authentication
 
-### 2.1 Authentication Methods
+> See `02-authentication.md` for the full auth architecture, WorkOS AuthKit integration, and session token lifecycle.
 
-#### Web (Browser) — Cookie-Based Auth
+#### 2.1 Authentication Methods
+
+**Web (Browser) — Cookie-Based Auth** [MVP]
 
 The web frontend authenticates via WorkOS AuthKit cookies. No bearer token is needed for browser requests.
 
@@ -34,7 +39,7 @@ The web frontend authenticates via WorkOS AuthKit cookies. No bearer token is ne
 
 This flow is transparent to the frontend: the web API client simply makes relative `/v4/*` requests.
 
-#### API — Bearer Tokens
+**API — Bearer Tokens** [MVP]
 
 External API clients and service-to-service integrations use bearer tokens:
 
@@ -42,16 +47,16 @@ External API clients and service-to-service integrations use bearer tokens:
 Authorization: Bearer bush_tok_abc123def456...
 ```
 
-**Token format:** `bush_tok_` prefix followed by base62 string.
+Token format: `bush_tok_` prefix followed by base62 string.
 
-Alternatively, a `userId:sessionId` pair can be used as a bearer token (useful for development/testing).
+A `userId:sessionId` pair can also be used as a bearer token (useful for development/testing).
 
-**Token lifecycle (planned):**
+**Token lifecycle:**
 - Token refresh via `POST /v4/auth/token` with refresh token
-- Access tokens expire after 5 minutes (aligned with `specs/12-authentication.md`)
+- Access tokens expire after **5 minutes**
 - Refresh tokens expire after 7 days
 
-### 2.2 API Keys (Server-to-Server)
+**API Keys (Server-to-Server)** [Phase 2]
 
 For automated integrations and CI/CD pipelines, API keys can be used instead of OAuth tokens.
 
@@ -61,11 +66,10 @@ Authorization: Bearer bush_key_abc123def456...
 
 - Generated in Account Settings > Developer > API Keys
 - Scoped to specific permissions (read-only, read-write, admin)
-- No expiration unless explicitly set
-- Can be revoked at any time
-- API key format: `bush_key_` prefix followed by 48-character base62 string
+- No expiration unless explicitly set; can be revoked at any time
+- Format: `bush_key_` prefix followed by 48-character base62 string
 
-### 2.3 Auth Endpoints
+#### 2.2 Auth Endpoints [MVP]
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -73,7 +77,7 @@ Authorization: Bearer bush_key_abc123def456...
 | `POST` | `/v4/auth/revoke` | Revoke a token |
 | `GET` | `/v4/auth/me` | Get current authenticated user and permissions |
 
-**Example -- Token Refresh:**
+**Example — Token Refresh:**
 
 ```http
 POST /v4/auth/token
@@ -90,7 +94,7 @@ Content-Type: application/json
   "data": {
     "access_token": "bush_tok_newtoken...",
     "token_type": "Bearer",
-    "expires_in": 3600,
+    "expires_in": 300,
     "refresh_token": "bush_rt_newrefresh..."
   }
 }
@@ -98,9 +102,9 @@ Content-Type: application/json
 
 ---
 
-## 3. Response Format
+### 3. Response Format
 
-### 3.1 Success Response (List)
+#### 3.1 Success Response (List)
 
 ```json
 {
@@ -124,23 +128,23 @@ Content-Type: application/json
 }
 ```
 
-### 3.2 Success Response (Single Resource)
+#### 3.2 Success Response (Single Resource)
 
 ```json
 {
   "data": {
     "id": "abc123",
     "type": "file",
-    "attributes": { ... }
+    "attributes": { }
   }
 }
 ```
 
-### 3.3 Success Response (No Content)
+#### 3.3 Success Response (No Content)
 
 HTTP 204 with empty body. Used for DELETE operations and some updates.
 
-### 3.4 Error Response
+#### 3.4 Error Response
 
 ```json
 {
@@ -162,7 +166,7 @@ Error codes: `validation_error`, `bad_request`, `unauthorized`, `forbidden`, `no
 
 Multiple errors can be returned in a single response.
 
-### 3.5 HTTP Status Codes
+#### 3.5 HTTP Status Codes
 
 | Code | Meaning | Usage |
 |------|---------|-------|
@@ -181,15 +185,15 @@ Multiple errors can be returned in a single response.
 
 ---
 
-## 4. Pagination
+### 4. Pagination
 
-### 4.1 Cursor-Based Pagination
+#### 4.1 Cursor-Based Pagination
 
 All list endpoints use cursor-based pagination. Offset-based pagination is not supported.
 
 **Query parameters:**
-- `limit` -- Number of items per page (default: 50, max: 100)
-- `cursor` -- Opaque base64url cursor token from previous response
+- `limit` — Number of items per page (default: 50, max: 100)
+- `cursor` — Opaque base64url cursor token from previous response
 
 **Example:**
 
@@ -199,7 +203,7 @@ GET /v4/projects/xyz/files?limit=25
 
 ```json
 {
-  "data": [ ... ],
+  "data": [ ],
   "links": {
     "self": "/v4/projects/xyz/files?limit=25",
     "next": "/v4/projects/xyz/files?limit=25&cursor=eyJpZCI6ImFiYzEyMyJ9"
@@ -216,7 +220,7 @@ GET /v4/projects/xyz/files?limit=25
 - Cursor tokens are base64-encoded, opaque to clients, and expire after 24 hours
 - Sort order is preserved across pages
 
-### 4.2 Sorting
+#### 4.2 Sorting
 
 - `sort` parameter accepts field names, prefixed with `-` for descending
 - Example: `?sort=-created_at` (newest first)
@@ -224,31 +228,32 @@ GET /v4/projects/xyz/files?limit=25
 
 ---
 
-## 5. Rate Limiting
+### 5. Rate Limiting
 
-### 5.1 Algorithm
+#### 5.1 Algorithm
 
-Sliding window algorithm backed by Redis sorted sets. Each endpoint category has its own rate limit configuration. Requests are tracked per IP (or per account when authenticated).
+Sliding window algorithm backed by Redis sorted sets. Each endpoint category has its own rate limit configuration. Requests are tracked per IP (unauthenticated) or per account token (authenticated).
 
-### 5.2 Limits
+> Canonical rate limit values are defined in `12-security.md` (§7.1) and reproduced here as the implementation target. Configuration via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` environment variables (see `30-configuration.md`).
 
-| Endpoint Category | Rate | Window |
-|-------------------|------|--------|
-| Standard (all API) | 100 req/min | 60s |
-| Auth endpoints | 10 req/min | 60s |
-| Upload endpoints | 20 req/min | 60s |
-| Search endpoints | 30 req/min | 60s |
-| Webhook endpoints | 1000 req/min | 60s |
+#### 5.2 Limits
 
-Configurable via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` environment variables.
+| Endpoint Category | Rate | Window | Tracked By |
+|-------------------|------|--------|------------|
+| Auth endpoints | 10 req/min | 60s | Per IP |
+| API read endpoints | 300 req/min | 60s | Per token |
+| API write endpoints | 60 req/min | 60s | Per token |
+| Upload endpoints | 20 req/min | 60s | Per token |
+| Share link access | 30 req/min | 60s | Per IP |
+| Webhook delivery | 1000 req/min | 60s | Per account |
 
-### 5.3 Response Headers
+#### 5.3 Response Headers
 
 Every response includes rate limit headers:
 
 ```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 87
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 287
 X-RateLimit-Reset: 1706123456
 ```
 
@@ -258,12 +263,12 @@ X-RateLimit-Reset: 1706123456
 | `X-RateLimit-Remaining` | Requests remaining in the current window |
 | `X-RateLimit-Reset` | Unix timestamp when the window resets |
 
-### 5.4 Rate Limit Exceeded Response
+#### 5.4 Rate Limit Exceeded Response
 
 ```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 60
-X-RateLimit-Limit: 100
+X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1706123456
 ```
@@ -281,9 +286,11 @@ X-RateLimit-Reset: 1706123456
 
 ---
 
-## 6. Complete Endpoint Inventory
+### 6. Endpoint Inventory
 
-### 6.1 Accounts
+#### 6.1 Accounts [MVP]
+
+> Permission model: see `03-permissions.md`.
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -295,7 +302,7 @@ X-RateLimit-Reset: 1706123456
 | `PUT` | `/v4/accounts/:id/members/:user_id` | Update member role | Account Owner |
 | `GET` | `/v4/accounts/:id/storage` | Get storage usage | Account Owner, Content Admin |
 
-### 6.2 Workspaces
+#### 6.2 Workspaces [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -309,7 +316,7 @@ X-RateLimit-Reset: 1706123456
 | `PUT` | `/v4/workspaces/:id/members/:user_id` | Update member permission | Full Access+ |
 | `DELETE` | `/v4/workspaces/:id/members/:user_id` | Remove member from workspace | Full Access+ |
 
-### 6.3 Projects
+#### 6.3 Projects [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -325,7 +332,7 @@ X-RateLimit-Reset: 1706123456
 | `PUT` | `/v4/projects/:id/members/:user_id` | Update member permission | Full Access+ |
 | `DELETE` | `/v4/projects/:id/members/:user_id` | Remove member from project | Full Access+ |
 
-### 6.4 Folders
+#### 6.4 Folders [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -338,7 +345,7 @@ X-RateLimit-Reset: 1706123456
 | `DELETE` | `/v4/folders/:id` | Delete folder and contents | Edit+ |
 | `POST` | `/v4/folders/:id/move` | Move folder to new parent | Edit+ |
 
-### 6.5 Files
+#### 6.5 Files [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -356,12 +363,12 @@ X-RateLimit-Reset: 1706123456
 
 **File Upload Flow:**
 
-1. `POST /v4/files` -- Create placeholder, receive pre-signed upload URLs
-2. `PUT` to each pre-signed URL -- Upload file chunks directly to storage
+1. `POST /v4/files` — Create placeholder, receive pre-signed upload URLs
+2. `PUT` to each pre-signed URL — Upload file chunks directly to storage
 3. System processes upload asynchronously (transcoding, thumbnail generation)
-4. Poll `GET /v4/files/:id` or listen via WebSocket for status updates
+4. Poll `GET /v4/files/:id` or listen via WebSocket for status updates (see `05-realtime.md`)
 
-**Example -- Create File:**
+**Example — Create File:**
 
 ```http
 POST /v4/files
@@ -405,7 +412,7 @@ Authorization: Bearer bush_tok_...
 }
 ```
 
-### 6.6 Version Stacks
+#### 6.6 Version Stacks [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -418,18 +425,16 @@ Authorization: Bearer bush_tok_...
 | `POST` | `/v4/files/stack` | Create version stack from multiple files | Edit+ |
 | `POST` | `/v4/files/:file_id/unstack` | Remove file from version stack | Edit+ |
 
-### 6.7 Users
+#### 6.7 Users [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
 | `GET` | `/v4/users/me` | Get current user profile | Authenticated |
 | `PUT` | `/v4/users/me` | Update current user profile | Authenticated |
 | `GET` | `/v4/users/:id` | Get user profile | Account Member |
-| `GET` | `/v4/users/me/notifications/settings` | Get notification preferences | Authenticated |
-| `PUT` | `/v4/users/me/notifications/settings` | Update notification preferences | Authenticated |
 | `GET` | `/v4/users/me/accounts` | List accounts user belongs to | Authenticated |
 
-### 6.8 Comments
+#### 6.8 Comments [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -442,13 +447,14 @@ Authorization: Bearer bush_tok_...
 | `PUT` | `/v4/comments/:id/complete` | Mark comment as complete | Edit+ |
 
 **Comment attributes:**
-- `text` -- Comment body (supports @mentions as `@[user_id]`)
-- `timestamp` -- Timecode for video/audio comments (seconds, float)
-- `duration` -- Duration of time-range annotation (seconds, float)
-- `annotation` -- Drawing/shape annotation data (JSON)
-- `page` -- Page number for PDF/document comments
+- `text` — Comment body (supports @mentions as `@[user_id]`)
+- `timestamp` — Timecode for video/audio comments (seconds, float)
+- `duration` — Duration of time-range annotation (seconds, float)
+- `annotation` — Drawing/shape annotation data (JSON)
+- `page` — Page number for PDF/document comments
+- `client_id` — Optional client-generated ID for optimistic UI reconciliation (see `05-realtime.md` §7)
 
-**Example -- Create Comment:**
+**Example — Create Comment:**
 
 ```http
 POST /v4/files/file_xyz789/comments
@@ -460,6 +466,7 @@ Content-Type: application/json
     "attributes": {
       "text": "The color grading looks off here @[user_abc]",
       "timestamp": 34.5,
+      "client_id": "tmp_abc123",
       "annotation": {
         "type": "rectangle",
         "x": 0.2,
@@ -472,7 +479,7 @@ Content-Type: application/json
 }
 ```
 
-### 6.9 Shares
+#### 6.9 Shares [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -487,16 +494,16 @@ Content-Type: application/json
 | `POST` | `/v4/shares/:id/invite` | Send share invitation email | Edit & Share+ |
 
 **Share attributes:**
-- `layout` -- `grid`, `reel`, or `viewer`
-- `allow_comments` -- Boolean
-- `allow_downloads` -- Boolean
-- `show_all_versions` -- Boolean
-- `show_transcriptions` -- Boolean
-- `passphrase` -- Optional passphrase protection
-- `expires_at` -- Optional expiration timestamp
-- `branding` -- Object with `icon`, `header`, `background`, `description`, `theme`, `accent_color`
+- `layout` — `grid`, `reel`, or `viewer`
+- `allow_comments` — Boolean
+- `allow_downloads` — Boolean
+- `show_all_versions` — Boolean
+- `show_transcriptions` — Boolean
+- `passphrase` — Optional passphrase protection
+- `expires_at` — Optional expiration timestamp
+- `branding` — Object with `icon`, `header`, `background`, `description`, `theme`, `accent_color`
 
-### 6.10 Custom Fields / Metadata
+#### 6.10 Custom Fields / Metadata [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -511,7 +518,7 @@ Content-Type: application/json
 
 **Custom field types:** `text`, `textarea`, `number`, `date`, `single_select`, `multi_select`, `checkbox`, `user`, `url`, `rating`
 
-**Example -- Set Metadata:**
+**Example — Set Metadata:**
 
 ```http
 PUT /v4/files/file_xyz789/metadata
@@ -526,7 +533,7 @@ Content-Type: application/json
 }
 ```
 
-### 6.11 Collections
+#### 6.11 Collections [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -538,7 +545,7 @@ Content-Type: application/json
 | `POST` | `/v4/collections/:id/items` | Add items to collection | Collection Creator, Edit+ |
 | `DELETE` | `/v4/collections/:id/items/:item_id` | Remove item from collection | Collection Creator, Edit+ |
 
-### 6.12 Webhooks
+#### 6.12 Webhooks [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -579,10 +586,11 @@ Content-Type: application/json
 {
   "event": "comment.created",
   "timestamp": "2026-01-15T10:30:00Z",
+  "api_version": "v4",
   "data": {
     "id": "comment_abc123",
     "type": "comment",
-    "attributes": { ... }
+    "attributes": { }
   },
   "account_id": "account_xyz",
   "webhook_id": "webhook_def"
@@ -593,9 +601,9 @@ Content-Type: application/json
 - Payloads signed with HMAC-SHA256
 - Signature in `x-bush-signature` header
 - Secret provided at webhook creation time
-- Delivery retried 3 times with exponential backoff (1min, 5min, 30min)
+- Delivery retried 3 times with exponential backoff (1 min, 5 min, 30 min)
 
-### 6.13 Search
+#### 6.13 Search [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -603,40 +611,44 @@ Content-Type: application/json
 | `GET` | `/v4/projects/:project_id/search` | Search within project | Project Member |
 
 **Query parameters:**
-- `q` -- Search query string (required)
-- `type` -- Filter by resource type: `file`, `folder`, `project`, `comment`
-- `file_type` -- Filter by file type: `video`, `image`, `audio`, `document`
-- `status` -- Filter by status
-- `uploader` -- Filter by uploader user ID
-- `created_after` -- ISO 8601 timestamp
-- `created_before` -- ISO 8601 timestamp
-- `sort` -- `relevance` (default), `-created_at`, `name`
+- `q` — Search query string (required)
+- `type` — Filter by resource type: `file`, `folder`, `project`, `comment`
+- `file_type` — Filter by file type: `video`, `image`, `audio`, `document`
+- `status` — Filter by status
+- `uploader` — Filter by uploader user ID
+- `created_after` — ISO 8601 timestamp
+- `created_before` — ISO 8601 timestamp
+- `sort` — `relevance` (default), `-created_at`, `name`
 - Standard pagination parameters
 
 **Example:**
 
 ```http
-GET /v4/accounts/acc_123/search?q=hero+shot&type=file&file_type=video&sort=relevance&page[size]=25
+GET /v4/accounts/acc_123/search?q=hero+shot&type=file&file_type=video&sort=relevance&limit=25
 ```
 
-### 6.14 Transcription
+#### 6.14 Transcription [MVP]
+
+> See `08-transcription.md` for the full transcription pipeline, provider abstraction, and export formats.
+
+Note: the endpoint path uses `/transcript` (singular, no trailing `ion`), consistent with `08-transcription.md`.
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
-| `POST` | `/v4/files/:file_id/transcription` | Generate transcription | Edit+ |
-| `GET` | `/v4/files/:file_id/transcription` | Get transcription | View Only+ |
-| `PUT` | `/v4/files/:file_id/transcription` | Update transcription text | Edit+ |
-| `DELETE` | `/v4/files/:file_id/transcription` | Delete transcription | Edit+ |
-| `GET` | `/v4/files/:file_id/transcription/export` | Export transcription (SRT, VTT, TXT) | Edit & Share+ |
+| `POST` | `/v4/files/:file_id/transcript` | Generate transcription | Edit+ |
+| `GET` | `/v4/files/:file_id/transcript` | Get transcription | View Only+ |
+| `PUT` | `/v4/files/:file_id/transcript` | Update transcription text | Edit+ |
+| `DELETE` | `/v4/files/:file_id/transcript` | Delete transcription | Edit+ |
+| `GET` | `/v4/files/:file_id/transcript/export` | Export transcription (SRT, VTT, TXT) | Edit & Share+ |
 | `POST` | `/v4/files/:file_id/captions` | Upload caption file (SRT/VTT) | Edit+ |
 | `GET` | `/v4/files/:file_id/captions` | List caption tracks | View Only+ |
 | `DELETE` | `/v4/files/:file_id/captions/:caption_id` | Delete caption track | Edit+ |
 
 **Transcription request attributes:**
-- `language` -- ISO 639-1 code or `auto` for auto-detection
-- `speaker_identification` -- Boolean (requires consent acknowledgment)
+- `language` — ISO 639-1 code or `auto` for auto-detection
+- `speaker_identification` — Boolean (requires consent acknowledgment)
 
-### 6.15 Notifications
+#### 6.15 Notifications [MVP]
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
@@ -644,10 +656,29 @@ GET /v4/accounts/acc_123/search?q=hero+shot&type=file&file_type=video&sort=relev
 | `PUT` | `/v4/notifications/:id/read` | Mark notification as read | Authenticated |
 | `PUT` | `/v4/users/me/notifications/read-all` | Mark all notifications as read | Authenticated |
 | `GET` | `/v4/users/me/notifications/unread-count` | Get unread notification count | Authenticated |
+| `GET` | `/v4/users/me/notifications/settings` | Get notification preferences | Authenticated |
+| `PUT` | `/v4/users/me/notifications/settings` | Update notification preferences | Authenticated |
+
+#### 6.16 Audit Log [Phase 2]
+
+Audit log provides an immutable record of all account-level actions for compliance and security review. See `12-security.md` for the full audit event taxonomy.
+
+| Method | Path | Description | Permission |
+|--------|------|-------------|------------|
+| `GET` | `/v4/accounts/:account_id/audit-log` | List audit log entries | Account Owner |
+| `GET` | `/v4/accounts/:account_id/audit-log/export` | Export audit log (CSV/JSON) | Account Owner |
+
+**Query parameters:**
+- `actor_id` — Filter by user who performed the action
+- `event_type` — Filter by event type (e.g., `file.deleted`, `member.removed`)
+- `resource_type` — Filter by resource type
+- `resource_id` — Filter by specific resource
+- `created_after`, `created_before` — ISO 8601 timestamps
+- Standard pagination parameters
 
 ---
 
-## 7. Bulk Operations
+### 7. Bulk Operations [MVP]
 
 Bulk endpoints accept arrays of resource IDs and apply the same operation to all. Maximum 100 items per bulk request.
 
@@ -663,7 +694,7 @@ Bulk endpoints accept arrays of resource IDs and apply the same operation to all
 | `POST` | `/v4/bulk/members/add` | Add members to multiple projects | Full Access+ |
 | `POST` | `/v4/bulk/members/remove` | Remove members from multiple projects | Full Access+ |
 
-**Example -- Bulk Move:**
+**Example — Bulk Move:**
 
 ```http
 POST /v4/bulk/files/move
@@ -694,127 +725,61 @@ Content-Type: application/json
 }
 ```
 
-Bulk operations are processed atomically where possible. If partial failure occurs, the response indicates which items succeeded and which failed.
+Bulk operations are processed atomically where possible. Partial failure responses indicate which items succeeded and which failed.
 
 ---
 
-## 8. WebSocket Protocol
+### 8. WebSocket
 
-### 8.1 Connection
+> Full WebSocket protocol, event tables, presence, conflict resolution, and connection management are specified in `05-realtime.md`.
+
+**Connection endpoint:**
 
 ```
-wss://ws.bush.io/v4/cable?token=bush_tok_...
+wss://bush.io/ws
 ```
 
-- Authentication via query parameter or first message after connect
-- Connection uses WebSocket protocol (RFC 6455)
-- Heartbeat ping every 30 seconds; server disconnects after 2 missed pongs
-- Automatic reconnection expected from clients with exponential backoff
+Browser clients: cookie-based auth, same-origin. Browser sends session cookies automatically on WebSocket upgrade — no token parameter needed.
 
-### 8.2 Channel Subscription
+External API clients: token in query parameter or first message after connect.
 
-After connecting, clients subscribe to channels for specific resources:
+```
+wss://bush.io/ws?token=bush_tok_...
+```
+
+After connecting, subscribe to a channel:
 
 ```json
 {
   "action": "subscribe",
   "channel": "project",
-  "resource_id": "project_abc123"
+  "resource_id": "proj_abc123"
 }
 ```
 
-```json
-{
-  "action": "subscribe",
-  "channel": "file",
-  "resource_id": "file_xyz789"
-}
-```
-
-**Available channels:**
-- `project` -- Events within a project (uploads, deletes, moves)
-- `file` -- Events on a specific file (comments, status changes, versions)
-- `user` -- Personal events (notifications, mentions)
-- `share` -- Share link activity (views, comments)
-
-### 8.3 Event Message Format
-
-```json
-{
-  "channel": "file",
-  "resource_id": "file_xyz789",
-  "event": "comment.created",
-  "timestamp": "2026-01-15T10:30:00Z",
-  "data": {
-    "id": "comment_abc",
-    "type": "comment",
-    "attributes": {
-      "text": "Looks good!",
-      "user_id": "user_def",
-      "timestamp": 34.5
-    }
-  }
-}
-```
-
-### 8.4 Event Types
-
-| Channel | Events |
-|---------|--------|
-| `project` | `file.created`, `file.deleted`, `file.moved`, `folder.created`, `folder.deleted`, `member.added`, `member.removed` |
-| `file` | `comment.created`, `comment.updated`, `comment.deleted`, `comment.completed`, `version.created`, `file.status_changed`, `file.updated`, `transcription.completed` |
-| `user` | `notification.created`, `notification.read` |
-| `share` | `share.viewed`, `comment.created`, `share.downloaded` |
-
-### 8.5 Presence
-
-Clients can broadcast presence to indicate they are viewing a resource:
-
-```json
-{
-  "action": "presence",
-  "channel": "file",
-  "resource_id": "file_xyz789",
-  "state": {
-    "status": "viewing",
-    "cursor_position": 34.5
-  }
-}
-```
-
-Presence updates are broadcast to all subscribers on the same channel/resource. Presence automatically expires 60 seconds after last update.
-
-### 8.6 Unsubscribe
-
-```json
-{
-  "action": "unsubscribe",
-  "channel": "file",
-  "resource_id": "file_xyz789"
-}
-```
+Available channels: `project`, `file`, `user`, `share`. See `05-realtime.md` for the full channel model, event payload schemas, and subscription permission requirements.
 
 ---
 
-## 9. API Versioning Strategy
+### 9. API Versioning
 
-### 9.1 Current Versions
+#### 9.1 Current Versions
 
 | Version | Status | End of Life |
 |---------|--------|-------------|
-| V4 | Current | -- |
+| V4 | Current | — |
 | V3 | Deprecated | 2026-12-31 |
 | V2 | End of Life | 2025-06-30 |
 
-### 9.2 Versioning Rules
+#### 9.2 Versioning Rules
 
 - Version is specified in the URL path: `/v4/...`
-- Each major version is a stable contract -- no breaking changes within a version
+- Each major version is a stable contract — no breaking changes within a version
 - Breaking changes trigger a new major version
-- Non-breaking additions (new fields, new endpoints) are added to the current version
+- Non-breaking additions (new fields, new endpoints, new webhook event types) are added to the current version
 - Deprecated versions receive security patches only for 12 months after deprecation
 
-### 9.3 Breaking vs Non-Breaking Changes
+#### 9.3 Breaking vs Non-Breaking Changes
 
 **Non-breaking (added to current version):**
 - New optional request parameters
@@ -831,7 +796,7 @@ Presence updates are broadcast to all subscribers on the same channel/resource. 
 - Changing authentication mechanisms
 - Changing error response structure
 
-### 9.4 Deprecation Headers
+#### 9.4 Deprecation Headers
 
 When calling deprecated versions, responses include:
 
@@ -841,17 +806,17 @@ Deprecation: true
 Link: </v4/projects>; rel="successor-version"
 ```
 
-### 9.5 Migration
+#### 9.5 Migration
 
 - Migration guides published for each major version transition
 - SDKs updated to support new versions before old versions are sunset
-- Webhook payloads include a `api_version` field so receivers can handle multiple versions
+- Webhook payloads include an `api_version` field so receivers can handle multiple versions
 
 ---
 
-## 10. Filtering and Field Selection
+### 10. Filtering and Field Selection
 
-### 10.1 Sparse Fieldsets
+#### 10.1 Sparse Fieldsets
 
 Request only specific fields to reduce payload size:
 
@@ -859,7 +824,7 @@ Request only specific fields to reduce payload size:
 GET /v4/projects/xyz/files?fields[file]=name,file_size,status,created_at
 ```
 
-### 10.2 Including Related Resources
+#### 10.2 Including Related Resources
 
 Sideload related resources to avoid N+1 requests:
 
@@ -872,20 +837,20 @@ GET /v4/files/abc?include=comments,versions
   "data": {
     "id": "abc",
     "type": "file",
-    "attributes": { ... },
+    "attributes": { },
     "relationships": {
       "comments": { "data": [{ "type": "comment", "id": "c1" }] },
       "versions": { "data": [{ "type": "version", "id": "v1" }] }
     }
   },
   "included": [
-    { "id": "c1", "type": "comment", "attributes": { ... } },
-    { "id": "v1", "type": "version", "attributes": { ... } }
+    { "id": "c1", "type": "comment", "attributes": { } },
+    { "id": "v1", "type": "version", "attributes": { } }
   ]
 }
 ```
 
-### 10.3 Filtering
+#### 10.3 Filtering
 
 List endpoints support filtering via query parameters:
 
@@ -895,30 +860,30 @@ GET /v4/projects/xyz/files?filter[created_at][gte]=2026-01-01T00:00:00Z
 ```
 
 **Filter operators (via nested keys):**
-- `eq` -- Equals (default when no operator specified)
-- `neq` -- Not equals
-- `gt`, `gte` -- Greater than, greater than or equal
-- `lt`, `lte` -- Less than, less than or equal
-- `in` -- In list (comma-separated values)
+- `eq` — Equals (default when no operator specified)
+- `neq` — Not equals
+- `gt`, `gte` — Greater than, greater than or equal
+- `lt`, `lte` — Less than, less than or equal
+- `in` — In list (comma-separated values)
 
 ---
 
-## 11. SDKs
+### 11. SDKs [Phase 2]
 
 | Language | Package | Install |
 |----------|---------|---------|
 | TypeScript/JavaScript | `bush-sdk` | `npm install bush-sdk` |
 | Python | `bush-sdk` | `pip install bush-sdk` |
 
-SDKs handle authentication, pagination, rate limit retries, and provide typed interfaces for all endpoints.
+SDKs handle authentication, pagination, rate limit retries (with exponential backoff), and provide typed interfaces for all endpoints.
 
 ---
 
-## 12. Common Request Headers
+### 12. Common Request Headers
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer bush_tok_...` or `Bearer bush_key_...` |
+| `Authorization` | Yes (API clients) | `Bearer bush_tok_...` or `Bearer bush_key_...` |
 | `Content-Type` | Yes (POST/PUT/PATCH) | `application/json` |
 | `Accept` | No | `application/json` (default) |
 | `X-Request-Id` | No | Client-generated UUID for request tracing |
@@ -926,13 +891,24 @@ SDKs handle authentication, pagination, rate limit retries, and provide typed in
 
 ---
 
-## 13. Common Response Headers
+### 13. Common Response Headers
 
 | Header | Description |
 |--------|-------------|
 | `x-request-id` | Server-generated or echoed request ID |
-| `X-RateLimit-Limit` | Rate limit ceiling |
-| `X-RateLimit-Remaining` | Remaining requests |
+| `X-RateLimit-Limit` | Rate limit ceiling for this endpoint category |
+| `X-RateLimit-Remaining` | Remaining requests in current window |
 | `X-RateLimit-Reset` | Reset timestamp (Unix) |
 | `content-type` | `application/json; charset=utf-8` |
 | `cache-control` | Caching directives |
+
+---
+
+## Cross-References
+
+- `02-authentication.md` — WorkOS AuthKit integration, session cookies, token lifecycle, bearer token format
+- `03-permissions.md` — Permission level definitions (Full Access through View Only), account roles, permission inheritance
+- `05-realtime.md` — Full WebSocket protocol, event schemas, presence system, connection management
+- `08-transcription.md` — Transcription pipeline, provider abstraction, export formats; source of truth for `/transcript` endpoint path
+- `12-security.md` — Canonical rate limit values, audit log event taxonomy, webhook security
+- `30-configuration.md` — `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX_REQUESTS`, and all other environment variables

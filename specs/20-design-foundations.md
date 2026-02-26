@@ -1,4 +1,4 @@
-# Bush Design System
+# Design System: Foundations
 
 **Status**: Spec complete, implementation pending
 **Reference**: [agno.com docs](https://docs.agno.com/) — dark-first, generous whitespace, depth via background layering
@@ -6,7 +6,15 @@
 
 ---
 
-## Design Principles
+## Overview
+
+This spec defines the visual and structural foundations of the Bush design system: the principles that guide every decision, the migration path from CSS Modules to Tailwind v4, and the complete token vocabulary — colors, typography, spacing, radius, shadows, motion, layout, z-index, iconography, and scrollbars. These foundations are consumed by components (documented in `21-design-components.md`). The token layer is the source of truth; Tailwind classes are just a convenient interface to it.
+
+---
+
+## Specification
+
+### Design Principles
 
 Every decision in this system traces back to five principles:
 
@@ -20,14 +28,14 @@ Every decision in this system traces back to five principles:
 
 ---
 
-## Migration Strategy
+### Migration Strategy
 
-### From: CSS Modules + `globals.css` utility classes (BEM)
-### To: Tailwind CSS v4 + CSS custom properties
+#### From: CSS Modules + `globals.css` utility classes (BEM)
+#### To: Tailwind CSS v4 + CSS custom properties
 
 **Why Tailwind v4**: Native CSS-based configuration via `@theme`. CSS custom properties are the source of truth — Tailwind consumes them. Tokens remain accessible outside Tailwind (canvas rendering, SVG, custom video player).
 
-### Approach
+#### Approach
 
 1. Install Tailwind v4 + `@tailwindcss/vite` (or postcss plugin for Next.js)
 2. Define all tokens as CSS custom properties in a `tokens.css` file
@@ -37,7 +45,7 @@ Every decision in this system traces back to five principles:
 6. Remove `globals.css` utility classes (`.btn`, `.input`, etc.) as components move to Tailwind
 7. Keep `tokens.css` as the permanent source of truth
 
-### File structure (post-migration)
+#### File Structure (post-migration)
 
 ```
 src/web/
@@ -48,7 +56,7 @@ src/web/
     globals.css         ← Minimal resets, font-face declarations
 ```
 
-### Token → Tailwind mapping example
+#### Token → Tailwind Mapping Example
 
 ```css
 /* tokens.css */
@@ -70,11 +78,34 @@ src/web/
 
 Usage: `bg-surface-0`, `text-primary`, `border-default`.
 
+#### Implementation Checklist
+
+Suggested migration order — each step is independently shippable:
+
+| # | Step | Scope |
+|---|------|-------|
+| 1 | Install Tailwind v4, create `tokens.css` + `theme.css` | Infrastructure |
+| 2 | Implement theme toggle (`data-theme`, localStorage, default dark) | Infrastructure |
+| 3 | Load Inter + JetBrains Mono fonts | Infrastructure |
+| 4 | Migrate UI primitives: Button, Input, Select, Badge, Spinner | Components |
+| 5 | Migrate Modal, Toast (switch to Sonner pattern), Tooltip | Components |
+| 6 | Build Command Palette + Keyboard Legend | New components |
+| 7 | Rebuild sidebar as icon rail with hover-expand | Layout |
+| 8 | Migrate asset grid with density slider | Feature |
+| 9 | Rebuild file viewer with custom controls + collapsible/resizable comment panel | Feature |
+| 10 | Implement skeleton loading states | Pattern |
+| 11 | Implement upload drawer | Feature |
+| 12 | Add corner bracket hover + staggered grid animations | Polish |
+| 13 | Build custom scrollbars + drag-and-drop affordances | Polish |
+| 14 | Redesign share pages (light, editorial, responsive) | Feature |
+| 15 | Add presence cursors + avatar stack | Collaboration |
+| 16 | Clean up: delete all `.module.css` files, remove old `globals.css` utility classes | Cleanup |
+
 ---
 
-## Color System
+### Color System
 
-### Architecture
+#### Architecture
 
 Three layers:
 
@@ -86,7 +117,7 @@ Primitives (raw values)
 
 Primitives are never used directly in components. Semantic tokens are what you reference.
 
-### Dark Theme (default)
+#### Dark Theme (default)
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -116,7 +147,7 @@ Primitives are never used directly in components. Semantic tokens are what you r
 | `--status-error` | `#ef4444` | Failed, destructive |
 | `--status-info` | `#3b82f6` | Informational |
 
-### Light Theme
+#### Light Theme
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -143,7 +174,7 @@ Primitives are never used directly in components. Semantic tokens are what you r
 | | | |
 | Status tokens | Same values | Status colors are theme-independent |
 
-### Theme Implementation
+#### Theme Implementation
 
 ```css
 /* Dark (default) */
@@ -161,7 +192,7 @@ Primitives are never used directly in components. Semantic tokens are what you r
 
 Theme toggle writes `data-theme` attribute to `<html>`. Persist choice in `localStorage`. Default to `dark` on first visit.
 
-### Viewer Context
+#### Viewer Context
 
 The media viewer (video, audio, image, PDF) is **always dark** regardless of theme. This is intentional — media needs a neutral dark backdrop for accurate color perception. The viewer area uses `--surface-0` and `--surface-1` from the dark palette directly, not from the current theme.
 
@@ -177,16 +208,16 @@ The media viewer (video, audio, image, PDF) is **always dark** regardless of the
 
 ---
 
-## Typography
+### Typography
 
-### Fonts
+#### Fonts
 
 | Role | Family | Load |
 |------|--------|------|
 | Body | `'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif` | Google Fonts / self-hosted, `font-display: swap`, variable weight |
 | Code | `'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace` | Google Fonts / self-hosted, `font-display: swap` |
 
-### Type Scale
+#### Type Scale
 
 | Name | Size | Weight | Line height | Tracking | Usage |
 |------|------|--------|-------------|----------|-------|
@@ -201,7 +232,7 @@ The media viewer (video, audio, image, PDF) is **always dark** regardless of the
 | `label` | 11px | 500 | 1.3 | 0.05em | Uppercase section labels, overlines |
 | `code` | 13px | 400 | 1.6 | 0 | Inline code, code blocks (JetBrains Mono) |
 
-### Rules
+#### Rules
 
 - **14px body** — not 16px. Bush is a tool, not a reading app. 14px is information-dense without being cramped.
 - **`-0.02em` tracking on large text** — Inter opens up at large sizes. Tighten it.
@@ -210,9 +241,9 @@ The media viewer (video, audio, image, PDF) is **always dark** regardless of the
 
 ---
 
-## Spacing
+### Spacing
 
-### Base Unit: 4px
+#### Base Unit: 4px
 
 | Token | Value | Common use |
 |-------|-------|------------|
@@ -229,7 +260,7 @@ The media viewer (video, audio, image, PDF) is **always dark** regardless of the
 | `--space-16` | 64px | Major section breaks |
 | `--space-20` | 80px | Hero spacing, share page sections |
 
-### Density Modes
+#### Density Modes
 
 Two density contexts, not a global toggle:
 
@@ -242,7 +273,7 @@ Dense mode is automatic based on context, not user-toggled (except via the asset
 
 ---
 
-## Border Radius
+### Border Radius
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -256,7 +287,7 @@ Slightly sharper than Agno. No `rounded-xl` (16px) in the default system.
 
 ---
 
-## Shadows
+### Shadows
 
 Shadows are **subtle** in dark mode. Depth is primarily communicated through background layering (`surface-0` → `surface-1` → `surface-2`), not shadows.
 
@@ -270,9 +301,9 @@ Shadows are **subtle** in dark mode. Depth is primarily communicated through bac
 
 ---
 
-## Motion
+### Motion
 
-### Durations
+#### Durations
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -282,7 +313,7 @@ Shadows are **subtle** in dark mode. Depth is primarily communicated through bac
 | `--duration-enter` | `250ms` | Elements appearing (toasts, modals) |
 | `--duration-exit` | `200ms` | Elements disappearing (faster out than in) |
 
-### Easings
+#### Easings
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -291,7 +322,7 @@ Shadows are **subtle** in dark mode. Depth is primarily communicated through bac
 | `--ease-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Elements leaving (accelerate out) |
 | `--ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Playful micro-interactions (badge count, upload complete) |
 
-### Animation Patterns
+#### Animation Patterns
 
 | Pattern | Implementation | Where |
 |---------|---------------|-------|
@@ -305,15 +336,15 @@ Shadows are **subtle** in dark mode. Depth is primarily communicated through bac
 | **Upload progress** | Determinate bar fill, no animation on the bar itself (instant visual feedback) | Upload drawer |
 | **Focus ring pulse** | `box-shadow` with `--shadow-accent`, one subtle pulse on focus (`scale 1→1.02→1`) | Focused interactive elements |
 
-### `prefers-reduced-motion`
+#### `prefers-reduced-motion`
 
 All animations respect `prefers-reduced-motion: reduce`. When active: durations drop to `0ms`, transforms are disabled, opacity transitions remain (they're non-distracting).
 
 ---
 
-## Layout
+### Layout
 
-### App Shell
+#### App Shell
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -329,7 +360,7 @@ All animations respect `prefers-reduced-motion: reduce`. When active: durations 
 - **Content area**: Fills remaining width. Contains page header + scrollable content.
 - **No fixed top header bar**. Page-level headers are part of the content scroll, not a separate chrome bar. This maximizes vertical space.
 
-### File Viewer Layout
+#### File Viewer Layout
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -349,7 +380,7 @@ All animations respect `prefers-reduced-motion: reduce`. When active: durations 
 - **Comment panel**: Default 360px, resizable (min 280px, max 600px), collapsible to 0. Draggable resize handle.
 - **Player controls**: Custom, dark, overlaid on viewer bottom. Auto-hide after 3s of no mouse movement. Reappear on mouse move.
 
-### Asset Grid Density
+#### Asset Grid Density
 
 Fluid density slider with three named detents:
 
@@ -365,7 +396,7 @@ Grid uses CSS Grid with `auto-fill` and `minmax()` — the number of columns is 
 
 ---
 
-## Z-Index Scale
+### Z-Index Scale
 
 | Token | Value | Layer |
 |-------|-------|-------|
@@ -384,11 +415,11 @@ Grid uses CSS Grid with `auto-fill` and `minmax()` — the number of columns is 
 
 ---
 
-## Iconography
+### Iconography
 
 **Library**: [Lucide React](https://lucide.dev/) — consistent 24px grid, 2px stroke weight, MIT licensed.
 
-### Conventions
+#### Conventions
 
 - **Size**: 16px in dense contexts (tables, compact nav), 20px default, 24px in headers/empty states
 - **Stroke**: Always `currentColor` — inherits text color from parent
@@ -401,261 +432,11 @@ Grid uses CSS Grid with `auto-fill` and `minmax()` — the number of columns is 
 - **Action icons**: `Plus`, `Trash2`, `Pencil`, `Download`, `Share2`, `MoreHorizontal`, `Search`, `X`
 - **Status icons**: `Check` (success), `AlertTriangle` (warning), `AlertCircle` (error), `Info` (info), `Loader2` (spinner, animated rotate)
 
-### Drag Handle
+#### Drag Handle
 
 Six-dot grip icon (`GripVertical`). Hidden by default, fades in on row/card hover. Color: `--text-muted`.
 
 ---
-
-## Components
-
-### Button
-
-| Variant | Background | Text | Border | Usage |
-|---------|-----------|------|--------|-------|
-| `primary` | `--accent` | `--text-inverse` | none | Main CTAs |
-| `secondary` | `transparent` | `--text-primary` | `--border-default` | Secondary actions |
-| `ghost` | `transparent` | `--text-secondary` | none | Tertiary, toolbar actions |
-| `danger` | `transparent` | `--status-error` | `--status-error` | Destructive (but remember: undo > confirm) |
-
-| Size | Height | Padding (h) | Font | Radius |
-|------|--------|-------------|------|--------|
-| `sm` | 32px | 12px | `body-sm` (13px) | `--radius-sm` |
-| `md` | 36px | 16px | `body` (14px) | `--radius-sm` |
-| `lg` | 40px | 20px | `body` (14px) | `--radius-sm` |
-
-States: hover (background shift), active (darker), disabled (`opacity: 0.5`, no pointer), loading (spinner replaces label, width maintained).
-
-Primary button hover: `--accent-hover`. Shadow: `--shadow-accent` on focus.
-
-### Input
-
-Single-line text input.
-
-| Property | Value |
-|----------|-------|
-| Background | `--surface-2` |
-| Border | `--border-default`, `--border-active` on focus |
-| Text | `--text-primary` |
-| Placeholder | `--text-muted` |
-| Radius | `--radius-sm` |
-| Focus | `--shadow-accent` ring |
-| Heights | Same as button sizes (32/36/40px) |
-
-Support: start icon, end icon, error state (border `--status-error`), helper text below.
-
-### Select
-
-Native `<select>` with custom styling. Matches input dimensions and styling. Custom chevron icon (`ChevronDown`, `--text-muted`).
-
-### Modal
-
-- **Backdrop**: `--surface-0` at `60%` opacity, `backdrop-filter: blur(4px)`
-- **Dialog**: `--surface-2` background, `--radius-lg`, `--shadow-lg`
-- **Sizes**: `sm` (400px), `md` (520px), `lg` (680px), `xl` (860px), `full` (90vw × 90vh)
-- **Animation**: Backdrop fades in. Dialog `scale(0.98)→1` + `opacity 0→1`, `--duration-enter`.
-- **Close**: `X` button top-right + `Escape` key. Focus trapped inside.
-
-### Toast (Sonner-style)
-
-- **Position**: Top-center, stacked vertically
-- **Background**: `--surface-2`, `--border-default` border
-- **Types**: `success` (green left accent), `error` (red), `warning` (amber), `info` (blue), `neutral` (no accent)
-- **Actions**: Optional action buttons ("Undo", "View file") — right-aligned, ghost style
-- **Auto-dismiss**: 5s default, pauses on hover. Errors persist until dismissed.
-- **Animation**: Slide down + fade in. Stack shifts smoothly when new toasts arrive.
-- **Max visible**: 3. Older toasts compress into a count badge.
-
-### Dropdown / Context Menu
-
-- **Background**: `--surface-2`
-- **Border**: `--border-default`, `--radius-md`
-- **Shadow**: `--shadow-md`
-- **Items**: `body-sm` (13px), `--space-2` vertical padding, `--space-3` horizontal
-- **Hover**: `--surface-3` background
-- **Separator**: 1px `--border-default`, `--space-1` margin
-- **Keyboard**: Arrow keys navigate, Enter selects, Escape closes
-- **Icons**: Optional leading icon per item, 16px, `--text-muted`
-- **Destructive items**: `--status-error` text color
-
-### Tooltip
-
-- **Background**: `--surface-3` (dark), `--surface-0` (light, for contrast)
-- **Text**: `caption` size (12px), `--text-primary`
-- **Radius**: `--radius-xs`
-- **Arrow**: 6px CSS triangle
-- **Delay**: 500ms show, 0ms hide
-- **Position**: Auto (prefers top, flips if clipped)
-- **Keyboard shortcut hint**: Right-aligned, `--text-muted`, `code` font
-
-### Badge
-
-| Variant | Background | Text |
-|---------|-----------|------|
-| `default` | `--surface-3` | `--text-secondary` |
-| `accent` | `--accent-muted` | `--accent` |
-| `success` | `rgba(34,197,94,0.15)` | `--status-success` |
-| `warning` | `rgba(245,158,11,0.15)` | `--status-warning` |
-| `error` | `rgba(239,68,68,0.15)` | `--status-error` |
-
-Size: `caption` (12px), `--radius-full`, horizontal padding `--space-2`, height 22px.
-
-### Avatar
-
-- **Shape**: Rounded square (`--radius-md`)
-- **Sizes**: `sm` (28px), `md` (36px), `lg` (44px), `xl` (56px)
-- **Fallback**: Geometric pattern + initials (Figma-style), color derived from user ID hash
-- **Presence dot**: 8px circle, bottom-right, border `2px --surface-1` (to cut out from background)
-  - Online: `--status-success`
-  - Away: `--status-warning`
-  - Offline: `--text-muted`
-
-### Spinner
-
-Lucide `Loader2` icon with CSS `rotate` animation, `1s linear infinite`.
-Sizes match icon sizes: 16px, 20px, 24px. Color: `currentColor`.
-
-### Table
-
-- **Header**: `label` style (11px, uppercase, `--text-muted`), no background
-- **Rows**: No zebra striping. Separator: 1px `--border-default` between rows.
-- **Hover**: `--surface-2` background
-- **Selection**: Checkbox column appears on hover (first column). Selected rows get `--accent-muted` background.
-- **Actions**: Via context menu (right-click or kebab icon on hover)
-- **Sort**: Click column header. Arrow indicator (`ChevronUp`/`ChevronDown`), `--text-muted`
-- **Density**: Dense mode by default (tables are inherently data-heavy)
-
-### Command Palette
-
-- **Trigger**: `Cmd+K` (Mac) / `Ctrl+K` (Linux/Windows)
-- **Position**: Top-center, `--z-command-palette` (900), with backdrop blur
-- **Width**: 560px
-- **Structure**:
-  - Search input at top (no border, large font `h4` 16px)
-  - Results grouped by category with `label` headers
-  - Each result: icon (16px) + name + optional description (`--text-muted`) + shortcut hint (right-aligned, `code` font)
-- **Navigation**: Arrow keys, Enter to select, Escape to close
-- **Animation**: `scale(0.98)→1` + `opacity`, `--duration-enter`
-- **Recent**: Shows recent commands/files when input is empty
-- **Nested**: Selecting a category (e.g., "Go to project...") narrows results. Backspace returns to root.
-
-### Keyboard Legend
-
-- **Trigger**: `?` key (when no input is focused)
-- **Display**: Modal-style overlay listing contextual shortcuts
-- **Grouping**: By context (Global, Navigation, Viewer, Asset Grid, Comments)
-- **Format**: Description left, key combo right in `<kbd>` styled badges
-- **`<kbd>` style**: `--surface-3` background, `--border-default` border, `--radius-xs`, `code` font, `caption` size
-
----
-
-## Keyboard Shortcuts
-
-### Global
-
-| Key | Action |
-|-----|--------|
-| `Cmd/Ctrl + K` | Command palette |
-| `?` | Keyboard legend |
-| `Cmd/Ctrl + /` | Toggle sidebar |
-| `Cmd/Ctrl + Shift + U` | Toggle upload drawer |
-
-### Navigation
-
-| Key | Action |
-|-----|--------|
-| `G then D` | Go to Dashboard |
-| `G then P` | Go to Projects |
-| `G then S` | Go to Shares |
-| `G then N` | Go to Notifications |
-
-### Asset Grid
-
-| Key | Action |
-|-----|--------|
-| `J` / `K` | Next / previous item |
-| `Enter` | Open selected item |
-| `Space` | Quick preview |
-| `Cmd/Ctrl + A` | Select all |
-| `Delete` / `Backspace` | Delete selected (with undo toast) |
-| `N` | New folder |
-| `U` | Upload files |
-| `1` / `2` / `3` | Density: compact / default / expanded |
-
-### Viewer
-
-| Key | Action |
-|-----|--------|
-| `Space` | Play / pause |
-| `←` / `→` | Seek -5s / +5s |
-| `Shift + ←` / `→` | Seek -1 frame / +1 frame |
-| `↑` / `↓` | Volume up / down |
-| `M` | Mute / unmute |
-| `F` | Fullscreen |
-| `C` | Toggle comment panel |
-| `Escape` | Close viewer |
-| `[` / `]` | Previous / next file |
-
-### Comments
-
-| Key | Action |
-|-----|--------|
-| `Cmd/Ctrl + Enter` | Submit comment |
-| `Escape` | Cancel reply / discard draft |
-
----
-
-## Patterns
-
-### Empty States
-
-Minimal. Three elements only:
-
-1. **Icon**: Relevant Lucide icon, 48px, `--text-muted`
-2. **Text**: One sentence, `body` size, `--text-secondary`. Conversational. ("No files here yet.")
-3. **Action**: Single `primary` or `secondary` button. ("Upload files")
-
-No illustrations. No multi-paragraph explanations.
-
-### Loading States (Skeletons)
-
-- Skeletons mirror the exact layout of the content they replace
-- Background: `--surface-3`
-- Shimmer: Linear gradient sweep (`--surface-3` → `--surface-4` → `--surface-3`), 1.5s, infinite
-- **Asset grid**: Skeleton cards at current density setting
-- **Comment panel**: Skeleton comment bubbles (avatar circle + text lines)
-- **Tables**: Skeleton rows with column-width-matched bars
-- **Viewer**: Full dark area with centered `Spinner`
-
-### Error States
-
-Conversational, not clinical.
-
-| Context | Message style | Example |
-|---------|--------------|---------|
-| Inline field error | Red text below input, `caption` size | "That email's already taken" |
-| Toast error | `error` toast, persists until dismissed | "Upload failed. Retry?" (with Retry action) |
-| Full-page error | Empty state pattern with error icon | "Something broke. Try refreshing." |
-
-### Destructive Actions
-
-**No confirmation modals.** Use optimistic action + undo toast.
-
-Flow:
-1. User clicks delete
-2. Item immediately removed from UI (fade-out animation)
-3. Toast appears: "Deleted [item name]. Undo?" — 8s timeout
-4. Undo restores the item with fade-in animation
-5. After timeout, deletion is committed server-side
-
-Exception: Irreversible actions with high blast radius (delete workspace, remove team member) get a **confirmation input** — type the name to confirm. Not a modal with "Are you sure?" buttons.
-
-### Drag and Drop
-
-- **Drag handle**: `GripVertical` icon, hidden by default, fades in on hover (`--text-muted`)
-- **Drag preview**: Semi-transparent clone of the item, slight rotation (2deg), `--shadow-lg`
-- **Drop target**: `--accent-muted` background + dashed `--accent` border on valid targets
-- **Invalid target**: No visual change (don't show red — just don't show green)
 
 ### Scrollbars
 
@@ -680,122 +461,7 @@ Appear on scroll, auto-hide after 1.5s of no scroll activity (where supported).
 
 ---
 
-## Upload Drawer
+## Cross-References
 
-- **Position**: Bottom of viewport, full width, above toasts (`--z-upload-drawer`)
-- **Height**: Auto based on content, max 40vh, scrollable internally
-- **Background**: `--surface-2`, `--border-default` top border
-- **Behavior**: Auto-appears when uploads start. Auto-dismisses 3s after all uploads complete. Drag handle to resize. Can be manually collapsed to a thin bar showing count + overall progress.
-- **Per-file row**: Filename (truncated) + file type icon + progress bar + percentage + status icon (spinner → check → error)
-- **Progress bar**: 2px height, `--accent` fill, `--surface-3` track
-- **Actions**: Pause/resume per file, cancel per file, "Cancel all" in header
-
----
-
-## Share Pages
-
-Share pages (`/s/[slug]`) are Bush's public face. They follow a **different** visual treatment than the app.
-
-### Differences from App
-
-| Property | App | Share Page |
-|----------|-----|-----------|
-| Default theme | Dark | Light |
-| Typography | Functional (14px body) | Editorial (`display` headings, 16px body) |
-| Spacing | Airy/dense contextual | Generous throughout |
-| Branding | Bush nav | Bush logo + sharer's logo |
-| Viewer | Dark always | Dark always (consistent) |
-| Target | Desktop | Responsive (desktop + tablet + phone) |
-
-### Layout
-
-```
-┌──────────────────────────────────────────────┐
-│ [Bush logo]              [Sharer logo/name]  │
-├──────────────────────────────────────────────┤
-│                                              │
-│  [Share title — display typography]          │
-│  [Description — body 16px]                   │
-│                                              │
-│  [Asset grid or single viewer]               │
-│                                              │
-│  [Comments (if enabled)]                     │
-│                                              │
-├──────────────────────────────────────────────┤
-│  Powered by Bush                             │
-└──────────────────────────────────────────────┘
-```
-
-### Responsive Breakpoints (share pages only)
-
-| Breakpoint | Width | Adjustments |
-|------------|-------|-------------|
-| Desktop | ≥1024px | Full layout, side-by-side where applicable |
-| Tablet | 768–1023px | Single column, reduced spacing |
-| Mobile | <768px | Stacked layout, full-width assets, collapsible comments |
-
-### Password Protection
-
-If share requires a password, show a centered card with:
-- Bush logo
-- Sharer's logo
-- "This share is password protected"
-- Password input + Submit button
-- Minimal, elegant. No extra chrome.
-
----
-
-## Presence & Collaboration
-
-### User Cursors (Viewer/Canvas)
-
-- **Cursor**: Small arrow + name label below
-- **Label**: `caption` size, `--radius-xs`, padding `2px 6px`
-- **Color**: Assigned per-user from a fixed palette of 8 distinguishable colors (not the accent color — these need to be distinct from each other):
-  - `#f97316` (orange), `#8b5cf6` (purple), `#06b6d4` (cyan), `#ec4899` (pink),
-  - `#22c55e` (green), `#eab308` (yellow), `#6366f1` (indigo), `#14b8a6` (teal)
-- **Fade**: Cursor fades to `0.3` opacity after 5s of no movement. Returns to `1` on move.
-
-### Avatar Stack (Project Header)
-
-Up to 4 avatars stacked with `-8px` overlap. `+N` badge for overflow. Each avatar shows presence color ring (2px).
-
----
-
-## Accessibility
-
-Not a separate concern — built into every component above.
-
-### Non-negotiables
-
-- **Focus visible**: `--shadow-accent` ring on all interactive elements via `:focus-visible` (not `:focus` — no rings on click)
-- **Color contrast**: WCAG AA minimum (4.5:1 for text, 3:1 for large text/UI). The dark palette + `--text-primary` on `--surface-1` = ~16:1 ratio.
-- **`prefers-reduced-motion`**: All animations disabled (see Motion section)
-- **Keyboard navigation**: Every action reachable without a mouse. Tab order follows visual order.
-- **ARIA**: Labels on icon-only buttons, `role="dialog"` on modals, `aria-live="polite"` on toasts
-- **Semantic HTML**: `<nav>`, `<main>`, `<header>`, `<button>`, `<dialog>`. No `<div>` buttons.
-
----
-
-## Implementation Checklist
-
-Suggested migration order — each step is independently shippable:
-
-| # | Step | Scope |
-|---|------|-------|
-| 1 | Install Tailwind v4, create `tokens.css` + `theme.css` | Infrastructure |
-| 2 | Implement theme toggle (`data-theme`, localStorage, default dark) | Infrastructure |
-| 3 | Load Inter + JetBrains Mono fonts | Infrastructure |
-| 4 | Migrate UI primitives: Button, Input, Select, Badge, Spinner | Components |
-| 5 | Migrate Modal, Toast (switch to Sonner pattern), Tooltip | Components |
-| 6 | Build Command Palette + Keyboard Legend | New components |
-| 7 | Rebuild sidebar as icon rail with hover-expand | Layout |
-| 8 | Migrate asset grid with density slider | Feature |
-| 9 | Rebuild file viewer with custom controls + collapsible/resizable comment panel | Feature |
-| 10 | Implement skeleton loading states | Pattern |
-| 11 | Implement upload drawer | Feature |
-| 12 | Add corner bracket hover + staggered grid animations | Polish |
-| 13 | Build custom scrollbars + drag-and-drop affordances | Polish |
-| 14 | Redesign share pages (light, editorial, responsive) | Feature |
-| 15 | Add presence cursors + avatar stack | Collaboration |
-| 16 | Clean up: delete all `.module.css` files, remove old `globals.css` utility classes | Cleanup |
+- `21-design-components.md` — All components and patterns built on these foundations (buttons, inputs, modals, toasts, keyboard shortcuts, patterns, share pages, presence)
+- `30-configuration.md` / `30-configuration.md` — Font loading configuration, Tailwind v4 plugin setup, build tooling
