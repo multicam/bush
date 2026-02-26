@@ -15,8 +15,9 @@ import { authService } from "../auth/service.js";
 import { config } from "../config/index.js";
 import type { SessionData } from "../auth/types.js";
 import { db } from "../db/index.js";
-import { projects } from "../db/schema.js";
+import { files, shares } from "../db/schema.js";
 import { eq } from "drizzle-orm";
+import { verifyProjectAccess, verifyAccountAccess } from "../api/access-control.js";
 
 // ============================================================================
 // Types
@@ -458,32 +459,43 @@ class WebSocketManager {
   ): Promise<boolean> {
     switch (channel) {
       case "project": {
-        // Check if user has access to the project
-        const project = await db
-          .select()
-          .from(projects)
-          .where(eq(projects.id, resourceId))
-          .limit(1);
-
-        if (project.length === 0) return false;
-
-        // Verify project belongs to user's account
-        return project[0].workspaceId !== null;
+        // Check if user has access to the project via account membership
+        const access = await verifyProjectAccess(resourceId, session.currentAccountId);
+        return access !== null;
       }
 
-      case "file":
-        // File access is checked via project
-        // For now, allow subscription and let the project-level check handle it
-        return true;
+      case "file": {
+        // File access is checked via project membership
+        const [file] = await db
+          .select()
+          .from(files)
+          .where(eq(files.id, resourceId))
+          .limit(1);
+
+        if (!file) return false;
+
+        // Check if user has access to the file's project
+        const access = await verifyProjectAccess(file.projectId, session.currentAccountId);
+        return access !== null;
+      }
 
       case "user":
         // Can only subscribe to own user channel
         return resourceId === session.userId;
 
-      case "share":
-        // Share access is checked separately
-        // For now, allow subscription
-        return true;
+      case "share": {
+        // Share access is checked via account membership
+        const [share] = await db
+          .select()
+          .from(shares)
+          .where(eq(shares.id, resourceId))
+          .limit(1);
+
+        if (!share) return false;
+
+        // Check if user has access to the share's account
+        return verifyAccountAccess(share.accountId, session.currentAccountId);
+      }
 
       default:
         return false;

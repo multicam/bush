@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.70 - Permission Validation Before Grant Completed)
+**Last updated**: 2026-02-26 (v0.0.71 - WebSocket Channel Permission Checks Completed)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -120,17 +120,15 @@ These are nice-to-fix but not blocking:
 - `invalidateOnRoleChange()` is called at lines 596 and 667 in `src/api/routes/accounts.ts`
 - Role changes now immediately invalidate affected sessions
 
-### [P2] Share Channel Permission Check [2h] -- NOT STARTED
+### ~~[P2] Share Channel Permission Check [2h]~~ -- COMPLETED (v0.0.71)
 
-- **Problem**: `src/realtime/ws-manager.ts:446-449` share permission check is placeholder returning `true`
-- **Impact**: Any authenticated user could subscribe to any share's realtime events
-- **Solution**: Implement proper share membership check
+- Proper account access check now implemented
+- Location: `src/realtime/ws-manager.ts`
 
-### [P2] File Channel Permission Check [1h] -- NOT STARTED
+### ~~[P2] File Channel Permission Check [1h]~~ -- COMPLETED (v0.0.71)
 
-- **Problem**: `src/realtime/ws-manager.ts:437-440` file permission check is placeholder returning `true`
-- **Impact**: Any authenticated user could subscribe to any file's realtime events
-- **Solution**: Implement proper file access check via project permission
+- Proper project access check now implemented
+- Location: `src/realtime/ws-manager.ts`
 
 ### [P2] Comment Permission Check [1h] -- NOT STARTED
 
@@ -304,8 +302,8 @@ The following are correctly deferred per spec/README.md:
 2. ~~Permission validation before grant~~ -- COMPLETED v0.0.70
 3. ~~Transcription permission checks~~ -- COMPLETED v0.0.69
 4. ~~Session cache invalidation on role changes~~ -- COMPLETED v0.0.69
-5. Share channel permission check
-6. File channel permission check
+5. ~~Share channel permission check~~ -- COMPLETED v0.0.71
+6. ~~File channel permission check~~ -- COMPLETED v0.0.71
 7. Comment completion permission check
 8. Email provider implementation (SendGrid recommended)
 9. CDN provider implementation (Bunny CDN per specs)
@@ -327,6 +325,14 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.71 (2026-02-26) - WebSocket Channel Permission Checks
+
+**Completed:**
+- Implemented proper permission checks for WebSocket file and share channels
+- File channel now verifies project access before allowing subscription
+- Share channel now verifies account access before allowing subscription
+- Location: `src/realtime/ws-manager.ts`
 
 ### v0.0.70 (2026-02-26) - Permission Validation Before Grant
 
@@ -378,7 +384,7 @@ The following are correctly deferred per spec/README.md:
 
 **Confirmed Existing Findings:**
 - `invalidateOnRoleChange()` function EXISTS in session-cache.ts - just needs calling from accounts.ts
-- Both file AND share channel WebSocket permission checks are permissive stubs returning `true`
+- ~~Both file AND share channel WebSocket permission checks are permissive stubs returning `true`~~ -- Fixed in v0.0.71
 
 **Updates:**
 - Added "ADDITIONAL GAPS IDENTIFIED" section for grant permission API exposure
