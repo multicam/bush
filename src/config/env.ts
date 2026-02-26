@@ -97,6 +97,7 @@ const envSchema = z.object({
   FASTER_WHISPER_URL: z.string().optional(),
 
   // Email
+  EMAIL_PROVIDER: z.enum(["console", "smtp", "sendgrid", "ses", "postmark", "resend"]).default("smtp"),
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   SMTP_USER: z.string().optional().default(""),
@@ -202,6 +203,13 @@ function loadConfig(): Env {
       WORKER_METADATA_CONCURRENCY: 8,
       TRANSCRIPTION_PROVIDER: "deepgram",
       TRANSCRIPTION_MAX_DURATION: 7200,
+      EMAIL_PROVIDER: "console",
+      SMTP_HOST: "localhost",
+      SMTP_PORT: 1025,
+      SMTP_USER: "",
+      SMTP_PASS: "",
+      SMTP_FROM: "noreply@bush.local",
+      SMTP_SECURE: false,
     } as Env;
   }
 

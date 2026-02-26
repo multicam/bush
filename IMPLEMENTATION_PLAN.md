@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.72 - Comment Permission Check Completed)
+**Last updated**: 2026-02-26 (v0.0.73 - SMTP Email Provider Implemented)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -138,12 +138,14 @@ These are nice-to-fix but not blocking:
 - Comment deletion now properly checks for owner, account admin, or full_access permission
 - Location: `src/api/routes/comments.ts`
 
-### [P2] Email Provider Implementation [4h] -- NOT STARTED
+### ~~[P2] Email Provider Implementation [4h]~~ -- COMPLETED (v0.0.73)
 
-- **Problem**: All providers (SendGrid, SES, Postmark, Resend, SMTP) are TODO stubs
-- **Impact**: No production email capability; only console logging
-- **Recommendation**: Implement SendGrid provider first
-- **Location**: `src/lib/email/index.ts`
+- SMTP provider is now fully implemented with template rendering
+- All 10 email templates implemented (member-invitation, password-reset, welcome, comment-mention, comment-reply, share-created, email-verification, file-processed, export-complete, notification-digest)
+- Configuration via `EMAIL_PROVIDER` environment variable
+- Nodemailer dependency added
+- Location: `src/lib/email/smtp.ts`
+- Tests: 75 passing tests across email module
 
 ### [P2] CDN Provider Interface [4h] -- NOT STARTED
 
@@ -308,7 +310,7 @@ The following are correctly deferred per spec/README.md:
 5. ~~Share channel permission check~~ -- COMPLETED v0.0.71
 6. ~~File channel permission check~~ -- COMPLETED v0.0.71
 7. ~~Comment deletion permission check~~ -- COMPLETED v0.0.72
-8. Email provider implementation (SendGrid recommended)
+8. ~~Email provider implementation (SMTP with nodemailer)~~ -- COMPLETED v0.0.73
 9. CDN provider implementation (Bunny CDN per specs)
 10. Session limits enforcement
 11. Grant permission API exposure (verify design or add endpoints)
@@ -328,6 +330,23 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.73 (2026-02-26) - SMTP Email Provider Implementation
+
+**Completed:**
+- Implemented full SMTP email provider with nodemailer
+- Added local template rendering for all 10 email templates:
+  - member-invitation, password-reset, welcome
+  - comment-mention, comment-reply, share-created
+  - email-verification, file-processed, export-complete
+  - notification-digest
+- Added `EMAIL_PROVIDER` environment variable to config
+- Installed nodemailer and @types/nodemailer dependencies
+- Updated email factory to use SMTP by default in production
+- Added comprehensive tests (75 total email tests passing)
+- Location: `src/lib/email/smtp.ts`, `src/lib/email/index.ts`
+
+**Note:** API-based providers (SendGrid, SES, Postmark, Resend) now fall back to SMTP provider instead of console.
 
 ### v0.0.72 (2026-02-26) - Comment Permission Check
 

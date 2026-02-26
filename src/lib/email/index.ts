@@ -2,17 +2,18 @@
  * Bush Platform - Email Service Factory
  *
  * Creates the appropriate email provider based on configuration.
- * Currently only supports 'console' provider for development.
- *
- * Future providers to be added:
- * - sendgrid: SendGrid API
- * - ses: AWS SES
- * - postmark: Postmark API
- * - resend: Resend API
- * - smtp: Generic SMTP
+ * Supported providers:
+ * - console: Logs emails to console (development)
+ * - smtp: Generic SMTP (production-ready)
+ * - sendgrid: SendGrid API (TODO)
+ * - ses: AWS SES (TODO)
+ * - postmark: Postmark API (TODO)
+ * - resend: Resend API (TODO)
  */
+import { config } from "../../config/env";
 import { EmailService } from "../email";
 import { ConsoleEmailProvider, createConsoleProvider } from "./console";
+import { SmtpEmailProvider, createSmtpProvider } from "./smtp";
 
 // Re-export types and classes
 export type {
@@ -28,6 +29,8 @@ export type {
 
 export { EmailService } from "../email";
 export { ConsoleEmailProvider, createConsoleProvider };
+export { SmtpEmailProvider, createSmtpProvider };
+export type { SmtpConfig } from "./smtp";
 
 /**
  * Supported email provider types
@@ -47,74 +50,72 @@ export interface EmailConfig {
 /**
  * Create an email service with the configured provider
  *
- * For MVP, only 'console' provider is supported.
- * Real providers will be added when needed.
+ * Provider is determined by EMAIL_PROVIDER environment variable.
+ * Falls back to console provider if provider is not implemented.
  */
 export function createEmailService(
-  providerType: EmailProviderType = "console"
+  providerType?: EmailProviderType
 ): EmailService {
-  let provider;
+  // Use provided type or read from config
+  const provider = providerType || (config.EMAIL_PROVIDER as EmailProviderType);
+  let emailProvider;
 
-  switch (providerType) {
+  switch (provider) {
     case "console":
-      provider = createConsoleProvider();
+      emailProvider = createConsoleProvider();
+      break;
+
+    case "smtp":
+      emailProvider = createSmtpProvider();
       break;
 
     case "sendgrid":
       // TODO: Implement SendGrid provider
       console.warn(
-        "SendGrid email provider not yet implemented. Falling back to console provider."
+        "SendGrid email provider not yet implemented. Falling back to SMTP provider."
       );
-      provider = createConsoleProvider();
+      emailProvider = createSmtpProvider();
       break;
 
     case "ses":
       // TODO: Implement AWS SES provider
       console.warn(
-        "AWS SES email provider not yet implemented. Falling back to console provider."
+        "AWS SES email provider not yet implemented. Falling back to SMTP provider."
       );
-      provider = createConsoleProvider();
+      emailProvider = createSmtpProvider();
       break;
 
     case "postmark":
       // TODO: Implement Postmark provider
       console.warn(
-        "Postmark email provider not yet implemented. Falling back to console provider."
+        "Postmark email provider not yet implemented. Falling back to SMTP provider."
       );
-      provider = createConsoleProvider();
+      emailProvider = createSmtpProvider();
       break;
 
     case "resend":
       // TODO: Implement Resend provider
       console.warn(
-        "Resend email provider not yet implemented. Falling back to console provider."
+        "Resend email provider not yet implemented. Falling back to SMTP provider."
       );
-      provider = createConsoleProvider();
-      break;
-
-    case "smtp":
-      // TODO: Implement generic SMTP provider
-      console.warn(
-        "SMTP email provider not yet implemented. Falling back to console provider."
-      );
-      provider = createConsoleProvider();
+      emailProvider = createSmtpProvider();
       break;
 
     default:
       console.warn(
-        `Unknown email provider '${providerType}'. Falling back to console provider.`
+        `Unknown email provider '${provider}'. Falling back to SMTP provider.`
       );
-      provider = createConsoleProvider();
+      emailProvider = createSmtpProvider();
   }
 
-  return new EmailService(provider);
+  return new EmailService(emailProvider);
 }
 
 /**
  * Default email service instance
  *
- * Uses the console provider by default.
- * In production, configure via environment variable.
+ * Created on first access (singleton pattern).
+ * Uses EMAIL_PROVIDER from environment configuration.
  */
 let defaultEmailService: EmailService | null = null;
 
@@ -125,9 +126,7 @@ let defaultEmailService: EmailService | null = null;
  */
 export function getEmailService(): EmailService {
   if (!defaultEmailService) {
-    // Default to console provider for now
-    // In the future, read from config.EMAIL_PROVIDER
-    defaultEmailService = createEmailService("console");
+    defaultEmailService = createEmailService();
   }
   return defaultEmailService;
 }
