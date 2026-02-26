@@ -6,13 +6,14 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { files, folders, accounts } from "../../db/schema.js";
+import { files, folders, accounts, customFields } from "../../db/schema.js";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { generateId } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
-import { verifyProjectAccess } from "../access-control.js";
+import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
+import type { CustomFieldValue } from "../../db/schema.js";
 
 const app = new Hono();
 
@@ -661,5 +662,259 @@ app.post("/folders/delete", async (c) => {
     },
   });
 });
+
+/**
+ * POST /v4/bulk/files/metadata - Update metadata on multiple files
+ *
+ * Applies the same metadata updates to multiple files at once.
+ * Supports both built-in fields (rating, status, keywords, notes, assignee_id)
+ * and custom field values.
+ */
+app.post("/files/metadata", async (c) => {
+  const session = requireAuth(c);
+  const body = await c.req.json();
+
+  const fileIds = body.file_ids as string[] | undefined;
+  const metadata = body.metadata as Record<string, unknown> | undefined;
+
+  // Validate input
+  if (!Array.isArray(fileIds) || fileIds.length === 0) {
+    throw new ValidationError("file_ids must be a non-empty array", { pointer: "/data/file_ids" });
+  }
+
+  if (fileIds.length > MAX_BULK_ITEMS) {
+    throw new ValidationError(`Maximum ${MAX_BULK_ITEMS} items per bulk request`, { pointer: "/data/file_ids" });
+  }
+
+  if (!metadata || typeof metadata !== "object") {
+    throw new ValidationError("metadata object is required", { pointer: "/data/metadata" });
+  }
+
+  // Pre-validate all metadata fields before making any changes
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+  // Handle built-in editable fields
+  if (metadata.rating !== undefined) {
+    if (typeof metadata.rating !== "number" || metadata.rating < 1 || metadata.rating > 5) {
+      throw new ValidationError("Rating must be between 1 and 5", { pointer: "/data/metadata/rating" });
+    }
+    updates.rating = metadata.rating;
+  }
+
+  if (metadata.status !== undefined) {
+    if (typeof metadata.status !== "string") {
+      throw new ValidationError("Status must be a string", { pointer: "/data/metadata/status" });
+    }
+    updates.assetStatus = metadata.status;
+  }
+
+  if (metadata.keywords !== undefined) {
+    if (!Array.isArray(metadata.keywords) || !metadata.keywords.every((k: unknown) => typeof k === "string")) {
+      throw new ValidationError("Keywords must be an array of strings", { pointer: "/data/metadata/keywords" });
+    }
+    updates.keywords = metadata.keywords;
+  }
+
+  if (metadata.notes !== undefined) {
+    if (typeof metadata.notes !== "string") {
+      throw new ValidationError("Notes must be a string", { pointer: "/data/metadata/notes" });
+    }
+    updates.notes = metadata.notes;
+  }
+
+  if (metadata.assignee_id !== undefined) {
+    if (metadata.assignee_id !== null) {
+      // Verify user exists and is a member of the account
+      const isMember = await verifyAccountMembership(metadata.assignee_id as string, session.currentAccountId);
+      if (!isMember) {
+        throw new ValidationError("Assignee must be a member of the account", { pointer: "/data/metadata/assignee_id" });
+      }
+    }
+    updates.assigneeId = metadata.assignee_id;
+  }
+
+  // Handle custom field values - pre-validate all custom fields
+  let customMetadataUpdates: Record<string, CustomFieldValue> | null = null;
+  if (metadata.custom !== undefined && typeof metadata.custom === "object") {
+    // Get all custom fields for validation
+    const allCustomFields = await db
+      .select()
+      .from(customFields)
+      .where(eq(customFields.accountId, session.currentAccountId));
+
+    const fieldMap = new Map(allCustomFields.map((f) => [f.id, f]));
+
+    // Validate each custom field value
+    for (const [fieldId, value] of Object.entries(metadata.custom as Record<string, CustomFieldValue>)) {
+      const field = fieldMap.get(fieldId);
+      if (!field) {
+        throw new ValidationError(`Unknown custom field: ${fieldId}`, { pointer: `/data/metadata/custom/${fieldId}` });
+      }
+
+      // Validate value based on field type
+      const validationError = validateCustomFieldValue(field, value);
+      if (validationError) {
+        throw new ValidationError(validationError, { pointer: `/data/metadata/custom/${fieldId}` });
+      }
+    }
+
+    // Store the custom metadata to merge (we'll merge with existing per-file)
+    customMetadataUpdates = metadata.custom as Record<string, CustomFieldValue>;
+  }
+
+  const succeeded: string[] = [];
+  const failed: { id: string; error: string }[] = [];
+
+  // Process each file
+  for (const fileId of fileIds) {
+    try {
+      // Get file
+      const [file] = await db
+        .select()
+        .from(files)
+        .where(
+          and(
+            eq(files.id, fileId),
+            isNull(files.deletedAt)
+          )
+        )
+        .limit(1);
+
+      if (!file) {
+        failed.push({ id: fileId, error: "File not found" });
+        continue;
+      }
+
+      // Verify project access
+      const access = await verifyProjectAccess(file.projectId, session.currentAccountId);
+      if (!access) {
+        failed.push({ id: fileId, error: "Access denied" });
+        continue;
+      }
+
+      // Build final updates for this file
+      const fileUpdates: Record<string, unknown> = { ...updates };
+
+      // Handle custom metadata merging
+      if (customMetadataUpdates) {
+        const mergedCustomMetadata: Record<string, CustomFieldValue> = {
+          ...(file.customMetadata ?? {}),
+        };
+
+        for (const [fieldId, value] of Object.entries(customMetadataUpdates)) {
+          if (value === null || value === undefined || value === "") {
+            // Remove field if value is null/empty
+            delete mergedCustomMetadata[fieldId];
+          } else {
+            mergedCustomMetadata[fieldId] = value;
+          }
+        }
+
+        fileUpdates.customMetadata = mergedCustomMetadata;
+      }
+
+      // Update file
+      await db
+        .update(files)
+        .set(fileUpdates)
+        .where(eq(files.id, fileId));
+
+      succeeded.push(fileId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      failed.push({ id: fileId, error: message });
+    }
+  }
+
+  return c.json({
+    data: {
+      succeeded,
+      failed,
+    },
+  });
+});
+
+/**
+ * Validate a custom field value against its type
+ */
+function validateCustomFieldValue(
+  field: typeof customFields.$inferSelect,
+  value: unknown
+): string | null {
+  if (value === null || value === undefined || value === "") {
+    return null; // Null is always valid (clears the field)
+  }
+
+  switch (field.type) {
+    case "text":
+    case "textarea":
+    case "url":
+      if (typeof value !== "string") {
+        return "Value must be a string";
+      }
+      if (field.type === "url") {
+        try {
+          new URL(value);
+        } catch {
+          return "Value must be a valid URL";
+        }
+      }
+      break;
+
+    case "number":
+      if (typeof value !== "number" || isNaN(value)) {
+        return "Value must be a number";
+      }
+      break;
+
+    case "date":
+      if (typeof value !== "string" || isNaN(Date.parse(value))) {
+        return "Value must be a valid ISO 8601 date string";
+      }
+      break;
+
+    case "single_select":
+      if (typeof value !== "string") {
+        return "Value must be a string";
+      }
+      if (field.options && !field.options.includes(value)) {
+        return `Value must be one of: ${field.options.join(", ")}`;
+      }
+      break;
+
+    case "multi_select":
+      if (!Array.isArray(value) || !value.every((v) => typeof v === "string")) {
+        return "Value must be an array of strings";
+      }
+      if (field.options) {
+        for (const v of value) {
+          if (!field.options.includes(v)) {
+            return `Value "${v}" is not a valid option. Must be one of: ${field.options.join(", ")}`;
+          }
+        }
+      }
+      break;
+
+    case "checkbox":
+      if (typeof value !== "boolean") {
+        return "Value must be a boolean";
+      }
+      break;
+
+    case "user":
+      if (typeof value !== "string") {
+        return "Value must be a user ID string";
+      }
+      break;
+
+    case "rating":
+      if (typeof value !== "number" || value < 1 || value > 5 || !Number.isInteger(value)) {
+        return "Value must be an integer between 1 and 5";
+      }
+      break;
+  }
+
+  return null;
+}
 
 export default app;

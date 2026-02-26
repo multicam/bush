@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.76 - Notification Settings & Collection File Viewer)
+**Last updated**: 2026-02-27 (v0.0.77 - Missing API Endpoints Implementation)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (26 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (133 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -29,7 +29,7 @@ This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 133 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(9), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
+| **API Endpoints** | 136 (100%) | 18 route modules: accounts(10), auth(3), bulk(7), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(10), search(2), shares(11), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
 | **Database Schema (schema.ts)** | 26 tables (100%) | All tables defined with proper indexes |
 | **Database Migration (migrate.ts)** | 26 tables (100%) | All tables, columns, and indexes now included |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
@@ -227,10 +227,10 @@ These are nice-to-fix but not blocking:
 
 ### [P3] Missing API Endpoints (Lower Priority) [1d] -- PARTIALLY COMPLETED
 
-- `POST /v4/projects/:id/duplicate` - Project duplication -- NOT STARTED
-- `POST /v4/bulk/files/metadata` - Bulk metadata update -- NOT STARTED
+- ~~`POST /v4/projects/:id/duplicate` - Project duplication~~ -- COMPLETED (v0.0.77)
+- ~~`POST /v4/bulk/files/metadata` - Bulk metadata update~~ -- COMPLETED (v0.0.77)
 - ~~`GET/PUT /v4/users/me/notifications/settings` - User notification preferences~~ -- COMPLETED (v0.0.76)
-- `POST /v4/shares/:id/invite` - Share invitation email -- NOT STARTED
+- ~~`POST /v4/shares/:id/invite` - Share invitation email~~ -- COMPLETED (v0.0.77)
 - `GET /v4/projects/:project_id/shares` - List shares for project -- NOT STARTED (use `/accounts/:accountId/shares?project_id=...`)
 
 ---
@@ -338,6 +338,38 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.77 (2026-02-27) - Missing API Endpoints Implementation
+
+**Bulk Metadata Update:**
+- Added `POST /v4/bulk/files/metadata` - Update metadata on multiple files
+- Supports built-in fields (rating, status, keywords, notes, assignee_id)
+- Supports custom field values with validation
+- Validates all fields before making any changes
+- Location: `src/api/routes/bulk.ts`
+- Spec refs: `specs/04-api-reference.md` Section 7
+
+**Project Duplication:**
+- Added `POST /v4/projects/:id/duplicate` - Duplicate a project
+- Copies project settings, folder structure, and file records
+- Creates new IDs for all duplicated resources
+- Updates storage usage for the account
+- Optional `name` parameter to customize duplicated project name
+- Location: `src/api/routes/projects.ts`
+- Spec refs: `specs/04-api-reference.md` Section 6.3
+
+**Share Invitation:**
+- Added `POST /v4/shares/:id/invite` - Send share invitation email
+- Sends emails to multiple recipients (max 50)
+- Uses existing `sendShareCreated` email template
+- Logs share activity for each invitation sent
+- Location: `src/api/routes/shares.ts`
+- Spec refs: `specs/04-api-reference.md` Section 6.9
+
+**API Endpoint Count:** 133 → 136 (3 new endpoints)
+- bulk: 6 → 7 (added metadata)
+- projects: 9 → 10 (added duplicate)
+- shares: 10 → 11 (added invite)
 
 ### v0.0.76 (2026-02-27) - Notification Settings & Collection File Viewer
 
