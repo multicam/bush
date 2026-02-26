@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.75 - Grant Permission API Exposure)
+**Last updated**: 2026-02-27 (v0.0.76 - Notification Settings & Collection File Viewer)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (131 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (26 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (133 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -29,9 +29,9 @@ This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 131 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(9), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
-| **Database Schema (schema.ts)** | 25 tables (100%) | All tables defined with proper indexes |
-| **Database Migration (migrate.ts)** | 25 tables (100%) | All tables, columns, and indexes now included |
+| **API Endpoints** | 133 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(9), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
+| **Database Schema (schema.ts)** | 26 tables (100%) | All tables defined with proper indexes |
+| **Database Migration (migrate.ts)** | 26 tables (100%) | All tables, columns, and indexes now included |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 10 | See detailed breakdown below |
@@ -74,7 +74,7 @@ These should be addressed for production readiness:
 4. ~~**Comment Deletion Permission Check** - `src/api/routes/comments.ts:421`~~ -- RESOLVED (v0.0.72)
    - Now properly checks for owner, account admin, or full_access permission
 
-### Minor Severity (2)
+### Minor Severity (1)
 
 These are nice-to-fix but not blocking:
 
@@ -82,9 +82,8 @@ These are nice-to-fix but not blocking:
    - Issue: pdf.js v4+ API changes for text layer
    - Impact: Cannot select/copy text from PDFs
 
-2. **Collection File Viewer** - `src/web/app/projects/[id]/collections/[collectionId]/page.tsx:364`
-   - Issue: Click handler only logs to console
-   - Impact: Cannot open files from collection view
+2. ~~**Collection File Viewer** - `src/web/app/projects/[id]/collections/[collectionId]/page.tsx:364`~~ -- RESOLVED (v0.0.76)
+   - Now navigates to file viewer page when clicking files in collection view
 
 ---
 
@@ -187,10 +186,10 @@ These are nice-to-fix but not blocking:
 - **Impact**: Cannot select/copy text from PDFs
 - **Cause**: pdf.js v4+ API changes
 
-### [P3] Collection Detail File Viewer Integration [2h] -- NOT STARTED
+### ~~[P3] Collection Detail File Viewer Integration [2h]~~ -- COMPLETED (v0.0.76)
 
-- **Problem**: TODO at `src/web/app/projects/[id]/collections/[collectionId]/page.tsx:364`
-- **Impact**: Clicking files in collection view only logs to console
+- Fixed: Clicking files in collection view now navigates to file viewer page
+- Location: `src/web/app/projects/[id]/collections/[collectionId]/page.tsx`
 
 ### [P3] Document Processing [4d] -- DEFERRED
 
@@ -226,13 +225,13 @@ These are nice-to-fix but not blocking:
 - Serve at `/v4/openapi.json`
 - **Dependencies**: Routes complete - DONE
 
-### [P3] Missing API Endpoints (Lower Priority) [1d] -- NOT STARTED
+### [P3] Missing API Endpoints (Lower Priority) [1d] -- PARTIALLY COMPLETED
 
-- `POST /v4/projects/:id/duplicate` - Project duplication
-- `POST /v4/bulk/files/metadata` - Bulk metadata update
-- `GET/PUT /v4/users/me/notifications/settings` - User notification preferences
-- `POST /v4/shares/:id/invite` - Share invitation email
-- `GET /v4/projects/:project_id/shares` - List shares for project
+- `POST /v4/projects/:id/duplicate` - Project duplication -- NOT STARTED
+- `POST /v4/bulk/files/metadata` - Bulk metadata update -- NOT STARTED
+- ~~`GET/PUT /v4/users/me/notifications/settings` - User notification preferences~~ -- COMPLETED (v0.0.76)
+- `POST /v4/shares/:id/invite` - Share invitation email -- NOT STARTED
+- `GET /v4/projects/:project_id/shares` - List shares for project -- NOT STARTED (use `/accounts/:accountId/shares?project_id=...`)
 
 ---
 
@@ -326,7 +325,7 @@ The following are correctly deferred per spec/README.md:
 ### Can Defer (P3)
 
 12. PDF text layer
-13. Collection file viewer integration
+13. ~~Collection file viewer integration~~ -- COMPLETED v0.0.76
 14. Document processing
 15. RAW/Adobe image support
 16. Access groups
@@ -334,10 +333,36 @@ The following are correctly deferred per spec/README.md:
 18. OpenAPI spec generation
 19. Route test coverage (currently 0%)
 20. WebSocket rate limit configuration
+21. ~~Notification settings API~~ -- COMPLETED v0.0.76
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.76 (2026-02-27) - Notification Settings & Collection File Viewer
+
+**Notification Settings API:**
+- Added `GET /v4/users/me/notifications/settings` - Get notification preferences
+- Added `PUT /v4/users/me/notifications/settings` - Update notification preferences
+- Added `notification_settings` database table with 22 preference fields
+- Preferences grouped into email, in_app, and digest categories
+- Auto-creates default settings on first access
+- Location: `src/api/routes/notifications.ts`
+- Location: `src/db/schema.ts`, `src/db/migrate.ts`
+- Spec refs: `specs/17-api-complete.md` Section 6.15
+
+**Collection File Viewer Integration:**
+- Fixed file click handler in collection detail page
+- Clicking files now navigates to file viewer page instead of logging to console
+- Location: `src/web/app/projects/[id]/collections/[collectionId]/page.tsx`
+
+**WebSocket Manager Test Fix:**
+- Fixed mock for `../db/schema.js` to include all required tables
+- Fixed mock for `../db/index.js` to support innerJoin queries
+- Location: `src/realtime/ws-manager.test.ts`
+
+**API Endpoint Count:** 131 → 133 (2 new notification settings endpoints)
+**Database Table Count:** 25 → 26 (notification_settings table)
 
 ### v0.0.75 (2026-02-27) - Grant Permission API Exposure
 

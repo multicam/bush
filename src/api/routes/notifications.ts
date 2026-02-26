@@ -6,14 +6,13 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { notifications } from "../../db/schema.js";
+import { notifications, notificationSettings } from "../../db/schema.js";
 import { eq, and, desc, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { RESOURCE_TYPES } from "../response.js";
-import { parseLimit } from "../router.js";
-import { NotFoundError } from "../../errors/index.js";
+import { parseLimit, generateId } from "../router.js";
+import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { emitNotificationEvent } from "../../realtime/index.js";
-import { generateId } from "../router.js";
 
 const app = new Hono();
 
@@ -156,6 +155,268 @@ app.put("/read-all", async (c) => {
       type: "notification-bulk-update",
       attributes: {
         updated_count: unreadBefore || 0,
+      },
+    },
+  });
+});
+
+/**
+ * GET /v4/users/me/notifications/settings - Get notification preferences
+ *
+ * Returns the user's notification preferences for email, in-app, and digest settings.
+ */
+app.get("/settings", async (c) => {
+  const session = requireAuth(c);
+
+  // Try to get existing settings
+  let [settings] = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.userId, session.userId))
+    .limit(1);
+
+  // Create default settings if none exist
+  if (!settings) {
+    const settingsId = generateId("nset");
+    const now = new Date();
+    await db.insert(notificationSettings).values({
+      id: settingsId,
+      userId: session.userId,
+      // Email defaults
+      emailMentions: true,
+      emailCommentReplies: true,
+      emailComments: true,
+      emailUploads: false,
+      emailStatusChanges: true,
+      emailShareInvites: true,
+      emailShareViews: false,
+      emailShareDownloads: false,
+      emailAssignments: true,
+      emailFileProcessed: true,
+      // In-app defaults
+      inAppMentions: true,
+      inAppCommentReplies: true,
+      inAppComments: true,
+      inAppUploads: true,
+      inAppStatusChanges: true,
+      inAppShareInvites: true,
+      inAppShareViews: true,
+      inAppShareDownloads: true,
+      inAppAssignments: true,
+      inAppFileProcessed: true,
+      // Digest defaults
+      digestEnabled: false,
+      digestFrequency: "daily",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    [settings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.id, settingsId))
+      .limit(1);
+  }
+
+  return c.json({
+    data: {
+      id: settings!.id,
+      type: "notification-settings",
+      attributes: {
+        // Email notification preferences
+        email: {
+          mentions: settings!.emailMentions,
+          comment_replies: settings!.emailCommentReplies,
+          comments: settings!.emailComments,
+          uploads: settings!.emailUploads,
+          status_changes: settings!.emailStatusChanges,
+          share_invites: settings!.emailShareInvites,
+          share_views: settings!.emailShareViews,
+          share_downloads: settings!.emailShareDownloads,
+          assignments: settings!.emailAssignments,
+          file_processed: settings!.emailFileProcessed,
+        },
+        // In-app notification preferences
+        in_app: {
+          mentions: settings!.inAppMentions,
+          comment_replies: settings!.inAppCommentReplies,
+          comments: settings!.inAppComments,
+          uploads: settings!.inAppUploads,
+          status_changes: settings!.inAppStatusChanges,
+          share_invites: settings!.inAppShareInvites,
+          share_views: settings!.inAppShareViews,
+          share_downloads: settings!.inAppShareDownloads,
+          assignments: settings!.inAppAssignments,
+          file_processed: settings!.inAppFileProcessed,
+        },
+        // Digest preferences
+        digest: {
+          enabled: settings!.digestEnabled,
+          frequency: settings!.digestFrequency,
+        },
+        updated_at: settings!.updatedAt instanceof Date
+          ? settings!.updatedAt.toISOString()
+          : new Date(settings!.updatedAt as number).toISOString(),
+      },
+    },
+  });
+});
+
+/**
+ * PUT /v4/users/me/notifications/settings - Update notification preferences
+ *
+ * Updates the user's notification preferences for email, in-app, and digest settings.
+ */
+app.put("/settings", async (c) => {
+  const session = requireAuth(c);
+  const body = await c.req.json();
+  const data = body.data?.attributes || body;
+
+  // Validate digest frequency if provided
+  if (data.digest?.frequency && !["daily", "weekly"].includes(data.digest.frequency)) {
+    throw new ValidationError("digest.frequency must be 'daily' or 'weekly'", {
+      pointer: "/data/attributes/digest/frequency",
+    });
+  }
+
+  // Try to get existing settings
+  let [settings] = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.userId, session.userId))
+    .limit(1);
+
+  // Create default settings if none exist
+  if (!settings) {
+    const settingsId = generateId("nset");
+    const now = new Date();
+    await db.insert(notificationSettings).values({
+      id: settingsId,
+      userId: session.userId,
+      emailMentions: true,
+      emailCommentReplies: true,
+      emailComments: true,
+      emailUploads: false,
+      emailStatusChanges: true,
+      emailShareInvites: true,
+      emailShareViews: false,
+      emailShareDownloads: false,
+      emailAssignments: true,
+      emailFileProcessed: true,
+      inAppMentions: true,
+      inAppCommentReplies: true,
+      inAppComments: true,
+      inAppUploads: true,
+      inAppStatusChanges: true,
+      inAppShareInvites: true,
+      inAppShareViews: true,
+      inAppShareDownloads: true,
+      inAppAssignments: true,
+      inAppFileProcessed: true,
+      digestEnabled: false,
+      digestFrequency: "daily",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    [settings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.id, settingsId))
+      .limit(1);
+  }
+
+  // Build update object with only provided fields
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  // Update email preferences if provided
+  if (data.email) {
+    if (typeof data.email.mentions === "boolean") updateData.emailMentions = data.email.mentions;
+    if (typeof data.email.comment_replies === "boolean") updateData.emailCommentReplies = data.email.comment_replies;
+    if (typeof data.email.comments === "boolean") updateData.emailComments = data.email.comments;
+    if (typeof data.email.uploads === "boolean") updateData.emailUploads = data.email.uploads;
+    if (typeof data.email.status_changes === "boolean") updateData.emailStatusChanges = data.email.status_changes;
+    if (typeof data.email.share_invites === "boolean") updateData.emailShareInvites = data.email.share_invites;
+    if (typeof data.email.share_views === "boolean") updateData.emailShareViews = data.email.share_views;
+    if (typeof data.email.share_downloads === "boolean") updateData.emailShareDownloads = data.email.share_downloads;
+    if (typeof data.email.assignments === "boolean") updateData.emailAssignments = data.email.assignments;
+    if (typeof data.email.file_processed === "boolean") updateData.emailFileProcessed = data.email.file_processed;
+  }
+
+  // Update in-app preferences if provided
+  if (data.in_app) {
+    if (typeof data.in_app.mentions === "boolean") updateData.inAppMentions = data.in_app.mentions;
+    if (typeof data.in_app.comment_replies === "boolean") updateData.inAppCommentReplies = data.in_app.comment_replies;
+    if (typeof data.in_app.comments === "boolean") updateData.inAppComments = data.in_app.comments;
+    if (typeof data.in_app.uploads === "boolean") updateData.inAppUploads = data.in_app.uploads;
+    if (typeof data.in_app.status_changes === "boolean") updateData.inAppStatusChanges = data.in_app.status_changes;
+    if (typeof data.in_app.share_invites === "boolean") updateData.inAppShareInvites = data.in_app.share_invites;
+    if (typeof data.in_app.share_views === "boolean") updateData.inAppShareViews = data.in_app.share_views;
+    if (typeof data.in_app.share_downloads === "boolean") updateData.inAppShareDownloads = data.in_app.share_downloads;
+    if (typeof data.in_app.assignments === "boolean") updateData.inAppAssignments = data.in_app.assignments;
+    if (typeof data.in_app.file_processed === "boolean") updateData.inAppFileProcessed = data.in_app.file_processed;
+  }
+
+  // Update digest preferences if provided
+  if (data.digest) {
+    if (typeof data.digest.enabled === "boolean") updateData.digestEnabled = data.digest.enabled;
+    if (data.digest.frequency) updateData.digestFrequency = data.digest.frequency;
+  }
+
+  // Update the settings
+  await db
+    .update(notificationSettings)
+    .set(updateData)
+    .where(eq(notificationSettings.id, settings!.id));
+
+  // Fetch updated settings
+  const [updatedSettings] = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.id, settings!.id))
+    .limit(1);
+
+  return c.json({
+    data: {
+      id: updatedSettings!.id,
+      type: "notification-settings",
+      attributes: {
+        // Email notification preferences
+        email: {
+          mentions: updatedSettings!.emailMentions,
+          comment_replies: updatedSettings!.emailCommentReplies,
+          comments: updatedSettings!.emailComments,
+          uploads: updatedSettings!.emailUploads,
+          status_changes: updatedSettings!.emailStatusChanges,
+          share_invites: updatedSettings!.emailShareInvites,
+          share_views: updatedSettings!.emailShareViews,
+          share_downloads: updatedSettings!.emailShareDownloads,
+          assignments: updatedSettings!.emailAssignments,
+          file_processed: updatedSettings!.emailFileProcessed,
+        },
+        // In-app notification preferences
+        in_app: {
+          mentions: updatedSettings!.inAppMentions,
+          comment_replies: updatedSettings!.inAppCommentReplies,
+          comments: updatedSettings!.inAppComments,
+          uploads: updatedSettings!.inAppUploads,
+          status_changes: updatedSettings!.inAppStatusChanges,
+          share_invites: updatedSettings!.inAppShareInvites,
+          share_views: updatedSettings!.inAppShareViews,
+          share_downloads: updatedSettings!.inAppShareDownloads,
+          assignments: updatedSettings!.inAppAssignments,
+          file_processed: updatedSettings!.inAppFileProcessed,
+        },
+        // Digest preferences
+        digest: {
+          enabled: updatedSettings!.digestEnabled,
+          frequency: updatedSettings!.digestFrequency,
+        },
+        updated_at: updatedSettings!.updatedAt instanceof Date
+          ? updatedSettings!.updatedAt.toISOString()
+          : new Date(updatedSettings!.updatedAt as number).toISOString(),
       },
     },
   });

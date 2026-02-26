@@ -422,6 +422,40 @@ sqlite.exec(`
     FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
+  -- Notification Settings
+  CREATE TABLE IF NOT EXISTS notification_settings (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    -- Email notification preferences
+    email_mentions INTEGER NOT NULL DEFAULT 1,
+    email_comment_replies INTEGER NOT NULL DEFAULT 1,
+    email_comments INTEGER NOT NULL DEFAULT 1,
+    email_uploads INTEGER NOT NULL DEFAULT 0,
+    email_status_changes INTEGER NOT NULL DEFAULT 1,
+    email_share_invites INTEGER NOT NULL DEFAULT 1,
+    email_share_views INTEGER NOT NULL DEFAULT 0,
+    email_share_downloads INTEGER NOT NULL DEFAULT 0,
+    email_assignments INTEGER NOT NULL DEFAULT 1,
+    email_file_processed INTEGER NOT NULL DEFAULT 1,
+    -- In-app notification preferences
+    in_app_mentions INTEGER NOT NULL DEFAULT 1,
+    in_app_comment_replies INTEGER NOT NULL DEFAULT 1,
+    in_app_comments INTEGER NOT NULL DEFAULT 1,
+    in_app_uploads INTEGER NOT NULL DEFAULT 1,
+    in_app_status_changes INTEGER NOT NULL DEFAULT 1,
+    in_app_share_invites INTEGER NOT NULL DEFAULT 1,
+    in_app_share_views INTEGER NOT NULL DEFAULT 1,
+    in_app_share_downloads INTEGER NOT NULL DEFAULT 1,
+    in_app_assignments INTEGER NOT NULL DEFAULT 1,
+    in_app_file_processed INTEGER NOT NULL DEFAULT 1,
+    -- Digest preferences
+    digest_enabled INTEGER NOT NULL DEFAULT 0,
+    digest_frequency TEXT NOT NULL DEFAULT 'daily',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
   -- ============================================
   -- INDEXES
   -- ============================================
@@ -507,6 +541,9 @@ sqlite.exec(`
   -- Captions indexes
   CREATE INDEX IF NOT EXISTS captions_file_id_idx ON captions(file_id);
   CREATE INDEX IF NOT EXISTS captions_language_idx ON captions(language);
+
+  -- Notification Settings indexes
+  CREATE UNIQUE INDEX IF NOT EXISTS notification_settings_user_id_idx ON notification_settings(user_id);
 
   -- ============================================
   -- FTS5 VIRTUAL TABLES

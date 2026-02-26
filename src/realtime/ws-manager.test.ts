@@ -59,6 +59,14 @@ vi.mock("../db/index.js", () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
+        innerJoin: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(() => [{
+              projects: { id: "mock-project-id", workspaceId: "mock-workspace" },
+              workspaces: { id: "mock-workspace-id", accountId: "account_1" }
+            }]),
+          })),
+        })),
         where: vi.fn(() => ({
           limit: vi.fn(() => [{ id: "mock-id", workspaceId: "mock-workspace" }]),
         })),
@@ -69,6 +77,10 @@ vi.mock("../db/index.js", () => ({
 
 vi.mock("../db/schema.js", () => ({
   projects: { id: "projects.id", workspaceId: "projects.workspaceId" },
+  workspaces: { id: "workspaces.id", accountId: "workspaces.accountId" },
+  folders: { id: "folders.id", projectId: "folders.projectId" },
+  files: { id: "files.id", projectId: "files.projectId" },
+  shares: { id: "shares.id", accountId: "shares.accountId" },
 }));
 
 describe("WebSocket Manager", () => {
