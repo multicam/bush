@@ -18,8 +18,9 @@ import {
   decodeCursor,
 } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError } from "../../errors/index.js";
-import { verifyProjectAccess } from "../access-control.js";
+import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
+import { permissionService } from "../../permissions/index.js";
 import { emitCommentEvent } from "../../realtime/index.js";
 
 const app = new Hono();
@@ -418,22 +419,33 @@ app.delete("/:id", async (c) => {
   }
 
   const comment = commentResult.comment;
+  const projectId = commentResult.file?.projectId;
 
   // Check if user can delete (own comment or full_access+ permission)
   const isOwner = comment.userId === session.userId;
 
   // For non-owners, check if they have full_access permission
   if (!isOwner) {
-    // For now, only allow owner to delete
-    // TODO: Check full_access+ permission when permission system is more complete
-    throw new ValidationError("You can only delete your own comments", {
-      pointer: "/data/relationships/user",
-    });
+    // Check if user is account admin (owner or content_admin)
+    const accountRole = await verifyAccountMembership(session.userId, session.currentAccountId);
+    const isAccountAdmin = accountRole && (accountRole === "owner" || accountRole === "content_admin");
+
+    if (!isAccountAdmin && projectId) {
+      // Check if user has full_access project permission
+      const projectPermission = await permissionService.getProjectPermission(session.userId, projectId);
+      const hasFullAccess = projectPermission && projectPermission.permission === "full_access";
+
+      if (!hasFullAccess) {
+        throw new AuthorizationError("You can only delete your own comments or need full_access permission");
+      }
+    } else if (!isAccountAdmin) {
+      // No project access and not account admin
+      throw new AuthorizationError("You can only delete your own comments or need full_access permission");
+    }
   }
 
   // Store info for event emission before deletion
   const fileId = comment.fileId;
-  const projectId = commentResult.file?.projectId;
 
   // Delete comment (cascade will handle replies if configured)
   await db.delete(comments).where(eq(comments.id, commentId));

@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.71 - WebSocket Channel Permission Checks Completed)
+**Last updated**: 2026-02-26 (v0.0.72 - Comment Permission Check Completed)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -71,6 +71,9 @@ These should be addressed for production readiness:
 3. ~~**Session Cache Invalidation (2 TODOs)** - `src/api/routes/accounts.ts:594,664`~~ -- RESOLVED
    - `invalidateOnRoleChange()` is now called at lines 596 and 667
 
+4. ~~**Comment Deletion Permission Check** - `src/api/routes/comments.ts:421`~~ -- RESOLVED (v0.0.72)
+   - Now properly checks for owner, account admin, or full_access permission
+
 ### Minor Severity (2)
 
 These are nice-to-fix but not blocking:
@@ -130,10 +133,10 @@ These are nice-to-fix but not blocking:
 - Proper project access check now implemented
 - Location: `src/realtime/ws-manager.ts`
 
-### [P2] Comment Permission Check [1h] -- NOT STARTED
+### ~~[P2] Comment Permission Check [1h]~~ -- COMPLETED (v0.0.72)
 
-- **Problem**: TODO at `src/api/routes/comments.ts:421` - `full_access+` check not implemented
-- **Impact**: Comment completion may be allowed without appropriate permissions
+- Comment deletion now properly checks for owner, account admin, or full_access permission
+- Location: `src/api/routes/comments.ts`
 
 ### [P2] Email Provider Implementation [4h] -- NOT STARTED
 
@@ -304,7 +307,7 @@ The following are correctly deferred per spec/README.md:
 4. ~~Session cache invalidation on role changes~~ -- COMPLETED v0.0.69
 5. ~~Share channel permission check~~ -- COMPLETED v0.0.71
 6. ~~File channel permission check~~ -- COMPLETED v0.0.71
-7. Comment completion permission check
+7. ~~Comment deletion permission check~~ -- COMPLETED v0.0.72
 8. Email provider implementation (SendGrid recommended)
 9. CDN provider implementation (Bunny CDN per specs)
 10. Session limits enforcement
@@ -325,6 +328,13 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.72 (2026-02-26) - Comment Permission Check
+
+**Completed:**
+- Implemented proper permission check for comment deletion
+- Non-owners can now delete comments if they are account admin or have full_access permission on the project
+- Location: `src/api/routes/comments.ts`
 
 ### v0.0.71 (2026-02-26) - WebSocket Channel Permission Checks
 
