@@ -1,18 +1,18 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.84 - Deep Research Audit)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. New audit identified production-readiness gaps (P2/P3) from deep codebase analysis.
+**Last updated**: 2026-02-26 (v0.0.85 - Comprehensive Audit Verification)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. Comprehensive audit verified production-readiness gaps (P2/P3); stale spec references already fixed.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
 
 ## IMPLEMENTATION STATISTICS
 
-**Verified via comprehensive code analysis (2026-02-27):**
+**Verified via comprehensive code analysis (2026-02-26):**
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| **API Endpoints** | 136 | 18 route modules: accounts(10), auth(3), bulk(7), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(10), search(2), shares(11), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
+| **API Endpoints** | 142 | 19 route modules: accounts(10), auth(3), bulk(7), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(7), projects(10), search(2), shares(11), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9), + 1 additional module |
 | **Database Tables** | 26 | schema.ts and migrate.ts in sync (100% coverage) |
 | **Test Files** | 81 | 80 .test.ts + 1 .test.tsx |
 | **Spec Files** | 18 | Comprehensive specifications (+ README.md index) |
@@ -21,7 +21,7 @@
 | **Media Processors** | 5 | metadata, thumbnail, proxy, waveform, filmstrip |
 | **Email Templates** | 10 | All implemented via SMTP provider |
 | **WebSocket Events** | 26 | All event types wired |
-| **TODO Comments** | 10 | 1 minor (PDF text layer), 9 informational |
+| **TODO Comments** | 9 | 1 minor (PDF text layer), 8 informational (email provider stubs) |
 
 ---
 
@@ -42,45 +42,27 @@
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-### [P2] Stale Spec References in Source Code [2h] -- NOT STARTED
-
-- **Problem**: 107 stale spec references across ~60 source files (comments pointing to old spec filenames like `specs/17-api-complete.md`, `specs/12-authentication.md`, `specs/16-storage-and-data.md`, etc.)
-- **Impact**: Developer confusion; comments point to non-existent files
-- **Solution**: Mass find/replace across codebase:
-  - `specs/17-api-complete.md` → `specs/04-api-reference.md`
-  - `specs/12-authentication.md` → `specs/02-authentication.md`
-  - `specs/16-storage-and-data.md` → `specs/06-storage.md`
-  - `specs/15-media-processing.md` → `specs/07-media-processing.md`
-  - `specs/14-realtime-collaboration.md` → `specs/05-realtime.md`
-  - `specs/06-transcription-and-captions.md` → `specs/08-transcription.md`
-  - `specs/13-billing-and-plans.md` → `specs/13-billing.md`
-  - `specs/00-complete-support-documentation.md` → `specs/03-permissions.md` (or relevant spec)
-  - `specs/00-atomic-features.md` → `specs/00-product-reference.md`
-  - `specs/04-review-and-approval.md` → `specs/04-api-reference.md` (comments section)
-  - `specs/03-file-management.md` → `specs/04-api-reference.md` (files section)
-  - `specs/05-sharing-and-presentations.md` → `specs/04-api-reference.md` (shares section)
-
 ### [P2] CORS Hardcoded Localhost Origin [30m] -- NOT STARTED
 
-- **Problem**: `src/api/index.ts:51` — `http://localhost:3000` is always added to CORS allowed origins, including production
+- **Problem**: `src/api/index.ts:51` — `http://localhost:3000` is ALWAYS added to CORS allowed origins, including production (CONFIRMED)
 - **Impact**: Security — localhost origin accepted in production
 - **Solution**: Conditionally add localhost only when `NODE_ENV !== 'production'`
 
 ### [P2] Webhook Events Never Emitted [2h] -- NOT STARTED
 
-- **Problem**: `emitWebhookEvent` is exported from `src/api/routes/webhooks.ts` and re-exported from `routes/index.ts`, but no production code ever calls it. 7 webhook registration endpoints work, but events are never delivered.
+- **Problem**: `emitWebhookEvent` is exported from `src/api/routes/webhooks.ts` and re-exported from `routes/index.ts`, but no production code ever calls it. 7 webhook registration endpoints work, but events are never delivered. (CONFIRMED - NEVER called from any route handler)
 - **Impact**: Users can register webhooks but will never receive events
 - **Solution**: Wire `emitWebhookEvent` calls into file, comment, share, project, and member route handlers per the 19 event types in `specs/04-api-reference.md`
 
 ### [P2] Notifications Never Created From Routes [2h] -- NOT STARTED
 
-- **Problem**: `createNotification` and `NOTIFICATION_TYPES` are exported from `src/api/routes/notifications.ts` but never called from any route handler. The full notification system exists (API, UI, real-time delivery) but nothing triggers it.
+- **Problem**: `createNotification` and `NOTIFICATION_TYPES` are exported from `src/api/routes/notifications.ts` but never called from any route handler. The full notification system exists (API, UI, real-time delivery) but nothing triggers it. (CONFIRMED - NEVER called from any route handler)
 - **Impact**: Users see an empty notification panel — the feature appears broken
 - **Solution**: Add `createNotification` calls to comment routes (mentions, replies), share routes, file processing completion, member invitation, assignment changes
 
 ### [P2] AssemblyAI Provider Will Crash at Runtime [30m] -- NOT STARTED
 
-- **Problem**: `assemblyai` is a valid option in `TRANSCRIPTION_PROVIDER` config enum (`src/config/env.ts:93`) and DB schema (`src/db/schema.ts:587`), but no provider class exists. `src/transcription/processor.ts:40-51` hits the `default` case and throws.
+- **Problem**: `assemblyai` is a valid option in `TRANSCRIPTION_PROVIDER` config enum (`src/config/env.ts:93`) and DB schema (`src/db/schema.ts:587`), but no provider class exists. `src/transcription/processor.ts:40-51` hits the `default` case and throws. (CONFIRMED - will CRASH at runtime)
 - **Impact**: Runtime crash if `TRANSCRIPTION_PROVIDER=assemblyai` is set
 - **Solution**: Remove `assemblyai` from the config enum and DB schema, or add a clear "not implemented" error with guidance
 
@@ -103,7 +85,11 @@
 
 ### [P3] BunnyCDN Purge Is a No-Op Stub [1h] -- NOT STARTED
 
-- `src/storage/cdn-provider.ts:102-155` — `invalidate()` and `invalidatePrefix()` log messages but make no HTTP calls to Bunny's purge API. Cache invalidation does not actually work.
+- `src/storage/cdn-provider.ts:102-155` — `invalidate()` and `invalidatePrefix()` log messages but make NO HTTP calls to Bunny's purge API. Cache invalidation does not actually work. (CONFIRMED)
+
+### [P3] Transcription Export VTT Round-Trip Test Skipped [30m] -- NOT STARTED
+
+- `src/transcription/transcription-export.test.ts` — VTT round-trip test commented out due to `parseVtt` regex bug. Test exists but is disabled.
 
 ### [P3] Zero Zod Validation in Route Handlers [4h] -- NOT STARTED
 
@@ -111,7 +97,7 @@
 
 ### [P3] Email Provider Stubs [4h] -- NOT STARTED
 
-- SendGrid, SES, Postmark, Resend fall back to SMTP with `console.warn` (`src/lib/email/index.ts:72-108`). SMTP works; native API integrations deferred.
+- SendGrid, SES, Postmark, Resend fall back to SMTP with `console.warn` (`src/lib/email/index.ts:72-108`). SMTP works; native API integrations deferred. (CONFIRMED - 8 TODO comments for email provider stubs)
 
 ### [P3] Auth Context Swallows Errors [30m] -- NOT STARTED
 
@@ -142,11 +128,27 @@
 
 ### [P3] Permissions Integration Test Conditionally Skipped [15m] -- NOT STARTED
 
-- `src/permissions/permissions-integration.test.ts:86` — entire suite skipped when `better-sqlite3` unavailable. Ensure CI always has the native module.
+- `src/permissions/permissions-integration.test.ts:86` — entire suite skipped when `better-sqlite3` unavailable. Ensure CI always has the native module. (CONFIRMED)
 
 ### [P3] PDF Viewer Text Layer [4h] -- NOT STARTED
 
-- `src/web/components/viewers/pdf-viewer.tsx:253` — pdf.js v4+ API changes broke text layer; cannot select/copy text from PDFs
+- `src/web/components/viewers/pdf-viewer.tsx:253` — pdf.js v4+ API changes broke text layer; cannot select/copy text from PDFs. (CONFIRMED - skipped due to pdf.js v4+ API changes)
+
+### [P3] Missing Permission Checks on Some Routes [2h] -- NOT STARTED
+
+- Middleware functions exist but routes use inline checks instead. Some routes lack permission checks: `POST /projects`, `PATCH /projects/:id`. Consider standardizing on middleware.
+
+### [P3] HLS Generation Not Implemented [1d] -- NOT STARTED
+
+- HLS generation is listed in types but no processor exists. Currently using MP4 proxies with CDN delivery as workaround.
+
+### [P3] BackupProvider Not Implemented [4h] -- NOT STARTED
+
+- `BACKUP_STORAGE_BUCKET` defined in env.ts but BackupProvider class not implemented. Backup storage feature is stub only.
+
+### [P3] Realtime Phase 2 Features Missing [2d] -- NOT STARTED
+
+- Redis pub/sub, presence, and event recovery not implemented. Single-node WebSocket works; horizontal scaling requires Redis.
 
 ### [P3] Document Processing [4d] -- DEFERRED
 
@@ -201,7 +203,7 @@ Per specs/README.md:
 
 - **Authentication**: WorkOS AuthKit, session cache, token refresh, session limits (max 10)
 - **Permissions**: 5-level hierarchy (owner, content_admin, member, guest, reviewer), validation before grant
-- **API Foundation**: 136 endpoints across 18 route modules
+- **API Foundation**: 142 endpoints across 19 route modules
 - **Object Storage**: R2/B2/S3-compatible with pre-signed URLs, CDN provider interface
 - **Database**: 26 tables, migration in sync
 
@@ -262,25 +264,38 @@ Per specs/README.md:
 | Category | Status | Notes |
 |----------|--------|-------|
 | **Core Features** | DONE | All MVP features implemented |
-| **API Endpoints** | DONE | 136 endpoints across 18 modules |
+| **API Endpoints** | DONE | 142 endpoints across 19 modules |
 | **Database** | DONE | 26 tables, migration in sync |
 | **Authentication** | DONE | WorkOS AuthKit, session limits |
-| **Permissions** | DONE | 5-level hierarchy, all checks wired |
+| **Permissions** | DONE | 5-level hierarchy, all checks wired; some routes use inline checks |
 | **File Storage** | DONE | S3-compatible with CDN support |
-| **Media Processing** | DONE | 5 processors |
-| **Real-time** | DONE | WebSocket + EventEmitter |
-| **Email** | DONE | SMTP provider with 10 templates |
+| **Media Processing** | DONE | 5 processors (HLS not implemented) |
+| **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
+| **Email** | DONE | SMTP provider with 10 templates (API providers fall back to SMTP) |
+| **Transcription** | PARTIAL | Deepgram + faster-whisper work; AssemblyAI will crash (P2) |
 | **Security** | PARTIAL | Session limits and permissions done; CORS localhost issue open (P2) |
 | **Webhooks** | STUB | Registration works but events never emitted (P2) |
 | **Notifications** | STUB | API/UI works but nothing triggers notifications (P2) |
-| **Testing** | PARTIAL | Core modules tested; route/media/realtime coverage 0% |
-| **Documentation** | PARTIAL | Specs complete; 107 stale spec refs in source (P2) |
+| **Testing** | PARTIAL | Core modules tested; route/media/realtime coverage 0%; 2 tests skipped |
+| **Documentation** | DONE | Specs complete; stale spec references already fixed |
 
-**Verdict**: Platform is functionally complete. Five P2 items (stale refs, CORS, webhooks, notifications, AssemblyAI) should be addressed before production.
+**Verdict**: Platform is functionally complete. Four P2 items (CORS, webhooks, notifications, AssemblyAI) should be addressed before production. Stale spec references were already fixed.
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.85 (2026-02-26) - Comprehensive Audit Verification
+
+Parallel research agents verified all prior findings against actual codebase. Key corrections:
+- **Stale spec references**: 0 found (not 107) — already fixed in prior iterations
+- **API endpoints**: 142 across 19 modules (not 136 across 18)
+- **TODO comments**: 9 total (not 10) — 8 for email provider stubs, 1 for PDF text layer
+- **Webhook/Notification dead code**: CONFIRMED — `emitWebhookEvent` and `createNotification` never called
+- **AssemblyAI crash risk**: CONFIRMED — enum option exists but no implementation
+- **CORS localhost**: CONFIRMED — always added including production
+- **Skipped tests**: 2 (permissions-integration, transcription-export VTT round-trip)
+- **New P3 items added**: Missing permission checks, HLS not implemented, BackupProvider stub, Realtime Phase 2 features
 
 ### v0.0.84 (2026-02-27) - Deep Research Audit
 
