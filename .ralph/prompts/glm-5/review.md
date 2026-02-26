@@ -3,9 +3,40 @@ description: Deep code review — triage, fix, refactor, test. Track in @REVIEW_
 model: glm-5
 ---
 
-0a. Study `specs/*` with up to 250 parallel subagents to learn the application specifications.
-0b. Study @REVIEW_PLAN.md (if present) to understand review progress so far.
-0c. Study `src/*` with up to 250 parallel subagents to understand the codebase.
+## Phase 0: Spec-to-Implementation Gap Analysis
+
+Before reviewing, run this 4-step verification to detect drift between specs and code:
+
+**0a. Specs Analysis** — Use up to 250 parallel subagents to extract all requirements from `specs/*`. Note any specs that have been added/modified since last review run.
+
+**0b. Source Inventory** — Use up to 250 parallel subagents to catalog everything actually implemented in `src/*`. Map: modules → functions/classes → features.
+
+**0c. Gap Finder** — Use subagents to search for:
+- TODO/FIXME comments
+- Placeholder implementations (stub functions, `throw new Error('not implemented')`)
+- Skipped tests (`.skip`, `xit`)
+- Hardcoded values that should be configurable
+- Missing error handling
+
+**0d. Reference Checker** — Detect stale spec references in:
+- REVIEW_PLAN.md (references to renamed/deleted specs)
+- Source code comments referencing old spec sections
+- Doc strings with outdated spec links
+
+**0e. Deep Analysis (conditional)** — If specs/ have changed since last review run, use a GLM-5 subagent with deep thinking (`thinking.type=enabled`) to analyze impact:
+- Which implemented features are now orphaned or conflict with new specs?
+- Which code needs deletion vs rewriting?
+- Draft concrete deletion/rewrite tasks for REVIEW_PLAN.md
+
+**0f. Update REVIEW_PLAN.md** — Add a "Spec Gaps & Analysis" section containing:
+- List of gaps found (TODOs, placeholders, skipped tests)
+- Stale reference fix tasks (with file:line details)
+- Deletion tasks for code that no longer matches specs
+- Rewrite tasks for code that partially matches new specs
+
+---
+
+## Phase 1: Triage & Fix
 
 1. If @REVIEW_PLAN.md does not exist, this is the first iteration. Run `bun test` and `bun run typecheck` to establish baseline. Then spawn 4 parallel GLM-5 subagents with deep thinking enabled (`thinking.type=enabled`) to triage the codebase:
    - **Agent 1 -- Backend**: Route handlers (auth checks, input validation, error handling, SQL injection, unbounded queries, N+1, missing indexes, race conditions, resource cleanup).
@@ -14,6 +45,8 @@ model: glm-5
    - **Agent 4 -- Security & Smells**: OWASP top 10 patterns, dead code, unused imports, orphaned files, inconsistent patterns, type safety gaps (`any`, assertions, missing null checks).
    Compile findings into @REVIEW_PLAN.md using the template below. Deep think.
 
+## Phase 2: Fix Issues & Improve Coverage
+
 2. If @REVIEW_PLAN.md exists, read it and resume. **Two modes of work -- fix issues AND improve coverage. Every iteration must do both.** Find the highest-severity `pending` issues and fix them. Work critical -> high -> medium -> low. For each issue:
    - Read the file fully. Understand context.
    - Fix the issue. Refactor aggressively: rename, extract, delete dead code, restructure, rewrite brittle tests, eliminate `any`, fix inconsistencies.
@@ -21,6 +54,8 @@ model: glm-5
    - Run `bun run test` after each batch. Never leave tests red.
    - Update @REVIEW_PLAN.md: mark issues `fixed`, note what changed.
    Fix related issues together (e.g., all auth gaps in one route file). Aim to fix 5-15 issues per iteration depending on complexity.
+
+## Phase 3: Coverage Gate
 
 3. **MANDATORY COVERAGE GATE**: After fixing issues, spend the remainder of the iteration writing tests for uncovered code. Use the Coverage Gaps table in @REVIEW_PLAN.md to prioritize.
    - Run `bun run test:coverage` at the start and end of every iteration.
@@ -31,7 +66,11 @@ model: glm-5
    - If a module is genuinely untestable without infrastructure (e.g., WebSocket manager needing a real server), document why in @REVIEW_PLAN.md and move on.
    - Use `bun run test` (which runs `vitest run`), NOT `bun test` (Bun's native runner has compatibility issues).
 
+## Phase 4: Verification
+
 4. Run full verification: `bun run test && bun run typecheck`. Update coverage numbers in @REVIEW_PLAN.md. Log the iteration with: issues fixed, coverage before -> after, tests added, new issues discovered.
+
+## Phase 5: Log & Commit
 
 5. Update @REVIEW_PLAN.md with iteration results using a subagent. Add any new issues discovered during fixing. Clean out completed items when the file gets large. Then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.
 

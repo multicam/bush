@@ -62,7 +62,7 @@ while true; do
     # --verbose: Detailed execution logging
     LOG_FILE="/tmp/ralph/${MODE}-$(date +%Y%m%d-%H%M%S)-iter${ITERATION}.jsonl"
     mkdir -p /tmp/ralph
-    cat "$PROMPT_FILE" | claude -p \
+    cat "$SCRIPT_DIR/shared/tool-preferences.md" "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
         --model sonnet \
