@@ -28,6 +28,7 @@ import {
   canPerformAction,
   GUEST_CONSTRAINTS,
 } from "./types.js";
+import { ValidationError } from "../errors/index.js";
 import { generateId } from "../shared/id.js";
 
 /**
@@ -387,12 +388,24 @@ export const permissionService = {
 
   /**
    * Grant permission to a user for a project
+   * Validates that the permission doesn't violate inheritance rules
    */
   async grantProjectPermission(
     projectId: string,
     userId: string,
     permission: PermissionLevel
   ): Promise<void> {
+    // Validate that this doesn't lower inherited permissions
+    const validation = await this.validatePermissionChange(
+      userId,
+      "project",
+      projectId,
+      permission
+    );
+    if (!validation.valid) {
+      throw new ValidationError(validation.reason || "Invalid permission change");
+    }
+
     const id = generateId("pp");
     const now = new Date();
 
@@ -417,12 +430,24 @@ export const permissionService = {
 
   /**
    * Grant permission to a user for a folder
+   * Validates that the permission doesn't violate inheritance rules
    */
   async grantFolderPermission(
     folderId: string,
     userId: string,
     permission: PermissionLevel
   ): Promise<void> {
+    // Validate that this doesn't lower inherited permissions
+    const validation = await this.validatePermissionChange(
+      userId,
+      "folder",
+      folderId,
+      permission
+    );
+    if (!validation.valid) {
+      throw new ValidationError(validation.reason || "Invalid permission change");
+    }
+
     const id = generateId("fp");
     const now = new Date();
 

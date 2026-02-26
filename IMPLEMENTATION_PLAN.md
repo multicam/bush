@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.69 - Session Cache & Transcription Permissions Completed)
+**Last updated**: 2026-02-26 (v0.0.70 - Permission Validation Before Grant Completed)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -104,12 +104,11 @@ These are nice-to-fix but not blocking:
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-### [P2] Permission Validation Before Grant [2h] -- NOT STARTED
+### ~~[P2] Permission Validation Before Grant [2h]~~ -- COMPLETED (v0.0.70)
 
-- **Problem**: `validatePermissionChange()` exists but is never called
-- **Impact**: Could grant permissions that violate inheritance rules
-- **Location**: `src/permissions/service.ts`
-- **Solution**: Call validation before `grantProjectPermission()`, `grantFolderPermission()`
+- `validatePermissionChange()` is now called from `grantProjectPermission()` and `grantFolderPermission()`
+- Prevents granting permissions that would lower inherited permissions
+- Location: `src/permissions/service.ts`
 
 ### ~~[P2] Transcription Permission Checks [2h]~~ -- COMPLETED (v0.0.69)
 
@@ -302,7 +301,7 @@ The following are correctly deferred per spec/README.md:
 
 ### Should Fix (P2) - Before Production Launch
 
-2. Permission validation before grant
+2. ~~Permission validation before grant~~ -- COMPLETED v0.0.70
 3. ~~Transcription permission checks~~ -- COMPLETED v0.0.69
 4. ~~Session cache invalidation on role changes~~ -- COMPLETED v0.0.69
 5. Share channel permission check
@@ -328,6 +327,13 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.70 (2026-02-26) - Permission Validation Before Grant
+
+**Completed:**
+- Added permission validation before granting project and folder permissions
+- `validatePermissionChange()` is now called to prevent lowering inherited permissions
+- Location: `src/permissions/service.ts`
 
 ### v0.0.69 (2026-02-26) - Session Cache & Transcription Permissions Completed
 
@@ -372,7 +378,6 @@ The following are correctly deferred per spec/README.md:
 
 **Confirmed Existing Findings:**
 - `invalidateOnRoleChange()` function EXISTS in session-cache.ts - just needs calling from accounts.ts
-- `validatePermissionChange()` function EXISTS in permissions/service.ts - not called from grant methods
 - Both file AND share channel WebSocket permission checks are permissive stubs returning `true`
 
 **Updates:**
