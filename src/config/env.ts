@@ -108,6 +108,7 @@ const envSchema = z.object({
   // Session
   SESSION_SECRET: z.string().min(32),
   SESSION_MAX_AGE: z.coerce.number().int().positive().default(604800),
+  MAX_CONCURRENT_SESSIONS: z.coerce.number().int().positive().default(10),
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
@@ -174,6 +175,7 @@ function loadConfig(): Env {
       STORAGE_BUCKET: "placeholder",
       SESSION_SECRET: "placeholder-for-build-at-least-32-characters",
       SESSION_MAX_AGE: 604800,
+      MAX_CONCURRENT_SESSIONS: 10,
       RATE_LIMIT_WINDOW_MS: 60000,
       RATE_LIMIT_MAX_REQUESTS: 100,
       TRUST_PROXY: false,

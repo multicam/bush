@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.73 - SMTP Email Provider Implemented)
+**Last updated**: 2026-02-26 (v0.0.74 - Session Limits Enforcement)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
@@ -154,12 +154,13 @@ These are nice-to-fix but not blocking:
 - **Recommendation**: Implement Bunny CDN adapter per specs/README.md
 - **Location**: `src/storage/`
 
-### [P2] Session Limits Enforcement [4h] -- NOT STARTED
+### ~~[P2] Session Limits Enforcement [4h]~~ -- COMPLETED (v0.0.74)
 
-- **Problem**: Max 10 concurrent sessions per user not enforced
-- **Location**: `src/redis/session-cache.ts` - infrastructure exists
-- **Solution**: Add session count check, evict oldest on exceed
-- **Spec refs**: `specs/12-authentication.md`
+- Max 10 concurrent sessions per user now enforced
+- Oldest sessions evicted when limit exceeded
+- Configuration via `MAX_CONCURRENT_SESSIONS` environment variable (default: 10)
+- Location: `src/auth/session-cache.ts`
+- Spec refs: `specs/12-authentication.md`
 
 ### [P2] Grant Permission API Exposure [4h] -- NOT STARTED
 
@@ -311,8 +312,8 @@ The following are correctly deferred per spec/README.md:
 6. ~~File channel permission check~~ -- COMPLETED v0.0.71
 7. ~~Comment deletion permission check~~ -- COMPLETED v0.0.72
 8. ~~Email provider implementation (SMTP with nodemailer)~~ -- COMPLETED v0.0.73
-9. CDN provider implementation (Bunny CDN per specs)
-10. Session limits enforcement
+9. ~~Session limits enforcement~~ -- COMPLETED v0.0.74
+10. CDN provider implementation (Bunny CDN per specs)
 11. Grant permission API exposure (verify design or add endpoints)
 
 ### Can Defer (P3)
@@ -330,6 +331,18 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.74 (2026-02-26) - Session Limits Enforcement
+
+**Completed:**
+- Implemented max concurrent sessions enforcement (default: 10 sessions per user)
+- Oldest sessions automatically evicted when limit exceeded
+- Added `MAX_CONCURRENT_SESSIONS` environment variable for configuration
+- Added `enforceSessionLimit()` and `getSessionCount()` methods to session cache
+- Session limits enforced during `sessionCache.set()` operation
+- Added comprehensive tests for session limit enforcement
+- Location: `src/auth/session-cache.ts`, `src/config/env.ts`
+- Spec refs: `specs/12-authentication.md` (Session Limits section)
 
 ### v0.0.73 (2026-02-26) - SMTP Email Provider Implementation
 
