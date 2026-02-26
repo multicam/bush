@@ -97,6 +97,17 @@ app.post("/", async (c) => {
     throw new NotFoundError("workspace", body.workspace_id);
   }
 
+  // Check if user has permission to create projects in the workspace
+  const canCreateProject = await permissionService.canPerformAction(
+    session.userId,
+    "workspace",
+    body.workspace_id,
+    "create_project"
+  );
+  if (!canCreateProject) {
+    throw new AuthorizationError("You do not have permission to create projects in this workspace");
+  }
+
   // Create project
   const projectId = generateId("prj");
   const now = new Date();
@@ -169,6 +180,17 @@ app.patch("/:id", async (c) => {
     throw new NotFoundError("project", projectId);
   }
 
+  // Check if user has permission to edit the project
+  const canEdit = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    projectId,
+    "edit"
+  );
+  if (!canEdit) {
+    throw new AuthorizationError("You do not have permission to edit this project");
+  }
+
   // Build updates
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (body.name !== undefined) {
@@ -220,6 +242,17 @@ app.delete("/:id", async (c) => {
     throw new NotFoundError("project", projectId);
   }
 
+  // Check if user has permission to delete the project
+  const canDelete = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    projectId,
+    "delete"
+  );
+  if (!canDelete) {
+    throw new AuthorizationError("You do not have permission to delete this project");
+  }
+
   // Archive project (soft delete)
   await db
     .update(projects)
@@ -258,6 +291,28 @@ app.post("/:id/duplicate", async (c) => {
   }
 
   const sourceProject = access.project;
+
+  // Check if user has permission to view the source project
+  const canView = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    sourceProjectId,
+    "view"
+  );
+  if (!canView) {
+    throw new AuthorizationError("You do not have permission to view this project");
+  }
+
+  // Check if user has permission to create projects in the workspace
+  const canCreateProject = await permissionService.canPerformAction(
+    session.userId,
+    "workspace",
+    sourceProject.workspaceId,
+    "create_project"
+  );
+  if (!canCreateProject) {
+    throw new AuthorizationError("You do not have permission to create projects in this workspace");
+  }
 
   // Check storage quota before duplicating
   const [account] = await db

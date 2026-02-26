@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.92 - VTT Parser Fix & Media Worker Metadata)
+**Last updated**: 2026-02-26 (v0.0.93 - Permission Check Enforcement)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -169,9 +169,14 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - `src/web/components/viewers/pdf-viewer.tsx:253` — pdf.js v4+ API changes broke text layer; cannot select/copy text from PDFs. (CONFIRMED - skipped due to pdf.js v4+ API changes)
 
-### [P3] Missing Permission Checks on Some Routes [2h] -- NOT STARTED
+### [P3] Missing Permission Checks on Some Routes [2h] -- RESOLVED (v0.0.93)
 
-- Middleware functions exist but routes use inline checks instead. Some routes lack permission checks: `POST /projects`, `PATCH /projects/:id`. Consider standardizing on middleware.
+- Added permission checks to `POST /projects` - now requires `create_project` permission on workspace
+- Added permission checks to `PATCH /projects/:id` - now requires `edit` permission on project
+- Added permission checks to `DELETE /projects/:id` - now requires `delete` (full_access) permission on project
+- Added permission checks to `POST /projects/:id/duplicate` - now requires `view` on source project and `create_project` on workspace
+- Added permission checks to all folder routes (create, update, delete, move) - requires appropriate permissions on project
+- Routes now use `permissionService.canPerformAction()` for consistent permission enforcement per spec
 
 ### [P3] HLS Generation Not Implemented [1d] -- NOT STARTED
 
@@ -318,6 +323,25 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.93 (2026-02-26) - Permission Check Enforcement
+
+Added proper permission checks to project and folder routes that were missing authorization enforcement. Previously, any authenticated user with account access could modify or delete projects and folders without checking their actual permission level on those resources.
+
+**Projects routes (`src/api/routes/projects.ts`):**
+- `POST /projects` - now requires `create_project` permission on the workspace
+- `PATCH /projects/:id` - now requires `edit` permission on the project
+- `DELETE /projects/:id` - now requires `delete` (full_access) permission on the project
+- `POST /projects/:id/duplicate` - now requires `view` on source project and `create_project` on workspace
+
+**Folders routes (`src/api/routes/folders.ts`):**
+- `POST /projects/:projectId/folders` - now requires `edit` permission on the project
+- `POST /folders/:id/folders` - now requires `edit` permission on the project
+- `PATCH /folders/:id` - now requires `edit` permission on the project
+- `DELETE /folders/:id` - now requires `delete` (full_access) permission on the project
+- `POST /folders/:id/move` - now requires `edit` permission on the project
+
+All routes now use `permissionService.canPerformAction()` for consistent permission enforcement per `specs/03-permissions.md`.
 
 ### v0.0.92 (2026-02-26) - VTT Parser Fix & Media Worker Metadata
 

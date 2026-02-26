@@ -11,8 +11,9 @@ import { eq, and, desc, isNull } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyFolderAccess } from "../access-control.js";
+import { permissionService } from "../../permissions/service.js";
 
 const app = new Hono();
 
@@ -158,6 +159,17 @@ app.post("/", async (c) => {
     throw new NotFoundError("project", projectId);
   }
 
+  // Check if user has permission to edit the project (creating folders requires edit)
+  const canEdit = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    projectId,
+    "edit"
+  );
+  if (!canEdit) {
+    throw new AuthorizationError("You do not have permission to create folders in this project");
+  }
+
   // Validate input
   if (!body.name || typeof body.name !== "string") {
     throw new ValidationError("Folder name is required", { pointer: "/data/attributes/name" });
@@ -219,6 +231,17 @@ app.post("/:id/folders", async (c) => {
   const access = await verifyFolderAccess(parentFolderId, session.currentAccountId);
   if (!access) {
     throw new NotFoundError("folder", parentFolderId);
+  }
+
+  // Check if user has permission to edit the project (creating folders requires edit)
+  const canEdit = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    access.folder.projectId,
+    "edit"
+  );
+  if (!canEdit) {
+    throw new AuthorizationError("You do not have permission to create folders in this project");
   }
 
   // Validate input
@@ -284,6 +307,17 @@ app.patch("/:id", async (c) => {
     throw new NotFoundError("folder", folderId);
   }
 
+  // Check if user has permission to edit the project
+  const canEdit = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    access.folder.projectId,
+    "edit"
+  );
+  if (!canEdit) {
+    throw new AuthorizationError("You do not have permission to update folders in this project");
+  }
+
   // Build updates
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -344,6 +378,17 @@ app.delete("/:id", async (c) => {
     throw new NotFoundError("folder", folderId);
   }
 
+  // Check if user has permission to delete (requires full_access)
+  const canDelete = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    access.folder.projectId,
+    "delete"
+  );
+  if (!canDelete) {
+    throw new AuthorizationError("You do not have permission to delete folders in this project");
+  }
+
   // Don't allow deleting root folder (path = "/")
   if (access.folder.path === "/") {
     throw new ValidationError("Cannot delete the project root folder");
@@ -367,6 +412,17 @@ app.post("/:id/move", async (c) => {
   const access = await verifyFolderAccess(folderId, session.currentAccountId);
   if (!access) {
     throw new NotFoundError("folder", folderId);
+  }
+
+  // Check if user has permission to edit the project (moving folders requires edit)
+  const canEdit = await permissionService.canPerformAction(
+    session.userId,
+    "project",
+    access.folder.projectId,
+    "edit"
+  );
+  if (!canEdit) {
+    throw new AuthorizationError("You do not have permission to move folders in this project");
   }
 
   // Don't allow moving root folder
