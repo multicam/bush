@@ -60,7 +60,7 @@ const DEFAULT_MAX_FILE_SIZE = 5 * Math.pow(1024, 4); // 5TB
  * Generate unique ID for dropped file
  */
 function generateFileId(): string {
-  return `file_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `file_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
 }
 
 /**

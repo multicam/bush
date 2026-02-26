@@ -117,7 +117,7 @@ async function checkRateLimit(
   pipeline.zcard(key);
 
   // Add current request timestamp
-  pipeline.zadd(key, now, `${now}-${Math.random().toString(36).slice(2)}`);
+  pipeline.zadd(key, now, `${now}-${crypto.randomUUID().slice(0, 8)}`);
 
   // Set expiry on the key
   pipeline.expire(key, Math.ceil(windowMs / 1000));

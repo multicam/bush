@@ -105,7 +105,7 @@ export class ConsoleEmailProvider implements EmailProvider {
 
     return {
       success: true,
-      messageId: `console-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      messageId: `console-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
     };
   }
 
@@ -161,7 +161,7 @@ export class ConsoleEmailProvider implements EmailProvider {
 
     return {
       success: true,
-      messageId: `console-template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      messageId: `console-template-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
     };
   }
 }

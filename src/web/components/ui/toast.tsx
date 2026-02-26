@@ -61,7 +61,7 @@ export function ToastProvider({
 
   const addToast = useCallback(
     (toast: Omit<Toast, "id">) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const id = `toast-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
       const newToast: Toast = {
         ...toast,
         id,
