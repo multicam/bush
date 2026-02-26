@@ -121,7 +121,6 @@ const envSchema = z.object({
   UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
 
   // Backup
-  BACKUP_STORAGE_BUCKET: z.string().default("bush-backups"),
   LITESTREAM_ENABLED: z.coerce.boolean().default(false),
 
   // Next.js Public Variables (also available server-side)
@@ -202,7 +201,6 @@ function loadConfig(): Env {
       UPLOAD_MAX_FILE_SIZE: 5368709120,
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,
-      BACKUP_STORAGE_BUCKET: "placeholder",
       LITESTREAM_ENABLED: false,
       NEXT_PUBLIC_APP_NAME: "Bush",
       // Media Processing

@@ -134,11 +134,11 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - `src/media/index.ts:100-125` — filmstrip, proxy, waveform jobs enqueued with `durationSeconds: 0`, `sourceWidth: 0`, `sourceHeight: 0`. Processors handle gracefully (skip if 0) but initial job records have wrong data. Note: 6 processors exist (metadata, thumbnail, proxy, waveform, filmstrip, frame-capture).
 
-### [P3] Dead Exports and Config [15m] -- NOT STARTED
+### [P3] Dead Exports and Config [15m] -- RESOLVED (v0.0.90)
 
-- `cdn` export from `src/storage/index.ts:359` never imported
-- `BACKUP_STORAGE_BUCKET` defined in env.ts but never referenced
-- `createNotifications` (plural) exported but not re-exported
+- Removed unused `cdn` export from `src/storage/index.ts`
+- Removed unused `BACKUP_STORAGE_BUCKET` from `src/config/env.ts`
+- `createNotifications` (plural) is used in tests - not dead code
 
 ### [P3] Missing /docs Endpoint [2h] -- NOT STARTED
 
@@ -307,11 +307,13 @@ Per specs/README.md:
 
 ## CHANGE LOG
 
-### v0.0.90 (2026-02-26) - Auth Error Logging & Production SMTP Safety
+### v0.0.90 (2026-02-26) - Auth Error Logging, Production SMTP Safety & Dead Code Cleanup
 
 Fixed auth context error swallowing by adding `console.error` logging in both `refresh()` and `useEffect` initialization catch blocks. Auth failures are now visible in browser console for debugging.
 
 Added production SMTP safety check via Zod refinement in env config. In production mode with SMTP email provider, the app now requires explicit SMTP_HOST, SMTP_PORT, and SMTP_FROM configuration. Using development defaults (localhost:1025, noreply@bush.local) will cause the app to fail at startup with a clear error message.
+
+Removed dead exports and config: unused `cdn` export from `src/storage/index.ts`, unused `BACKUP_STORAGE_BUCKET` env variable, and unused CDN-related type imports. Also fixed pre-existing TypeScript error by removing unused `CDNContentType` import.
 
 ### v0.0.89 (2026-02-26) - CORS Security Fix
 

@@ -22,10 +22,6 @@ import { buildStorageKey, parseStorageKey } from "./types.js";
 import type {
   ICDNProvider,
   CDNProviderType,
-  CDNDeliveryOptions,
-  CDNDeliveryResult,
-  CDNInvalidationResult,
-  CDNContentType,
 } from "./cdn-types.js";
 
 // Singleton storage provider instance
@@ -350,54 +346,6 @@ export const storage = {
     contentType?: string
   ): Promise<void> {
     return getStorageProvider().putObject(key, body, contentType);
-  },
-};
-
-/**
- * High-level CDN operations
- */
-export const cdn = {
-  /**
-   * Check CDN health
-   */
-  async healthCheck(): Promise<boolean> {
-    return getCDNProvider().healthCheck();
-  },
-
-  /**
-   * Get CDN delivery URL for a storage key
-   */
-  async getDeliveryUrl(
-    storageKey: string,
-    options: CDNDeliveryOptions
-  ): Promise<CDNDeliveryResult> {
-    return getCDNProvider().getDeliveryUrl(storageKey, options);
-  },
-
-  /**
-   * Invalidate a single file from CDN cache
-   */
-  async invalidate(storageKey: string): Promise<CDNInvalidationResult> {
-    return getCDNProvider().invalidate(storageKey);
-  },
-
-  /**
-   * Invalidate all files matching a prefix from CDN cache
-   */
-  async invalidatePrefix(prefix: string): Promise<CDNInvalidationResult> {
-    return getCDNProvider().invalidatePrefix(prefix);
-  },
-
-  /**
-   * Invalidate all derivatives for an asset
-   */
-  async invalidateAsset(
-    accountId: string,
-    projectId: string,
-    assetId: string
-  ): Promise<CDNInvalidationResult> {
-    const prefix = `${accountId}/${projectId}/${assetId}`;
-    return getCDNProvider().invalidatePrefix(prefix);
   },
 };
 
