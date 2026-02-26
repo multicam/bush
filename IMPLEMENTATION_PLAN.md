@@ -1,86 +1,15 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-18 (v0.0.55 - Deep Analysis with 250+ Parallel Subagents)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release BUT has critical database migration drift that will break fresh deployments.
+**Last updated**: 2026-02-26 (v0.0.56 - Database Migration Drift Fixed)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
 **Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
 
-## CRITICAL BLOCKER: Database Migration Drift (P1)
+## ~~CRITICAL BLOCKER: Database Migration Drift (P1)~~ -- RESOLVED
 
-### The Problem
-
-The `schema.ts` file defines **25 tables** but `migrate.ts` only creates **11 tables**. This means:
-
-- **Fresh database deployments will FAIL** - features requiring missing tables will not work
-- **Existing databases work** because they were created with incremental migrations not captured in `migrate.ts`
-
-### Missing Tables from migrate.ts (14 tables)
-
-| Table | Schema Location | Impact |
-|-------|-----------------|--------|
-| `custom_fields` | schema.ts:211 | Custom field definitions - feature broken |
-| `custom_field_visibility` | schema.ts:240 | Per-project field visibility - feature broken |
-| `workspace_permissions` | schema.ts:389 | Workspace-level permissions - feature broken |
-| `project_permissions` | schema.ts:407 | Project-level permissions - feature broken |
-| `folder_permissions` | schema.ts:425 | Folder-level permissions - feature broken |
-| `collections` | schema.ts:457 | Collections - feature broken |
-| `collection_assets` | schema.ts:481 | Collection asset links - feature broken |
-| `webhooks` | schema.ts:521 | Webhook configurations - feature broken |
-| `webhook_deliveries` | schema.ts:557 | Delivery tracking - feature broken |
-| `transcripts` | schema.ts:593 | Transcription data - feature broken |
-| `transcript_words` | schema.ts:620 | Word-level timestamps - feature broken |
-| `captions` | schema.ts:640 | Caption tracks - feature broken |
-| `share_assets` | schema.ts:334 | Assets in shares - feature broken |
-| `share_activity` | schema.ts:349 | Share view/download tracking - feature broken |
-
-### Missing Columns in files table (8 columns)
-
-| Column | Schema Line | Purpose |
-|--------|-------------|---------|
-| `technical_metadata` | schema.ts:168 | Technical metadata JSON (duration, codec, etc.) |
-| `rating` | schema.ts:170 | 1-5 star rating |
-| `asset_status` | schema.ts:171 | Custom status value |
-| `keywords` | schema.ts:172 | Tags/keywords JSON array |
-| `notes` | schema.ts:173 | User notes |
-| `assignee_id` | schema.ts:174 | Assigned user ID |
-| `custom_metadata` | schema.ts:176 | Custom field values JSON |
-| `custom_thumbnail_key` | schema.ts:178 | User-defined thumbnail storage key |
-
-### Missing Columns in shares table (3 columns)
-
-| Column | Schema Line | Purpose |
-|--------|-------------|---------|
-| `show_all_versions` | schema.ts:319 | Show all versions in share |
-| `show_transcription` | schema.ts:320 | Show transcription in share |
-| `featured_field` | schema.ts:321 | Featured metadata field |
-
-### Missing Indexes
-
-The `migrate.ts` is also missing ~40+ indexes defined in `schema.ts`:
-
-**Files table indexes:**
-- `files_folder_id_idx`, `files_version_stack_id_idx`, `files_mime_type_idx`, `files_expires_at_idx`, `files_assignee_id_idx`
-
-**Folders table indexes:**
-- `folders_parent_id_idx`, `folders_path_idx`, `folders_project_parent_idx` (critical for tree queries)
-
-**Projects table indexes:**
-- `projects_archived_at_idx`
-
-**Shares table indexes:**
-- `shares_slug_idx`, `shares_account_id_idx`, `shares_project_id_idx`
-
-**Other tables (all indexes missing):**
-- `custom_fields`, `custom_field_visibility`, `workspace_permissions`, `project_permissions`, `folder_permissions`, `collections`, `collection_assets`, `webhooks`, `webhook_deliveries`, `transcripts`, `transcript_words`, `captions`, `share_assets`, `share_activity`
-
-### Solution Required
-
-Update `/home/tgds/projects/bush/src/db/migrate.ts` to include all tables, columns, and indexes from schema.ts.
-
-**Estimated effort**: 4 hours
-**Priority**: P1 - Must be fixed before any fresh deployment
+This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 tables, all columns, and all indexes defined in `schema.ts`. Fresh database deployments will work correctly.
 
 ---
 
@@ -92,7 +21,7 @@ Update `/home/tgds/projects/bush/src/db/migrate.ts` to include all tables, colum
 - All 303 tests pass (25 test files)
 - API endpoints: 123 total across 18 route modules (excluding index.ts and test files)
 - Database schema: 25 tables defined in schema.ts
-- Database migration: Only 11 tables in migrate.ts (CRITICAL GAP)
+- Database migration: 25 tables in migrate.ts (100% coverage - migration drift resolved)
 - Media processing: 5 processors (metadata, thumbnail, proxy, waveform, filmstrip)
 - Frontend viewers: 4 implemented (video, audio, image, pdf)
 - Frontend components: 49 TSX components
@@ -102,7 +31,7 @@ Update `/home/tgds/projects/bush/src/db/migrate.ts` to include all tables, colum
 |--------|--------|-------|
 | **API Endpoints** | 123 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) |
 | **Database Schema (schema.ts)** | 25 tables (100%) | All tables defined with proper indexes |
-| **Database Migration (migrate.ts)** | 11/25 tables (44%) | **CRITICAL GAP** - 14 tables missing |
+| **Database Migration (migrate.ts)** | 25 tables (100%) | All tables, columns, and indexes now included |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
 | **Spec Files** | 21 | Comprehensive specifications exist |
 | **TODO Comments** | 12 | See detailed breakdown below |
@@ -174,18 +103,7 @@ These are nice-to-fix but not blocking:
 
 ## P1 - CRITICAL (Must Fix Before Fresh Deployment)
 
-### [P1] Database Migration Drift [4h] -- NOT STARTED
-
-**The single most critical issue.**
-
-- **Problem**: 14 tables defined in `schema.ts` are missing from `migrate.ts`
-- **Missing tables**: custom_fields, custom_field_visibility, workspace_permissions, project_permissions, folder_permissions, collections, collection_assets, webhooks, webhook_deliveries, transcripts, transcript_words, captions, share_assets, share_activity
-- **Missing columns in files table**: technicalMetadata, rating, assetStatus, keywords, notes, assigneeId, customMetadata, customThumbnailKey
-- **Missing columns in shares table**: show_all_versions, show_transcription, featured_field
-- **Missing indexes**: ~40+ indexes across all missing tables, plus files (5), folders (3), projects (1), shares (3)
-- **Impact**: Fresh database deployments will fail; features will not work
-- **Solution**: Update `src/db/migrate.ts` to include all schema tables/columns/indexes
-- **File**: `/home/tgds/projects/bush/src/db/migrate.ts`
+**All P1 items have been resolved.**
 
 ---
 
@@ -388,7 +306,7 @@ The following are correctly deferred per spec/README.md:
 
 ### Must Fix (P1) - Before Any Fresh Deployment
 
-1. **Database Migration Drift** - Update `migrate.ts` to include all 25 tables
+1. ~~**Database Migration Drift**~~ -- COMPLETED in v0.0.56
 
 ### Should Fix (P2) - Before Production Launch
 
@@ -418,6 +336,19 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.56 (2026-02-26) - Database Migration Drift Fixed
+
+**Fixed:**
+- Updated `migrate.ts` to include all 25 tables from `schema.ts` (was 11 tables, 44% coverage)
+- Added 14 missing tables: custom_fields, custom_field_visibility, share_assets, share_activity, workspace_permissions, project_permissions, folder_permissions, collections, collection_assets, webhooks, webhook_deliveries, transcripts, transcript_words, captions
+- Added 8 missing columns to files table: technical_metadata, rating, asset_status, keywords, notes, assignee_id, custom_metadata, custom_thumbnail_key
+- Added 3 missing columns to shares table: show_all_versions, show_transcription, featured_field
+- Added all missing indexes (61 total indexes now included)
+
+**Impact:**
+- Fresh database deployments now work correctly
+- All features requiring database tables are functional on new installations
 
 ### v0.0.55 (2026-02-18) - Deep Analysis with 250+ Parallel Subagents
 

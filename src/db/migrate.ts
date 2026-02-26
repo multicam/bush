@@ -28,6 +28,10 @@ if (config.DATABASE_WAL_MODE && config.DATABASE_URL !== ":memory:") {
 
 // Create tables directly for initial setup
 sqlite.exec(`
+  -- ============================================
+  -- CORE TABLES
+  -- ============================================
+
   CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -108,12 +112,21 @@ sqlite.exec(`
     file_size_bytes INTEGER NOT NULL,
     checksum TEXT,
     status TEXT NOT NULL DEFAULT 'uploading',
+    technical_metadata TEXT,
+    rating INTEGER,
+    asset_status TEXT,
+    keywords TEXT DEFAULT '[]',
+    notes TEXT,
+    assignee_id TEXT,
+    custom_metadata TEXT,
+    custom_thumbnail_key TEXT,
     deleted_at INTEGER,
     expires_at INTEGER,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
+    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
+    FOREIGN KEY (assignee_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
   CREATE TABLE IF NOT EXISTS version_stacks (
@@ -147,6 +160,43 @@ sqlite.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
+  -- ============================================
+  -- CUSTOM FIELDS
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS custom_fields (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    type TEXT NOT NULL,
+    description TEXT,
+    options TEXT,
+    is_visible_by_default INTEGER NOT NULL DEFAULT 1,
+    editable_by TEXT NOT NULL DEFAULT 'full_access',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    UNIQUE(account_id, slug)
+  );
+
+  CREATE TABLE IF NOT EXISTS custom_field_visibility (
+    id TEXT PRIMARY KEY,
+    custom_field_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    is_visible INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (custom_field_id) REFERENCES custom_fields(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    UNIQUE(custom_field_id, project_id)
+  );
+
+  -- ============================================
+  -- SHARING
+  -- ============================================
+
   CREATE TABLE IF NOT EXISTS shares (
     id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,
@@ -159,6 +209,9 @@ sqlite.exec(`
     layout TEXT NOT NULL DEFAULT 'grid',
     allow_comments INTEGER NOT NULL DEFAULT 1,
     allow_downloads INTEGER NOT NULL DEFAULT 0,
+    show_all_versions INTEGER NOT NULL DEFAULT 0,
+    show_transcription INTEGER NOT NULL DEFAULT 0,
+    featured_field TEXT,
     branding TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
@@ -166,6 +219,34 @@ sqlite.exec(`
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS share_assets (
+    id TEXT PRIMARY KEY,
+    share_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (share_id) REFERENCES shares(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+    UNIQUE(share_id, file_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS share_activity (
+    id TEXT PRIMARY KEY,
+    share_id TEXT NOT NULL,
+    file_id TEXT,
+    type TEXT NOT NULL,
+    viewer_email TEXT,
+    viewer_ip TEXT,
+    user_agent TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (share_id) REFERENCES shares(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+  );
+
+  -- ============================================
+  -- NOTIFICATIONS
+  -- ============================================
 
   CREATE TABLE IF NOT EXISTS notifications (
     id TEXT PRIMARY KEY,
@@ -179,13 +260,257 @@ sqlite.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
+  -- ============================================
+  -- PERMISSIONS
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS workspace_permissions (
+    id TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    permission TEXT NOT NULL DEFAULT 'view_only',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(workspace_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS project_permissions (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    permission TEXT NOT NULL DEFAULT 'view_only',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(project_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS folder_permissions (
+    id TEXT PRIMARY KEY,
+    folder_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    permission TEXT NOT NULL DEFAULT 'view_only',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(folder_id, user_id)
+  );
+
+  -- ============================================
+  -- COLLECTIONS
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS collections (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    created_by_user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    type TEXT NOT NULL DEFAULT 'team',
+    filter_rules TEXT,
+    is_dynamic INTEGER NOT NULL DEFAULT 0,
+    default_view TEXT NOT NULL DEFAULT 'grid',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS collection_assets (
+    id TEXT PRIMARY KEY,
+    collection_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    added_by_user_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+    FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(collection_id, file_id)
+  );
+
+  -- ============================================
+  -- WEBHOOKS
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS webhooks (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    created_by_user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    secret TEXT NOT NULL,
+    events TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_triggered_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id TEXT PRIMARY KEY,
+    webhook_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    status_code INTEGER,
+    response TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at INTEGER,
+    delivered_at INTEGER,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
+  );
+
+  -- ============================================
+  -- TRANSCRIPTION
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS transcripts (
+    id TEXT PRIMARY KEY,
+    file_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    provider_transcript_id TEXT,
+    full_text TEXT,
+    language TEXT,
+    language_confidence INTEGER,
+    speaker_count INTEGER,
+    speaker_names TEXT DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'pending',
+    error_message TEXT,
+    duration_seconds INTEGER,
+    is_edited INTEGER NOT NULL DEFAULT 0,
+    edited_at INTEGER,
+    edited_by_user_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+    FOREIGN KEY (edited_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS transcript_words (
+    id TEXT PRIMARY KEY,
+    transcript_id TEXT NOT NULL,
+    word TEXT NOT NULL,
+    start_ms INTEGER NOT NULL,
+    end_ms INTEGER NOT NULL,
+    speaker INTEGER,
+    confidence INTEGER,
+    position INTEGER NOT NULL,
+    original_word TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (transcript_id) REFERENCES transcripts(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS captions (
+    id TEXT PRIMARY KEY,
+    file_id TEXT NOT NULL,
+    language TEXT NOT NULL,
+    format TEXT NOT NULL,
+    storage_key TEXT NOT NULL,
+    label TEXT,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_by_user_id TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  -- ============================================
+  -- INDEXES
+  -- ============================================
+
+  -- Core indexes
   CREATE INDEX IF NOT EXISTS workspaces_account_id_idx ON workspaces(account_id);
   CREATE INDEX IF NOT EXISTS projects_workspace_id_idx ON projects(workspace_id);
+  CREATE INDEX IF NOT EXISTS projects_archived_at_idx ON projects(archived_at);
   CREATE INDEX IF NOT EXISTS folders_project_id_idx ON folders(project_id);
+  CREATE INDEX IF NOT EXISTS folders_parent_id_idx ON folders(parent_id);
+  CREATE INDEX IF NOT EXISTS folders_path_idx ON folders(path);
+  CREATE INDEX IF NOT EXISTS folders_project_parent_idx ON folders(project_id, parent_id);
+
+  -- Files indexes
   CREATE INDEX IF NOT EXISTS files_project_id_idx ON files(project_id);
+  CREATE INDEX IF NOT EXISTS files_folder_id_idx ON files(folder_id);
   CREATE INDEX IF NOT EXISTS files_status_idx ON files(status);
+  CREATE INDEX IF NOT EXISTS files_version_stack_id_idx ON files(version_stack_id);
+  CREATE INDEX IF NOT EXISTS files_mime_type_idx ON files(mime_type);
+  CREATE INDEX IF NOT EXISTS files_expires_at_idx ON files(expires_at);
+  CREATE INDEX IF NOT EXISTS files_assignee_id_idx ON files(assignee_id);
+  CREATE INDEX IF NOT EXISTS files_project_deleted_idx ON files(project_id, deleted_at);
+  CREATE INDEX IF NOT EXISTS files_project_folder_deleted_idx ON files(project_id, folder_id, deleted_at);
+
+  -- Version stacks indexes
+  CREATE INDEX IF NOT EXISTS version_stacks_project_id_idx ON version_stacks(project_id);
+
+  -- Comments indexes
   CREATE INDEX IF NOT EXISTS comments_file_id_idx ON comments(file_id);
+  CREATE INDEX IF NOT EXISTS comments_user_id_idx ON comments(user_id);
+  CREATE INDEX IF NOT EXISTS comments_parent_id_idx ON comments(parent_id);
+  CREATE INDEX IF NOT EXISTS comments_version_stack_id_idx ON comments(version_stack_id);
+
+  -- Custom fields indexes
+  CREATE INDEX IF NOT EXISTS custom_fields_account_id_idx ON custom_fields(account_id);
+  CREATE INDEX IF NOT EXISTS custom_field_visibility_custom_field_id_idx ON custom_field_visibility(custom_field_id);
+  CREATE INDEX IF NOT EXISTS custom_field_visibility_project_id_idx ON custom_field_visibility(project_id);
+
+  -- Shares indexes
+  CREATE INDEX IF NOT EXISTS shares_account_id_idx ON shares(account_id);
+  CREATE INDEX IF NOT EXISTS shares_project_id_idx ON shares(project_id);
+  CREATE INDEX IF NOT EXISTS share_assets_share_id_idx ON share_assets(share_id);
+  CREATE INDEX IF NOT EXISTS share_assets_file_id_idx ON share_assets(file_id);
+  CREATE INDEX IF NOT EXISTS share_activity_share_id_idx ON share_activity(share_id);
+  CREATE INDEX IF NOT EXISTS share_activity_type_idx ON share_activity(type);
+  CREATE INDEX IF NOT EXISTS share_activity_created_at_idx ON share_activity(created_at);
+
+  -- Notifications indexes
   CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications(user_id);
+  CREATE INDEX IF NOT EXISTS notifications_read_at_idx ON notifications(read_at);
+
+  -- Permissions indexes
+  CREATE INDEX IF NOT EXISTS workspace_permissions_workspace_id_idx ON workspace_permissions(workspace_id);
+  CREATE INDEX IF NOT EXISTS workspace_permissions_user_id_idx ON workspace_permissions(user_id);
+  CREATE INDEX IF NOT EXISTS project_permissions_project_id_idx ON project_permissions(project_id);
+  CREATE INDEX IF NOT EXISTS project_permissions_user_id_idx ON project_permissions(user_id);
+  CREATE INDEX IF NOT EXISTS folder_permissions_folder_id_idx ON folder_permissions(folder_id);
+  CREATE INDEX IF NOT EXISTS folder_permissions_user_id_idx ON folder_permissions(user_id);
+
+  -- Collections indexes
+  CREATE INDEX IF NOT EXISTS collections_project_id_idx ON collections(project_id);
+  CREATE INDEX IF NOT EXISTS collections_created_by_user_id_idx ON collections(created_by_user_id);
+  CREATE INDEX IF NOT EXISTS collections_type_idx ON collections(type);
+  CREATE INDEX IF NOT EXISTS collection_assets_collection_id_idx ON collection_assets(collection_id);
+  CREATE INDEX IF NOT EXISTS collection_assets_file_id_idx ON collection_assets(file_id);
+  CREATE INDEX IF NOT EXISTS collection_assets_sort_order_idx ON collection_assets(sort_order);
+
+  -- Webhooks indexes
+  CREATE INDEX IF NOT EXISTS webhooks_account_id_idx ON webhooks(account_id);
+  CREATE INDEX IF NOT EXISTS webhooks_is_active_idx ON webhooks(is_active);
+  CREATE INDEX IF NOT EXISTS webhook_deliveries_webhook_id_idx ON webhook_deliveries(webhook_id);
+  CREATE INDEX IF NOT EXISTS webhook_deliveries_status_idx ON webhook_deliveries(status);
+  CREATE INDEX IF NOT EXISTS webhook_deliveries_created_at_idx ON webhook_deliveries(created_at);
+
+  -- Transcripts indexes
+  CREATE UNIQUE INDEX IF NOT EXISTS transcripts_file_id_idx ON transcripts(file_id);
+  CREATE INDEX IF NOT EXISTS transcripts_status_idx ON transcripts(status);
+  CREATE INDEX IF NOT EXISTS transcripts_provider_idx ON transcripts(provider);
+  CREATE INDEX IF NOT EXISTS transcript_words_transcript_id_idx ON transcript_words(transcript_id);
+  CREATE INDEX IF NOT EXISTS transcript_words_transcript_start_idx ON transcript_words(transcript_id, start_ms);
+  CREATE INDEX IF NOT EXISTS transcript_words_transcript_position_idx ON transcript_words(transcript_id, position);
+
+  -- Captions indexes
+  CREATE INDEX IF NOT EXISTS captions_file_id_idx ON captions(file_id);
+  CREATE INDEX IF NOT EXISTS captions_language_idx ON captions(language);
+
+  -- ============================================
+  -- FTS5 VIRTUAL TABLES
+  -- ============================================
 
   -- FTS5 virtual table for file search
   CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
