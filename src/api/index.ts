@@ -9,7 +9,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { config, scrubSecrets } from "../config/index.js";
+import { config, scrubSecrets, isDev } from "../config/index.js";
 import { storage } from "../storage/index.js";
 import { sqlite } from "../db/index.js";
 import { redisHealthCheck } from "../redis/index.js";
@@ -45,10 +45,15 @@ import { getShareBySlug } from "./routes/index.js";
 const app = new Hono();
 
 // Middleware: CORS (allow Next.js frontend)
+// Only allow localhost in development mode for security
+const corsOrigins = isDev
+  ? [config.APP_URL, "http://localhost:3000"]
+  : [config.APP_URL];
+
 app.use(
   "*",
   cors({
-    origin: [config.APP_URL, "http://localhost:3000"],
+    origin: corsOrigins,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,

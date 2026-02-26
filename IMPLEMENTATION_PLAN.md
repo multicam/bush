@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.88 - Statistics Corrected)
+**Last updated**: 2026-02-26 (v0.0.89 - CORS Security Fix)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -84,12 +84,6 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-### [P2] CORS Hardcoded Localhost Origin [30m] -- NOT STARTED
-
-- **Problem**: `src/api/index.ts:51` — `http://localhost:3000` is ALWAYS added to CORS allowed origins, including production (CONFIRMED)
-- **Impact**: Security — localhost origin accepted in production
-- **Solution**: Conditionally add localhost only when `NODE_ENV !== 'production'`
-
 ### [P2] Webhook Events Never Emitted [2h] -- NOT STARTED
 
 - **Problem**: `emitWebhookEvent` is exported from `src/api/routes/webhooks.ts` and re-exported from `routes/index.ts`, but no production code ever calls it. 7 webhook registration endpoints work, but events are never delivered. (CONFIRMED - NEVER called from any route handler)
@@ -110,6 +104,7 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ### Previously Completed P2 Items
 
+- ~~CORS hardcoded localhost origin~~ — v0.0.89
 - ~~Permission validation before grant~~ — v0.0.70
 - ~~Transcription permission checks~~ — v0.0.69
 - ~~Redis cache invalidation for role changes~~ — v0.0.69
@@ -315,17 +310,21 @@ Per specs/README.md:
 | **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
 | **Email** | DONE | SMTP provider with 10 templates (API providers fall back to SMTP) |
 | **Transcription** | PARTIAL | Deepgram + faster-whisper work; AssemblyAI will crash (P2) |
-| **Security** | PARTIAL | Session limits and permissions done; CORS localhost issue open (P2) |
+| **Security** | DONE | Session limits, permissions, and CORS configuration complete |
 | **Webhooks** | STUB | Registration works but events never emitted (P2) |
 | **Notifications** | STUB | API/UI works but nothing triggers notifications (P2) |
 | **Testing** | PARTIAL | 95 test files; route/media/realtime coverage 0%; 2 tests skipped |
 | **Documentation** | DONE | Specs complete; /docs endpoint missing (P3) |
 
-**Verdict**: Platform is functionally complete. Four P2 items (CORS, webhooks, notifications, AssemblyAI) should be addressed before production.
+**Verdict**: Platform is functionally complete. Three P2 items (webhooks, notifications, AssemblyAI) should be addressed before production.
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.89 (2026-02-26) - CORS Security Fix
+
+Fixed CORS configuration to conditionally add localhost origin only in non-production environments. The `isDev` helper from config is now used to check `NODE_ENV !== 'production'` before adding `http://localhost:3000` to CORS allowed origins. This prevents localhost origins from being accepted in production, improving security posture.
 
 ### v0.0.88 (2026-02-26) - Statistics Corrected
 
