@@ -8,13 +8,16 @@
  */
 import { Worker, Job } from "bullmq";
 import { config } from "../config/index.js";
+import { db } from "../db/index.js";
+import { files } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 import { getRedisOptions, QUEUE_NAMES } from "./queue.js";
 import { processMetadata } from "./processors/metadata.js";
 import { processThumbnail } from "./processors/thumbnail.js";
 import { processProxy } from "./processors/proxy.js";
 import { processWaveform } from "./processors/waveform.js";
 import { processFilmstrip } from "./processors/filmstrip.js";
-import type { MediaJobData, QueueName } from "./types.js";
+import type { MediaJobData, MetadataJobResult, QueueName } from "./types.js";
 
 // Worker configuration
 const WORKER_CONFIG: Record<QueueName, { concurrency: number; processor: string }> = {
@@ -47,6 +50,28 @@ const workers: Worker[] = [];
 let isShuttingDown = false;
 
 /**
+ * Load metadata from the database for an asset
+ * Returns the technical metadata if available, otherwise undefined
+ */
+async function loadMetadataFromDb(assetId: string): Promise<MetadataJobResult | undefined> {
+  try {
+    const result = await db
+      .select({ technicalMetadata: files.technicalMetadata })
+      .from(files)
+      .where(eq(files.id, assetId))
+      .limit(1);
+
+    if (result.length > 0 && result[0].technicalMetadata) {
+      // TechnicalMetadata is compatible with MetadataJobResult
+      return result[0].technicalMetadata as MetadataJobResult;
+    }
+  } catch (error) {
+    console.error(`[worker] Error loading metadata for asset ${assetId}:`, error);
+  }
+  return undefined;
+}
+
+/**
  * Process a job based on its type
  */
 async function processJob(job: Job<MediaJobData>): Promise<unknown> {
@@ -60,14 +85,23 @@ async function processJob(job: Job<MediaJobData>): Promise<unknown> {
     case "thumbnail":
       return processThumbnail(data);
 
-    case "filmstrip":
-      return processFilmstrip(data);
+    case "filmstrip": {
+      // Load metadata from database to get duration
+      const metadata = await loadMetadataFromDb(data.assetId);
+      return processFilmstrip(data, metadata);
+    }
 
-    case "proxy":
-      return processProxy(data);
+    case "proxy": {
+      // Load metadata from database to get source dimensions
+      const metadata = await loadMetadataFromDb(data.assetId);
+      return processProxy(data, metadata);
+    }
 
-    case "waveform":
-      return processWaveform(data);
+    case "waveform": {
+      // Load metadata from database to get duration
+      const metadata = await loadMetadataFromDb(data.assetId);
+      return processWaveform(data, metadata);
+    }
 
     case "frame_capture": {
       const { processFrameCapture } = await import("./processors/frame-capture.js");

@@ -380,8 +380,8 @@ Valid text`;
     });
 
     it("handles WEBVTT header with greedy regex", () => {
-      // This test documents the current behavior where the WEBVTT header
-      // stripping regex is overly greedy and consumes content
+      // This test verifies the fix for the WEBVTT header stripping regex
+      // that was previously overly greedy and consumed content
       const vttContent = `WEBVTT
 
 00:00:00.000 --> 00:00:02.000
@@ -389,9 +389,11 @@ Hello world`;
 
       const result = parseVtt(vttContent);
 
-      // Due to the greedy regex, content after WEBVTT is consumed
-      // This is a known limitation
-      expect(result.length).toBeGreaterThanOrEqual(0);
+      // After the fix, content after WEBVTT should be properly parsed
+      expect(result).toHaveLength(1);
+      expect(result[0].startMs).toBe(0);
+      expect(result[0].endMs).toBe(2000);
+      expect(result[0].text).toBe("Hello world");
     });
   });
 
@@ -416,5 +418,39 @@ Hello world`;
 
     // Note: VTT round-trip test skipped due to parseVtt regex bug
     // that removes valid timestamp lines when stripping header
+
+    it("VTT round-trip preserves content", () => {
+      const originalSegments: CaptionSegment[] = [
+        { index: 1, startMs: 0, endMs: 2000, text: "Hello world" },
+        { index: 2, startMs: 2500, endMs: 4500, text: "How are you" },
+      ];
+
+      const vttContent = exportToVtt(originalSegments);
+      const parsedSegments = parseVtt(vttContent);
+
+      expect(parsedSegments).toHaveLength(2);
+      expect(parsedSegments[0].startMs).toBe(originalSegments[0].startMs);
+      expect(parsedSegments[0].endMs).toBe(originalSegments[0].endMs);
+      expect(parsedSegments[0].text).toBe(originalSegments[0].text);
+      expect(parsedSegments[1].startMs).toBe(originalSegments[1].startMs);
+      expect(parsedSegments[1].endMs).toBe(originalSegments[1].endMs);
+      expect(parsedSegments[1].text).toBe(originalSegments[1].text);
+    });
+
+    it("VTT round-trip preserves speaker tags", () => {
+      const originalSegments: CaptionSegment[] = [
+        { index: 1, startMs: 0, endMs: 2000, text: "Hello", speaker: "Alice" },
+        { index: 2, startMs: 2500, endMs: 4500, text: "Hi there", speaker: "Bob" },
+      ];
+
+      const vttContent = exportToVtt(originalSegments);
+      const parsedSegments = parseVtt(vttContent);
+
+      expect(parsedSegments).toHaveLength(2);
+      expect(parsedSegments[0].speaker).toBe("Alice");
+      expect(parsedSegments[0].text).toBe("Hello");
+      expect(parsedSegments[1].speaker).toBe("Bob");
+      expect(parsedSegments[1].text).toBe("Hi there");
+    });
   });
 });

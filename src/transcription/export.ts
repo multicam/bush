@@ -275,8 +275,10 @@ export function parseSrt(content: string): CaptionSegment[] {
  */
 export function parseVtt(content: string): CaptionSegment[] {
   const segments: CaptionSegment[] = [];
-  // Remove WEBVTT header and any metadata
-  const body = content.replace(/^WEBVTT.*\n(?:.*\n)*/, "").trim();
+  // Remove WEBVTT header line and any header metadata (but not content)
+  // The header is "WEBVTT" followed by optional metadata on the same line,
+  // then a blank line before the cues start
+  const body = content.replace(/^WEBVTT[^\n]*\n+/, "").trim();
   const blocks = body.split(/\n\n+/);
 
   let index = 1;

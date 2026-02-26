@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.91 - BunnyCDN Purge Implementation)
+**Last updated**: 2026-02-26 (v0.0.92 - VTT Parser Fix & Media Worker Metadata)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -114,9 +114,12 @@ All implemented features have corresponding spec documentation. No code was foun
 - Wired CDN invalidation into file deletion routes (`files.ts`) and scheduled purge (`processor.ts`)
 - Updated tests to verify API calls are made with correct parameters
 
-### [P3] Transcription Export VTT Round-Trip Test Skipped [30m] -- NOT STARTED
+### [P3] Transcription Export VTT Round-Trip Test Skipped [30m] -- RESOLVED (v0.0.92)
 
-- `src/transcription/transcription-export.test.ts` — VTT round-trip test commented out due to `parseVtt` regex bug. Test exists but is disabled.
+- Fixed the greedy regex in `parseVtt()` function (`src/transcription/export.ts`)
+- Changed regex from `/^WEBVTT.*\n(?:.*\n)*/` to `/^WEBVTT[^\n]*\n+/` to properly strip only the WEBVTT header line
+- Added VTT round-trip tests that verify export and import preserve content and speaker tags
+- All 35 transcription export tests now pass
 
 ### [P3] Zero Zod Validation in Route Handlers [4h] -- NOT STARTED
 
@@ -134,9 +137,12 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - `src/config/env.ts` now has a Zod refinement that rejects default SMTP values (localhost:1025, noreply@bush.local) in production mode. App will fail to start with clear error message.
 
-### [P3] Media Job Duration/Dimension Placeholders [1h] -- NOT STARTED
+### [P3] Media Job Duration/Dimension Placeholders [1h] -- RESOLVED (v0.0.92)
 
-- `src/media/index.ts:100-125` — filmstrip, proxy, waveform jobs enqueued with `durationSeconds: 0`, `sourceWidth: 0`, `sourceHeight: 0`. Processors handle gracefully (skip if 0) but initial job records have wrong data. Note: 6 processors exist (metadata, thumbnail, proxy, waveform, filmstrip, frame-capture).
+- Updated `src/media/worker.ts` to load metadata from database (`files.technicalMetadata`) before calling processors
+- Filmstrip, proxy, and waveform processors now receive metadata parameter with duration, dimensions, HDR info
+- Processors can use this metadata instead of relying on placeholder zeros in job data
+- Added `loadMetadataFromDb()` helper function that fetches technical metadata from database
 
 ### [P3] Dead Exports and Config [15m] -- RESOLVED (v0.0.90)
 
@@ -312,6 +318,12 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.92 (2026-02-26) - VTT Parser Fix & Media Worker Metadata
+
+Fixed the VTT (WebVTT subtitle) parser regex that was overly greedy and consumed all content after the WEBVTT header. Changed the regex from `/^WEBVTT.*\n(?:.*\n)*/` to `/^WEBVTT[^\n]*\n+/` to properly strip only the header line. Added VTT round-trip tests that verify export and import preserve content and speaker tags. All 35 transcription export tests now pass.
+
+Fixed the media worker to load metadata from the database and pass it to dependent processors (filmstrip, proxy, waveform). Previously, these processors received placeholder zeros for duration and dimensions. Now they receive actual metadata extracted by the metadata processor, allowing them to work correctly without re-probing the source file.
 
 ### v0.0.91 (2026-02-26) - BunnyCDN Purge Implementation
 
