@@ -19,7 +19,7 @@ import {
   decodeCursor,
 } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError, parseJsonBody } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 import { randomBytes } from "crypto";
 import { getEmailService } from "../../lib/email/index.js";
@@ -912,12 +912,16 @@ export async function getShareBySlug(c: Context) {
   const slug = c.req.param("slug");
   // Accept passphrase from body (preferred) or query param (deprecated, may be logged)
   let providedPassphrase: string | undefined;
+
+  // Try to parse body, but don't fail on malformed JSON - fall back to query param
   try {
-    const body = await c.req.json().catch(() => ({}));
+    const body = await parseJsonBody<{ passphrase?: string }>(c, { allowEmpty: true });
     providedPassphrase = body.passphrase;
   } catch {
-    // No JSON body, try query param
+    // Malformed JSON body - log warning and fall back to query param
+    console.warn("[Shares] Malformed JSON body in getShareBySlug, falling back to query param");
   }
+
   // Fallback to query param for backward compatibility (deprecated)
   if (!providedPassphrase) {
     providedPassphrase = c.req.query("passphrase");

@@ -144,10 +144,12 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - `src/api/index.ts:134` references `/docs` but the endpoint returns a 404
 
-### [P3] Body Parsing Error Swallowing [30m] -- NOT STARTED
+### [P3] Body Parsing Error Swallowing [30m] -- RESOLVED (v0.0.90)
 
-- Several routes use `.catch(() => ({}))` for body parsing (`auth.ts:28,95`, `projects.ts:229`, `transcription.ts:165`, `shares.ts:905`). Malformed requests silently treated as empty objects.
-- `transcription.ts:859` — caption storage delete errors silently swallowed with `.catch(() => {})`
+- Added `parseJsonBody()` helper in `src/errors/index.ts` that properly handles JSON parsing errors
+- Updated `auth.ts`, `projects.ts`, `transcription.ts` to use `parseJsonBody()` with proper error handling
+- Updated `shares.ts` to log malformed JSON warnings instead of silently swallowing
+- Added error logging for caption storage delete failures in `transcription.ts`
 
 ### [P3] Permissions Integration Test Conditionally Skipped [15m] -- NOT STARTED
 
@@ -307,13 +309,15 @@ Per specs/README.md:
 
 ## CHANGE LOG
 
-### v0.0.90 (2026-02-26) - Auth Error Logging, Production SMTP Safety & Dead Code Cleanup
+### v0.0.90 (2026-02-26) - Security & Error Handling Improvements
 
 Fixed auth context error swallowing by adding `console.error` logging in both `refresh()` and `useEffect` initialization catch blocks. Auth failures are now visible in browser console for debugging.
 
 Added production SMTP safety check via Zod refinement in env config. In production mode with SMTP email provider, the app now requires explicit SMTP_HOST, SMTP_PORT, and SMTP_FROM configuration. Using development defaults (localhost:1025, noreply@bush.local) will cause the app to fail at startup with a clear error message.
 
 Removed dead exports and config: unused `cdn` export from `src/storage/index.ts`, unused `BACKUP_STORAGE_BUCKET` env variable, and unused CDN-related type imports. Also fixed pre-existing TypeScript error by removing unused `CDNContentType` import.
+
+Added `parseJsonBody()` helper function for proper JSON body parsing error handling. Replaced `.catch(() => ({}))` pattern in route handlers (auth.ts, projects.ts, transcription.ts, shares.ts) with explicit error handling that returns clear "Invalid JSON" error messages instead of silently treating malformed requests as empty objects. Added error logging for storage delete failures instead of silently swallowing them.
 
 ### v0.0.89 (2026-02-26) - CORS Security Fix
 

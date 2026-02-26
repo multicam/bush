@@ -6,6 +6,7 @@
  * Reference: IMPLEMENTATION_PLAN.md QW4
  */
 import { generateId } from "../shared/id.js";
+import type { Context } from "hono";
 
 /**
  * JSON:API-style error object
@@ -287,3 +288,48 @@ export const errorLogger = {
     );
   },
 };
+
+/**
+ * Parse JSON request body with proper error handling.
+ * Throws BadRequestError for malformed JSON instead of silently returning empty object.
+ *
+ * @param c - Hono context
+ * @param options - Optional configuration
+ * @param options.allowEmpty - If true, empty/missing body returns {} instead of error (default: false)
+ * @returns Parsed JSON body
+ * @throws BadRequestError if JSON is malformed
+ */
+export async function parseJsonBody<T = unknown>(
+  c: Context,
+  options?: { allowEmpty?: boolean }
+): Promise<T> {
+  const allowEmpty = options?.allowEmpty ?? false;
+
+  try {
+    const text = await c.req.text();
+
+    // Handle empty body
+    if (!text || text.trim() === "") {
+      if (allowEmpty) {
+        return {} as T;
+      }
+      throw new BadRequestError("Request body is required");
+    }
+
+    return JSON.parse(text) as T;
+  } catch (error) {
+    // If it's already an AppError (like BadRequestError from empty body), rethrow it
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    // JSON parsing error
+    if (error instanceof SyntaxError) {
+      throw new BadRequestError(`Invalid JSON: ${error.message}`);
+    }
+
+    // Unknown error - log and throw generic error
+    console.error("[parseJsonBody] Unexpected error:", error);
+    throw new BadRequestError("Failed to parse request body");
+  }
+}

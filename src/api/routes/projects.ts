@@ -11,7 +11,7 @@ import { eq, desc, and, isNull, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError, AuthorizationError, parseJsonBody } from "../../errors/index.js";
 import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js";
 import { permissionService } from "../../permissions/service.js";
 import type { PermissionLevel } from "../../permissions/types.js";
@@ -249,7 +249,7 @@ app.delete("/:id", async (c) => {
 app.post("/:id/duplicate", async (c) => {
   const session = requireAuth(c);
   const sourceProjectId = c.req.param("id");
-  const body = await c.req.json().catch(() => ({}));
+  const body = await parseJsonBody<{ name?: string }>(c, { allowEmpty: true });
 
   // Verify source project access
   const access = await verifyProjectAccess(sourceProjectId, session.currentAccountId);

@@ -15,7 +15,7 @@ import {
   RESOURCE_TYPES,
   formatDates,
 } from "../response.js";
-import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError, AuthorizationError, parseJsonBody } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { permissionService, isPermissionAtLeast } from "../../permissions/index.js";
 import type { PermissionLevel } from "../../permissions/types.js";
@@ -162,7 +162,12 @@ app.get("/", async (c) => {
 app.post("/", async (c) => {
   const session = requireAuth(c);
   const fileId = c.req.param("fileId")!;
-  const body = await c.req.json().catch(() => ({}));
+  const body = await parseJsonBody<{
+    language?: string;
+    speaker_identification?: boolean;
+    provider?: string;
+    callback_url?: string;
+  }>(c, { allowEmpty: true });
 
   // Get file and verify access
   const [file] = await db
@@ -854,9 +859,11 @@ captionsApp.delete("/:captionId", async (c) => {
     throw new NotFoundError("caption", captionId);
   }
 
-  // Delete from storage
+  // Delete from storage (log but don't fail if storage delete fails)
   const storage = getStorageProvider();
-  await storage.deleteObject(caption.storageKey).catch(() => {});
+  await storage.deleteObject(caption.storageKey).catch((error) => {
+    console.error("[Transcription] Failed to delete caption from storage:", caption.storageKey, error);
+  });
 
   // Delete from database
   await db.delete(captions).where(eq(captions.id, captionId));

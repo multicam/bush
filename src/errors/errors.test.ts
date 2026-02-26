@@ -19,8 +19,10 @@ import {
   toAppError,
   generateRequestId,
   errorLogger,
+  parseJsonBody,
   type RequestContext,
 } from "./index.js";
+import { Hono } from "hono";
 
 describe("Error Classes", () => {
   describe("ValidationError", () => {
@@ -337,6 +339,78 @@ describe("Error Utilities", () => {
       }
 
       expect(ids.size).toBe(100);
+    });
+  });
+
+  describe("parseJsonBody", () => {
+    const createMockContext = (body: string | null): unknown => {
+      return {
+        req: {
+          text: async () => body ?? "",
+        },
+      };
+    };
+
+    it("should parse valid JSON body", async () => {
+      const c = createMockContext('{"name": "test", "value": 123}') as any;
+      const result = await parseJsonBody<{ name: string; value: number }>(c);
+
+      expect(result).toEqual({ name: "test", value: 123 });
+    });
+
+    it("should throw BadRequestError for malformed JSON", async () => {
+      const c = createMockContext('{"name": "test"') as any; // Missing closing brace
+
+      await expect(parseJsonBody(c)).rejects.toThrow(BadRequestError);
+      await expect(parseJsonBody(c)).rejects.toThrow("Invalid JSON");
+    });
+
+    it("should throw BadRequestError for empty body when allowEmpty is false", async () => {
+      const c = createMockContext("") as any;
+
+      await expect(parseJsonBody(c, { allowEmpty: false })).rejects.toThrow(BadRequestError);
+      await expect(parseJsonBody(c, { allowEmpty: false })).rejects.toThrow("Request body is required");
+    });
+
+    it("should return empty object for empty body when allowEmpty is true", async () => {
+      const c = createMockContext("") as any;
+      const result = await parseJsonBody(c, { allowEmpty: true });
+
+      expect(result).toEqual({});
+    });
+
+    it("should return empty object for whitespace-only body when allowEmpty is true", async () => {
+      const c = createMockContext("   ") as any;
+      const result = await parseJsonBody(c, { allowEmpty: true });
+
+      expect(result).toEqual({});
+    });
+
+    it("should throw BadRequestError for whitespace-only body when allowEmpty is false", async () => {
+      const c = createMockContext("   ") as any;
+
+      await expect(parseJsonBody(c, { allowEmpty: false })).rejects.toThrow(BadRequestError);
+      await expect(parseJsonBody(c, { allowEmpty: false })).rejects.toThrow("Request body is required");
+    });
+
+    it("should parse arrays", async () => {
+      const c = createMockContext('[1, 2, 3]') as any;
+      const result = await parseJsonBody<number[]>(c);
+
+      expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should parse null values", async () => {
+      const c = createMockContext('null') as any;
+      const result = await parseJsonBody(c);
+
+      expect(result).toBeNull();
+    });
+
+    it("should throw BadRequestError with specific error message for syntax errors", async () => {
+      const c = createMockContext('{"a": }') as any; // Invalid syntax
+
+      await expect(parseJsonBody(c)).rejects.toThrow("Invalid JSON:");
     });
   });
 });

@@ -11,7 +11,7 @@ import { sessionCache } from "../../auth/session-cache.js";
 import { db } from "../../db/index.js";
 import { users, accounts, accountMemberships, workspaces } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
-import { ValidationError, AuthenticationError } from "../../errors/index.js";
+import { ValidationError, AuthenticationError, parseJsonBody } from "../../errors/index.js";
 
 const app = new Hono();
 
@@ -25,7 +25,7 @@ app.use("*", authMiddleware({ optional: true }));
  * For web clients, the session is managed via cookies.
  */
 app.post("/token", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
+  const body = await parseJsonBody<{ grant_type?: string; refresh_token?: string }>(c, { allowEmpty: false });
 
   // Validate grant_type
   if (body.grant_type !== "refresh_token") {
@@ -92,7 +92,7 @@ app.post("/token", async (c) => {
  * Revokes the current session or a specific token.
  */
 app.post("/revoke", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
+  const body = await parseJsonBody<{ token?: string }>(c, { allowEmpty: true });
   const session = c.get("session");
 
   // If we have a current session, revoke it
