@@ -1,8 +1,8 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.74 - Session Limits & CDN Provider)
+**Last updated**: 2026-02-27 (v0.0.75 - Grant Permission API Exposure)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, Phase 2, and Phase 3 core features implemented. Platform is feature-complete for initial release. Database migration drift has been resolved - fresh deployments will work correctly.
-**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (123 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
+**Implementation progress**: [1.1] Bootstrap COMPLETED, [1.2] Database Schema COMPLETED (25 tables in schema.ts), [1.3] Authentication COMPLETED, [1.4] Permissions COMPLETED, [1.5] API Foundation COMPLETED (131 endpoints), [1.6] Object Storage COMPLETED, [1.7a/b] Web Shell COMPLETED, [QW1-4] Quick Wins COMPLETED, [2.1] File Upload System COMPLETED, [2.2] Media Processing COMPLETED, [2.3] Asset Browser COMPLETED, [2.4] Asset Operations COMPLETED, [2.5] Version Stacking COMPLETED, [2.6] Video Player COMPLETED, [2.7] Image Viewer COMPLETED, [2.8a] Audio Player COMPLETED, [2.8b] PDF Viewer COMPLETED, [2.9] Comments and Annotations COMPLETED, [2.10] Metadata System COMPLETED, [2.11] Notifications COMPLETED (API + UI), [2.12] Basic Search COMPLETED, [3.1] Sharing API + UI COMPLETED, [3.2] Collections COMPLETED, [3.4] Transcription COMPLETED, [R7] Realtime Infrastructure COMPLETED, [Email] Email Service COMPLETED, [Members] Member Management COMPLETED, [Folders] Folder Navigation COMPLETED, [Upload] Folder Structure Preservation COMPLETED.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -29,7 +29,7 @@ This issue has been fixed in v0.0.56. The `migrate.ts` file now includes all 25 
 
 | Metric | Status | Notes |
 |--------|--------|-------|
-| **API Endpoints** | 123 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(5), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(5) |
+| **API Endpoints** | 131 (100%) | 18 route modules: accounts(10), auth(3), bulk(6), collections(7), comments(8), custom-fields(6), files(17), folders(9), metadata(3), notifications(5), projects(9), search(2), shares(10), transcription(6), users(3), version-stacks(11), webhooks(7), workspaces(9) |
 | **Database Schema (schema.ts)** | 25 tables (100%) | All tables defined with proper indexes |
 | **Database Migration (migrate.ts)** | 25 tables (100%) | All tables, columns, and indexes now included |
 | **Test Files** | 25 | 303 tests passing, good coverage on core modules |
@@ -165,13 +165,17 @@ These are nice-to-fix but not blocking:
 - Location: `src/auth/session-cache.ts`
 - Spec refs: `specs/12-authentication.md`
 
-### [P2] Grant Permission API Exposure [4h] -- NOT STARTED
+### [P2] Grant Permission API Exposure [4h] -- COMPLETED (v0.0.75)
 
-- **Problem**: `permissionService` has `grantProjectPermission()`, `grantFolderPermission()`, `grantWorkspacePermission()` methods that are implemented and tested but NOT exposed via API routes
-- **Impact**: Permission granting UI may be incomplete - users cannot manage permissions through the API
-- **Location**: `src/permissions/service.ts:384-455`
-- **Solution**: Either add API endpoints for permission management, or verify that permission assignment happens via account/workspace/project membership roles only
-- **Note**: May be intentional design - permissions could be derived from account roles rather than explicit grants
+- Implemented member management endpoints for workspaces and projects
+- Workspace endpoints: GET/POST/PUT/DELETE /v4/workspaces/:id/members
+- Project endpoints: GET/POST/PUT/DELETE /v4/projects/:id/members
+- Uses `permissionService.grantWorkspacePermission()` and `permissionService.grantProjectPermission()`
+- Uses `permissionService.revokeWorkspacePermission()` and `permissionService.revokeProjectPermission()`
+- Requires `full_access` permission to add/update/remove members
+- Validates that target users are account members before granting permissions
+- Location: `src/api/routes/workspaces.ts`, `src/api/routes/projects.ts`
+- Spec refs: `specs/17-api-complete.md` Section 6.2, 6.3
 
 ---
 
@@ -317,7 +321,7 @@ The following are correctly deferred per spec/README.md:
 8. ~~Email provider implementation (SMTP with nodemailer)~~ -- COMPLETED v0.0.73
 9. ~~Session limits enforcement~~ -- COMPLETED v0.0.74
 10. ~~CDN provider implementation (Bunny CDN per specs)~~ -- COMPLETED v0.0.74
-11. Grant permission API exposure (verify design or add endpoints)
+11. ~~Grant permission API exposure~~ -- COMPLETED v0.0.75
 
 ### Can Defer (P3)
 
@@ -334,6 +338,30 @@ The following are correctly deferred per spec/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.75 (2026-02-27) - Grant Permission API Exposure
+
+**Workspace Member Management:**
+- Added `GET /v4/workspaces/:id/members` - List workspace members
+- Added `POST /v4/workspaces/:id/members` - Add member to workspace
+- Added `PUT /v4/workspaces/:id/members/:user_id` - Update member permission
+- Added `DELETE /v4/workspaces/:id/members/:user_id` - Remove member from workspace
+- Uses `permissionService.grantWorkspacePermission()` and `revokeWorkspacePermission()`
+- Requires `full_access` permission for add/update/delete operations
+- Location: `src/api/routes/workspaces.ts`
+
+**Project Member Management:**
+- Added `GET /v4/projects/:id/members` - List project members
+- Added `POST /v4/projects/:id/members` - Add member to project
+- Added `PUT /v4/projects/:id/members/:user_id` - Update member permission
+- Added `DELETE /v4/projects/:id/members/:user_id` - Remove member from project
+- Uses `permissionService.grantProjectPermission()` and `revokeProjectPermission()`
+- Requires `full_access` permission for add/update/delete operations
+- Location: `src/api/routes/projects.ts`
+
+**API Endpoint Count:** 123 → 131 (8 new member management endpoints)
+
+**Spec refs:** `specs/17-api-complete.md` Sections 6.2, 6.3
 
 ### v0.0.74 (2026-02-26) - Session Limits & CDN Provider
 
