@@ -361,8 +361,8 @@ export default function CollectionDetailPage({
               selectedIds={selectedAssetIds}
               onSelectionChange={setSelectedAssetIds}
               onFileClick={(file) => {
-                // TODO: Open file viewer
-                console.log("File clicked:", file);
+                // Navigate to file viewer page
+                window.location.href = `/projects/${projectId}/files/${file.id}`;
               }}
               defaultViewMode="grid"
               defaultCardSize="medium"

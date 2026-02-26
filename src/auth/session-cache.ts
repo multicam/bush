@@ -17,6 +17,9 @@ const DEFAULT_SESSION_TTL = 7 * 24 * 60 * 60;
 // Only update last activity if older than this threshold (5 minutes in ms)
 const TOUCH_THROTTLE_MS = 5 * 60 * 1000;
 
+// Default max concurrent sessions per user (can be overridden by config)
+const DEFAULT_MAX_CONCURRENT_SESSIONS = 10;
+
 /**
  * Get the HMAC secret for session cookie signing
  * Uses the session secret from config
@@ -75,9 +78,74 @@ async function scanKeys(pattern: string): Promise<string[]> {
  */
 export const sessionCache = {
   /**
+   * Enforce session limit by evicting oldest sessions if needed
+   * Returns the number of sessions evicted
+   */
+  async enforceSessionLimit(userId: string): Promise<number> {
+    const maxSessions = config.MAX_CONCURRENT_SESSIONS ?? DEFAULT_MAX_CONCURRENT_SESSIONS;
+    const sessionIds = await this.getSessionIds(userId);
+
+    if (sessionIds.length < maxSessions) {
+      return 0;
+    }
+
+    // Get all sessions with their lastActivityAt to find oldest
+    const redis = getRedis();
+    const sessionsWithActivity: Array<{ sessionId: string; lastActivityAt: number }> = [];
+
+    for (const sessionId of sessionIds) {
+      const key = getSessionCacheKey(userId, sessionId);
+      const value = await redis.get(key);
+      if (value) {
+        try {
+          const session = JSON.parse(value) as SessionData;
+          sessionsWithActivity.push({
+            sessionId,
+            lastActivityAt: session.lastActivityAt,
+          });
+        } catch {
+          // Invalid session data, skip
+        }
+      }
+    }
+
+    // Sort by lastActivityAt ascending (oldest first)
+    sessionsWithActivity.sort((a, b) => a.lastActivityAt - b.lastActivityAt);
+
+    // Calculate how many sessions to evict
+    // We need to make room for the new session, so evict enough to be under the limit
+    const toEvictCount = sessionsWithActivity.length - maxSessions + 1;
+
+    if (toEvictCount <= 0) {
+      return 0;
+    }
+
+    // Evict the oldest sessions
+    let evicted = 0;
+    for (let i = 0; i < toEvictCount && i < sessionsWithActivity.length; i++) {
+      await this.delete(userId, sessionsWithActivity[i].sessionId);
+      evicted++;
+    }
+
+    return evicted;
+  },
+
+  /**
+   * Get the current session count for a user
+   */
+  async getSessionCount(userId: string): Promise<number> {
+    const sessionIds = await this.getSessionIds(userId);
+    return sessionIds.length;
+  },
+
+  /**
    * Store session data in Redis
+   * Enforces max concurrent session limit by evicting oldest sessions
    */
   async set(session: SessionData, ttlSeconds = DEFAULT_SESSION_TTL): Promise<void> {
+    // Enforce session limit before creating new session
+    await this.enforceSessionLimit(session.userId);
+
     const redis = getRedis();
     const key = getSessionCacheKey(session.userId, session.sessionId);
     const value = JSON.stringify(session);

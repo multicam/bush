@@ -35,6 +35,15 @@ vi.mock("../redis/index.js", () => ({
   getRedis: () => mockRedis,
 }));
 
+// Mock config for MAX_CONCURRENT_SESSIONS
+// Note: The actual test uses 11 sessions to exceed the default limit of 10
+vi.mock("../config/index.js", () => ({
+  config: {
+    SESSION_SECRET: "test-secret-for-testing-at-least-32-chars",
+    MAX_CONCURRENT_SESSIONS: 10, // Use default limit
+  },
+}));
+
 describe("sessionCache", () => {
   const mockSession: SessionData = {
     sessionId: "test-session-123",
@@ -619,5 +628,261 @@ describe("sessionCache.update retry logic", () => {
 
     expect(result).toBe(false);
     expect(mockRedis.watch).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("sessionCache.enforceSessionLimit", () => {
+  const mockSession: SessionData = {
+    sessionId: "test-session-123",
+    userId: "usr_abc123",
+    email: "test@example.com",
+    displayName: "Test User",
+    currentAccountId: "acc_xyz789",
+    accountRole: "owner",
+    workosOrganizationId: "org_workos123",
+    workosUserId: "user_workos456",
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRedis.del.mockResolvedValue(1);
+  });
+
+  it("should not evict sessions when under limit", async () => {
+    // 9 sessions (under limit of 10)
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:session2",
+      "session:usr_abc123:session3",
+      "session:usr_abc123:session4",
+      "session:usr_abc123:session5",
+      "session:usr_abc123:session6",
+      "session:usr_abc123:session7",
+      "session:usr_abc123:session8",
+      "session:usr_abc123:session9",
+    ]]);
+
+    const evicted = await sessionCache.enforceSessionLimit("usr_abc123");
+
+    expect(evicted).toBe(0);
+    expect(mockRedis.del).not.toHaveBeenCalled();
+  });
+
+  it("should evict oldest session when at limit", async () => {
+    // 10 sessions (at limit, need to evict 1 to make room)
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:session2",
+      "session:usr_abc123:session3",
+      "session:usr_abc123:session4",
+      "session:usr_abc123:session5",
+      "session:usr_abc123:session6",
+      "session:usr_abc123:session7",
+      "session:usr_abc123:session8",
+      "session:usr_abc123:session9",
+      "session:usr_abc123:session10",
+    ]]);
+
+    // Mock getting session data for activity timestamps
+    mockRedis.get
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session1", lastActivityAt: 1000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session2", lastActivityAt: 2000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session3", lastActivityAt: 3000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session4", lastActivityAt: 4000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session5", lastActivityAt: 5000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session6", lastActivityAt: 6000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session7", lastActivityAt: 7000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session8", lastActivityAt: 8000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session9", lastActivityAt: 9000 }))
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session10", lastActivityAt: 10000 }));
+
+    const evicted = await sessionCache.enforceSessionLimit("usr_abc123");
+
+    // Should evict 1 session (the oldest one - session1)
+    expect(evicted).toBe(1);
+    expect(mockRedis.del).toHaveBeenCalledTimes(1);
+    expect(mockRedis.del).toHaveBeenCalledWith("session:usr_abc123:session1");
+  });
+
+  it("should evict multiple oldest sessions when over limit", async () => {
+    // 12 sessions (over limit of 10, need to evict 3)
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:oldest",
+      "session:usr_abc123:old",
+      "session:usr_abc123:mid",
+      "session:usr_abc123:session4",
+      "session:usr_abc123:session5",
+      "session:usr_abc123:session6",
+      "session:usr_abc123:session7",
+      "session:usr_abc123:session8",
+      "session:usr_abc123:session9",
+      "session:usr_abc123:session10",
+      "session:usr_abc123:new",
+      "session:usr_abc123:newest",
+    ]]);
+
+    // Mock getting session data - oldest has lowest lastActivityAt
+    for (let i = 0; i < 12; i++) {
+      mockRedis.get.mockResolvedValueOnce(
+        JSON.stringify({ ...mockSession, sessionId: `session${i}`, lastActivityAt: (i + 1) * 1000 })
+      );
+    }
+
+    const evicted = await sessionCache.enforceSessionLimit("usr_abc123");
+
+    // Should evict 3 sessions to make room for 1 new session (12 - 10 + 1 = 3)
+    expect(evicted).toBe(3);
+    expect(mockRedis.del).toHaveBeenCalledTimes(3);
+  });
+
+  it("should return 0 when no sessions exist", async () => {
+    mockRedis.scan.mockResolvedValueOnce(["0", []]);
+
+    const evicted = await sessionCache.enforceSessionLimit("usr_abc123");
+
+    expect(evicted).toBe(0);
+    expect(mockRedis.del).not.toHaveBeenCalled();
+  });
+
+  it("should handle invalid session data gracefully", async () => {
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:invalid",
+    ]]);
+
+    mockRedis.get
+      .mockResolvedValueOnce(JSON.stringify({ ...mockSession, sessionId: "session1", lastActivityAt: 1000 }))
+      .mockResolvedValueOnce("invalid json"); // This will cause JSON.parse to fail
+
+    const evicted = await sessionCache.enforceSessionLimit("usr_abc123");
+
+    // Should not evict since only 1 valid session exists (under limit of 10)
+    expect(evicted).toBe(0);
+  });
+});
+
+describe("sessionCache.getSessionCount", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return correct session count", async () => {
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:session2",
+      "session:usr_abc123:session3",
+    ]]);
+
+    const count = await sessionCache.getSessionCount("usr_abc123");
+
+    expect(count).toBe(3);
+  });
+
+  it("should return 0 when no sessions exist", async () => {
+    mockRedis.scan.mockResolvedValueOnce(["0", []]);
+
+    const count = await sessionCache.getSessionCount("usr_abc123");
+
+    expect(count).toBe(0);
+  });
+});
+
+describe("sessionCache.set with limit enforcement", () => {
+  const mockSession: SessionData = {
+    sessionId: "test-session-123",
+    userId: "usr_abc123",
+    email: "test@example.com",
+    displayName: "Test User",
+    currentAccountId: "acc_xyz789",
+    accountRole: "owner",
+    workosOrganizationId: "org_workos123",
+    workosUserId: "user_workos456",
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetAllMocks();
+    // Re-setup mocks after reset
+    mockRedis.setex.mockResolvedValue("OK");
+    mockRedis.del.mockResolvedValue(1);
+    mockRedis.watch.mockResolvedValue("OK");
+    mockRedis.unwatch.mockResolvedValue("OK");
+    mockMultiChain.setex.mockReturnThis();
+    mockMultiChain.exec.mockResolvedValue(["OK"]);
+    mockRedis.multi.mockReturnValue(mockMultiChain);
+    mockRedis.scan.mockResolvedValue(["0", []]);
+  });
+
+  it("should call enforceSessionLimit before storing", async () => {
+    // Start with 11 sessions (over limit of 10)
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:session2",
+      "session:usr_abc123:session3",
+      "session:usr_abc123:session4",
+      "session:usr_abc123:session5",
+      "session:usr_abc123:session6",
+      "session:usr_abc123:session7",
+      "session:usr_abc123:session8",
+      "session:usr_abc123:session9",
+      "session:usr_abc123:session10",
+      "session:usr_abc123:session11",
+    ]]);
+
+    // Reset the get mock completely to clear any queued values from other tests
+    mockRedis.get.mockReset();
+
+    // Mock getting session data for enforceSessionLimit - need 11 responses
+    // Use mockImplementation for more reliable behavior
+    const sessionDataMap = new Map<string, string>();
+    for (let i = 1; i <= 11; i++) {
+      sessionDataMap.set(
+        `session:usr_abc123:session${i}`,
+        JSON.stringify({ ...mockSession, sessionId: `session${i}`, lastActivityAt: i * 1000 })
+      );
+    }
+    mockRedis.get.mockImplementation((key: string) => {
+      return Promise.resolve(sessionDataMap.get(key) || null);
+    });
+
+    await sessionCache.set(mockSession);
+
+    // Should have evicted oldest 2 sessions (11 - 10 + 1 = 2)
+    // Check that del was called twice with the oldest sessions
+    expect(mockRedis.del).toHaveBeenCalledTimes(2);
+    expect(mockRedis.del).toHaveBeenCalledWith("session:usr_abc123:session1");
+    expect(mockRedis.del).toHaveBeenCalledWith("session:usr_abc123:session2");
+    // Should have stored new session
+    expect(mockRedis.setex).toHaveBeenCalled();
+  });
+
+  it("should store session without eviction when under limit", async () => {
+    // Start with 9 sessions (under limit of 10)
+    mockRedis.scan.mockResolvedValueOnce(["0", [
+      "session:usr_abc123:session1",
+      "session:usr_abc123:session2",
+      "session:usr_abc123:session3",
+      "session:usr_abc123:session4",
+      "session:usr_abc123:session5",
+      "session:usr_abc123:session6",
+      "session:usr_abc123:session7",
+      "session:usr_abc123:session8",
+      "session:usr_abc123:session9",
+    ]]);
+
+    await sessionCache.set(mockSession);
+
+    // Should not have evicted any sessions
+    expect(mockRedis.del).not.toHaveBeenCalled();
+    // Should have stored new session
+    expect(mockRedis.setex).toHaveBeenCalledWith(
+      `session:${mockSession.userId}:${mockSession.sessionId}`,
+      expect.any(Number),
+      JSON.stringify(mockSession)
+    );
   });
 });

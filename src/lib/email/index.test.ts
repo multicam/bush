@@ -5,14 +5,28 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EmailService } from "../email";
 
 // Mock the console provider
-const mockProvider = {
+const mockConsoleProvider = {
+  name: "console",
   send: vi.fn().mockResolvedValue({ success: true, messageId: "test-id" }),
   sendTemplate: vi.fn().mockResolvedValue({ success: true, messageId: "test-id" }),
 };
 
+// Mock the smtp provider
+const mockSmtpProvider = {
+  name: "smtp",
+  send: vi.fn().mockResolvedValue({ success: true, messageId: "smtp-test-id" }),
+  sendTemplate: vi.fn().mockResolvedValue({ success: true, messageId: "smtp-test-id" }),
+  close: vi.fn(),
+};
+
 vi.mock("./console.js", () => ({
-  ConsoleEmailProvider: vi.fn(() => mockProvider),
-  createConsoleProvider: vi.fn(() => mockProvider),
+  ConsoleEmailProvider: vi.fn(() => mockConsoleProvider),
+  createConsoleProvider: vi.fn(() => mockConsoleProvider),
+}));
+
+vi.mock("./smtp.js", () => ({
+  SmtpEmailProvider: vi.fn(() => mockSmtpProvider),
+  createSmtpProvider: vi.fn(() => mockSmtpProvider),
 }));
 
 // Mock the EmailService constructor
@@ -34,116 +48,111 @@ describe("Email Service Factory", () => {
       createEmailService("console");
 
       expect(createConsoleProvider).toHaveBeenCalled();
-      expect(EmailService).toHaveBeenCalledWith(mockProvider);
+      expect(EmailService).toHaveBeenCalledWith(mockConsoleProvider);
     });
 
-    it("falls back to console for sendgrid (not implemented)", async () => {
+    it("creates email service with smtp provider", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
+      const { createSmtpProvider } = await import("./smtp.js");
+
+      createEmailService("smtp");
+
+      expect(createSmtpProvider).toHaveBeenCalled();
+      expect(EmailService).toHaveBeenCalledWith(mockSmtpProvider);
+    });
+
+    it("falls back to smtp for sendgrid (not implemented)", async () => {
+      vi.resetModules();
+      const { createEmailService } = await import("./index.js");
+      const { createSmtpProvider } = await import("./smtp.js");
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       createEmailService("sendgrid");
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "SendGrid email provider not yet implemented. Falling back to console provider."
+        "SendGrid email provider not yet implemented. Falling back to SMTP provider."
       );
-      expect(createConsoleProvider).toHaveBeenCalled();
+      expect(createSmtpProvider).toHaveBeenCalled();
 
       consoleWarnSpy.mockRestore();
     });
 
-    it("falls back to console for ses (not implemented)", async () => {
+    it("falls back to smtp for ses (not implemented)", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
+      const { createSmtpProvider } = await import("./smtp.js");
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       createEmailService("ses");
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "AWS SES email provider not yet implemented. Falling back to console provider."
+        "AWS SES email provider not yet implemented. Falling back to SMTP provider."
       );
-      expect(createConsoleProvider).toHaveBeenCalled();
+      expect(createSmtpProvider).toHaveBeenCalled();
 
       consoleWarnSpy.mockRestore();
     });
 
-    it("falls back to console for postmark (not implemented)", async () => {
+    it("falls back to smtp for postmark (not implemented)", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
+      const { createSmtpProvider } = await import("./smtp.js");
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       createEmailService("postmark");
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Postmark email provider not yet implemented. Falling back to console provider."
+        "Postmark email provider not yet implemented. Falling back to SMTP provider."
       );
-      expect(createConsoleProvider).toHaveBeenCalled();
+      expect(createSmtpProvider).toHaveBeenCalled();
 
       consoleWarnSpy.mockRestore();
     });
 
-    it("falls back to console for resend (not implemented)", async () => {
+    it("falls back to smtp for resend (not implemented)", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
+      const { createSmtpProvider } = await import("./smtp.js");
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       createEmailService("resend");
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Resend email provider not yet implemented. Falling back to console provider."
+        "Resend email provider not yet implemented. Falling back to SMTP provider."
       );
-      expect(createConsoleProvider).toHaveBeenCalled();
+      expect(createSmtpProvider).toHaveBeenCalled();
 
       consoleWarnSpy.mockRestore();
     });
 
-    it("falls back to console for smtp (not implemented)", async () => {
+    it("falls back to smtp for unknown provider", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("smtp");
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "SMTP email provider not yet implemented. Falling back to console provider."
-      );
-      expect(createConsoleProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("falls back to console for unknown provider", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
+      const { createSmtpProvider } = await import("./smtp.js");
 
       const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       createEmailService("unknown" as any);
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Unknown email provider 'unknown'. Falling back to console provider."
+        "Unknown email provider 'unknown'. Falling back to SMTP provider."
       );
-      expect(createConsoleProvider).toHaveBeenCalled();
+      expect(createSmtpProvider).toHaveBeenCalled();
 
       consoleWarnSpy.mockRestore();
     });
 
-    it("defaults to console provider", async () => {
+    it("defaults to provider from config (console in test env)", async () => {
       vi.resetModules();
       const { createEmailService } = await import("./index.js");
       const { createConsoleProvider } = await import("./console.js");
 
+      // In test environment, config.EMAIL_PROVIDER returns "console"
       createEmailService();
 
       expect(createConsoleProvider).toHaveBeenCalled();
@@ -223,6 +232,18 @@ describe("Email Service Factory", () => {
       vi.resetModules();
       const { createConsoleProvider } = await import("./index.js");
       expect(createConsoleProvider).toBeDefined();
+    });
+
+    it("exports SmtpEmailProvider", async () => {
+      vi.resetModules();
+      const { SmtpEmailProvider } = await import("./index.js");
+      expect(SmtpEmailProvider).toBeDefined();
+    });
+
+    it("exports createSmtpProvider", async () => {
+      vi.resetModules();
+      const { createSmtpProvider } = await import("./index.js");
+      expect(createSmtpProvider).toBeDefined();
     });
 
     it("exports types", async () => {

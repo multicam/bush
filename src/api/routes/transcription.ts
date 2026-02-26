@@ -17,6 +17,8 @@ import {
 } from "../response.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
+import { permissionService, isPermissionAtLeast } from "../../permissions/index.js";
+import type { PermissionLevel } from "../../permissions/types.js";
 import { enqueueTranscriptionJob } from "../../transcription/index.js";
 import { exportTranscription } from "../../transcription/export.js";
 import type { CaptionFormat } from "../../transcription/types.js";
@@ -32,16 +34,20 @@ app.use("*", authMiddleware());
  * Check if user has edit access to a project
  * Returns true if user is owner, content_admin, or has edit+ project permission
  */
-async function hasEditAccess(_projectId: string, userId: string, accountId: string): Promise<boolean> {
+async function hasEditAccess(projectId: string, userId: string, accountId: string): Promise<boolean> {
   // First check account role
   const role = await verifyAccountMembership(userId, accountId);
   if (role && (role === "owner" || role === "content_admin")) {
     return true;
   }
 
-  // TODO: Check project-specific permissions when implemented
-  // For now, any account member can edit
-  return !!role;
+  // Check project-specific permissions
+  const projectPermission = await permissionService.getProjectPermission(userId, projectId);
+  if (projectPermission && isPermissionAtLeast(projectPermission.permission, "edit" as PermissionLevel)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -57,14 +63,21 @@ async function hasViewAccess(projectId: string, userId: string, accountId: strin
 
 /**
  * Check if user has share access (can export)
+ * Requires edit_and_share permission or higher
  */
-async function hasShareAccess(_projectId: string, userId: string, accountId: string): Promise<boolean> {
+async function hasShareAccess(projectId: string, userId: string, accountId: string): Promise<boolean> {
   const role = await verifyAccountMembership(userId, accountId);
   if (role && (role === "owner" || role === "content_admin")) {
     return true;
   }
-  // TODO: Check edit_and_share permission when project permissions are implemented
-  return !!role;
+
+  // Check project-specific permissions for edit_and_share
+  const projectPermission = await permissionService.getProjectPermission(userId, projectId);
+  if (projectPermission && isPermissionAtLeast(projectPermission.permission, "edit_and_share" as PermissionLevel)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

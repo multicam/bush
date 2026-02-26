@@ -655,3 +655,40 @@ export const captions = sqliteTable("captions", {
   fileIdx: index("captions_file_id_idx").on(table.fileId),
   languageIdx: index("captions_language_idx").on(table.language),
 }));
+
+/**
+ * Notification Settings - User preferences for notification types
+ */
+export const notificationSettings = sqliteTable("notification_settings", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  // Email notification preferences
+  emailMentions: integer("email_mentions", { mode: "boolean" }).notNull().default(true),
+  emailCommentReplies: integer("email_comment_replies", { mode: "boolean" }).notNull().default(true),
+  emailComments: integer("email_comments", { mode: "boolean" }).notNull().default(true),
+  emailUploads: integer("email_uploads", { mode: "boolean" }).notNull().default(false),
+  emailStatusChanges: integer("email_status_changes", { mode: "boolean" }).notNull().default(true),
+  emailShareInvites: integer("email_share_invites", { mode: "boolean" }).notNull().default(true),
+  emailShareViews: integer("email_share_views", { mode: "boolean" }).notNull().default(false),
+  emailShareDownloads: integer("email_share_downloads", { mode: "boolean" }).notNull().default(false),
+  emailAssignments: integer("email_assignments", { mode: "boolean" }).notNull().default(true),
+  emailFileProcessed: integer("email_file_processed", { mode: "boolean" }).notNull().default(true),
+  // In-app notification preferences
+  inAppMentions: integer("in_app_mentions", { mode: "boolean" }).notNull().default(true),
+  inAppCommentReplies: integer("in_app_comment_replies", { mode: "boolean" }).notNull().default(true),
+  inAppComments: integer("in_app_comments", { mode: "boolean" }).notNull().default(true),
+  inAppUploads: integer("in_app_uploads", { mode: "boolean" }).notNull().default(true),
+  inAppStatusChanges: integer("in_app_status_changes", { mode: "boolean" }).notNull().default(true),
+  inAppShareInvites: integer("in_app_share_invites", { mode: "boolean" }).notNull().default(true),
+  inAppShareViews: integer("in_app_share_views", { mode: "boolean" }).notNull().default(true),
+  inAppShareDownloads: integer("in_app_share_downloads", { mode: "boolean" }).notNull().default(true),
+  inAppAssignments: integer("in_app_assignments", { mode: "boolean" }).notNull().default(true),
+  inAppFileProcessed: integer("in_app_file_processed", { mode: "boolean" }).notNull().default(true),
+  // Digest preferences
+  digestEnabled: integer("digest_enabled", { mode: "boolean" }).notNull().default(false),
+  digestFrequency: text("digest_frequency", { enum: ["daily", "weekly"] }).notNull().default("daily"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  userIdIdx: uniqueIndex("notification_settings_user_id_idx").on(table.userId),
+}));

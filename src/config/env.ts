@@ -97,6 +97,7 @@ const envSchema = z.object({
   FASTER_WHISPER_URL: z.string().optional(),
 
   // Email
+  EMAIL_PROVIDER: z.enum(["console", "smtp", "sendgrid", "ses", "postmark", "resend"]).default("smtp"),
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   SMTP_USER: z.string().optional().default(""),
@@ -107,6 +108,7 @@ const envSchema = z.object({
   // Session
   SESSION_SECRET: z.string().min(32),
   SESSION_MAX_AGE: z.coerce.number().int().positive().default(604800),
+  MAX_CONCURRENT_SESSIONS: z.coerce.number().int().positive().default(10),
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
@@ -171,8 +173,13 @@ function loadConfig(): Env {
       STORAGE_ACCESS_KEY: "placeholder",
       STORAGE_SECRET_KEY: "placeholder",
       STORAGE_BUCKET: "placeholder",
+      // CDN
+      CDN_PROVIDER: "none",
+      CDN_BASE_URL: "",
+      CDN_SIGNING_KEY: "",
       SESSION_SECRET: "placeholder-for-build-at-least-32-characters",
       SESSION_MAX_AGE: 604800,
+      MAX_CONCURRENT_SESSIONS: 10,
       RATE_LIMIT_WINDOW_MS: 60000,
       RATE_LIMIT_MAX_REQUESTS: 100,
       TRUST_PROXY: false,
@@ -202,6 +209,13 @@ function loadConfig(): Env {
       WORKER_METADATA_CONCURRENCY: 8,
       TRANSCRIPTION_PROVIDER: "deepgram",
       TRANSCRIPTION_MAX_DURATION: 7200,
+      EMAIL_PROVIDER: "console",
+      SMTP_HOST: "localhost",
+      SMTP_PORT: 1025,
+      SMTP_USER: "",
+      SMTP_PASS: "",
+      SMTP_FROM: "noreply@bush.local",
+      SMTP_SECURE: false,
     } as Env;
   }
 

@@ -6,13 +6,16 @@
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { projects, projectPermissions, folders } from "../../db/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { projects, projectPermissions, folders, users, accountMemberships } from "../../db/schema.js";
+import { eq, desc, and } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError, ValidationError } from "../../errors/index.js";
+import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js";
+import { permissionService } from "../../permissions/service.js";
+import type { PermissionLevel } from "../../permissions/types.js";
+import { isPermissionAtLeast } from "../../permissions/types.js";
 
 const app = new Hono();
 
@@ -205,6 +208,299 @@ app.delete("/:id", async (c) => {
     .update(projects)
     .set({ archivedAt: new Date(), updatedAt: new Date() })
     .where(eq(projects.id, projectId));
+
+  return sendNoContent(c);
+});
+
+// ============================================================================
+// MEMBER MANAGEMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /v4/projects/:id/members - List project members
+ *
+ * Returns all users with project-level permissions.
+ * Permission: Project Member (any permission level)
+ */
+app.get("/:id/members", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("id");
+  const limit = parseLimit(c.req.query("limit"));
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Get all users with project permissions
+  const members = await db
+    .select({
+      id: projectPermissions.id,
+      permission: projectPermissions.permission,
+      createdAt: projectPermissions.createdAt,
+      userId: users.id,
+      userEmail: users.email,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userAvatarUrl: users.avatarUrl,
+    })
+    .from(projectPermissions)
+    .innerJoin(users, eq(projectPermissions.userId, users.id))
+    .where(eq(projectPermissions.projectId, projectId))
+    .orderBy(desc(projectPermissions.createdAt))
+    .limit(limit);
+
+  const items = members.map((m) => ({
+    id: m.id,
+    permission: m.permission,
+    created_at: m.createdAt instanceof Date ? m.createdAt.toISOString() : new Date(m.createdAt as number).toISOString(),
+    user: {
+      id: m.userId,
+      email: m.userEmail,
+      first_name: m.userFirstName,
+      last_name: m.userLastName,
+      avatar_url: m.userAvatarUrl,
+    },
+  }));
+
+  return sendCollection(c, items, "project_member", {
+    basePath: `/v4/projects/${projectId}/members`,
+    limit,
+    totalCount: items.length,
+  });
+});
+
+/**
+ * POST /v4/projects/:id/members - Add member to project
+ *
+ * Grants project-level permission to a user.
+ * Permission: Full Access+ required
+ */
+app.post("/:id/members", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Check caller has full_access permission
+  const callerPermission = await permissionService.getProjectPermission(session.userId, projectId);
+  if (!callerPermission || !isPermissionAtLeast(callerPermission.permission, "full_access" as PermissionLevel)) {
+    throw new AuthorizationError("Only users with full_access permission can add project members");
+  }
+
+  // Validate input
+  const userId = body.data?.attributes?.user_id;
+  const permission = body.data?.attributes?.permission as PermissionLevel | undefined;
+
+  if (!userId || typeof userId !== "string") {
+    throw new ValidationError("user_id is required", { pointer: "/data/attributes/user_id" });
+  }
+
+  const validPermissions: PermissionLevel[] = ["full_access", "edit_and_share", "edit", "comment_only", "view_only"];
+  if (!permission || !validPermissions.includes(permission)) {
+    throw new ValidationError(`permission must be one of: ${validPermissions.join(", ")}`, {
+      pointer: "/data/attributes/permission",
+    });
+  }
+
+  // Verify target user is a member of the account
+  const [targetMembership] = await db
+    .select()
+    .from(accountMemberships)
+    .where(
+      and(
+        eq(accountMemberships.userId, userId),
+        eq(accountMemberships.accountId, session.currentAccountId)
+      )
+    )
+    .limit(1);
+
+  if (!targetMembership) {
+    throw new ValidationError("User is not a member of this account", {
+      pointer: "/data/attributes/user_id",
+    });
+  }
+
+  // Grant permission using permission service
+  await permissionService.grantProjectPermission(projectId, userId, permission);
+
+  // Get the created/updated permission with user info
+  const [newMember] = await db
+    .select({
+      id: projectPermissions.id,
+      permission: projectPermissions.permission,
+      createdAt: projectPermissions.createdAt,
+      userId: users.id,
+      userEmail: users.email,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userAvatarUrl: users.avatarUrl,
+    })
+    .from(projectPermissions)
+    .innerJoin(users, eq(projectPermissions.userId, users.id))
+    .where(
+      and(
+        eq(projectPermissions.projectId, projectId),
+        eq(projectPermissions.userId, userId)
+      )
+    )
+    .limit(1);
+
+  return sendSingle(c, {
+    id: newMember!.id,
+    permission: newMember!.permission,
+    created_at: newMember!.createdAt instanceof Date ? newMember!.createdAt.toISOString() : new Date(newMember!.createdAt as number).toISOString(),
+    user: {
+      id: newMember!.userId,
+      email: newMember!.userEmail,
+      first_name: newMember!.userFirstName,
+      last_name: newMember!.userLastName,
+      avatar_url: newMember!.userAvatarUrl,
+    },
+  }, "project_member", { selfLink: `/v4/projects/${projectId}/members` });
+});
+
+/**
+ * PUT /v4/projects/:id/members/:user_id - Update member permission
+ *
+ * Permission: Full Access+ required
+ */
+app.put("/:id/members/:user_id", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("id");
+  const targetUserId = c.req.param("user_id");
+  const body = await c.req.json();
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Check caller has full_access permission
+  const callerPermission = await permissionService.getProjectPermission(session.userId, projectId);
+  if (!callerPermission || !isPermissionAtLeast(callerPermission.permission, "full_access" as PermissionLevel)) {
+    throw new AuthorizationError("Only users with full_access permission can update project members");
+  }
+
+  // Validate input
+  const permission = body.data?.attributes?.permission as PermissionLevel | undefined;
+
+  const validPermissions: PermissionLevel[] = ["full_access", "edit_and_share", "edit", "comment_only", "view_only"];
+  if (!permission || !validPermissions.includes(permission)) {
+    throw new ValidationError(`permission must be one of: ${validPermissions.join(", ")}`, {
+      pointer: "/data/attributes/permission",
+    });
+  }
+
+  // Check if target user has project permission
+  const [existingPermission] = await db
+    .select()
+    .from(projectPermissions)
+    .where(
+      and(
+        eq(projectPermissions.projectId, projectId),
+        eq(projectPermissions.userId, targetUserId)
+      )
+    )
+    .limit(1);
+
+  if (!existingPermission) {
+    throw new NotFoundError("project member", targetUserId);
+  }
+
+  // Update permission using permission service
+  await permissionService.grantProjectPermission(projectId, targetUserId, permission);
+
+  // Get updated permission with user info
+  const [updatedMember] = await db
+    .select({
+      id: projectPermissions.id,
+      permission: projectPermissions.permission,
+      createdAt: projectPermissions.createdAt,
+      userId: users.id,
+      userEmail: users.email,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userAvatarUrl: users.avatarUrl,
+    })
+    .from(projectPermissions)
+    .innerJoin(users, eq(projectPermissions.userId, users.id))
+    .where(
+      and(
+        eq(projectPermissions.projectId, projectId),
+        eq(projectPermissions.userId, targetUserId)
+      )
+    )
+    .limit(1);
+
+  return sendSingle(c, {
+    id: updatedMember!.id,
+    permission: updatedMember!.permission,
+    created_at: updatedMember!.createdAt instanceof Date ? updatedMember!.createdAt.toISOString() : new Date(updatedMember!.createdAt as number).toISOString(),
+    user: {
+      id: updatedMember!.userId,
+      email: updatedMember!.userEmail,
+      first_name: updatedMember!.userFirstName,
+      last_name: updatedMember!.userLastName,
+      avatar_url: updatedMember!.userAvatarUrl,
+    },
+  }, "project_member");
+});
+
+/**
+ * DELETE /v4/projects/:id/members/:user_id - Remove member from project
+ *
+ * Permission: Full Access+ required
+ */
+app.delete("/:id/members/:user_id", async (c) => {
+  const session = requireAuth(c);
+  const projectId = c.req.param("id");
+  const targetUserId = c.req.param("user_id");
+
+  // Verify project access
+  const access = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!access) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Check caller has full_access permission
+  const callerPermission = await permissionService.getProjectPermission(session.userId, projectId);
+  if (!callerPermission || !isPermissionAtLeast(callerPermission.permission, "full_access" as PermissionLevel)) {
+    throw new AuthorizationError("Only users with full_access permission can remove project members");
+  }
+
+  // Prevent removing self
+  if (targetUserId === session.userId) {
+    throw new ValidationError("You cannot remove yourself from the project", {
+      pointer: "/data/attributes/user_id",
+    });
+  }
+
+  // Check if target user has project permission
+  const [existingPermission] = await db
+    .select()
+    .from(projectPermissions)
+    .where(
+      and(
+        eq(projectPermissions.projectId, projectId),
+        eq(projectPermissions.userId, targetUserId)
+      )
+    )
+    .limit(1);
+
+  if (!existingPermission) {
+    throw new NotFoundError("project member", targetUserId);
+  }
+
+  // Revoke permission using permission service
+  await permissionService.revokeProjectPermission(projectId, targetUserId);
 
   return sendNoContent(c);
 });
