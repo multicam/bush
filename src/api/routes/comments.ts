@@ -4,7 +4,7 @@
  * API routes for comment management on files and version stacks.
  * Reference: specs/17-api-complete.md Section 6.8
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { db } from "../../db/index.js";
 import { comments, files, users, versionStacks } from "../../db/schema.js";
 import { eq, and, desc, isNull, lt } from "drizzle-orm";
@@ -700,7 +700,7 @@ app.get("/:id/replies", async (c) => {
 /**
  * GET /v4/version-stacks/:stackId/comments - List comments on a version stack
  */
-export async function getVersionStackComments(c: any) {
+export async function getVersionStackComments(c: Context) {
   const session = requireAuth(c);
   const stackId = c.req.param("stackId")!;
   const limit = parseLimit(c.req.query("limit"));
@@ -761,7 +761,7 @@ export async function getVersionStackComments(c: any) {
 /**
  * POST /v4/version-stacks/:stackId/comments - Create comment on version stack
  */
-export async function createVersionStackComment(c: any) {
+export async function createVersionStackComment(c: Context) {
   const session = requireAuth(c);
   const stackId = c.req.param("stackId")!;
   const body = await c.req.json();

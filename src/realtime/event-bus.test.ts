@@ -727,10 +727,13 @@ describe("generateEventId", () => {
   it("should have expected format", () => {
     const id = generateEventId();
     // Format: evt_{timestamp}_{random_string}
-    const parts = id.split("_");
-    expect(parts).toHaveLength(3);
-    expect(parts[0]).toBe("evt");
-    expect(parseInt(parts[1], 10)).not.toBeNaN();
-    expect(parts[2].length).toBeGreaterThan(0);
+    // Note: base64url can contain underscores, so we use regex to validate
+    expect(id).toMatch(/^evt_\d+_[A-Za-z0-9_-]+$/);
+    expect(id.startsWith("evt_")).toBe(true);
+
+    // Extract timestamp (between first and second underscore)
+    const match = id.match(/^evt_(\d+)_/);
+    expect(match).not.toBeNull();
+    expect(parseInt(match![1], 10)).not.toBeNaN();
   });
 });

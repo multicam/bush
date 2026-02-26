@@ -4,7 +4,7 @@
  * API routes for share link management.
  * Reference: specs/17-api-complete.md, specs/05-sharing-and-presentations.md
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { db } from "../../db/index.js";
 import { shares, shareAssets, shareActivity, files, users } from "../../db/schema.js";
 import { eq, and, desc, lt, sql, isNull } from "drizzle-orm";
@@ -776,7 +776,7 @@ app.get("/:id/activity", async (c) => {
  * Query param is supported for backward compatibility but deprecated.
  * The passphrase is never returned in the response.
  */
-export async function getShareBySlug(c: any) {
+export async function getShareBySlug(c: Context) {
   const slug = c.req.param("slug");
   // Accept passphrase from body (preferred) or query param (deprecated, may be logged)
   let providedPassphrase: string | undefined;
