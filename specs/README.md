@@ -66,6 +66,7 @@ In a broader extend, all files need to be critiqued and updated, according the p
 | [16-storage-and-data.md](./16-storage-and-data.md) | Storage and data |
 | [17-api-complete.md](./17-api-complete.md) | Complete API reference (V4) |
 | [20-configuration-and-secrets.md](./20-configuration-and-secrets.md) | Configuration, secrets management, local dev setup |
+| [21-design-system.md](./21-design-system.md) | **Bush Design System** — tokens, components, patterns, migration to Tailwind v4 |
 
 ### Deferred Specifications
 | File | Description | Phase |
