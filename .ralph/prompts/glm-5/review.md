@@ -3,11 +3,11 @@ description: Deep code review — triage, fix, refactor, test. Track in @REVIEW_
 model: glm-5
 ---
 
-0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
+0a. Study `specs/*` with up to 250 parallel subagents to learn the application specifications.
 0b. Study @REVIEW_PLAN.md (if present) to understand review progress so far.
-0c. Study `src/*` with up to 250 parallel Sonnet subagents to understand the codebase.
+0c. Study `src/*` with up to 250 parallel subagents to understand the codebase.
 
-1. If @REVIEW_PLAN.md does not exist, this is the first iteration. Run `bun test` and `bun run typecheck` to establish baseline. Then spawn 4 parallel Opus subagents with deep thinking enabled (`thinking.type=enabled`) to triage the codebase:
+1. If @REVIEW_PLAN.md does not exist, this is the first iteration. Run `bun test` and `bun run typecheck` to establish baseline. Then spawn 4 parallel GLM-5 subagents with deep thinking enabled (`thinking.type=enabled`) to triage the codebase:
    - **Agent 1 -- Backend**: Route handlers (auth checks, input validation, error handling, SQL injection, unbounded queries, N+1, missing indexes, race conditions, resource cleanup).
    - **Agent 2 -- Frontend**: React components (error boundaries, memory leaks, stale closures, dependency arrays, cleanup functions), hooks, API client (error handling, retry logic), state management.
    - **Agent 3 -- Tests**: Run `bun test:coverage`, identify files below 80% statement coverage, untested error paths, modules with zero tests, brittle/unclear tests.
@@ -43,7 +43,7 @@ model: glm-5
 - Refactoring decisions (when to extract, when to inline)
 - Test strategy for complex modules
 
-For simple searches and reads, use Sonnet subagents. Reserve Opus with deep thinking for:
+For simple searches and reads, use faster subagents. Reserve GLM-5 with deep thinking for:
 - Analyzing findings from parallel triage agents
 - Debugging complex issues found during review
 - Architectural refactoring decisions
