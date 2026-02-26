@@ -72,7 +72,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ...state,
         isLoading: false,
       });
-    } catch {
+    } catch (error) {
+      console.error("[Auth] Failed to refresh auth state:", error);
       setAuthState({
         isAuthenticated: false,
         isLoading: false,
@@ -89,7 +90,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!cancelled) {
         setAuthState({ ...state, isLoading: false });
       }
-    }).catch(() => {
+    }).catch((error) => {
+      console.error("[Auth] Failed to load initial auth state:", error);
       if (!cancelled) {
         setAuthState({
           isAuthenticated: false,

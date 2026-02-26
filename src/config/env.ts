@@ -128,6 +128,22 @@ const envSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url().optional(),
   NEXT_PUBLIC_WS_URL: z.string().optional(),
   NEXT_PUBLIC_APP_NAME: z.string().default("Bush"),
+}).refine((data) => {
+  // In production with SMTP provider, require explicit SMTP configuration
+  // to prevent accidental use of dev defaults (localhost:1025, noreply@bush.local)
+  if (data.NODE_ENV === "production" && data.EMAIL_PROVIDER === "smtp") {
+    const isDefaultHost = data.SMTP_HOST === "localhost";
+    const isDefaultPort = data.SMTP_PORT === 1025;
+    const isDefaultFrom = data.SMTP_FROM === "noreply@bush.local";
+
+    if (isDefaultHost || isDefaultPort || isDefaultFrom) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Production mode with SMTP provider requires explicit SMTP_HOST, SMTP_PORT, and SMTP_FROM configuration (defaults are for development only)",
+  path: ["EMAIL_PROVIDER"],
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.89 - CORS Security Fix)
+**Last updated**: 2026-02-26 (v0.0.90 - Auth Error Logging & Production SMTP Safety)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -122,13 +122,13 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - SendGrid, SES, Postmark, Resend fall back to SMTP with `console.warn` (`src/lib/email/index.ts:72-108`). SMTP works; native API integrations deferred. (CONFIRMED - 8 TODO comments for email provider stubs)
 
-### [P3] Auth Context Swallows Errors [30m] -- NOT STARTED
+### [P3] Auth Context Swallows Errors [30m] -- RESOLVED (v0.0.90)
 
-- `src/web/context/auth-context.tsx:92-100` catches errors and silently returns unauthenticated state. No logging — auth failures invisible in browser console.
+- `src/web/context/auth-context.tsx` now logs auth failures to console.error in both `refresh()` and `useEffect` initialization catch blocks.
 
-### [P3] SMTP Defaults Are Dev-Only [15m] -- NOT STARTED
+### [P3] SMTP Defaults Are Dev-Only [15m] -- RESOLVED (v0.0.90)
 
-- `src/config/env.ts:101-105` defaults: port 1025 (Mailpit), host `localhost`, from `noreply@bush.local`. Production should require explicit config or fail loudly.
+- `src/config/env.ts` now has a Zod refinement that rejects default SMTP values (localhost:1025, noreply@bush.local) in production mode. App will fail to start with clear error message.
 
 ### [P3] Media Job Duration/Dimension Placeholders [1h] -- NOT STARTED
 
@@ -306,6 +306,12 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.90 (2026-02-26) - Auth Error Logging & Production SMTP Safety
+
+Fixed auth context error swallowing by adding `console.error` logging in both `refresh()` and `useEffect` initialization catch blocks. Auth failures are now visible in browser console for debugging.
+
+Added production SMTP safety check via Zod refinement in env config. In production mode with SMTP email provider, the app now requires explicit SMTP_HOST, SMTP_PORT, and SMTP_FROM configuration. Using development defaults (localhost:1025, noreply@bush.local) will cause the app to fail at startup with a clear error message.
 
 ### v0.0.89 (2026-02-26) - CORS Security Fix
 
