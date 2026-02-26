@@ -151,9 +151,9 @@ All implemented features have corresponding spec documentation. No code was foun
 - Updated `shares.ts` to log malformed JSON warnings instead of silently swallowing
 - Added error logging for caption storage delete failures in `transcription.ts`
 
-### [P3] Permissions Integration Test Conditionally Skipped [15m] -- NOT STARTED
+### [P3] Permissions Integration Test Conditionally Skipped [15m] -- RESOLVED (v0.0.90)
 
-- `src/permissions/permissions-integration.test.ts:86` — entire suite skipped when `better-sqlite3` unavailable. Ensure CI always has the native module. (CONFIRMED)
+- Updated CI workflow to use Bun instead of npm. This ensures `better-sqlite3` native module is properly installed and available for integration tests.
 
 ### [P3] PDF Viewer Text Layer [4h] -- NOT STARTED
 
