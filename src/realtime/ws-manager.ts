@@ -117,7 +117,6 @@ type ChannelKey = `${ChannelType}:${string}`;
 const getMaxSubscriptions = () => config.WS_MAX_SUBSCRIPTIONS;
 const getRateLimitMessages = () => config.WS_RATE_LIMIT_MESSAGES;
 const getRateLimitWindow = () => config.WS_RATE_LIMIT_WINDOW_MS;
-const getMaxConnectionsPerUser = () => config.WS_MAX_CONNECTIONS_PER_USER;
 
 /**
  * WebSocket connection manager
@@ -248,14 +247,15 @@ class WebSocketManager {
       if (session) {
         // Fetch user info for presence
         const [user] = await db
-          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .select({ firstName: users.firstName, lastName: users.lastName, avatarUrl: users.avatarUrl })
           .from(users)
           .where(eq(users.id, bushSessionData.userId))
           .limit(1);
 
+        const userName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Unknown";
         return {
           userId: bushSessionData.userId,
-          userName: user?.name || "Unknown",
+          userName,
           userAvatarUrl: user?.avatarUrl || null,
           session,
         };
@@ -313,14 +313,17 @@ class WebSocketManager {
 
         // Fetch user info for presence
         const [user] = await db
-          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .select({ firstName: users.firstName, lastName: users.lastName, avatarUrl: users.avatarUrl })
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
 
+        const userName = [user?.firstName, user?.lastName].filter(Boolean).join(" ")
+          || `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim()
+          || "Unknown";
         return {
           userId,
-          userName: user?.name || `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() || "Unknown",
+          userName,
           userAvatarUrl: user?.avatarUrl || session.user.profilePictureUrl,
           session: resolvedSession,
         };

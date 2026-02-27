@@ -497,10 +497,9 @@ export class CloudFrontCDNProvider implements ICDNProvider {
   /**
    * HMAC-SHA256 helper
    */
-  private hmacSha256(key: string | Buffer, data: string, encoding?: BufferEncoding): string | Buffer {
-    return crypto.createHmac("sha256", typeof key === "string" ? key : key)
-      .update(data)
-      .digest(encoding as BufferEncoding || undefined) as string | Buffer;
+  private hmacSha256(key: string | Buffer, data: string, encoding?: crypto.BinaryToTextEncoding): string | Buffer {
+    const hmac = crypto.createHmac("sha256", typeof key === "string" ? key : key).update(data);
+    return encoding ? hmac.digest(encoding) : hmac.digest();
   }
 }
 

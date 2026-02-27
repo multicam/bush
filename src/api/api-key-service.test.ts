@@ -72,7 +72,6 @@ import {
   API_KEY_PREFIX,
 } from "./api-key-service.js";
 import { db } from "../db/index.js";
-import { eq, and, isNull } from "drizzle-orm";
 
 describe("API Key Service", () => {
   beforeEach(() => {
@@ -141,7 +140,6 @@ describe("API Key Service", () => {
 
   describe("apiKeyService.createKey", () => {
     it("should create an API key with all required fields", async () => {
-      const mockInsert = vi.fn().mockResolvedValue(undefined);
       const mockValues = vi.fn().mockReturnValue({ mock: "result" });
       (db.insert as any).mockReturnValue({ values: mockValues });
 
@@ -164,7 +162,6 @@ describe("API Key Service", () => {
     });
 
     it("should create an API key with expiration date", async () => {
-      const mockInsert = vi.fn().mockResolvedValue(undefined);
       const mockValues = vi.fn().mockReturnValue({ mock: "result" });
       (db.insert as any).mockReturnValue({ values: mockValues });
 
@@ -203,7 +200,6 @@ describe("API Key Service", () => {
 
     it("should validate a correct API key and return session", async () => {
       // First create a key
-      const mockInsert = vi.fn().mockResolvedValue(undefined);
       const mockValues = vi.fn().mockReturnValue({ mock: "result" });
       (db.insert as any).mockReturnValue({ values: mockValues });
 
@@ -478,9 +474,33 @@ describe("API Key Service", () => {
 
   describe("apiKeyService.revokeKey", () => {
     it("should revoke an API key", async () => {
+      // Mock getKey to return an existing key (not revoked)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([{
+                id: "key_test",
+                accountId: "acc_test",
+                userId: "usr_test",
+                userName: "Test",
+                name: "Test Key",
+                scope: "read_write",
+                keyPrefix: "abc12345",
+                lastUsedAt: null,
+                expiresAt: null,
+                revokedAt: null, // Not revoked
+                createdAt: new Date(),
+              }]),
+            }),
+          }),
+        }),
+      });
+      (db.select as any).mockReturnValue(mockSelect());
+
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue({ changes: 1 }),
+          where: vi.fn().mockResolvedValue(undefined),
         }),
       });
       (db.update as any).mockReturnValue(mockUpdate());
@@ -490,12 +510,17 @@ describe("API Key Service", () => {
     });
 
     it("should return false when no rows updated", async () => {
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue({ changes: 0 }),
+      // Mock getKey to return null (key doesn't exist)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
+          }),
         }),
       });
-      (db.update as any).mockReturnValue(mockUpdate());
+      (db.select as any).mockReturnValue(mockSelect());
 
       const success = await apiKeyService.revokeKey("key_nonexistent", "acc_test");
       expect(success).toBe(false);
@@ -504,8 +529,32 @@ describe("API Key Service", () => {
 
   describe("apiKeyService.deleteKey", () => {
     it("should permanently delete an API key", async () => {
+      // Mock getKey to return an existing key
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([{
+                id: "key_test",
+                accountId: "acc_test",
+                userId: "usr_test",
+                userName: "Test",
+                name: "Test Key",
+                scope: "read_write",
+                keyPrefix: "abc12345",
+                lastUsedAt: null,
+                expiresAt: null,
+                revokedAt: null,
+                createdAt: new Date(),
+              }]),
+            }),
+          }),
+        }),
+      });
+      (db.select as any).mockReturnValue(mockSelect());
+
       const mockDelete = vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue({ changes: 1 }),
+        where: vi.fn().mockResolvedValue(undefined),
       });
       (db.delete as any).mockReturnValue(mockDelete());
 
@@ -514,10 +563,17 @@ describe("API Key Service", () => {
     });
 
     it("should return false when no rows deleted", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue({ changes: 0 }),
+      // Mock getKey to return null (key doesn't exist)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
       });
-      (db.delete as any).mockReturnValue(mockDelete());
+      (db.select as any).mockReturnValue(mockSelect());
 
       const success = await apiKeyService.deleteKey("key_nonexistent", "acc_test");
       expect(success).toBe(false);

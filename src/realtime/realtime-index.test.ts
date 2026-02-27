@@ -186,6 +186,8 @@ describe("realtime index exports", () => {
       const data: WebSocketData = {
         connectionId: "conn-123",
         userId: "user-123",
+        userName: "Test User",
+        userAvatarUrl: null,
         session: {} as WebSocketData["session"],
         connectedAt: new Date(),
         subscriptions: new Set(),

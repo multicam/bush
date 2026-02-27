@@ -200,12 +200,6 @@ export function getBackupProvider(): IBackupProvider {
     return _backupProvider;
   }
 
-  // Determine if we need path-style URLs (MinIO, B2 need this)
-  const needsPathStyle =
-    config.STORAGE_PROVIDER === "minio" ||
-    config.STORAGE_PROVIDER === "b2" ||
-    (config.STORAGE_ENDPOINT?.includes("localhost") ?? false);
-
   _backupProvider = new S3BackupProvider({
     enabled: config.BACKUP_ENABLED,
     bucket: config.BACKUP_STORAGE_BUCKET,

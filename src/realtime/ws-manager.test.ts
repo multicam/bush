@@ -86,7 +86,7 @@ vi.mock("../db/index.js", () => ({
           })),
         })),
         where: vi.fn(() => ({
-          limit: vi.fn(() => [{ name: "Test User", avatarUrl: null }]),
+          limit: vi.fn(() => [{ firstName: "Test", lastName: "User", avatarUrl: null }]),
         })),
       })),
     })),
@@ -99,7 +99,7 @@ vi.mock("../db/schema.js", () => ({
   folders: { id: "folders.id", projectId: "folders.projectId" },
   files: { id: "files.id", projectId: "files.projectId" },
   shares: { id: "shares.id", accountId: "shares.accountId" },
-  users: { id: "users.id", name: "users.name", avatarUrl: "users.avatarUrl" },
+  users: { id: "users.id", firstName: "users.firstName", lastName: "users.lastName", avatarUrl: "users.avatarUrl" },
 }));
 
 describe("WebSocket Manager", () => {

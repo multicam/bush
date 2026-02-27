@@ -1841,7 +1841,7 @@ describe("listProjectShares", () => {
     const res = await testApp.request("/projects/prj_001/shares");
 
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await res.json() as { data: unknown[] };
     expect(json.data).toHaveLength(1);
   });
 
@@ -1884,7 +1884,7 @@ describe("listProjectShares", () => {
     const res = await testApp.request("/projects/prj_001/shares?cursor=eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTAxVDAwOjAwOjAwLjAwMFoifQ==");
 
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = await res.json() as { data: unknown };
     expect(json.data).toBeDefined();
   });
 });

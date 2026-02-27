@@ -204,9 +204,11 @@ export function sendSingle<T extends { id: string }>(
   c: Context,
   data: T,
   type: string,
-  options?: Parameters<typeof singleResponse<T>>[2]
+  options?: Parameters<typeof singleResponse<T>>[2] & { status?: number }
 ) {
-  return c.json(singleResponse(data, type, options));
+  const status = options?.status as 200 | 201 | undefined;
+  const response = singleResponse(data, type, options);
+  return status ? c.json(response, status) : c.json(response);
 }
 
 /**

@@ -94,7 +94,7 @@ app.get("/", async (c) => {
   // Get API keys
   const keys = await apiKeyService.listKeys(accountId);
 
-  const formattedItems = keys.map((key) => formatApiKey(formatDates(key)));
+  const formattedItems = keys.map((key) => formatDates(formatApiKey(key))) as { id: string }[];
 
   return sendCollection(c, formattedItems, RESOURCE_TYPES.API_KEY, {
     basePath: `/v4/accounts/${accountId}/api-keys`,
@@ -140,7 +140,7 @@ app.post("/", async (c) => {
     expiresAt,
   });
 
-  return sendSingle(c, formatApiKeyWithSecret(formatDates(key)), RESOURCE_TYPES.API_KEY, 201);
+  return sendSingle(c, formatDates(formatApiKeyWithSecret(key)) as { id: string }, RESOURCE_TYPES.API_KEY, { status: 201 });
 });
 
 /**
@@ -165,7 +165,7 @@ app.get("/:keyId", async (c) => {
     throw new NotFoundError("api_key", keyId);
   }
 
-  return sendSingle(c, formatApiKey(formatDates(key)), RESOURCE_TYPES.API_KEY);
+  return sendSingle(c, formatDates(formatApiKey(key)) as { id: string }, RESOURCE_TYPES.API_KEY);
 });
 
 /**
@@ -208,7 +208,7 @@ app.patch("/:keyId", async (c) => {
     throw new NotFoundError("api_key", keyId);
   }
 
-  return sendSingle(c, formatApiKey(formatDates(updatedKey)), RESOURCE_TYPES.API_KEY);
+  return sendSingle(c, formatDates(formatApiKey(updatedKey)) as { id: string }, RESOURCE_TYPES.API_KEY);
 });
 
 /**

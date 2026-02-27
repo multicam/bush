@@ -8,13 +8,12 @@
  * Reference: specs/04-api-reference.md Section 2.1
  */
 import { db } from "../db/index.js";
-import { apiKeys, users, accountMemberships, accounts } from "../db/schema.js";
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { apiKeys, users, accountMemberships } from "../db/schema.js";
+import { eq, and, isNull } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { hash, compare } from "bcrypt";
 import { generateId } from "../shared/id.js";
 import type { SessionData, AccountRole } from "../auth/types.js";
-import { sessionCache } from "../auth/session-cache.js";
 
 /**
  * API key prefix
@@ -352,25 +351,36 @@ export const apiKeyService = {
    * Revoke an API key (soft delete)
    */
   async revokeKey(keyId: string, accountId: string): Promise<boolean> {
-    const result = await db
+    // Check if key exists and is not already revoked
+    const existing = await this.getKey(keyId, accountId);
+    if (!existing || existing.revokedAt) {
+      return false;
+    }
+
+    await db
       .update(apiKeys)
       .set({ revokedAt: new Date(), updatedAt: new Date() })
       .where(
         and(
           eq(apiKeys.id, keyId),
-          eq(apiKeys.accountId, accountId),
-          isNull(apiKeys.revokedAt)
+          eq(apiKeys.accountId, accountId)
         )
       );
 
-    return result.changes > 0;
+    return true;
   },
 
   /**
    * Delete an API key permanently
    */
   async deleteKey(keyId: string, accountId: string): Promise<boolean> {
-    const result = await db
+    // Check if key exists first
+    const existing = await this.getKey(keyId, accountId);
+    if (!existing) {
+      return false;
+    }
+
+    await db
       .delete(apiKeys)
       .where(
         and(
@@ -379,7 +389,7 @@ export const apiKeyService = {
         )
       );
 
-    return result.changes > 0;
+    return true;
   },
 
   /**

@@ -20,10 +20,10 @@ const now = Date.now();
 
 // Bun SQLite named params require prefix in object keys (e.g. @name → {"@name": val})
 // This helper adds the @ prefix to all keys for use with prepared statements
-function p(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+function p(obj: Record<string, unknown>): Record<string, string | number | null | boolean> {
+  const result: Record<string, string | number | null | boolean> = {};
   for (const [k, v] of Object.entries(obj)) {
-    result[`@${k}`] = v;
+    result[`@${k}`] = v as string | number | null | boolean;
   }
   return result;
 }

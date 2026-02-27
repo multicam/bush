@@ -1,7 +1,7 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 14
+**Iteration**: 15
 **Coverage**: 84.08% statements (target: 80%)
 **Tests**: 2961 passing, 41 skipped
 
@@ -84,6 +84,29 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 15 -- 2026-02-27
+- Fixed: 15 TypeScript type errors discovered during typecheck
+- Coverage: 84.08% (stable, above target)
+- Type errors fixed:
+  - src/api/api-key-service.test.ts: Removed unused imports (eq, and, isNull), removed unused mockInsert variables
+  - src/api/api-key-service.ts: Removed unused imports (accounts, gt, sessionCache), fixed revokeKey/deleteKey to use existence check instead of .changes property
+  - src/types/bcrypt.d.ts: Added type declarations for bcrypt module
+  - src/api/routes/api-keys.ts: Fixed formatDates/formatApiKey ordering, added type assertions for sendSingle/sendCollection
+  - src/api/routes/index.ts: Fixed export syntax for apiKeysRoutes (named export instead of default)
+  - src/api/routes/shares.test.ts: Added type assertions for res.json() results
+  - src/db/seed.ts: Fixed p() helper return type for bun:sqlite compatibility
+  - src/realtime/realtime-index.test.ts: Added missing WebSocketData properties (userName, userAvatarUrl)
+  - src/realtime/ws-manager.ts: Fixed users.name to users.firstName/lastName, removed unused getMaxConnectionsPerUser
+  - src/storage/backup-provider.test.ts: Removed unused mkdir import
+  - src/storage/cdn-provider.ts: Fixed BinaryToTextEncoding type for digest() method
+  - src/storage/index.ts: Removed unused needsPathStyle variable
+  - src/api/response.ts: Added optional status parameter to sendSingle function
+- Test updates:
+  - Updated api-key-service.test.ts to mock getKey for revokeKey/deleteKey tests
+  - Updated ws-manager.test.ts to use firstName/lastName instead of name
+- Tests: 2961 passing, 41 skipped
+- Status: All type errors resolved, typecheck passes, tests green
+
 ### Iteration 14 -- 2026-02-27
 - Fixed: L3, L4, L5 (low priority test code quality issues)
 - Coverage: 84.14% → 84.08% (stable, above target)
