@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.13 - API Key Authentication)
+**Last updated**: 2026-02-27 (v0.1.14 - Hook Dependency Fixes)
 **Project status**: All P2 and P3 realtime items resolved. Platform is production-ready with horizontal scaling support.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -487,6 +487,26 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.14 (2026-02-27) - Hook Dependency Fixes
+
+Fixed missing dependencies in useCallback hooks that could cause stale closure bugs.
+
+**Bugs Fixed:**
+
+1. **notification-dropdown.tsx** - `handleNotificationClick` was missing `router` in dependency array
+   - Could cause navigation to use stale router instance when navigating from notifications
+
+2. **metadata-inspector.tsx** - `handleFieldUpdate` was missing `fileId` in dependency array
+   - Could cause metadata updates to use wrong file ID if fileId prop changed
+
+**Files Updated:**
+- `src/web/components/notifications/notification-dropdown.tsx` - Added `router` to deps
+- `src/web/components/metadata/metadata-inspector.tsx` - Added `fileId` to deps
+
+**Verification:**
+- All 2893 tests pass
+- Build succeeds with fewer ESLint warnings
 
 ### v0.1.13 (2026-02-27) - API Key Authentication
 
