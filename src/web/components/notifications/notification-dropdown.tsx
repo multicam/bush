@@ -153,7 +153,7 @@ export function NotificationDropdown({
 
       onClose();
     },
-    [onClose]
+    [onClose, router]
   );
 
   const handleMarkRead = useCallback(async (notification: Notification) => {

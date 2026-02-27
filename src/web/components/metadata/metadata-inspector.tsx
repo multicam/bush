@@ -383,7 +383,7 @@ export function MetadataInspector({
     } catch (err) {
       console.error("Failed to update metadata:", err);
     }
-  }, [metadata, onUpdate]);
+  }, [fileId, metadata, onUpdate]);
 
   // Build technical fields from metadata
   const technicalFields = useMemo(() => {
