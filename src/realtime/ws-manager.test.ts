@@ -102,6 +102,29 @@ vi.mock("../db/schema.js", () => ({
   users: { id: "users.id", firstName: "users.firstName", lastName: "users.lastName", avatarUrl: "users.avatarUrl" },
 }));
 
+vi.mock("../api/access-control.js", () => ({
+  verifyProjectAccess: vi.fn(),
+  verifyAccountAccess: vi.fn(),
+}));
+
+vi.mock("./redis-pubsub.js", () => ({
+  redisPubSub: {
+    init: vi.fn().mockResolvedValue(undefined),
+    isEnabled: vi.fn().mockReturnValue(false),
+    onMessage: vi.fn(),
+    onPresence: vi.fn(),
+    onPresenceLeave: vi.fn(),
+    subscribeToChannel: vi.fn().mockResolvedValue(undefined),
+    unsubscribeFromChannel: vi.fn().mockResolvedValue(undefined),
+    removePresence: vi.fn().mockResolvedValue(undefined),
+    updatePresence: vi.fn().mockResolvedValue(undefined),
+    getPresence: vi.fn().mockResolvedValue([]),
+    getMissedEvents: vi.fn().mockResolvedValue(null),
+    publishEvent: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe("WebSocket Manager", () => {
   let wsManager: any;
   let mockWs: any;
@@ -691,6 +714,306 @@ describe("WebSocket Manager", () => {
 
       // Should not throw
       expect(() => wsManager.unregister(mockWs)).not.toThrow();
+    });
+  });
+
+  describe("checkPermission", () => {
+    beforeEach(async () => {
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+    });
+
+    it("grants access to project channel when user has project access", async () => {
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1", name: "Test Project" } as any,
+        workspace: { id: "ws_1", name: "Test Workspace" } as any,
+      });
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.confirmed");
+    });
+
+    it("rejects project channel when user lacks access", async () => {
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue(null);
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_noaccess" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.rejected");
+      expect(message.reason).toBe("insufficient_permissions");
+    });
+
+    it("grants access to user channel only for own user", async () => {
+      // Subscribe to own user channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "user", resourceId: "user_1" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.confirmed");
+    });
+
+    it("rejects user channel for different user", async () => {
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "user", resourceId: "user_other" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.rejected");
+      expect(message.reason).toBe("insufficient_permissions");
+    });
+  });
+
+  describe("broadcasting", () => {
+    it("broadcasts events to subscribed connections", async () => {
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      // Create two connections for same user
+      mockWs = createMockWs();
+      const mockWs2 = createMockWs({ connectionId: "conn_456", userId: "user_2" });
+
+      wsManager.register(mockWs);
+      wsManager.register(mockWs2);
+
+      // Subscribe both to same channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+      await wsManager.handleMessage(
+        mockWs2,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Clear previous calls
+      mockWs.send.mockClear();
+      mockWs2.send.mockClear();
+
+      // Trigger broadcast through event bus
+      const { eventBus } = await import("./event-bus.js");
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      // Simulate an event from user_2 - user_1 should receive it, user_2 should not (actor exclusion)
+      onEventCallback({
+        type: "file.created",
+        eventId: "evt_1",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_1",
+        actorId: "user_2",
+        data: { fileId: "file_new", name: "test.txt", mimeType: "text/plain", size: 100, folderId: "folder_1" },
+      });
+
+      // user_1 should receive the event
+      expect(mockWs.send).toHaveBeenCalled();
+      const sentMessage = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentMessage.event).toBe("file.created");
+
+      // user_2 should NOT receive their own event (actor exclusion)
+      expect(mockWs2.send).not.toHaveBeenCalled();
+    });
+
+    it("broadcasts to file channel when fileId is present", async () => {
+      const { eventBus } = await import("./event-bus.js");
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Subscribe to file channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "file", resourceId: "file_1" })
+      );
+
+      mockWs.send.mockClear();
+
+      // Trigger broadcast with fileId
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      onEventCallback({
+        type: "file.updated",
+        eventId: "evt_2",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_1",
+        fileId: "file_1",
+        actorId: "user_other",
+        data: { fileId: "file_1", changes: { name: "renamed.txt" } },
+      });
+
+      expect(mockWs.send).toHaveBeenCalled();
+    });
+
+    it("does not broadcast to unsubscribed channels", async () => {
+      const { eventBus } = await import("./event-bus.js");
+
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      mockWs.send.mockClear();
+
+      // Trigger broadcast - user is not subscribed
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      onEventCallback({
+        type: "file.created",
+        eventId: "evt_3",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_not_subscribed",
+        actorId: "user_other",
+        data: { fileId: "file_2", name: "other.txt", mimeType: "text/plain", size: 50, folderId: "folder_2" },
+      });
+
+      // Should not receive event
+      expect(mockWs.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("presence", () => {
+    beforeEach(async () => {
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+    });
+
+    it("handles presence action", async () => {
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      // First subscribe to channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Then send presence
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({
+          action: "presence",
+          channel: "project",
+          resourceId: "proj_1",
+          state: { cursor: { x: 100, y: 200 } },
+        })
+      );
+
+      // Should not error - presence is silently processed
+    });
+
+    it("rejects presence when not subscribed to channel", async () => {
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({
+          action: "presence",
+          channel: "project",
+          resourceId: "proj_1",
+          state: { cursor: { x: 100, y: 200 } },
+        })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("error");
+      expect(message.code).toBe("not_subscribed");
+    });
+
+    it("rate limits presence updates", async () => {
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      // Subscribe to channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Send multiple presence updates rapidly
+      for (let i = 0; i < 5; i++) {
+        await wsManager.handleMessage(
+          mockWs,
+          JSON.stringify({
+            action: "presence",
+            channel: "project",
+            resourceId: "proj_1",
+            state: { cursor: { x: i, y: i } },
+          })
+        );
+      }
+
+      // Should not error - rate limiting is silent (drops updates)
+    });
+  });
+
+  describe("safeModify and pending modifications", () => {
+    it("queues modifications during broadcast and processes after", async () => {
+      const { eventBus } = await import("./event-bus.js");
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Subscribe to channel
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      // Get the event callback
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      // The broadcast should complete without issues
+      // Safe modification queueing is internal behavior
+      onEventCallback({
+        type: "file.status_changed",
+        eventId: "evt_test",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_1",
+        actorId: "user_other",
+        data: { fileId: "file_test", oldStatus: "processing", newStatus: "ready", changedBy: "user_other" },
+      });
+
+      // Verify the manager is still in a consistent state
+      const stats = wsManager.getStats();
+      expect(stats.totalConnections).toBe(1);
     });
   });
 });

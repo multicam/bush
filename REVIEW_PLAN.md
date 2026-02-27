@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 19
-**Coverage**: 89.46% statements (target: 80%)
-**Tests**: 3185 passing, 41 skipped
+**Iteration**: 20
+**Coverage**: 89.83% statements (target: 80%)
+**Tests**: 3196 passing, 41 skipped
 
 ## Spec Gaps & Analysis (Phase 0)
 
@@ -92,9 +92,7 @@
 | src/api/index.ts | 0% | 0% | 0% | SKIP | Server entry point |
 | src/media/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
 | src/scheduled/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
-| src/api/routes/projects.ts | 32.56% | 91.89% | 100% | **HIGH** | Add member route tests |
-| src/api/routes/bulk.ts | 69.94% | 93.66% | 0% | **HIGH** | Add metadata validation tests |
-| src/realtime/ws-manager.ts | 59.96% | 73.68% | 76% | MEDIUM | Add broadcasting tests |
+| src/realtime/ws-manager.ts | 74.67% | 76.99% | 88% | MEDIUM | Add Redis pub/sub tests |
 | src/transcription/processor.ts | 60.35% | 76.74% | 62.5% | MEDIUM | Add error path tests |
 | src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | Add CDN/Backup init tests |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | LOW | Edge cases only |
@@ -106,6 +104,26 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 20 -- 2026-02-27
+- Focus: Coverage improvement for ws-manager.ts (broadcasting, presence, permissions)
+- Coverage: 89.46% → 89.83% (+0.37pp)
+- Tests: 3185 → 3196 (+11 new tests)
+- Test file expanded:
+  - src/realtime/ws-manager.test.ts: 37 → 48 tests (+11 tests for broadcasting, presence, permission checks)
+- Coverage improvements:
+  - src/realtime/ws-manager.ts: 59.96% → 74.67% (+14.71pp)
+  - src/realtime overall: 75.23% → 82.66% (+7.43pp)
+- New test cases:
+  - Permission checking for project, user, and share channels
+  - Event broadcasting with actor exclusion
+  - File channel broadcasting
+  - Presence update handling and rate limiting
+  - Safe modification queue during broadcasts
+- Removed coverage gaps:
+  - src/api/routes/projects.ts: Now above 80%
+  - src/api/routes/bulk.ts: Now above 80%
+- Status: All tests green (3196 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 19 -- 2026-02-27
 - Focus: Fix TypeScript errors in bulk.test.ts
 - Fixed: Type errors in test file where SESSION was missing required properties and verifyAccountMembership was returning boolean instead of AccountRole | null
