@@ -243,14 +243,19 @@ export function PdfViewer({
           canvas: canvas,
         }).promise;
 
-        // Render text layer for selection (simplified - text layer API changed in pdf.js v4+)
+        // Render text layer for selection using pdf.js v5+ TextLayer class
         textLayer.innerHTML = "";
         textLayer.style.width = `${viewport.width}px`;
         textLayer.style.height = `${viewport.height}px`;
 
-        // Text selection is now handled via the newer pdf.js API
-        // For now, we skip the text layer rendering as the API has changed
-        // TODO: Implement text layer with pdf.js v4+ compatible API if needed
+        // Get text content and render text layer for selection
+        const textContent = await page.getTextContent();
+        const textLayerInstance = new pdfjsLib.TextLayer({
+          textContentSource: textContent,
+          container: textLayer,
+          viewport: viewport,
+        });
+        await textLayerInstance.render();
 
         onPageChange?.(currentPage);
       } catch (err) {

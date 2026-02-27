@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.96 - HLS Generation Processor)
+**Last updated**: 2026-02-27 (v0.0.97 - PDF Text Layer)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2 items resolved.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -21,7 +21,7 @@
 | **Media Processors** | 7 | metadata, thumbnail, proxy, waveform, filmstrip, frame-capture, hls |
 | **Email Templates** | 10 | All implemented via SMTP provider |
 | **WebSocket Events** | 26 | 26 distinct event types (all wired via emit helpers) |
-| **TODO Comments** | 9 | 1 minor (PDF text layer), 8 informational (email provider stubs) |
+| **TODO Comments** | 8 | 8 informational (email provider stubs) |
 
 ---
 
@@ -33,7 +33,7 @@
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **TODO Comments** | 9 | 8 email provider stubs (P3), 1 PDF text layer (P3) |
+| **TODO Comments** | 8 | 8 email provider stubs (P3) |
 | **Placeholder Implementations** | 4 | SendGrid, SES, Postmark, Resend → fallback to SMTP |
 | **Skipped Tests** | 2 | permissions-integration (conditional), VTT round-trip (bug) |
 | **Dead Code Paths** | 0 | — |
@@ -171,9 +171,12 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - Updated CI workflow to use Bun instead of npm. This ensures `better-sqlite3` native module is properly installed and available for integration tests.
 
-### [P3] PDF Viewer Text Layer [4h] -- NOT STARTED
+### [P3] PDF Viewer Text Layer [4h] -- RESOLVED (v0.0.97)
 
-- `src/web/components/viewers/pdf-viewer.tsx:253` — pdf.js v4+ API changes broke text layer; cannot select/copy text from PDFs. (CONFIRMED - skipped due to pdf.js v4+ API changes)
+- Fixed text layer rendering using pdf.js v5+ `TextLayer` class API
+- Updated `src/web/components/viewers/pdf-viewer.tsx` to use `new pdfjsLib.TextLayer()` instead of deprecated approach
+- Added comprehensive CSS styles for text layer selection highlighting
+- Text selection and copy now works in PDF viewer
 
 ### [P3] Missing Permission Checks on Some Routes [2h] -- RESOLVED (v0.0.93)
 
@@ -337,6 +340,24 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.97 (2026-02-27) - PDF Text Layer Fix
+
+Fixed text selection in PDF viewer by implementing the new pdf.js v5+ `TextLayer` class API. Previously, text layer rendering was skipped due to API changes in pdf.js v4+.
+
+**Features:**
+- Text selection and copy now works in PDF viewer
+- Selection highlighting with blue highlight color
+- Properly positioned text layer overlay on canvas
+
+**Files:**
+- `src/web/components/viewers/pdf-viewer.tsx` - Updated to use `new pdfjsLib.TextLayer()` API
+- `src/web/components/viewers/pdf-viewer.module.css` - Added comprehensive text layer CSS styles
+
+**Technical details:**
+- Uses pdf.js v5 `TextLayer` class instead of deprecated `renderTextLayer()` function
+- Text content loaded via `page.getTextContent()` and rendered via `textLayer.render()`
+- CSS includes selection highlighting, text positioning, and pdf.js compatibility styles
 
 ### v0.0.96 (2026-02-27) - HLS Generation Processor
 

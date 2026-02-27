@@ -283,17 +283,22 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Text layer for selection */
+/* Text layer for selection - pdf.js v5+ compatible */
 .textLayer {
   position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  opacity: 0.2;
+  overflow: hidden;
   line-height: 1;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
 }
 
-.textLayer span {
+.textLayer :is(span, br) {
   color: transparent;
   position: absolute;
   white-space: pre;
@@ -301,8 +306,65 @@
   transform-origin: 0 0;
 }
 
+.textLayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+
+.textLayer .highlight {
+  margin: -1px;
+  padding: 1px;
+  background-color: rgba(180, 0, 170, 0.3);
+  border-radius: 4px;
+}
+
+.textLayer .highlight.appended {
+  position: initial;
+}
+
+.textLayer .highlight.begin {
+  border-radius: 4px 0 0 4px;
+}
+
+.textLayer .highlight.end {
+  border-radius: 0 4px 4px 0;
+}
+
+.textLayer .highlight.middle {
+  border-radius: 0;
+}
+
+.textLayer .highlight.selected {
+  background-color: rgba(0, 100, 200, 0.4);
+}
+
 .textLayer ::selection {
   background-color: rgba(59, 130, 246, 0.4);
+}
+
+.textLayer ::-moz-selection {
+  background-color: rgba(59, 130, 246, 0.4);
+}
+
+.textLayer br::selection {
+  background: transparent;
+}
+
+.textLayer br::-moz-selection {
+  background: transparent;
+}
+
+.textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: -1;
+  cursor: default;
+  user-select: none;
+}
+
+.textLayer .endOfContent.active {
+  top: 0;
 }
 
 /* Comment marker */
