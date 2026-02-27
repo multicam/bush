@@ -37,23 +37,22 @@ import { getRedisOptions } from "../media/queue.js";
 
 /**
  * Get the configured transcription provider
+ * Uses validated config - only "deepgram" and "faster-whisper" are supported
  */
 function getProvider(): ITranscriptionProvider {
-  const providerName = process.env.TRANSCRIPTION_PROVIDER || "deepgram";
+  // Use validated config - TRANSCRIPTION_PROVIDER is validated by Zod schema
+  // to only allow "deepgram" or "faster-whisper" (assemblyai not yet implemented)
+  const providerName = config.TRANSCRIPTION_PROVIDER;
 
   switch (providerName) {
     case "deepgram":
       return new DeepgramProvider(process.env.DEEPGRAM_API_KEY);
     case "faster-whisper":
       return new FasterWhisperProvider(process.env.FASTER_WHISPER_URL);
-    case "assemblyai":
-      throw new Error(
-        "AssemblyAI transcription provider is not yet implemented. " +
-        "Please use 'deepgram' or 'faster-whisper' instead. " +
-        "See specs/08-transcription.md for provider options."
-      );
     default:
-      throw new Error(`Unknown transcription provider: ${providerName}`);
+      // TypeScript exhaustive check - this should never happen due to Zod validation
+      const _exhaustive: never = providerName;
+      throw new Error(`Unknown transcription provider: ${_exhaustive}`);
   }
 }
 
@@ -170,11 +169,12 @@ export async function processTranscriptionJob(
       .where(eq(transcriptWords.transcriptId, transcriptId));
   } else {
     transcriptId = `tr_${randomUUID().replace(/-/g, "")}`;
-    const provider = process.env.TRANSCRIPTION_PROVIDER || "deepgram";
+    const provider = config.TRANSCRIPTION_PROVIDER;
 
     await db.insert(transcripts).values({
       id: transcriptId,
       fileId,
+      // Cast is safe because config validates provider is a valid option
       provider: provider as "deepgram" | "assemblyai" | "faster-whisper",
       status: "processing",
       speakerNames: {},

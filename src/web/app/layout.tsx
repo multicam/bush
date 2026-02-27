@@ -46,7 +46,13 @@ const antiFoucScript = `
       document.documentElement.setAttribute('data-theme', 'light');
     }
     // Dark is default, so no attribute needed for dark theme
-  } catch (e) {}
+  } catch (e) {
+    // localStorage access may be blocked in private browsing mode
+    // or by browser settings - this is non-critical and expected
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[Theme] Could not access localStorage:', e.message);
+    }
+  }
 })();
 `;
 

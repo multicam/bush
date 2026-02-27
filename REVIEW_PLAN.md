@@ -1,7 +1,7 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 1
+**Iteration**: 2
 **Coverage**: 86.05% statements (target: 80%)
 **Tests**: 2808 passing, 41 skipped
 
@@ -11,10 +11,10 @@
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
 | C1 | src/api/routes/bulk.ts | 383-384 | SQL injection risk with raw SQL in bulk delete - use inArray() | **fixed** |
-| C2 | src/transcription/processor.ts | 49-54 | AssemblyAI provider throws at runtime - unimplemented enum option | pending |
-| C3 | src/web/app/layout.tsx | 49 | Empty catch block swallows theme initialization errors | pending |
+| C2 | src/transcription/processor.ts | 49-54 | AssemblyAI provider throws at runtime - use validated config | **fixed** |
+| C3 | src/web/app/layout.tsx | 49 | Empty catch block swallows theme initialization errors | **fixed** |
 | C4 | src/web/context/auth-context.tsx | 68-85 | refresh() lacks cancellation - state update after unmount | **fixed** |
-| C5 | src/web/lib/ws-client.ts | 468-470 | WebSocket lifecycle listeners never removed | pending |
+| C5 | src/web/lib/ws-client.ts | 468-470 | WebSocket lifecycle listeners never removed | **fixed** |
 
 ### High (code smells, missing validation)
 | # | File | Line | Issue | Status |
@@ -86,6 +86,11 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 2 -- 2026-02-27
+- Fixed: C2 (validated config for provider), C3 (theme error logging), C5 (WebSocket cleanup)
+- Tests: 2808 passing, 41 skipped
+- Status: All 5 critical issues resolved, tests green, typecheck passes
+
 ### Iteration 1 -- 2026-02-27
 - Triaged: 37 issues (5 critical, 11 high, 15 medium, 6 low)
 - Fixed: C1 (SQL injection), C4 (refresh cancellation), H3 (race condition), H6 (stale closure), H7 (navigation)

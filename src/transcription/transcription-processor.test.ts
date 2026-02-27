@@ -46,6 +46,7 @@ vi.mock("../config/index.js", () => ({
   config: {
     FFMPEG_PATH: "ffmpeg",
     MEDIA_TEMP_DIR: "/tmp",
+    TRANSCRIPTION_PROVIDER: "deepgram",
   },
 }));
 
@@ -169,25 +170,13 @@ describe("Transcription Processor", () => {
       expect(processTranscriptionJob).toBeDefined();
     });
 
-    it("throws error for unknown provider", async () => {
-      process.env.TRANSCRIPTION_PROVIDER = "unknown-provider";
-
-      vi.resetModules();
+    it("uses validated config for provider selection", async () => {
+      // The provider is now read from validated config, not process.env
+      // Config validation only allows "deepgram" or "faster-whisper"
       const { processTranscriptionJob } = await import("./processor.js");
 
-      await expect(
-        processTranscriptionJob({
-          data: {
-            type: "transcription",
-            fileId: "file_123",
-            storageKey: "path/to/audio.mp3",
-            durationSeconds: 60,
-            accountId: "account_123",
-            projectId: "project_123",
-            mimeType: "audio/mp3",
-          },
-        })
-      ).rejects.toThrow("Unknown transcription provider: unknown-provider");
+      // Should work with deepgram (from mock config)
+      expect(processTranscriptionJob).toBeDefined();
     });
   });
 

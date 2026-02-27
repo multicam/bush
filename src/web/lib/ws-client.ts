@@ -433,41 +433,68 @@ export class BushSocket {
 let sharedInstance: BushSocket | null = null;
 
 /**
- * Track if we've set up page lifecycle listeners
+ * Stored lifecycle handler references for cleanup
  */
-let lifecycleListenersSetUp = false;
+let lifecycleHandlers: {
+  visibilityChange: (() => void) | null;
+  beforeUnload: (() => void) | null;
+  pageHide: (() => void) | null;
+} = {
+  visibilityChange: null,
+  beforeUnload: null,
+  pageHide: null,
+};
 
 /**
  * Set up page lifecycle listeners to disconnect on hide/unload
  */
 function setupLifecycleListeners(): void {
-  if (lifecycleListenersSetUp || typeof window === "undefined") return;
-  lifecycleListenersSetUp = true;
+  if (lifecycleHandlers.visibilityChange || typeof window === "undefined") return;
 
   // Disconnect when page is hidden (tab switch, minimize, etc.)
-  const handleVisibilityChange = (): void => {
+  lifecycleHandlers.visibilityChange = (): void => {
     if (document.visibilityState === "hidden" && sharedInstance) {
       sharedInstance.disconnect();
     }
   };
 
   // Disconnect before page unload
-  const handleBeforeUnload = (): void => {
+  lifecycleHandlers.beforeUnload = (): void => {
     if (sharedInstance) {
       sharedInstance.disconnect();
     }
   };
 
   // Disconnect on page hide (mobile, etc.)
-  const handlePageHide = (): void => {
+  lifecycleHandlers.pageHide = (): void => {
     if (sharedInstance) {
       sharedInstance.disconnect();
     }
   };
 
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  window.addEventListener("pagehide", handlePageHide);
+  document.addEventListener("visibilitychange", lifecycleHandlers.visibilityChange);
+  window.addEventListener("beforeunload", lifecycleHandlers.beforeUnload);
+  window.addEventListener("pagehide", lifecycleHandlers.pageHide);
+}
+
+/**
+ * Remove lifecycle listeners (for cleanup during testing or app shutdown)
+ */
+function removeLifecycleListeners(): void {
+  if (lifecycleHandlers.visibilityChange) {
+    document.removeEventListener("visibilitychange", lifecycleHandlers.visibilityChange);
+  }
+  if (lifecycleHandlers.beforeUnload) {
+    window.removeEventListener("beforeunload", lifecycleHandlers.beforeUnload);
+  }
+  if (lifecycleHandlers.pageHide) {
+    window.removeEventListener("pagehide", lifecycleHandlers.pageHide);
+  }
+  lifecycleHandlers = {
+    visibilityChange: null,
+    beforeUnload: null,
+    pageHide: null,
+  };
 }
 
 /**
@@ -489,4 +516,6 @@ export function resetBushSocket(): void {
     sharedInstance.disconnect();
     sharedInstance = null;
   }
+  // Clean up lifecycle listeners to prevent memory leaks
+  removeLifecycleListeners();
 }
