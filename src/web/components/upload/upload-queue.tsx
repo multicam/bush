@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   UploadClient,
   UploadProgress,

@@ -300,7 +300,6 @@ async function apiFetch<T>(
       }
 
       lastError = error;
-      lastResponse = undefined;
 
       // Check if we should retry
       if (shouldRetry && attempt < maxRetries && isRetryableError(error)) {
@@ -1279,6 +1278,7 @@ export const commentsApi = {
     include_replies?: boolean;
     limit?: number;
     cursor?: string;
+    signal?: AbortSignal;
   }) => {
     const params = new URLSearchParams();
     if (options?.include_replies !== undefined) {
@@ -1292,7 +1292,7 @@ export const commentsApi = {
     }
     const queryString = params.toString();
     const path = `/files/${fileId}/comments${queryString ? `?${queryString}` : ""}`;
-    return apiFetch<CommentCollectionWithUsersResponse>(path);
+    return apiFetch<CommentCollectionWithUsersResponse>(path, { signal: options?.signal });
   },
 
   /**
@@ -1301,6 +1301,7 @@ export const commentsApi = {
   listByVersionStack: async (stackId: string, options?: {
     limit?: number;
     cursor?: string;
+    signal?: AbortSignal;
   }) => {
     const params = new URLSearchParams();
     if (options?.limit) {
@@ -1311,7 +1312,7 @@ export const commentsApi = {
     }
     const queryString = params.toString();
     const path = `/version-stacks/${stackId}/comments${queryString ? `?${queryString}` : ""}`;
-    return apiFetch<CommentCollectionWithUsersResponse>(path);
+    return apiFetch<CommentCollectionWithUsersResponse>(path, { signal: options?.signal });
   },
 
   /**

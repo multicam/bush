@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.99 - Design System Planning)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All backend P2 items resolved. Next phase: Design System implementation (specs 20-21) and Frontend Testing (spec 15).
+**Last updated**: 2026-02-27 (v0.0.99 - Design System Phase 0 Complete)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All backend P2 items resolved. Design System Phase 0 (Infrastructure) complete. Next: Phase 1 (Theme + Fonts) and Frontend Testing.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -87,7 +87,7 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-**Backend P2 items resolved.** Design System (Phases 0-6) and Frontend Testing remain.
+**Backend P2 items resolved.** Design System Phase 0 complete. Phases 1-6 and Frontend Testing remain.
 
 ### Previously Completed P2 Items
 
@@ -108,7 +108,7 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ---
 
-### [P2] Design System Phase 0: Infrastructure [2h] -- NOT STARTED
+### [P2] Design System Phase 0: Infrastructure [2h] -- RESOLVED (v0.0.99)
 
 - Install Tailwind v4 + PostCSS for Next.js
 - Create `src/web/styles/tokens.css` (all CSS custom properties — dark-first)
@@ -428,6 +428,38 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.99 (2026-02-27) - Design System Phase 0: Infrastructure
+
+Implemented the foundation for the design system by installing Tailwind CSS v4 and creating the CSS infrastructure for dark-first design tokens.
+
+**Features:**
+- **Tailwind CSS v4** - Installed with @tailwindcss/postcss for Next.js integration
+- **Design Tokens** - Created comprehensive CSS custom properties for:
+  - Colors (primary, accent, surface, text, semantic, border)
+  - Typography (font families, sizes, weights, line heights)
+  - Spacing scale (0-128)
+  - Border radius (none, sm, md, lg, full)
+  - Shadows (xs, sm, md, lg, glow)
+  - Motion (durations, easing, transitions)
+  - Z-index scale
+- **Theme Mapping** - @theme directive maps tokens to Tailwind utilities
+- **Custom Scrollbar** - Dark-themed scrollbar styles
+- **Minimal Reset** - Clean globals.css with box-sizing reset
+- **PostCSS Configuration** - Configured for Tailwind v4 processing
+
+**Files:**
+- `src/web/styles/tokens.css` (new) - All CSS custom properties
+- `src/web/styles/theme.css` (new) - @tailwind directive + @theme mapping
+- `src/web/styles/scrollbar.css` (new) - Custom scrollbar styles
+- `src/web/styles/globals.css` (new) - Minimal CSS reset
+- `postcss.config.mjs` (new) - PostCSS configuration
+- `src/web/app/layout.tsx` (modified) - Import new design system styles
+
+**Bug Fixes (During Verification):**
+- Fixed `commentsApi.listByFile` and `listByVersionStack` to support `AbortSignal` for cancellable requests
+- Fixed missing `useEffect` import in `upload-queue.tsx`
+- Removed unused `lastResponse` variable in `api.ts`
 
 ### v0.0.98 (2026-02-27) - Email Provider API Implementations
 

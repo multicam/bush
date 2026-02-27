@@ -296,8 +296,8 @@ export function CommentPanel({
 
       try {
         const response = fileId
-          ? await commentsApi.listByFile(fileId, { include_replies: true, limit: 100 }, { signal: abortControllerRef.current.signal })
-          : await commentsApi.listByVersionStack(versionStackId!, { limit: 100 }, { signal: abortControllerRef.current.signal });
+          ? await commentsApi.listByFile(fileId, { include_replies: true, limit: 100, signal: abortControllerRef.current.signal })
+          : await commentsApi.listByVersionStack(versionStackId!, { limit: 100, signal: abortControllerRef.current.signal });
 
         // Check if component is still mounted
         if (!isMountedRef.current) return;

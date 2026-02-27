@@ -1,0 +1,255 @@
+/**
+ * Design System Tokens
+ *
+ * This file defines all CSS custom properties (design tokens) for the Bush design system.
+ * These tokens are the single source of truth for colors, typography, spacing, etc.
+ *
+ * Dark theme is the default (dark-first approach).
+ * Light theme overrides are applied via [data-theme="light"] selector.
+ *
+ * Reference: specs/20-design-foundations.md
+ */
+
+/* ============================================
+   DARK THEME (Default)
+   ============================================ */
+:root {
+  /* ----------------------------------------
+     COLOR SYSTEM - SURFACES
+     ---------------------------------------- */
+  --surface-0: #09090b; /* Deepest background (sidebar rail, inset areas) */
+  --surface-1: #111113; /* Page background */
+  --surface-2: #18181b; /* Cards, panels, elevated surfaces */
+  --surface-3: #27272a; /* Hover states, active backgrounds */
+  --surface-4: #3f3f46; /* Active/pressed states */
+
+  /* ----------------------------------------
+     COLOR SYSTEM - BORDERS
+     ---------------------------------------- */
+  --border-default: #27272a;
+  --border-hover: #3f3f46;
+  --border-active: #52525b;
+
+  /* ----------------------------------------
+     COLOR SYSTEM - TEXT
+     ---------------------------------------- */
+  --text-primary: #fafafa; /* Headings, primary content */
+  --text-secondary: #a1a1aa; /* Descriptions, supporting text */
+  --text-muted: #71717a; /* Placeholders, disabled, timestamps */
+  --text-inverse: #18181b; /* Text on accent backgrounds */
+
+  /* ----------------------------------------
+     COLOR SYSTEM - ACCENT (Orange)
+     ---------------------------------------- */
+  --accent: #ff4017;
+  --accent-hover: #e63a14;
+  --accent-active: #cc3311;
+  --accent-muted: rgba(255, 64, 23, 0.15);
+  --accent-glow: rgba(255, 64, 23, 0.25);
+
+  /* ----------------------------------------
+     COLOR SYSTEM - STATUS
+     ---------------------------------------- */
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+  --status-info: #3b82f6;
+
+  /* ----------------------------------------
+     TYPOGRAPHY - FONTS
+     ---------------------------------------- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+
+  /* ----------------------------------------
+     TYPOGRAPHY - SCALE
+     ---------------------------------------- */
+  --text-display: 48px;
+  --text-h1: 32px;
+  --text-h2: 24px;
+  --text-h3: 20px;
+  --text-h4: 16px;
+  --text-body: 14px;
+  --text-body-sm: 13px;
+  --text-caption: 12px;
+  --text-label: 11px;
+  --text-code: 13px;
+
+  /* ----------------------------------------
+     TYPOGRAPHY - LINE HEIGHTS
+     ---------------------------------------- */
+  --leading-display: 1.1;
+  --leading-h1: 1.2;
+  --leading-h2: 1.3;
+  --leading-h3: 1.4;
+  --leading-h4: 1.5;
+  --leading-body: 1.6;
+  --leading-body-sm: 1.5;
+  --leading-caption: 1.4;
+  --leading-label: 1.3;
+  --leading-code: 1.6;
+
+  /* ----------------------------------------
+     TYPOGRAPHY - FONT WEIGHTS
+     ---------------------------------------- */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ----------------------------------------
+     TYPOGRAPHY - LETTER SPACING
+     ---------------------------------------- */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+
+  /* ----------------------------------------
+     SPACING (Base unit: 4px)
+     ---------------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ----------------------------------------
+     BORDER RADIUS
+     ---------------------------------------- */
+  --radius-xs: 4px; /* Small inline elements, chips */
+  --radius-sm: 6px; /* Buttons, inputs, select */
+  --radius-md: 8px; /* Cards, dropdowns, menus */
+  --radius-lg: 12px; /* Modals, panels, dialogs */
+  --radius-full: 9999px; /* Pills, tags, badges, avatars */
+
+  /* ----------------------------------------
+     SHADOWS
+     ---------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 0 12px var(--accent-glow);
+
+  /* ----------------------------------------
+     MOTION - DURATIONS
+     ---------------------------------------- */
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-enter: 250ms;
+  --duration-exit: 200ms;
+
+  /* ----------------------------------------
+     MOTION - EASINGS
+     ---------------------------------------- */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ----------------------------------------
+     Z-INDEX SCALE
+     ---------------------------------------- */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sidebar: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-upload-drawer: 600;
+  --z-toast: 700;
+  --z-tooltip: 800;
+  --z-command-palette: 900;
+
+  /* ----------------------------------------
+     LAYOUT - SIDEBAR
+     ---------------------------------------- */
+  --sidebar-collapsed: 64px;
+  --sidebar-expanded: 240px;
+
+  /* ----------------------------------------
+     LAYOUT - VIEWER
+     ---------------------------------------- */
+  --viewer-comment-panel: 360px;
+  --viewer-comment-min: 280px;
+  --viewer-comment-max: 600px;
+}
+
+/* ============================================
+   LIGHT THEME (User-toggled)
+   ============================================ */
+[data-theme="light"] {
+  /* Surfaces */
+  --surface-0: #ffffff;
+  --surface-1: #fafafa;
+  --surface-2: #f4f4f5;
+  --surface-3: #e4e4e7;
+  --surface-4: #d4d4d8;
+
+  /* Borders */
+  --border-default: #e4e4e7;
+  --border-hover: #d4d4d8;
+  --border-active: #a1a1aa;
+
+  /* Text */
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+  --text-inverse: #fafafa;
+
+  /* Accent - Same across themes */
+  --accent: #ff4017;
+  --accent-hover: #e63a14;
+  --accent-active: #cc3311;
+  --accent-muted: rgba(255, 64, 23, 0.1);
+  --accent-glow: rgba(255, 64, 23, 0.2);
+
+  /* Shadows - Lighter in light mode */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-accent: 0 0 8px var(--accent-glow);
+}
+
+/* ============================================
+   VIEWER CONTEXT (Always Dark)
+   The media viewer is always dark regardless of theme.
+   This ensures accurate color perception for media.
+   ============================================ */
+[data-viewer] {
+  --surface-0: #09090b;
+  --surface-1: #111113;
+  --surface-2: #18181b;
+  --surface-3: #27272a;
+  --surface-4: #3f3f46;
+
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  --border-default: #27272a;
+  --border-hover: #3f3f46;
+  --border-active: #52525b;
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-enter: 0ms;
+    --duration-exit: 0ms;
+  }
+}

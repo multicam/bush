@@ -1,0 +1,285 @@
+/**
+ * Tailwind CSS v4 Theme Configuration
+ *
+ * This file imports Tailwind CSS and maps our design tokens
+ * to Tailwind utility classes via the @theme directive.
+ *
+ * Usage: Import this file in your layout.tsx
+ * Classes: bg-surface-0, text-primary, border-default, etc.
+ *
+ * Reference: specs/20-design-foundations.md
+ */
+
+/* Import Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* Import our design tokens */
+@import "./tokens.css";
+
+/* Map tokens to Tailwind utilities */
+@theme {
+  /* ----------------------------------------
+     COLORS - SURFACES
+     ---------------------------------------- */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+
+  /* ----------------------------------------
+     COLORS - BORDERS
+     ---------------------------------------- */
+  --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
+  --color-border-active: var(--border-active);
+
+  /* ----------------------------------------
+     COLORS - TEXT
+     ---------------------------------------- */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  /* ----------------------------------------
+     COLORS - ACCENT
+     ---------------------------------------- */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-glow: var(--accent-glow);
+
+  /* ----------------------------------------
+     COLORS - STATUS
+     ---------------------------------------- */
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-error: var(--status-error);
+  --color-info: var(--status-info);
+
+  /* ----------------------------------------
+     FONT FAMILIES
+     ---------------------------------------- */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* ----------------------------------------
+     FONT SIZES
+     ---------------------------------------- */
+  --text-display: var(--text-display);
+  --text-h1: var(--text-h1);
+  --text-h2: var(--text-h2);
+  --text-h3: var(--text-h3);
+  --text-h4: var(--text-h4);
+  --text-body: var(--text-body);
+  --text-body-sm: var(--text-body-sm);
+  --text-caption: var(--text-caption);
+  --text-label: var(--text-label);
+  --text-code: var(--text-code);
+
+  /* ----------------------------------------
+     LINE HEIGHTS
+     ---------------------------------------- */
+  --leading-display: var(--leading-display);
+  --leading-h1: var(--leading-h1);
+  --leading-h2: var(--leading-h2);
+  --leading-h3: var(--leading-h3);
+  --leading-h4: var(--leading-h4);
+  --leading-body: var(--leading-body);
+  --leading-body-sm: var(--leading-body-sm);
+  --leading-caption: var(--leading-caption);
+  --leading-label: var(--leading-label);
+  --leading-code: var(--leading-code);
+
+  /* ----------------------------------------
+     LETTER SPACING
+     ---------------------------------------- */
+  --tracking-tight: var(--tracking-tight);
+  --tracking-wide: var(--tracking-wide);
+
+  /* ----------------------------------------
+     SPACING
+     ---------------------------------------- */
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --spacing-20: var(--space-20);
+
+  /* ----------------------------------------
+     BORDER RADIUS
+     ---------------------------------------- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+
+  /* ----------------------------------------
+     SHADOWS
+     ---------------------------------------- */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-accent: var(--shadow-accent);
+
+  /* ----------------------------------------
+     ANIMATIONS - DURATIONS
+     ---------------------------------------- */
+  --animate-duration-fast: var(--duration-fast);
+  --animate-duration-normal: var(--duration-normal);
+  --animate-duration-slow: var(--duration-slow);
+  --animate-duration-enter: var(--duration-enter);
+  --animate-duration-exit: var(--duration-exit);
+
+  /* ----------------------------------------
+     ANIMATIONS - EASINGS
+     ---------------------------------------- */
+  --ease-default: var(--ease-default);
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+  --ease-spring: var(--ease-spring);
+
+  /* ----------------------------------------
+     Z-INDEX
+     ---------------------------------------- */
+  --z-base: var(--z-base);
+  --z-dropdown: var(--z-dropdown);
+  --z-sticky: var(--z-sticky);
+  --z-sidebar: var(--z-sidebar);
+  --z-modal-backdrop: var(--z-modal-backdrop);
+  --z-modal: var(--z-modal);
+  --z-upload-drawer: var(--z-upload-drawer);
+  --z-toast: var(--z-toast);
+  --z-tooltip: var(--z-tooltip);
+  --z-command-palette: var(--z-command-palette);
+
+  /* ----------------------------------------
+     LAYOUT
+     ---------------------------------------- */
+  --sidebar-collapsed: var(--sidebar-collapsed);
+  --sidebar-expanded: var(--sidebar-expanded);
+  --viewer-comment-panel: var(--viewer-comment-panel);
+}
+
+/* ----------------------------------------
+   CUSTOM ANIMATIONS
+   ---------------------------------------- */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    transform: scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Animation utilities */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--ease-default);
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--duration-exit) var(--ease-exit);
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-slow) var(--ease-enter);
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--duration-enter) var(--ease-enter);
+}
+
+.animate-modal-in {
+  animation: modalIn var(--duration-enter) var(--ease-enter);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

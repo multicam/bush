@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+// Import new design system (Tailwind v4 + tokens)
+import "../styles/theme.css";
+// Keep old globals.css for backward compatibility during migration
 import "./globals.css";
 import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { AuthProvider, WorkspaceProvider } from "@/web/context";

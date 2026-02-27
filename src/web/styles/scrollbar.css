@@ -1,0 +1,63 @@
+/**
+ * Custom Scrollbar Styles
+ *
+ * Minimal, subtle scrollbars that appear on scroll
+ * and auto-hide after inactivity where supported.
+ *
+ * Reference: specs/20-design-foundations.md - Scrollbars section
+ */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-4);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+/* Hover state for Firefox */
+*:hover {
+  scrollbar-color: var(--text-muted) transparent;
+}
+
+/* Auto-hide scrollbar on inactivity (where supported via JS) */
+/* This is a progressive enhancement - browsers without support show scrollbar always */
+[data-scrollbar-autohide] {
+  scrollbar-width: none;
+}
+
+[data-scrollbar-autohide]::-webkit-scrollbar {
+  display: none;
+}
+
+[data-scrollbar-autohide]:hover,
+[data-scrollbar-autohide]:focus-within {
+  scrollbar-width: thin;
+}
+
+[data-scrollbar-autohide]:hover::-webkit-scrollbar,
+[data-scrollbar-autohide]:focus-within::-webkit-scrollbar {
+  display: block;
+}
+
+/* Corner where horizontal and vertical scrollbars meet */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
