@@ -1,4 +1,4 @@
-import { test, expect } from "../helpers/demo-auth";
+import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -57,13 +57,16 @@ test.describe("UC-07: Upload Video", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
+    // Hide Next.js dev overlay after navigation
+    await dismissDevOverlay(page);
+
     // Show dropzone first
     const uploadBtn = page.getByRole("button", { name: /Upload Files/i });
     await uploadBtn.click();
     await page.waitForTimeout(500);
 
-    // Find hidden file input
-    const fileInput = page.locator("input[type='file']").first();
+    // Find hidden file input (skip the webkitdirectory one used for folder uploads)
+    const fileInput = page.locator("input[type='file']:not([webkitdirectory])").first();
     if (await fileInput.count() > 0) {
       const videoPath = path.join(FIXTURES_DIR, "sample-video.mp4");
       await fileInput.setInputFiles(videoPath);

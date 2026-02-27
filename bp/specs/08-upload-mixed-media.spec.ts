@@ -1,4 +1,4 @@
-import { test, expect } from "../helpers/demo-auth";
+import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,12 +16,16 @@ test.describe("UC-08: Upload Mixed Media", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
+    // Hide Next.js dev overlay after navigation
+    await dismissDevOverlay(page);
+
     // Show dropzone
     const uploadBtn = page.getByRole("button", { name: /Upload Files/i });
     await uploadBtn.click();
     await page.waitForTimeout(500);
 
-    const fileInput = page.locator("input[type='file']").first();
+    // Skip the webkitdirectory input used for folder uploads
+    const fileInput = page.locator("input[type='file']:not([webkitdirectory])").first();
     if (await fileInput.count() > 0) {
       await fileInput.setInputFiles([
         path.join(FIXTURES_DIR, "sample-video.mp4"),

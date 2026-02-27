@@ -1,4 +1,4 @@
-import { test, expect } from "../helpers/demo-auth";
+import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-17: Notifications", () => {
@@ -10,6 +10,7 @@ test.describe("UC-17: Notifications", () => {
   });
 
   test("clicking bell navigates to notifications", async ({ authedPage: page }) => {
+    await dismissDevOverlay(page);
     const bell = page.getByLabel("Notifications").first();
     await bell.click();
     await page.waitForTimeout(500);

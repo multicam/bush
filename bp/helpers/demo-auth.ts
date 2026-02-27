@@ -15,11 +15,27 @@ export const test = base.extend<{ authedPage: Page }>({
     await page.goto("/dashboard");
     // Wait for the page to be interactive
     await page.waitForLoadState("networkidle");
+    // Hide Next.js dev overlay — it intercepts pointer events on elements near edges
+    await page.evaluate(() => {
+      const portal = document.querySelector("nextjs-portal");
+      if (portal) (portal as HTMLElement).style.display = "none";
+    });
     await use(page);
   },
 });
 
 export { expect };
+
+/**
+ * Hide the Next.js dev overlay that intercepts pointer events.
+ * Call after any full page navigation (goto, URL change).
+ */
+export async function dismissDevOverlay(page: Page) {
+  await page.evaluate(() => {
+    const portal = document.querySelector("nextjs-portal");
+    if (portal) (portal as HTMLElement).style.display = "none";
+  });
+}
 
 /**
  * Screenshot output directory for bush captures

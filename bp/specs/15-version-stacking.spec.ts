@@ -1,4 +1,4 @@
-import { test, expect } from "../helpers/demo-auth";
+import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-15: Version Stacking", () => {
@@ -48,11 +48,14 @@ test.describe("UC-15: Version Stacking", () => {
       await videoFile.click();
       await page.waitForTimeout(1000);
 
+      // Hide Next.js dev overlay after file viewer navigation
+      await dismissDevOverlay(page);
+
       // Look for version selector or version info in the viewer
-      const versionUI = page.locator(
-        "[class*='version'], select:has(option), " +
-        "button:has-text('Version'), text=version"
-      ).first();
+      const versionUI = page.locator("[class*='version']")
+        .or(page.getByRole("button", { name: /version/i }))
+        .or(page.getByText(/version/i))
+        .first();
 
       if (await versionUI.isVisible()) {
         await captureScreenshot(page, "15-version-stack-ui");
