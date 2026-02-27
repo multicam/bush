@@ -115,10 +115,16 @@ import { generateId } from "../router.js";
 // ---------------------------------------------------------------------------
 
 const SESSION = {
-  userId: "usr_abc",
-  currentAccountId: "acc_xyz",
-  accountRole: "owner",
   sessionId: "ses_111",
+  userId: "usr_abc",
+  email: "test@example.com",
+  displayName: "Test User",
+  currentAccountId: "acc_xyz",
+  accountRole: "owner" as const,
+  workosOrganizationId: "org_123",
+  workosUserId: "wusr_123",
+  createdAt: Date.now(),
+  lastActivityAt: Date.now(),
 };
 
 const FILE_ROW = {
@@ -1554,7 +1560,7 @@ describe("POST /files/metadata", () => {
     vi.clearAllMocks();
     vi.mocked(requireAuth).mockReturnValue(SESSION);
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_001" } as never);
-    vi.mocked(verifyAccountMembership).mockResolvedValue(true);
+    vi.mocked(verifyAccountMembership).mockResolvedValue("owner");
   });
 
   it("returns 200 with succeeded list when updating rating", async () => {
@@ -1793,7 +1799,7 @@ describe("POST /files/metadata", () => {
   });
 
   it("returns 500 when assignee is not a member of the account", async () => {
-    vi.mocked(verifyAccountMembership).mockResolvedValue(false);
+    vi.mocked(verifyAccountMembership).mockResolvedValue(null);
 
     const res = await app.request("/files/metadata", {
       method: "POST",
