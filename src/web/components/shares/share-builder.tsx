@@ -73,7 +73,9 @@ export function ShareBuilder({
 
         // Load assets
         const assetsResponse = await sharesApi.listAssets(shareId);
-        const fileIds = assetsResponse.data.map((a) => a.attributes.fileId);
+        const fileIds = assetsResponse.data
+          .map((a) => a.attributes?.fileId)
+          .filter((id): id is string => id != null);
         setFormData((prev) => ({ ...prev, file_ids: fileIds }));
       } catch (err) {
         setError(getErrorMessage(err));

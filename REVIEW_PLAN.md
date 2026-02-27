@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 12
-**Coverage**: 82.99% statements (target: 80%)
-**Tests**: 2912 passing, 41 skipped
+**Iteration**: 13
+**Coverage**: 84.14% statements (target: 80%)
+**Tests**: 2934 passing, 41 skipped
 
 ## Issue Tracker
 
@@ -53,14 +53,14 @@
 ### Low (style, naming, minor cleanup)
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
-| L1 | src/web/components/shares/share-builder.tsx | 73-77 | Missing null checks on share attributes | pending |
-| L2 | src/web/components/version-stacks/version-stack-compare.tsx | 58-108 | No cancellation on fileIds change | pending |
+| L1 | src/web/components/shares/share-builder.tsx | 73-77 | Missing null checks on share attributes | **fixed** |
+| L2 | src/web/components/version-stacks/version-stack-compare.tsx | 58-108 | No cancellation on fileIds change | **fixed** |
 | L3 | Multiple | - | Type assertions (as any) in test files | pending |
 | L4 | Multiple | - | Hardcoded localhost URLs in tests | pending |
 | L5 | Multiple | - | Magic numbers for dimensions/timeouts | pending |
-| L6 | src/realtime/ws-manager.ts | 103-113 | Hardcoded rate limit constants | pending |
-| L7 | src/api/routes/bulk.ts | 24 | Hardcoded MAX_BULK_ITEMS = 100 | pending |
-| L8 | src/config/env.ts | 109-114 | Default SMTP settings could be used in production | pending |
+| L6 | src/realtime/ws-manager.ts | 103-113 | Hardcoded rate limit constants | **fixed** (now configurable via WS_* env vars in config) |
+| L7 | src/api/routes/bulk.ts | 24 | Hardcoded MAX_BULK_ITEMS = 100 | **fixed** (now configurable via BULK_MAX_ITEMS env var) |
+| L8 | src/config/env.ts | 109-114 | Default SMTP settings could be used in production | **fixed** (production validation prevents default SMTP values) |
 
 ## Coverage Gaps (files below 80%)
 | File | Statements | Branches | Functions | Priority |
@@ -68,7 +68,6 @@
 | src/media/worker.ts | 0% | 0% | 0% | HIGH |
 | src/scheduled/worker.ts | 0% | 0% | 0% | HIGH |
 | src/shared/cn.ts | 0% | 0% | 0% | LOW |
-| src/api/routes/workspaces.ts | 36.33% | 100% | 100% | CRITICAL |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | MEDIUM |
 | src/lib/email/index.ts | 60.81% | 71.42% | 100% | MEDIUM |
 | src/lib/email/postmark.ts | 72.72% | 63.15% | 77.77% | LOW |
@@ -86,6 +85,22 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 13 -- 2026-02-27
+- Fixed: L1, L2, L6, L7, L8 (low priority issues)
+- Coverage: 82.99% → 84.14% (+1.15pp)
+- Changes:
+  - L1: Added null checks on share attributes in share-builder.tsx using optional chaining
+  - L2: Added cancellation support in version-stack-compare.tsx with `cancelled` flag pattern
+  - L6: Already fixed - WS rate limits configurable via WS_* env vars (WS_MAX_SUBSCRIPTIONS, WS_RATE_LIMIT_MESSAGES, etc.)
+  - L7: Made MAX_BULK_ITEMS configurable via BULK_MAX_ITEMS env var (default: 100)
+  - L8: Already fixed - production validation prevents default SMTP settings
+- Coverage improvements:
+  - Added 22 tests for workspace member management routes (GET/POST/PUT/DELETE /:id/members)
+  - Tests cover: list members, add member, update permission, remove member, error cases
+  - Removed workspaces.ts from coverage gaps (was 36.33%, now above 80%)
+- Tests: 2934 passing, 41 skipped (22 new tests)
+- Status: 5 low issues resolved, coverage above 80% target
+
 ### Iteration 12 -- 2026-02-27
 - Fixed: M13 (No CSRF protection for cookie-based requests)
 - Security: Implemented Double Submit Cookie pattern with Origin header validation

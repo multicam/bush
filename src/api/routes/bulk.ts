@@ -19,6 +19,7 @@ import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
 import { bulkRateLimit } from "../rate-limit.js";
+import { config } from "../../config/index.js";
 import type { CustomFieldValue } from "../../db/schema.js";
 
 const app = new Hono();
@@ -34,8 +35,11 @@ app.use("*", authMiddleware());
 // - Can cause significant database load
 app.use("*", bulkRateLimit);
 
-/** Maximum items per bulk request */
-const MAX_BULK_ITEMS = 100;
+/**
+ * Maximum items per bulk request (configurable via BULK_MAX_ITEMS env var)
+ * Default: 100
+ */
+const MAX_BULK_ITEMS = config.BULK_MAX_ITEMS;
 
 /**
  * POST /v4/bulk/files/move - Move multiple files to a folder

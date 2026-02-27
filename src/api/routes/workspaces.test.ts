@@ -43,11 +43,39 @@ vi.mock("../../db/schema.js", () => ({
     createdAt: "createdAt",
     updatedAt: "updatedAt",
   },
+  users: {
+    id: "id",
+    email: "email",
+    firstName: "firstName",
+    lastName: "lastName",
+    avatarUrl: "avatarUrl",
+  },
+  accountMemberships: {
+    id: "id",
+    userId: "userId",
+    accountId: "accountId",
+  },
 }));
 
 vi.mock("../router.js", () => ({
   generateId: vi.fn().mockReturnValue("ws_test123"),
   parseLimit: vi.fn().mockReturnValue(50),
+}));
+
+vi.mock("../../permissions/service.js", () => ({
+  permissionService: {
+    getWorkspacePermission: vi.fn(),
+    grantWorkspacePermission: vi.fn(),
+    revokeWorkspacePermission: vi.fn(),
+  },
+}));
+
+vi.mock("./index.js", () => ({
+  emitWebhookEvent: vi.fn(),
+  createNotification: vi.fn(),
+  NOTIFICATION_TYPES: {
+    ASSIGNMENT: "assignment",
+  },
 }));
 
 // drizzle-orm operators used in the route handlers - mock them as identity functions
@@ -64,6 +92,8 @@ import app from "./workspaces.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyWorkspaceAccess, verifyAccountMembership } from "../access-control.js";
+import { permissionService } from "../../permissions/service.js";
+import { emitWebhookEvent, createNotification } from "./index.js";
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -83,6 +113,23 @@ const WORKSPACE_ROW = {
   accountId: "acc_xyz",
   createdAt: new Date("2024-01-15T10:00:00.000Z"),
   updatedAt: new Date("2024-01-15T10:00:00.000Z"),
+};
+
+const MEMBER_ROW = {
+  id: "wp_001",
+  permission: "edit",
+  createdAt: new Date("2024-01-15T10:00:00.000Z"),
+  userId: "usr_member1",
+  userEmail: "member1@example.com",
+  userFirstName: "Member",
+  userLastName: "One",
+  userAvatarUrl: null,
+};
+
+const TARGET_MEMBERSHIP = {
+  id: "am_001",
+  userId: "usr_member1",
+  accountId: "acc_xyz",
 };
 
 // Formatted version (dates as ISO strings, as formatDates produces)
@@ -627,6 +674,538 @@ describe("Workspace Routes", () => {
       const res = await app.request("/ws_001", { method: "DELETE" });
 
       expect(res.status).toBe(204);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /:id/members - List workspace members
+  // -------------------------------------------------------------------------
+  describe("GET /:id/members - list workspace members", () => {
+    beforeEach(() => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(WORKSPACE_ROW as never);
+    });
+
+    it("returns 200 with JSON:API collection of members", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          innerJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: vi.fn().mockResolvedValue([MEMBER_ROW]),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/ws_001/members", { method: "GET" });
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+
+      expect(body).toHaveProperty("data");
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].type).toBe("workspace_member");
+      expect(body.data[0].attributes.permission).toBe("edit");
+      expect(body.data[0].attributes.user.id).toBe("usr_member1");
+    });
+
+    it("returns empty array when workspace has no members", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          innerJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/ws_001/members", { method: "GET" });
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(body.data).toEqual([]);
+    });
+
+    it("returns 500 when workspace not found", async () => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(null as never);
+
+      const res = await app.request("/ws_missing/members", { method: "GET" });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // POST /:id/members - Add workspace member
+  // -------------------------------------------------------------------------
+  describe("POST /:id/members - add workspace member", () => {
+    beforeEach(() => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(WORKSPACE_ROW as never);
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "full_access",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([TARGET_MEMBERSHIP]),
+          }),
+        }),
+      } as never);
+      vi.mocked(permissionService.grantWorkspacePermission).mockResolvedValue(undefined);
+    });
+
+    it("returns 200 with new member on success", async () => {
+      // Mock for getting the created member
+      let selectCallCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          // First call: check account membership
+          return {
+            from: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([TARGET_MEMBERSHIP]),
+              }),
+            }),
+          } as never;
+        }
+        // Second call: get created member
+        return {
+          from: () => ({
+            innerJoin: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([MEMBER_ROW]),
+              }),
+            }),
+          }),
+        } as never;
+      });
+
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(body.data.type).toBe("workspace_member");
+      expect(body.data.attributes.permission).toBe("edit");
+    });
+
+    it("calls grantWorkspacePermission with correct parameters", async () => {
+      await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "view_only",
+            },
+          },
+        }),
+      });
+
+      expect(vi.mocked(permissionService.grantWorkspacePermission)).toHaveBeenCalledWith(
+        "ws_001",
+        "usr_member1",
+        "view_only"
+      );
+    });
+
+    it("emits webhook event and notification on success", async () => {
+      // Mock for checking account membership, then for getting the created member
+      let selectCallCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          // First call: check account membership
+          return {
+            from: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([TARGET_MEMBERSHIP]),
+              }),
+            }),
+          } as never;
+        }
+        // Second call: get created member with innerJoin
+        return {
+          from: () => ({
+            innerJoin: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([MEMBER_ROW]),
+              }),
+            }),
+          }),
+        } as never;
+      });
+
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(vi.mocked(emitWebhookEvent)).toHaveBeenCalled();
+      expect(vi.mocked(createNotification)).toHaveBeenCalled();
+    });
+
+    it("returns 500 when caller lacks full_access permission", async () => {
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "edit",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when target user is not account member", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]), // No membership found
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_nonmember",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when permission is invalid", async () => {
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "invalid_permission",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when user_id is missing", async () => {
+      const res = await app.request("/ws_001/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when workspace not found", async () => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(null as never);
+
+      const res = await app.request("/ws_missing/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_member1",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // PUT /:id/members/:user_id - Update member permission
+  // -------------------------------------------------------------------------
+  describe("PUT /:id/members/:user_id - update member permission", () => {
+    beforeEach(() => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(WORKSPACE_ROW as never);
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "full_access",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+      vi.mocked(permissionService.grantWorkspacePermission).mockResolvedValue(undefined);
+    });
+
+    it("returns 200 with updated member on success", async () => {
+      // Mock for checking existing permission, then for getting the updated member
+      let selectCallCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          // First call: check existing permission
+          return {
+            from: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([{ id: "wp_001", userId: "usr_member1", permission: "view_only" }]),
+              }),
+            }),
+          } as never;
+        }
+        // Second call: get updated member with innerJoin
+        return {
+          from: () => ({
+            innerJoin: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([MEMBER_ROW]),
+              }),
+            }),
+          }),
+        } as never;
+      });
+
+      const res = await app.request("/ws_001/members/usr_member1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+
+    it("calls grantWorkspacePermission with correct parameters", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn()
+              .mockResolvedValueOnce([{ id: "wp_001" }]) // existing
+              .mockResolvedValueOnce([MEMBER_ROW]), // updated
+          }),
+        }),
+      } as never);
+
+      await app.request("/ws_001/members/usr_member1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "full_access",
+            },
+          },
+        }),
+      });
+
+      expect(vi.mocked(permissionService.grantWorkspacePermission)).toHaveBeenCalledWith(
+        "ws_001",
+        "usr_member1",
+        "full_access"
+      );
+    });
+
+    it("returns 500 when member not found", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]), // No existing permission
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/ws_001/members/usr_nonmember", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when caller lacks full_access permission", async () => {
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "edit",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+
+      const res = await app.request("/ws_001/members/usr_member1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "full_access",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // DELETE /:id/members/:user_id - Remove member from workspace
+  // -------------------------------------------------------------------------
+  describe("DELETE /:id/members/:user_id - remove member from workspace", () => {
+    beforeEach(() => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(WORKSPACE_ROW as never);
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "full_access",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([{ id: "wp_001", userId: "usr_member1" }]),
+          }),
+        }),
+      } as never);
+      vi.mocked(permissionService.revokeWorkspacePermission).mockResolvedValue(undefined);
+    });
+
+    it("returns 204 No Content on success", async () => {
+      const res = await app.request("/ws_001/members/usr_member1", { method: "DELETE" });
+
+      expect(res.status).toBe(204);
+    });
+
+    it("calls revokeWorkspacePermission with correct parameters", async () => {
+      await app.request("/ws_001/members/usr_member1", { method: "DELETE" });
+
+      expect(vi.mocked(permissionService.revokeWorkspacePermission)).toHaveBeenCalledWith(
+        "ws_001",
+        "usr_member1"
+      );
+    });
+
+    it("emits webhook event on member removal", async () => {
+      await app.request("/ws_001/members/usr_member1", { method: "DELETE" });
+
+      expect(vi.mocked(emitWebhookEvent)).toHaveBeenCalledWith(
+        SESSION.currentAccountId,
+        "member.removed",
+        expect.objectContaining({
+          workspace_id: "ws_001",
+          user_id: "usr_member1",
+        })
+      );
+    });
+
+    it("returns 500 when trying to remove self", async () => {
+      const res = await app.request(`/ws_001/members/${SESSION.userId}`, { method: "DELETE" });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when member not found", async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/ws_001/members/usr_nonmember", { method: "DELETE" });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when caller lacks full_access permission", async () => {
+      vi.mocked(permissionService.getWorkspacePermission).mockResolvedValue({
+        userId: SESSION.userId,
+        workspaceId: "ws_001",
+        permission: "edit",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as never);
+
+      const res = await app.request("/ws_001/members/usr_member1", { method: "DELETE" });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 500 when workspace not found", async () => {
+      vi.mocked(verifyWorkspaceAccess).mockResolvedValue(null as never);
+
+      const res = await app.request("/ws_missing/members/usr_member1", { method: "DELETE" });
+
+      expect(res.status).toBe(500);
     });
   });
 });

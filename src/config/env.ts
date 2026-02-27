@@ -152,6 +152,9 @@ const envSchema = z.object({
   UPLOAD_PRESIGNED_URL_EXPIRY: z.coerce.number().int().positive().default(3600),
   UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
 
+  // Bulk Operations
+  BULK_MAX_ITEMS: z.coerce.number().int().positive().default(100),
+
   // Backup
   BACKUP_ENABLED: z.coerce.boolean().default(false),
   BACKUP_STORAGE_BUCKET: z.string().optional(),
@@ -255,6 +258,7 @@ function loadConfig(): Env {
       UPLOAD_MAX_FILE_SIZE: 5368709120,
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,
+      BULK_MAX_ITEMS: 100,
       BACKUP_ENABLED: false,
       BACKUP_STORAGE_BUCKET: "",
       BACKUP_RETENTION_DAYS: 30,

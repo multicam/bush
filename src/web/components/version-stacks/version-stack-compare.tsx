@@ -56,6 +56,8 @@ export function VersionStackCompare({
 
   // Load file data
   useEffect(() => {
+    let cancelled = false;
+
     async function loadFiles() {
       try {
         setIsLoading(true);
@@ -79,32 +81,44 @@ export function VersionStackCompare({
                 // Download URL might not be available yet
               }
 
-              loadedFiles[index] = {
-                id: fileData.id,
-                name: fileData.name,
-                mimeType: fileData.mimeType,
-                fileSizeBytes: fileData.fileSizeBytes,
-                status: fileData.status,
-                thumbnailUrl: null,
-                createdAt: fileData.createdAt,
-                updatedAt: fileData.updatedAt,
-                downloadUrl,
-              };
+              if (!cancelled) {
+                loadedFiles[index] = {
+                  id: fileData.id,
+                  name: fileData.name,
+                  mimeType: fileData.mimeType,
+                  fileSizeBytes: fileData.fileSizeBytes,
+                  status: fileData.status,
+                  thumbnailUrl: null,
+                  createdAt: fileData.createdAt,
+                  updatedAt: fileData.updatedAt,
+                  downloadUrl,
+                };
+              }
             } catch (err) {
               console.error(`Failed to load file ${fileId}:`, err);
             }
           })
         );
 
-        setFiles(loadedFiles);
+        if (!cancelled) {
+          setFiles(loadedFiles);
+        }
       } catch (err) {
-        setError(getErrorMessage(err));
+        if (!cancelled) {
+          setError(getErrorMessage(err));
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadFiles();
+
+    return () => {
+      cancelled = true;
+    };
   }, [projectId, fileIds]);
 
   const handleKeyDown = useCallback(
