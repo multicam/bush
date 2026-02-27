@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.98 - Email Provider APIs)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2 items resolved.
+**Last updated**: 2026-02-27 (v0.0.99 - Design System Planning)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All backend P2 items resolved. Next phase: Design System implementation (specs 20-21) and Frontend Testing (spec 15).
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -56,6 +56,10 @@
 | Email | 11-email.md | SMTP ✓ (API providers: P3) |
 | Security | 12-security.md | Headers + rate limits ✓ |
 | Billing | 13-billing.md | Free tier limits ✓ (Stripe: Phase 2) |
+| Conventions | 14-conventions.md | Coding conventions ✓ |
+| Frontend Testing | 15-frontend-testing.md | NOT STARTED — Playwright + component tests |
+| Design Foundations | 20-design-foundations.md | NOT STARTED — Tailwind v4, tokens, theme, fonts |
+| Design Components | 21-design-components.md | NOT STARTED — Component migration, new components |
 
 ### No Orphaned Code Detected
 
@@ -83,7 +87,7 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-**All P2 items resolved.**
+**Backend P2 items resolved.** Design System (Phases 0-6) and Frontend Testing remain.
 
 ### Previously Completed P2 Items
 
@@ -101,6 +105,81 @@ All implemented features have corresponding spec documentation. No code was foun
 - ~~CDN provider interface (Bunny CDN)~~ — v0.0.74
 - ~~Session limits enforcement~~ — v0.0.74
 - ~~Grant permission API exposure~~ — v0.0.75
+
+---
+
+### [P2] Design System Phase 0: Infrastructure [2h] -- NOT STARTED
+
+- Install Tailwind v4 + PostCSS for Next.js
+- Create `src/web/styles/tokens.css` (all CSS custom properties — dark-first)
+- Create `src/web/styles/theme.css` (@tailwind + @theme mapping)
+- Create `src/web/styles/scrollbar.css`
+- Create `src/web/styles/globals.css` (minimal reset)
+- Create `postcss.config.mjs`
+- Wire `theme.css` import in `src/web/app/layout.tsx`
+- **Verify**: `bun run dev` — app starts, no visual changes, Tailwind classes available
+
+### [P2] Design System Phase 1: Theme + Fonts [2h] -- NOT STARTED
+
+- Create `src/web/context/theme-context.tsx` (dark/light toggle, localStorage, data-theme attribute)
+- Create `src/web/hooks/use-theme.ts`
+- Add ThemeProvider + anti-FOUC script to `src/web/app/layout.tsx`
+- Load Inter + JetBrains Mono via `next/font/google`
+- Bridge old CSS variables in `src/web/app/globals.css` to new tokens
+- Delete `@media (prefers-color-scheme: dark)` block
+- **Verify**: Toggle data-theme in DevTools → entire app switches. Text renders in Inter.
+
+### [P2] Design System Phase 2: UI Primitives [4h] -- NOT STARTED
+
+- Migrate all 10 components in `src/web/components/ui/` to Tailwind
+- Replace BEM class composition with Tailwind class maps
+- Replace inline SVGs with Lucide React icons
+- Keep same TypeScript interfaces (consuming code unchanged)
+- Components: Button, Input, Select, Badge, Spinner, Avatar, Modal, Toast, Tooltip, Dropdown
+- **Verify**: All pages render correctly with new styling. `bun run typecheck` passes.
+
+### [P2] Design System Phase 3: Layout [4h] -- NOT STARTED
+
+- Rewrite `src/web/components/layout/app-layout.tsx` — icon rail sidebar (64px → 240px hover)
+- Replace emoji nav icons with Lucide icons
+- Remove fixed top header bar
+- Add page-level headers to ~10 page components
+- Delete `app-layout.module.css`
+- **Verify**: Sidebar is thin icon rail that expands on hover. All nav links work.
+
+### [P2] Design System Phase 4: CSS Module Migration [8h] -- NOT STARTED
+
+- Convert all 34 CSS modules to Tailwind classes
+- Work smallest → largest (8 small, 9 medium, 7 large, 10 extra-large)
+- For each: replace `styles.className` with Tailwind in TSX, delete `.module.css`
+- **Verify**: Zero `import styles from` lines remain. All pages render correctly.
+
+### [P2] Design System Phase 5: New Components [6h] -- NOT STARTED
+
+- Build Command Palette (Cmd+K, 560px, z-900, grouped results)
+- Build Keyboard Legend (? key, modal overlay, kbd badges)
+- Build Skeleton loading states (shimmer animation)
+- Build Upload Drawer (bottom viewport, per-file progress, auto-dismiss)
+- **Verify**: Cmd+K opens palette, ? shows legend, skeletons appear during loading.
+
+### [P2] Design System Phase 6: Polish + Cleanup [4h] -- NOT STARTED
+
+- Corner bracket hover effects on cards
+- Staggered grid entry animation
+- Drag handle reveal on hover
+- Focus ring (orange glow)
+- Delete old `globals.css` component classes
+- Remove old `globals.css` import from layout
+- **Verify**: `grep -r "module\.css\|0066ff" src/web/` returns zero results.
+
+### [P2] Frontend Testing Setup [4h] -- NOT STARTED
+
+- Install Playwright, @testing-library/react, @axe-core/playwright
+- Create `src/web/playwright.config.ts`
+- Add npm scripts (test:e2e, test:components)
+- Create auth fixture
+- Write auth.spec.ts, dashboard.spec.ts, accessibility.spec.ts
+- **Verify**: `bun run test:e2e` runs and passes.
 
 ---
 
@@ -344,7 +423,7 @@ Per specs/README.md:
 | **Testing** | PARTIAL | 95 test files; route/media/realtime coverage 0%; 2 tests skipped |
 | **Documentation** | DONE | Specs complete; /docs endpoint missing (P3) |
 
-**Verdict**: Platform is functionally complete. All P2 items resolved.
+**Verdict**: Platform is functionally complete. Backend P2 items resolved. Design System and Frontend Testing are next.
 
 ---
 
