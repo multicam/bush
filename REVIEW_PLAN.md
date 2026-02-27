@@ -1,10 +1,57 @@
 # Code Review Plan
 
-**Last updated**: 2026-02-26
-**Iteration**: 4 (FINAL)
+**Last updated**: 2026-02-27
+**Iteration**: 5
 **Coverage**: 93.74% statements (target: 80%) ✓
-**Tests**: 2536 passing, 41 skipped, 1 suite skipped (better-sqlite3 bindings)
-**Status**: COMPLETE - All issues resolved, coverage above target
+**Tests**: 2576 passing, 67 failing, 41 skipped, 1 suite skipped (better-sqlite3 bindings)
+**Status**: IN PROGRESS - Fixing test infrastructure issues
+
+## Issue Tracker
+
+### Critical (bugs, security)
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| C1 | src/api/routes/shares.ts | 49 | Share slug uses `Math.random()` instead of `crypto.randomBytes` - predictable slugs could allow unauthorized access | **fixed** |
+| C2 | src/permissions/service.ts | 1-593 | Permission service has only 4.58% test coverage - critical security component | **fixed** |
+| C3 | src/permissions/permissions-integration.test.ts | 69 | Test fails due to better-sqlite3 native bindings not available | **fixed** |
+| C4 | src/api/validation.ts | 332 | createShareSchema requires project_id but route handles optional - tests fail | **fixed** |
+
+### High (code smells, missing validation)
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| H1 | src/realtime/ws-manager.ts | 164 | Connection ID uses `Math.random()` - should use crypto for security | **fixed** |
+| H2 | src/realtime/event-bus.ts | 392 | Event ID uses `Math.random()` - should use crypto for audit trails | **fixed** |
+| H3 | src/media/worker.ts | 1-181 | Worker has 0% coverage - auto-starting entry point, requires infrastructure for testing | **wontfix** |
+| H4 | src/scheduled/worker.ts | 1-140 | Worker has 0% coverage - auto-starting entry point, requires infrastructure for testing | **wontfix** |
+| H5 | src/api/index.ts | 1-337 | Server entry has 0% coverage - auto-starting entry point, requires infrastructure for testing | **wontfix** |
+
+### Medium (refactoring, test gaps)
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| M1 | src/transcription/processor.ts | 1-340 | Processor has 20.15% coverage - transcription is a key feature | **fixed** |
+| M2 | src/api/rate-limit.ts | 120 | Rate limit member ID uses `Math.random()` - non-critical but inconsistent | **fixed** |
+| M3 | src/web/lib/utils.ts | 16 | Utility ID uses `Math.random()` - fallback for older browsers, acceptable | **wontfix** |
+| M4 | src/web/components/upload/dropzone.tsx | 63 | Upload ID uses `Math.random()` - frontend only, low risk | **fixed** |
+| M5 | src/web/lib/upload-client.ts | 277 | Upload ID uses `Math.random()` - frontend only, low risk | **fixed** |
+| M6 | Multiple files | - | 42 occurrences of `: any` type across 14 files | **fixed** |
+| M7 | Multiple test files | - | Test infrastructure missing error handlers causing 500 instead of proper status codes | **fixed** |
+
+### Low (style, naming, minor cleanup)
+| # | File | Line | Issue | Status |
+|---|------|------|-------|--------|
+| L1 | src/lib/email/console.ts | 108,164 | Console email provider uses `Math.random()` for message IDs - debug only | **fixed** |
+| L2 | src/web/components/ui/toast.tsx | 64 | Toast ID uses `Math.random()` - UI only, no security impact | **fixed** |
+| L3 | src/web/lib/ws-client.ts | 373 | Jitter calculation uses `Math.random()` - acceptable for backoff | **wontfix** |
+
+### Test Infrastructure Issues (discovered in Iteration 5)
+| # | File | Issue | Status |
+|---|------|-------|--------|
+| T1 | src/api/routes/shares.test.ts | Missing error handler in slugApp causing incorrect status codes | **fixed** |
+| T2 | src/api/routes/webhooks.test.ts | Missing error handler and whitespace validation in name field | **fixed** |
+| T3 | src/api/routes/version-stacks.test.ts | Missing error handler and emitWebhookEvent mock | **fixed** |
+| T4 | Multiple test files | Tests expecting 500 for all errors instead of proper status codes (422, 404, 403) | **fixed** |
+| T5 | src/lib/email/*.test.ts | Mock fetch type missing preconnect property | **fixed** |
+| T6 | src/storage/cdn-provider.test.ts | Mock fetch type missing preconnect property | **fixed** |
 
 ## Issue Tracker
 
@@ -52,6 +99,42 @@
 | src/config/env.ts | 92.98% | 55.55% | 100% | LOW |
 
 ## Iteration Log
+
+### Iteration 5 -- 2026-02-27
+**Status:** IN PROGRESS - Fixing test infrastructure issues
+**Coverage:** 93.74% (target 80% exceeded by 13.74pp)
+**Tests:** 2576 passing, 67 failing, 41 skipped
+
+**Test infrastructure issues discovered:**
+- Several test files missing error handler middleware causing 500 instead of proper status codes
+- Mock type issues with `vi.fn()` not matching `typeof fetch` (missing preconnect property)
+- Whitespace validation not working in webhook schemas (needed `.trim()`)
+- Unused variables in source files (`formatAddresses`, `convertAttachments`)
+- Unused imports in test files (`updateShareSchema`, `updateWebhookSchema`, `Hono`)
+
+**Changes made:**
+1. **Typecheck fixes** (33 errors -> 0):
+   - `docs.test.ts`: Added type annotations for unknown JSON response types
+   - `validation.test.ts`: Removed unused imports (updateShareSchema, updateWebhookSchema)
+   - `errors.test.ts`: Removed unused import (Hono)
+   - Email provider tests: Fixed mock fetch type casting (`as unknown as typeof fetch`)
+   - `cdn-provider.test.ts`: Fixed mock fetch type casting
+   - `resend.ts`: Removed unused `formatAddresses` function
+   - `ses.ts`: Removed unused `formatAddresses` and `convertAttachments` functions
+
+2. **Test infrastructure fixes**:
+   - `shares.test.ts`: Added error handler to router.js mock and slugApp
+   - `webhooks.test.ts`: Added error handler to router.js mock and makeTestApp
+   - `version-stacks.test.ts`: Added error handler to router.js mock and makeTestApp
+   - Updated test expectations to proper status codes (422 for ValidationError, 404 for NotFoundError)
+
+3. **Validation fixes**:
+   - `validation.ts`: Added `.trim()` to webhook name fields for whitespace validation
+
+**Summary:**
+- 33 typecheck errors fixed
+- Test failures reduced from 68 to 67
+- Tests passing increased from 2536 to 2576
 
 ### Iteration 4 (FINAL) -- 2026-02-26
 **Status:** Review complete - all tracked issues resolved
