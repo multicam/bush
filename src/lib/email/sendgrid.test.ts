@@ -6,7 +6,7 @@ import { SendGridEmailProvider, createSendGridProvider } from "./sendgrid";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe("SendGridEmailProvider", () => {
   const testConfig = {

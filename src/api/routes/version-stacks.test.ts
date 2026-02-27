@@ -48,6 +48,19 @@ vi.mock("../../db/schema.js", () => ({
 vi.mock("../router.js", () => ({
   generateId: vi.fn().mockReturnValue("vstack_test123"),
   parseLimit: vi.fn().mockReturnValue(50),
+  errorHandler: (error: Error, c: { json: (body: unknown, status: number) => unknown }) => {
+    // Simple error handler that converts AppErrors to proper responses
+    const status = (error as { status?: number }).status ?? 500;
+    const code = (error as { code?: string }).code ?? "internal_error";
+    return c.json({
+      errors: [{
+        title: error.name,
+        detail: error.message,
+        status,
+        code,
+      }],
+    }, status);
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -67,6 +80,10 @@ vi.mock("./comments.js", () => ({
   createVersionStackComment: vi.fn(async (c: { json: (v: unknown) => unknown }) =>
     c.json({ data: { id: "cmt_001", type: "comment" } })
   ),
+}));
+
+vi.mock("./index.js", () => ({
+  emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../response.js", () => ({
@@ -101,13 +118,18 @@ vi.mock("../response.js", () => ({
 }));
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import app from "./version-stacks.js";
+import baseApp from "./version-stacks.js";
+import { errorHandler } from "../router.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyProjectAccess } from "../access-control.js";
 import { generateId, parseLimit } from "../router.js";
 import { getVersionStackComments, createVersionStackComment } from "./comments.js";
 import { sendSingle, sendCollection, sendNoContent, formatDates } from "../response.js";
+
+// Apply error handler to the app so errors are properly converted to responses
+const app = baseApp;
+app.onError(errorHandler);
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -349,21 +371,21 @@ describe("Version Stack Routes", () => {
       expect(body.included[1].type).toBe("file");
     });
 
-    it("returns 500 when stack is not found", async () => {
+    it("returns 404 when stack is not found", async () => {
       mockSelectForGetStack(null, []);
 
       const res = await app.request("/vstack_missing", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied", async () => {
+    it("returns 404 when project access is denied", async () => {
       mockSelectForGetStack(STACK_ROW, []);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
       const res = await app.request("/vstack_001", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("calls verifyProjectAccess with stack projectId and accountId", async () => {
@@ -442,47 +464,47 @@ describe("Version Stack Routes", () => {
       expect(vi.mocked(generateId)).toHaveBeenCalledWith("vstack");
     });
 
-    it("returns 500 when project_id is missing (ValidationError)", async () => {
+    it("returns 422 when project_id is missing (ValidationError)", async () => {
       const res = await app.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "My Stack" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when project_id is not a string (ValidationError)", async () => {
+    it("returns 422 when project_id is not a string (ValidationError)", async () => {
       const res = await app.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: 42, name: "My Stack" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is missing (ValidationError)", async () => {
+    it("returns 422 when name is missing (ValidationError)", async () => {
       const res = await app.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: "proj_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is not a string (ValidationError)", async () => {
+    it("returns 422 when name is not a string (ValidationError)", async () => {
       const res = await app.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: "proj_001", name: 123 }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
       const res = await app.request("/", {
@@ -491,7 +513,7 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ project_id: "proj_missing", name: "My Stack" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("calls verifyProjectAccess with project_id and accountId", async () => {
@@ -677,7 +699,7 @@ describe("Version Stack Routes", () => {
       );
     });
 
-    it("returns 500 when stack is not found (NotFoundError)", async () => {
+    it("returns 404 when stack is not found (NotFoundError)", async () => {
       mockSelectSequence([[]]);
 
       const res = await app.request("/vstack_missing", {
@@ -686,10 +708,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ name: "Won't matter" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       mockSelectSequence([[STACK_ROW]]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
@@ -699,10 +721,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ name: "Name" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when name is empty string (ValidationError)", async () => {
+    it("returns 422 when name is empty string (ValidationError)", async () => {
       mockSelectSequence([[STACK_ROW]]);
 
       const res = await app.request("/vstack_001", {
@@ -711,10 +733,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ name: "" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is not a string (ValidationError)", async () => {
+    it("returns 422 when name is not a string (ValidationError)", async () => {
       mockSelectSequence([[STACK_ROW]]);
 
       const res = await app.request("/vstack_001", {
@@ -723,10 +745,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ name: 123 }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when current_file_id is not in the stack (ValidationError)", async () => {
+    it("returns 422 when current_file_id is not in the stack (ValidationError)", async () => {
       // Stack lookup returns stack, file verification returns empty
       let callIdx = 0;
       vi.mocked(db.select).mockImplementation(() => {
@@ -756,7 +778,7 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ current_file_id: "file_999" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
   });
 
@@ -802,21 +824,21 @@ describe("Version Stack Routes", () => {
       expect(vi.mocked(db.delete)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when stack is not found (NotFoundError)", async () => {
+    it("returns 404 when stack is not found (NotFoundError)", async () => {
       mockSelectAlways([]);
 
       const res = await app.request("/vstack_missing", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       mockSelectAlways([STACK_ROW]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
       const res = await app.request("/vstack_001", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("does not call db.delete when stack is not found", async () => {
@@ -909,21 +931,21 @@ describe("Version Stack Routes", () => {
       expect(body.data).toHaveLength(0);
     });
 
-    it("returns 500 when stack is not found", async () => {
+    it("returns 404 when stack is not found", async () => {
       mockSelectAlways([]);
 
       const res = await app.request("/vstack_missing/files", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied", async () => {
+    it("returns 404 when project access is denied", async () => {
       mockSelectAlways([STACK_ROW]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
       const res = await app.request("/vstack_001/files", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("calls parseLimit to get pagination limit", async () => {
@@ -1128,27 +1150,27 @@ describe("Version Stack Routes", () => {
       expect(vi.mocked(db.update)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when file_id is missing (ValidationError)", async () => {
+    it("returns 422 when file_id is missing (ValidationError)", async () => {
       const res = await app.request("/vstack_001/files", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when file_id is not a string (ValidationError)", async () => {
+    it("returns 422 when file_id is not a string (ValidationError)", async () => {
       const res = await app.request("/vstack_001/files", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ file_id: 123 }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when stack is not found (NotFoundError)", async () => {
+    it("returns 404 when stack is not found (NotFoundError)", async () => {
       mockSelectAlways([]);
 
       const res = await app.request("/vstack_missing/files", {
@@ -1157,10 +1179,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       mockSelectAlways([STACK_ROW]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
@@ -1170,10 +1192,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when file is not found (NotFoundError)", async () => {
+    it("returns 404 when file is not found (NotFoundError)", async () => {
       let callIdx = 0;
       vi.mocked(db.select).mockImplementation(() => {
         callIdx++;
@@ -1201,10 +1223,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_missing" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when file is already in a different stack (ValidationError)", async () => {
+    it("returns 422 when file is already in a different stack (ValidationError)", async () => {
       let callIdx = 0;
       vi.mocked(db.select).mockImplementation(() => {
         callIdx++;
@@ -1232,7 +1254,7 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
   });
 
@@ -1323,29 +1345,29 @@ describe("Version Stack Routes", () => {
       expect(vi.mocked(db.update)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when stack is not found (NotFoundError)", async () => {
+    it("returns 404 when stack is not found (NotFoundError)", async () => {
       mockSelectAlways([]);
 
       const res = await app.request("/vstack_missing/files/file_001", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       mockSelectAlways([STACK_ROW]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
       const res = await app.request("/vstack_001/files/file_001", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when file is not found in the stack (NotFoundError)", async () => {
+    it("returns 404 when file is not found in the stack (NotFoundError)", async () => {
       mockSelectSequence([[STACK_ROW], []]);
 
       const res = await app.request("/vstack_001/files/file_missing", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("does not call db.update when file is not found", async () => {
@@ -1421,27 +1443,27 @@ describe("Version Stack Routes", () => {
       );
     });
 
-    it("returns 500 when file_id is missing (ValidationError)", async () => {
+    it("returns 422 when file_id is missing (ValidationError)", async () => {
       const res = await app.request("/vstack_001/set-current", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when file_id is not a string (ValidationError)", async () => {
+    it("returns 422 when file_id is not a string (ValidationError)", async () => {
       const res = await app.request("/vstack_001/set-current", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ file_id: 42 }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when stack is not found (NotFoundError)", async () => {
+    it("returns 404 when stack is not found (NotFoundError)", async () => {
       mockSelectAlways([]);
 
       const res = await app.request("/vstack_missing/set-current", {
@@ -1450,10 +1472,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project access is denied (NotFoundError)", async () => {
+    it("returns 404 when project access is denied (NotFoundError)", async () => {
       mockSelectAlways([STACK_ROW]);
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
@@ -1463,10 +1485,10 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_001" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when file is not in the stack (ValidationError)", async () => {
+    it("returns 422 when file is not in the stack (ValidationError)", async () => {
       // Stack lookup returns stack, file lookup returns empty
       mockSelectSequence([[STACK_ROW], []]);
 
@@ -1476,7 +1498,7 @@ describe("Version Stack Routes", () => {
         body: JSON.stringify({ file_id: "file_not_in_stack" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("calls verifyProjectAccess with projectId and accountId", async () => {

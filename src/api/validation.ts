@@ -329,7 +329,7 @@ export const layoutSchema = z.enum(["grid", "reel", "viewer"]);
  */
 export const createShareSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  project_id: z.string().min(1, "Project ID is required"),
+  project_id: z.string().min(1).optional(),
   layout: layoutSchema.optional(),
   allow_comments: z.boolean().optional(),
   allow_downloads: z.boolean().optional(),
@@ -434,7 +434,7 @@ export const normalizedWebhookEventsSchema = z.array(webhookEventObjectSchema);
  * Create webhook request body schema
  */
 export const createWebhookSchema = z.object({
-  name: z.string().min(1, "Webhook name is required").max(255),
+  name: z.string().trim().min(1, "Webhook name is required").max(255),
   url: webhookUrlSchema,
   events: z.array(webhookEventInputSchema).min(1, "At least one event type is required"),
   secret: z.string().min(16, "Secret must be at least 16 characters").optional(),
@@ -446,7 +446,7 @@ export const createWebhookSchema = z.object({
  * Update webhook request body schema
  */
 export const updateWebhookSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
+  name: z.string().trim().min(1).max(255).optional(),
   url: webhookUrlSchema.optional(),
   events: z.array(webhookEventInputSchema).min(1, "At least one event type is required").optional(),
   secret: z.string().min(16, "Secret must be at least 16 characters").optional(),

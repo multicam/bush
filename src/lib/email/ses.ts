@@ -17,7 +17,6 @@ import type {
   TemplateEmailOptions,
   SendResult,
   EmailAddress,
-  EmailAttachment,
 } from "../email";
 import { renderTemplate } from "./smtp";
 
@@ -26,37 +25,6 @@ import { renderTemplate } from "./smtp";
  */
 function formatAddress(addr: EmailAddress): string {
   return addr.name ? `${addr.name} <${addr.email}>` : addr.email;
-}
-
-/**
- * Format multiple email addresses
- */
-function formatAddresses(addrs: EmailAddress | EmailAddress[]): string {
-  if (Array.isArray(addrs)) {
-    return addrs.map(formatAddress).join(", ");
-  }
-  return formatAddress(addrs);
-}
-
-/**
- * Convert our attachment format to SES format
- */
-function convertAttachments(attachments?: EmailAttachment[]): Array<{
-  Filename: string;
-  Content: Buffer;
-  ContentType?: string;
-  ContentId?: string;
-}> {
-  if (!attachments || attachments.length === 0) {
-    return [];
-  }
-
-  return attachments.map((att) => ({
-    Filename: att.filename,
-    Content: typeof att.content === "string" ? Buffer.from(att.content) : att.content,
-    ContentType: att.contentType,
-    ContentId: att.contentId,
-  }));
 }
 
 /**

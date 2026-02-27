@@ -29,16 +29,6 @@ function formatAddress(addr: EmailAddress): string {
 }
 
 /**
- * Format multiple email addresses
- */
-function formatAddresses(addrs: EmailAddress | EmailAddress[]): string {
-  if (Array.isArray(addrs)) {
-    return addrs.map(formatAddress).join(", ");
-  }
-  return formatAddress(addrs);
-}
-
-/**
  * Convert our attachment format to Resend format
  */
 function convertAttachments(attachments?: EmailAttachment[]): Array<{

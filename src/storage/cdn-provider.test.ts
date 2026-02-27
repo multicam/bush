@@ -88,7 +88,7 @@ describe("BunnyCDNProvider", () => {
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
         status: 200,
-      } as Response);
+      } as Response) as unknown as typeof fetch;
 
       const result = await provider.healthCheck();
       expect(result).toBe(true);
@@ -101,14 +101,14 @@ describe("BunnyCDNProvider", () => {
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: false,
         status: 404,
-      } as Response);
+      } as Response) as unknown as typeof fetch;
 
       const result = await provider.healthCheck();
       expect(result).toBe(true);
     });
 
     it("should return false when fetch throws", async () => {
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error")) as unknown as typeof fetch;
 
       const result = await provider.healthCheck();
       expect(result).toBe(false);
@@ -207,7 +207,7 @@ describe("BunnyCDNProvider", () => {
         ok: true,
         status: 200,
         text: () => Promise.resolve("OK"),
-      } as Response);
+      } as Response) as unknown as typeof fetch;
 
       const result = await provider.invalidate("account/project/asset/thumbnail/thumb_320.jpg");
 
@@ -248,14 +248,14 @@ describe("BunnyCDNProvider", () => {
         ok: false,
         status: 401,
         text: () => Promise.resolve("Unauthorized"),
-      } as Response);
+      } as Response) as unknown as typeof fetch;
 
       const result = await provider.invalidate("test/key.jpg");
       expect(result.success).toBe(false);
     });
 
     it("should return failure when fetch throws", async () => {
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error")) as unknown as typeof fetch;
 
       const result = await provider.invalidate("test/key.jpg");
       expect(result.success).toBe(false);
@@ -268,7 +268,7 @@ describe("BunnyCDNProvider", () => {
         ok: true,
         status: 200,
         text: () => Promise.resolve("OK"),
-      } as Response);
+      } as Response) as unknown as typeof fetch;
 
       const result = await provider.invalidatePrefix("account/project/asset/");
 

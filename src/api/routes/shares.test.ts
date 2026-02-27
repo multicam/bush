@@ -86,6 +86,17 @@ vi.mock("../../db/schema.js", () => ({
 vi.mock("../router.js", () => ({
   generateId: vi.fn().mockReturnValue("share_test123"),
   parseLimit: vi.fn().mockReturnValue(50),
+  errorHandler: (error: Error, c: { json: (body: unknown, status: number) => Response }) => {
+    const status = (error as { status?: number }).status || 500;
+    return c.json({
+      errors: [{
+        title: error.name,
+        detail: error.message,
+        status,
+        code: (error as { code?: string }).code || 'error',
+      }],
+    }, status as 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503);
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -108,7 +119,7 @@ import app, { getShareBySlug } from "./shares.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyAccountAccess, verifyProjectAccess } from "../access-control.js";
-import { generateId, parseLimit } from "../router.js";
+import { generateId, parseLimit, errorHandler } from "../router.js";
 
 // ---------------------------------------------------------------------------
 // Test app factory - mount shares sub-app under the parent route
@@ -116,6 +127,7 @@ import { generateId, parseLimit } from "../router.js";
 // ---------------------------------------------------------------------------
 function makeTestApp() {
   const testApp = new Hono();
+  testApp.onError(errorHandler);
   testApp.route("/accounts/:accountId/shares", app);
   return testApp;
 }
@@ -394,13 +406,13 @@ describe("Shares Routes", () => {
       expect(vi.mocked(requireAuth)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
 
       const res = await testApp.request(ACCOUNT_SHARES, { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("verifies account access with correct accountId", async () => {
@@ -487,7 +499,7 @@ describe("Shares Routes", () => {
       expect(body.data.type).toBe("share");
     });
 
-    it("returns 500 when name is missing (ValidationError thrown)", async () => {
+    it("returns 422 when name is missing (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request(ACCOUNT_SHARES, {
@@ -496,10 +508,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ layout: "grid" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is empty string (ValidationError thrown)", async () => {
+    it("returns 422 when name is empty string (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request(ACCOUNT_SHARES, {
@@ -508,10 +520,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "   " }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name exceeds 255 characters (ValidationError thrown)", async () => {
+    it("returns 422 when name exceeds 255 characters (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request(ACCOUNT_SHARES, {
@@ -520,10 +532,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "a".repeat(256) }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when layout is invalid (ValidationError thrown)", async () => {
+    it("returns 422 when layout is invalid (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request(ACCOUNT_SHARES, {
@@ -532,10 +544,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "Valid Name", layout: "invalid_layout" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
 
@@ -545,10 +557,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "New Share" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when project_id is not accessible (NotFoundError thrown)", async () => {
+    it("returns 404 when project_id is not accessible (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
@@ -558,7 +570,7 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "New Share", project_id: "prj_invalid" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("calls db.insert for share record", async () => {
@@ -719,23 +731,23 @@ describe("Shares Routes", () => {
       expect(body.data.attributes.name).toBe("My Share");
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectJoinSingle(null, null);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_missing`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectJoinSingle(SHARE_ROW, USER_ROW);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("includes asset_count in response attributes", async () => {
@@ -805,7 +817,7 @@ describe("Shares Routes", () => {
       expect(body.data.type).toBe("share");
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
@@ -815,10 +827,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "New Name" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
@@ -829,10 +841,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "New Name" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when name is empty string (ValidationError thrown)", async () => {
+    it("returns 422 when name is empty string (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(SHARE_ROW);
 
@@ -842,10 +854,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "   " }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name exceeds 255 characters (ValidationError thrown)", async () => {
+    it("returns 422 when name exceeds 255 characters (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(SHARE_ROW);
 
@@ -855,10 +867,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ name: "a".repeat(256) }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when layout is invalid (ValidationError thrown)", async () => {
+    it("returns 422 when layout is invalid (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(SHARE_ROW);
 
@@ -868,7 +880,7 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ layout: "bad_layout" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("hashes passphrase using bcrypt when provided in update", async () => {
@@ -1061,7 +1073,7 @@ describe("Shares Routes", () => {
       expect(vi.mocked(db.delete)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
@@ -1069,10 +1081,10 @@ describe("Shares Routes", () => {
         method: "DELETE",
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
@@ -1081,7 +1093,7 @@ describe("Shares Routes", () => {
         method: "DELETE",
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("does not call db.delete when share is not found", async () => {
@@ -1130,23 +1142,23 @@ describe("Shares Routes", () => {
       expect(body.data).toEqual([]);
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_missing/assets`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("supports cursor pagination parameter", async () => {
@@ -1209,7 +1221,7 @@ describe("Shares Routes", () => {
       expect(res.status).toBe(202);
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
@@ -1219,10 +1231,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ file_ids: ["file_001"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
@@ -1233,10 +1245,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ file_ids: ["file_001"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when file_ids is missing (ValidationError thrown)", async () => {
+    it("returns 422 when file_ids is missing (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(SHARE_ROW);
 
@@ -1246,10 +1258,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({}),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when file_ids is empty array (ValidationError thrown)", async () => {
+    it("returns 422 when file_ids is empty array (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(SHARE_ROW);
 
@@ -1259,10 +1271,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ file_ids: [] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when file is not found (ValidationError thrown)", async () => {
+    it("returns 422 when file is not found (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
 
       // Share found
@@ -1276,10 +1288,10 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ file_ids: ["file_missing"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when project access denied for file (ValidationError thrown)", async () => {
+    it("returns 422 when project access denied for file (ValidationError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
 
@@ -1294,7 +1306,7 @@ describe("Shares Routes", () => {
         body: JSON.stringify({ file_ids: ["file_001"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
   });
 
@@ -1335,7 +1347,7 @@ describe("Shares Routes", () => {
       expect(vi.mocked(db.delete)).toHaveBeenCalledTimes(1);
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
@@ -1344,10 +1356,10 @@ describe("Shares Routes", () => {
         { method: "DELETE" }
       );
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
@@ -1357,7 +1369,7 @@ describe("Shares Routes", () => {
         { method: "DELETE" }
       );
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
   });
 
@@ -1394,7 +1406,7 @@ describe("Shares Routes", () => {
       expect(body.data.type).toBe("share");
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
@@ -1402,10 +1414,10 @@ describe("Shares Routes", () => {
         method: "POST",
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
@@ -1414,7 +1426,7 @@ describe("Shares Routes", () => {
         method: "POST",
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("inserts the duplicate share record", async () => {
@@ -1517,23 +1529,23 @@ describe("Shares Routes", () => {
       expect(body.data).toEqual([]);
     });
 
-    it("returns 500 when share is not found (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_missing/activity`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied (NotFoundError thrown)", async () => {
+    it("returns 404 when account access is denied (NotFoundError thrown)", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
 
       const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity`);
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("supports type filter parameter (valid types: view, comment, download)", async () => {
@@ -1586,6 +1598,7 @@ describe("Shares Routes", () => {
   describe("getShareBySlug - get share by slug (public access)", () => {
     // Mount the exported handler directly
     const slugApp = new Hono();
+    slugApp.onError(errorHandler);
     slugApp.get("/shares/slug/:slug", getShareBySlug);
 
     it("returns 200 with share data when share has no passphrase protection", async () => {
@@ -1625,15 +1638,15 @@ describe("Shares Routes", () => {
       expect(body.data.attributes.passphrase).toBeUndefined();
     });
 
-    it("returns 500 when share is not found by slug (NotFoundError thrown)", async () => {
+    it("returns 404 when share is not found by slug (NotFoundError thrown)", async () => {
       mockSelectShareSingle(null);
 
       const res = await slugApp.request("/shares/slug/nonexistent");
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when share has expired (ValidationError thrown)", async () => {
+    it("returns 422 when share has expired (ValidationError thrown)", async () => {
       const expiredShare = {
         ...SHARE_ROW,
         expiresAt: new Date("2020-01-01T00:00:00.000Z"),
@@ -1642,10 +1655,10 @@ describe("Shares Routes", () => {
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when passphrase is incorrect (ValidationError thrown)", async () => {
+    it("returns 422 when passphrase is incorrect (ValidationError thrown)", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
 
@@ -1657,7 +1670,7 @@ describe("Shares Routes", () => {
         "/shares/slug/abc123xyz0?passphrase=wrongpassword"
       );
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("returns full share data when correct passphrase provided via query param", async () => {

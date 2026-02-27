@@ -6,7 +6,7 @@ import { PostmarkEmailProvider, createPostmarkProvider } from "./postmark";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe("PostmarkEmailProvider", () => {
   const testConfig = {

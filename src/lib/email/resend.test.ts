@@ -6,7 +6,7 @@ import { ResendEmailProvider, createResendProvider } from "./resend";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe("ResendEmailProvider", () => {
   const testConfig = {

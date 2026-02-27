@@ -62,6 +62,17 @@ vi.mock("../../db/schema.js", () => ({
 vi.mock("../router.js", () => ({
   generateId: vi.fn().mockReturnValue("wh_test123"),
   parseLimit: vi.fn().mockReturnValue(50),
+  errorHandler: (error: Error, c: { json: (body: unknown, status: number) => Response }) => {
+    const status = (error as { status?: number }).status || 500;
+    return c.json({
+      errors: [{
+        title: error.name,
+        detail: error.message,
+        status,
+        code: (error as { code?: string }).code || 'error',
+      }],
+    }, status as 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503);
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -83,7 +94,7 @@ import app from "./webhooks.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyAccountAccess } from "../access-control.js";
-import { generateId, parseLimit } from "../router.js";
+import { generateId, parseLimit, errorHandler } from "../router.js";
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -141,6 +152,7 @@ const DELIVERY_ROW = {
 
 function makeTestApp() {
   const testApp = new Hono();
+  testApp.onError(errorHandler);
   testApp.route("/accounts/:accountId/webhooks", app);
   return testApp;
 }
@@ -301,7 +313,7 @@ describe("Webhooks Routes", () => {
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("calls requireAuth to authenticate the request", async () => {
@@ -504,7 +516,7 @@ describe("Webhooks Routes", () => {
       expect(vi.mocked(generateId)).toHaveBeenCalledWith("wh");
     });
 
-    it("returns 500 when name is missing", async () => {
+    it("returns 422 when name is missing", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -513,10 +525,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ url: "https://example.com/hook", events: ["file.created"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is empty string", async () => {
+    it("returns 422 when name is empty string", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -525,10 +537,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "  ", url: "https://example.com/hook", events: ["file.created"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when url is missing", async () => {
+    it("returns 422 when url is missing", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -537,10 +549,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "Hook", events: ["file.created"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when url is invalid", async () => {
+    it("returns 422 when url is invalid", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -549,10 +561,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "Hook", url: "not-a-url", events: ["file.created"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when events is missing", async () => {
+    it("returns 422 when events is missing", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -561,10 +573,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "Hook", url: "https://example.com/hook" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when events is empty array", async () => {
+    it("returns 422 when events is empty array", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -573,10 +585,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "Hook", url: "https://example.com/hook", events: [] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when events contains invalid event type string", async () => {
+    it("returns 422 when events contains invalid event type string", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -589,7 +601,7 @@ describe("Webhooks Routes", () => {
         }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("accepts events as array of objects with type property", async () => {
@@ -608,7 +620,7 @@ describe("Webhooks Routes", () => {
       expect(res.status).toBe(200);
     });
 
-    it("returns 500 when event object type is invalid", async () => {
+    it("returns 422 when event object type is invalid", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -621,10 +633,10 @@ describe("Webhooks Routes", () => {
         }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when event is neither string nor object with type", async () => {
+    it("returns 422 when event is neither string nor object with type", async () => {
       const testApp = makeTestApp();
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks", {
@@ -637,10 +649,10 @@ describe("Webhooks Routes", () => {
         }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       vi.mocked(verifyAccountAccess).mockResolvedValue(null as never);
 
@@ -654,7 +666,7 @@ describe("Webhooks Routes", () => {
         }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("accepts all valid event types", async () => {
@@ -708,23 +720,23 @@ describe("Webhooks Routes", () => {
       expect(body.data.attributes).not.toHaveProperty("secret");
     });
 
-    it("returns 500 when webhook is not found", async () => {
+    it("returns 404 when webhook is not found", async () => {
       const testApp = makeTestApp();
       mockSelectJoinWhereLimit([]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_missing", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       mockSelectJoinWhereLimit([WEBHOOK_WITH_CREATOR]);
       vi.mocked(verifyAccountAccess).mockResolvedValue(null as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("formats date fields as ISO strings", async () => {
@@ -946,7 +958,7 @@ describe("Webhooks Routes", () => {
       expect(updates.url).toBe("https://new-url.example.com/hook");
     });
 
-    it("returns 500 when url is invalid in update", async () => {
+    it("returns 422 when url is invalid in update", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -962,10 +974,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ url: "not-a-url" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when name is empty string in update", async () => {
+    it("returns 422 when name is empty string in update", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -981,10 +993,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when events is empty array in update", async () => {
+    it("returns 422 when events is empty array in update", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -1000,10 +1012,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ events: [] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
-    it("returns 500 when events contains invalid type in update", async () => {
+    it("returns 422 when events contains invalid type in update", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -1019,7 +1031,7 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ events: ["bogus.event"] }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("updates is_active field when provided", async () => {
@@ -1060,7 +1072,7 @@ describe("Webhooks Routes", () => {
       expect(updates.isActive).toBe(false);
     });
 
-    it("returns 500 when webhook is not found", async () => {
+    it("returns 404 when webhook is not found", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -1076,10 +1088,10 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "Won't matter" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       vi.mocked(db.select).mockReturnValueOnce({
         from: () => ({
@@ -1096,7 +1108,7 @@ describe("Webhooks Routes", () => {
         body: JSON.stringify({ name: "New name" }),
       });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("accepts valid event types in update", async () => {
@@ -1155,23 +1167,23 @@ describe("Webhooks Routes", () => {
       expect(vi.mocked(db.delete)).toHaveBeenCalledTimes(2);
     });
 
-    it("returns 500 when webhook is not found", async () => {
+    it("returns 404 when webhook is not found", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_missing", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([WEBHOOK_ROW]);
       vi.mocked(verifyAccountAccess).mockResolvedValue(null as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001", { method: "DELETE" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("does not call db.delete when webhook is not found", async () => {
@@ -1282,23 +1294,23 @@ describe("Webhooks Routes", () => {
       expect(attrs).not.toHaveProperty("payload");
     });
 
-    it("returns 500 when webhook is not found", async () => {
+    it("returns 404 when webhook is not found", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_missing/deliveries", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([WEBHOOK_ROW]);
       vi.mocked(verifyAccountAccess).mockResolvedValue(null as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/deliveries", { method: "GET" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("returns empty collection when no deliveries", async () => {
@@ -1493,23 +1505,23 @@ describe("Webhooks Routes", () => {
       expect(body.data.delivery_id).toBeDefined();
     });
 
-    it("returns 500 when webhook is not found", async () => {
+    it("returns 404 when webhook is not found", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([]);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_missing/test", { method: "POST" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 500 when account access is denied", async () => {
+    it("returns 404 when account access is denied", async () => {
       const testApp = makeTestApp();
       mockSelectWhereLimit([WEBHOOK_ROW]);
       vi.mocked(verifyAccountAccess).mockResolvedValue(null as never);
 
       const res = await testApp.request("/accounts/acc_xyz/webhooks/wh_001/test", { method: "POST" });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("uses generateId with 'whdel' prefix for delivery", async () => {
@@ -1560,7 +1572,7 @@ describe("Webhooks Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...baseBody, url: "ftp://example.com/hook" }),
       });
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("rejects malformed URLs", async () => {
@@ -1570,7 +1582,7 @@ describe("Webhooks Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...baseBody, url: "not a url at all" }),
       });
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(422);
     });
 
     it("rejects empty string url", async () => {
@@ -1580,8 +1592,8 @@ describe("Webhooks Routes", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...baseBody, url: "" }),
       });
-      // Empty string fails the `!body.url` check before URL validation
-      expect(res.status).toBe(500);
+      // Empty string fails URL validation
+      expect(res.status).toBe(422);
     });
   });
 

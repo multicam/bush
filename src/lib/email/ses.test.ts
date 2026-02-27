@@ -6,7 +6,7 @@ import { SesEmailProvider, createSesProvider } from "./ses";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe("SesEmailProvider", () => {
   const testConfig = {

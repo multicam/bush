@@ -22,7 +22,6 @@ import {
   parseJsonBody,
   type RequestContext,
 } from "./index.js";
-import { Hono } from "hono";
 
 describe("Error Classes", () => {
   describe("ValidationError", () => {
