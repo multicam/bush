@@ -20,6 +20,7 @@ import type { ServerWebSocket } from "bun";
 
 // Import route modules
 import {
+  docsRoutes,
   authRoutes,
   accountRoutes,
   workspaceRoutes,
@@ -144,6 +145,9 @@ app.get("/", (c) => {
     documentation: "/docs",
   });
 });
+
+// API Documentation endpoint
+app.route("/docs", docsRoutes);
 
 // API V4 Routes
 // Reference: specs/04-api-reference.md

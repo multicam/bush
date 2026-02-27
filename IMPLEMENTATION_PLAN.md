@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-26 (v0.0.94 - Zod Validation for API Routes)
+**Last updated**: 2026-02-27 (v0.0.95 - API Documentation Endpoint)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -153,9 +153,12 @@ All implemented features have corresponding spec documentation. No code was foun
 - Removed unused `BACKUP_STORAGE_BUCKET` from `src/config/env.ts`
 - `createNotifications` (plural) is used in tests - not dead code
 
-### [P3] Missing /docs Endpoint [2h] -- NOT STARTED
+### [P3] Missing /docs Endpoint [2h] -- RESOLVED (v0.0.95)
 
-- `src/api/index.ts:134` references `/docs` but the endpoint returns a 404
+- Created `src/api/routes/docs.ts` with comprehensive API documentation endpoint
+- Returns JSON:API spec info, authentication methods, endpoint listings, response format docs, rate limits, realtime events
+- Mounted at `/docs` in `src/api/index.ts`
+- Added tests in `src/api/routes/docs.test.ts` (7 tests, all passing)
 
 ### [P3] Body Parsing Error Swallowing [30m] -- RESOLVED (v0.0.90)
 
@@ -326,6 +329,25 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.95 (2026-02-27) - API Documentation Endpoint
+
+Implemented the `/docs` endpoint that was referenced in the root API response but returned 404. Created a comprehensive JSON documentation endpoint that provides:
+
+**Features:**
+- API name, version, and specification info (JSON:API 1.0)
+- Authentication methods (cookie-based sessions, bearer tokens)
+- Complete endpoint listings organized by resource (auth, accounts, workspaces, projects, files, folders, comments, shares, collections, webhooks, notifications, version-stacks, search, bulk, transcription, captions)
+- Response format documentation (JSON:API format, pagination)
+- Rate limit information
+- Realtime WebSocket events list
+- Useful links (self, API root, health check)
+
+**Files:**
+- `src/api/routes/docs.ts` - Documentation route handler
+- `src/api/routes/docs.test.ts` - 7 tests covering all documentation sections
+- Updated `src/api/routes/index.ts` to export docsRoutes
+- Updated `src/api/index.ts` to mount /docs endpoint
 
 ### v0.0.94 (2026-02-26) - Zod Validation for API Routes
 
