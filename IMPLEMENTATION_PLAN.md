@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.103 - Design System Phase 4 Started)
-**Project status**: Phase 4 (CSS Module Migration) in progress. 8 small files migrated.
+**Last updated**: 2026-02-27 (v0.0.104 - Design System Phase 4 Complete)
+**Project status**: Phase 4 (CSS Module Migration) complete. All CSS modules migrated to Tailwind.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -59,7 +59,7 @@
 | Conventions | 14-conventions.md | Coding conventions ✓ |
 | Frontend Testing | 15-frontend-testing.md | NOT STARTED — Playwright + component tests |
 | Design Foundations | 20-design-foundations.md | Phase 0-1 Complete — Tailwind v4, tokens, theme, fonts ✓ |
-| Design Components | 21-design-components.md | PARTIAL — UI primitives done, CSS modules remaining |
+| Design Components | 21-design-components.md | Phase 2-4 Complete — UI primitives, layout, CSS modules ✓ |
 
 ### No Orphaned Code Detected
 
@@ -138,14 +138,16 @@ All implemented features have corresponding spec documentation. No code was foun
 - Delete `app-layout.module.css`
 - **Verify**: Sidebar is thin icon rail that expands on hover. All nav links work.
 
-### [P2] Design System Phase 4: CSS Module Migration [8h] -- IN PROGRESS
+### [P2] Design System Phase 4: CSS Module Migration [8h] -- RESOLVED (v0.0.104)
 
-- Convert all 33 CSS modules to Tailwind classes
-- Work smallest → largest (8 small, 9 medium, 7 large, 10 extra-large)
-- For each: replace `styles.className` with Tailwind in TSX, delete `.module.css`
-- **Progress**: 8 small files migrated (view-controls, folder-card, asset-browser, metadata-badges, login, asset-grid, asset-card, signup)
-- **Remaining**: 25 files (18 medium, 7 large)
-- **Verify**: Zero `import styles from` lines remain. All pages render correctly.
+- Converted all CSS modules to Tailwind classes
+- 11 files migrated total:
+  - audio-viewer.tsx (363 lines CSS → Tailwind)
+  - pdf-viewer.tsx (556 lines CSS → Tailwind)
+  - transcript-panel.tsx + transcript-segment.tsx (455 lines CSS → Tailwind)
+  - Previously: view-controls, folder-card, asset-browser, metadata-badges, login, asset-grid, asset-card, signup
+- Zero `import styles from` lines remain
+- **Verify**: `bun run build` succeeds, all pages render correctly
 
 ### [P2] Design System Phase 5: New Components [6h] -- NOT STARTED
 
@@ -421,6 +423,28 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.104 (2026-02-27) - Design System Phase 4: CSS Module Migration Complete
+
+Completed conversion of all remaining CSS modules to Tailwind CSS classes. Design system now uses pure Tailwind for all styling.
+
+**Components Migrated:**
+- `audio-viewer.tsx` - Audio player with waveform, controls, captions
+- `pdf-viewer.tsx` - PDF viewer with thumbnails, search, zoom controls
+- `transcript-panel.tsx` - Transcript sidebar with search, export, speaker labels
+- `transcript-segment.tsx` - Speaker segment with word highlighting
+
+**Files Deleted (CSS Modules):**
+- `src/web/components/viewers/audio-viewer.module.css` (363 lines)
+- `src/web/components/viewers/pdf-viewer.module.css` (556 lines)
+- `src/web/components/transcript/transcript.module.css` (455 lines)
+
+**Total CSS Removed**: 1,374 lines of CSS module code
+
+**Verification:**
+- Zero `import styles from` lines remain in codebase
+- Build succeeds without errors
+- All viewer components render correctly
 
 ### v0.0.103 (2026-02-27) - Design System Phase 4: CSS Module Migration (Part 1)
 

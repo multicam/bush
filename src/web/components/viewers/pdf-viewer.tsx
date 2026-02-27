@@ -9,7 +9,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import styles from "./pdf-viewer.module.css";
+import { cn } from "@/web/lib/utils";
 
 // Configure PDF.js worker - use CDN for simplicity
 if (typeof window !== "undefined") {
@@ -497,39 +497,42 @@ export function PdfViewer({
 
   if (error) {
     return (
-      <div className={`${styles.container} ${className || ""}`}>
-        <div className={styles.error}>
-          <svg className={styles.errorIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <div className={cn("relative w-full h-full min-h-[400px] bg-surface-0 text-text flex flex-col overflow-hidden", className)}>
+        <div className="flex flex-col items-center justify-center gap-4 p-10">
+          <svg className="w-12 h-12 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span className={styles.errorMessage}>{error}</span>
+          <span className="text-red-500 text-sm">{error}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className={`${styles.container} ${className || ""}`}>
+    <div ref={containerRef} className={cn("relative w-full h-full min-h-[400px] bg-surface-0 text-text flex flex-col overflow-hidden", className)}>
       {/* Loading state */}
       {isLoading && (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-surface-0/90">
+          <div className="w-10 h-10 border-[3px] border-surface-2 border-t-primary rounded-full animate-spin" />
           <span>Loading PDF...</span>
         </div>
       )}
 
       {/* Main content area */}
-      <div className={styles.mainArea}>
+      <div className="flex flex-1 overflow-hidden">
         {/* Thumbnail sidebar */}
         {isSidebarOpen && (
-          <div className={styles.sidebar} ref={thumbnailContainerRef}>
-            <div className={styles.thumbnailList}>
+          <div className="w-[180px] min-w-[180px] bg-surface--1 border-r border-surface-1 flex flex-col overflow-hidden" ref={thumbnailContainerRef}>
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
-                  className={`${styles.thumbnailButton} ${page === currentPage ? styles.active : ""}`}
+                  className={cn(
+                    "relative flex flex-col items-center p-2 border-2 border-transparent rounded-md bg-surface-0 cursor-pointer transition-all hover:bg-surface-1 hover:border-surface-2",
+                    page === currentPage && "bg-primary/20 border-primary"
+                  )}
                   onClick={() => goToPage(page)}
                   title={`Page ${page}`}
                 >
@@ -537,14 +540,14 @@ export function PdfViewer({
                     <img
                       src={thumbnailUrls.get(page)}
                       alt={`Page ${page}`}
-                      className={styles.thumbnailImage}
+                      className="w-full h-auto rounded-sm"
                     />
                   ) : (
-                    <div className={styles.thumbnailPlaceholder}>{page}</div>
+                    <div className="w-full aspect-[0.7] bg-surface-1 flex items-center justify-center text-lg font-medium text-text-tertiary">{page}</div>
                   )}
-                  <span className={styles.thumbnailPage}>{page}</span>
+                  <span className="mt-1 text-[11px] text-text-secondary">{page}</span>
                   {commentMarkers.filter((m) => m.page === page).length > 0 && (
-                    <div className={styles.thumbnailMarker}>
+                    <div className="absolute top-1 right-1 bg-primary text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
                       <span>{commentMarkers.filter((m) => m.page === page).length}</span>
                     </div>
                   )}
@@ -555,13 +558,13 @@ export function PdfViewer({
         )}
 
         {/* Document viewing area */}
-        <div className={styles.documentArea}>
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Search bar */}
           {isSearchOpen && (
-            <div className={styles.searchBar}>
+            <div className="flex items-center gap-2 p-2 px-4 bg-surface-0 border-b border-surface-1">
               <input
                 type="text"
-                className={styles.searchInput}
+                className="flex-1 px-3 py-1.5 bg-surface-1 border border-surface-2 rounded text-text text-[13px] focus:outline-none focus:border-primary"
                 placeholder="Search in document..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -577,30 +580,30 @@ export function PdfViewer({
                 autoFocus
               />
               <button
-                className={styles.searchButton}
+                className="p-1.5 bg-transparent border-none text-text-secondary cursor-pointer flex items-center justify-center hover:text-text"
                 onClick={handleSearch}
                 title="Search"
                 aria-label="Search"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                 </svg>
               </button>
               {searchResults.length > 0 && (
-                <div className={styles.searchResults}>
+                <div className="flex items-center gap-2 text-xs text-text-secondary">
                   <span>
                     {currentSearchIndex + 1} of {searchResults.length}
                   </span>
-                  <button onClick={goToPrevSearchResult} title="Previous match">
+                  <button className="px-2 py-1 bg-surface-1 border border-surface-2 rounded text-text cursor-pointer hover:bg-surface-2" onClick={goToPrevSearchResult} title="Previous match">
                     ↑
                   </button>
-                  <button onClick={goToNextSearchResult} title="Next match">
+                  <button className="px-2 py-1 bg-surface-1 border border-surface-2 rounded text-text cursor-pointer hover:bg-surface-2" onClick={goToNextSearchResult} title="Next match">
                     ↓
                   </button>
                 </div>
               )}
               <button
-                className={styles.searchClose}
+                className="px-2.5 py-1 bg-transparent border-none text-text-secondary text-lg cursor-pointer hover:text-text"
                 onClick={() => {
                   setIsSearchOpen(false);
                   setSearchQuery("");
@@ -614,23 +617,26 @@ export function PdfViewer({
           )}
 
           {/* Top bar */}
-          <div className={styles.topBar}>
-            <div className={styles.titleSection}>
-              {name && <h2 className={styles.fileName}>{name}</h2>}
-              {metaDataDisplay && <span className={styles.fileMeta}>{metaDataDisplay}</span>}
+          <div className="flex items-center justify-between p-3 px-4 bg-surface--1 border-b border-surface-1">
+            <div className="flex flex-col gap-1">
+              {name && <h2 className="text-base font-semibold text-text m-0">{name}</h2>}
+              {metaDataDisplay && <span className="text-xs text-text-secondary">{metaDataDisplay}</span>}
             </div>
           </div>
 
           {/* PDF canvas container */}
-          <div className={styles.canvasContainer}>
-            <canvas ref={canvasRef} className={styles.canvas} />
-            <div ref={textLayerRef} className={styles.textLayer} />
+          <div className="flex-1 overflow-auto flex justify-center items-start p-5 bg-black/20 relative">
+            <canvas ref={canvasRef} className="shadow-lg" />
+            <div
+              ref={textLayerRef}
+              className="absolute top-5 left-1/2 -translate-x-1/2 overflow-hidden leading-none [-webkit-text-size-adjust:none] [-moz-text-size-adjust:none] [text-size-adjust:none] [forced-color-adjust:none] [transform-origin:0_0]"
+            />
 
             {/* Comment markers overlay */}
             {pageMarkers.map((marker) => (
               <div
                 key={marker.id}
-                className={styles.commentMarker}
+                className="absolute w-3 h-3 rounded-full cursor-pointer shadow-md transition-transform hover:scale-110"
                 style={{ backgroundColor: marker.color }}
                 onClick={() => handleCommentClick(marker)}
                 title={`Comment on page ${marker.page}`}
@@ -639,10 +645,10 @@ export function PdfViewer({
           </div>
 
           {/* Control bar */}
-          <div className={styles.controlBar}>
+          <div className="flex items-center gap-2 p-3 px-4 bg-surface--1 border-t border-surface-1">
             {/* Sidebar toggle */}
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
               title={isSidebarOpen ? "Hide thumbnails (T)" : "Show thumbnails (T)"}
               aria-label="Toggle thumbnails"
@@ -652,12 +658,12 @@ export function PdfViewer({
               </svg>
             </button>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-surface-2 mx-1" />
 
             {/* Page navigation */}
-            <div className={styles.pageNav}>
+            <div className="flex items-center gap-2">
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
                 onClick={prevPage}
                 disabled={currentPage <= 1}
                 title="Previous page (←)"
@@ -668,21 +674,21 @@ export function PdfViewer({
                 </svg>
               </button>
 
-              <div className={styles.pageInput}>
+              <div className="flex items-center gap-1.5 text-[13px] text-text-secondary">
                 <input
                   type="number"
                   min="1"
                   max={totalPages}
                   value={currentPage}
                   onChange={(e) => goToPage(parseInt(e.target.value) || 1)}
-                  className={styles.pageNumber}
+                  className="w-[50px] px-2 py-1.5 bg-surface-1 border border-surface-2 rounded text-text text-[13px] text-center focus:outline-none focus:border-primary"
                   aria-label="Current page"
                 />
                 <span>of {totalPages}</span>
               </div>
 
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
                 onClick={nextPage}
                 disabled={currentPage >= totalPages}
                 title="Next page (→)"
@@ -694,12 +700,12 @@ export function PdfViewer({
               </button>
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-surface-2 mx-1" />
 
             {/* Zoom controls */}
-            <div className={styles.zoomControls}>
+            <div className="flex items-center gap-2">
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
                 onClick={zoomOut}
                 title="Zoom out (-)"
                 aria-label="Zoom out"
@@ -710,7 +716,7 @@ export function PdfViewer({
               </button>
 
               <select
-                className={styles.zoomSelect}
+                className="px-3 py-1.5 bg-surface-1 border border-surface-2 rounded text-text text-[13px] min-w-[100px] focus:outline-none focus:border-primary"
                 value={zoomLevel}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
                 aria-label="Zoom level"
@@ -725,7 +731,7 @@ export function PdfViewer({
               </select>
 
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
                 onClick={zoomIn}
                 title="Zoom in (+)"
                 aria-label="Zoom in"
@@ -736,11 +742,11 @@ export function PdfViewer({
               </button>
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-surface-2 mx-1" />
 
             {/* Search button */}
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-surface-1 border-none rounded-md text-text cursor-pointer transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed [&>svg]:w-5 [&>svg]:h-5"
               onClick={() => setIsSearchOpen((prev) => !prev)}
               title="Search (Ctrl+F)"
               aria-label="Search in document"
@@ -754,7 +760,7 @@ export function PdfViewer({
       </div>
 
       {/* Keyboard shortcut hint */}
-      <div className={styles.shortcutHint}>
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/80 rounded text-[11px] text-text-secondary pointer-events-none opacity-0 transition-opacity group-hover:opacity-100">
         ←→: page · +/-: zoom · T: thumbnails · Ctrl+F: search · 0: fit page
       </div>
     </div>

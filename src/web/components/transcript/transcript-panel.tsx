@@ -26,7 +26,7 @@ import {
   getSpeakerColorIndex,
   formatTime,
 } from "./types";
-import styles from "./transcript.module.css";
+import { cn } from "@/web/lib/utils";
 
 /** Transcript icon */
 function TranscriptIcon() {
@@ -75,7 +75,7 @@ function SearchIcon() {
 /** Empty state icon */
 function EmptyIcon() {
   return (
-    <svg className={styles.transcriptPanel__emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg className="w-12 h-12 text-text-tertiary opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
@@ -349,8 +349,15 @@ export function TranscriptPanel({
       failed: "Failed",
     };
 
+    const statusClasses: Record<TranscriptionStatus, string> = {
+      pending: "text-amber-500 bg-amber-500/10",
+      processing: "text-amber-500 bg-amber-500/10",
+      completed: "text-green-500 bg-green-500/10",
+      failed: "text-red-500 bg-red-500/10",
+    };
+
     return (
-      <span className={`${styles.transcriptPanel__status} ${styles[`transcriptPanel__status--${status}`]}`}>
+      <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide rounded-full", statusClasses[status])}>
         {status === "processing" && <Spinner size="sm" />}
         {statusLabels[status]}
       </span>
@@ -360,16 +367,16 @@ export function TranscriptPanel({
   // Loading state
   if (isLoading) {
     return (
-      <div className={`${styles["transcript-panel"]} ${className}`}>
-        <div className={styles.transcriptPanel__header}>
-          <h3 className={styles.transcriptPanel__title}>
+      <div className={cn("flex flex-col h-full bg-surface-0 border-l border-surface-1", className)}>
+        <div className="flex items-center justify-between p-4 border-b border-surface-1">
+          <h3 className="flex items-center gap-2 m-0 text-base font-semibold text-text">
             <TranscriptIcon />
             Transcript
           </h3>
         </div>
-        <div className={styles.transcriptPanel__loading}>
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-text-secondary">
           <Spinner size="lg" />
-          <span className={styles.transcriptPanel__loadingText}>Loading transcript...</span>
+          <span className="text-sm">Loading transcript...</span>
         </div>
       </div>
     );
@@ -378,17 +385,17 @@ export function TranscriptPanel({
   // No transcript state
   if (!transcript) {
     return (
-      <div className={`${styles["transcript-panel"]} ${className}`}>
-        <div className={styles.transcriptPanel__header}>
-          <h3 className={styles.transcriptPanel__title}>
+      <div className={cn("flex flex-col h-full bg-surface-0 border-l border-surface-1", className)}>
+        <div className="flex items-center justify-between p-4 border-b border-surface-1">
+          <h3 className="flex items-center gap-2 m-0 text-base font-semibold text-text">
             <TranscriptIcon />
             Transcript
           </h3>
         </div>
-        <div className={styles.transcriptPanel__empty}>
+        <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
           <EmptyIcon />
-          <p>No transcript available</p>
-          <p className={styles["transcriptPanel__empty-hint"]}>
+          <p className="m-0 text-text-secondary">No transcript available</p>
+          <p className="mt-1 text-[13px] text-text-secondary">
             Generate a transcript for this file
           </p>
           <Button onClick={handleRegenerate} disabled={isRegenerating}>
@@ -410,17 +417,17 @@ export function TranscriptPanel({
   // Processing/Pending state
   if (transcript.status === "pending" || transcript.status === "processing") {
     return (
-      <div className={`${styles["transcript-panel"]} ${className}`}>
-        <div className={styles.transcriptPanel__header}>
-          <h3 className={styles.transcriptPanel__title}>
+      <div className={cn("flex flex-col h-full bg-surface-0 border-l border-surface-1", className)}>
+        <div className="flex items-center justify-between p-4 border-b border-surface-1">
+          <h3 className="flex items-center gap-2 m-0 text-base font-semibold text-text">
             <TranscriptIcon />
             Transcript
           </h3>
           {renderStatus(transcript.status)}
         </div>
-        <div className={styles.transcriptPanel__loading}>
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-text-secondary">
           <Spinner size="lg" />
-          <span className={styles.transcriptPanel__loadingText}>
+          <span className="text-sm">
             {transcript.status === "pending"
               ? "Waiting to process..."
               : "Transcribing audio..."}
@@ -433,16 +440,16 @@ export function TranscriptPanel({
   // Failed state
   if (transcript.status === "failed") {
     return (
-      <div className={`${styles["transcript-panel"]} ${className}`}>
-        <div className={styles.transcriptPanel__header}>
-          <h3 className={styles.transcriptPanel__title}>
+      <div className={cn("flex flex-col h-full bg-surface-0 border-l border-surface-1", className)}>
+        <div className="flex items-center justify-between p-4 border-b border-surface-1">
+          <h3 className="flex items-center gap-2 m-0 text-base font-semibold text-text">
             <TranscriptIcon />
             Transcript
           </h3>
           {renderStatus(transcript.status)}
         </div>
-        <div className={styles.transcriptPanel__error}>
-          <span className={styles.transcriptPanel__error_message}>
+        <div className="flex flex-col gap-2 p-4 px-4 text-[13px] text-red-500 bg-red-500/10">
+          <span className="leading-snug">
             {transcript.errorMessage || "Transcription failed"}
           </span>
           <Button size="sm" onClick={handleRegenerate} disabled={isRegenerating}>
@@ -463,14 +470,14 @@ export function TranscriptPanel({
 
   // Completed state - show transcript
   return (
-    <div className={`${styles["transcript-panel"]} ${className}`}>
+    <div className={cn("flex flex-col h-full bg-surface-0 border-l border-surface-1", className)}>
       {/* Header */}
-      <div className={styles.transcriptPanel__header}>
-        <h3 className={styles.transcriptPanel__title}>
+      <div className="flex items-center justify-between p-4 border-b border-surface-1">
+        <h3 className="flex items-center gap-2 m-0 text-base font-semibold text-text">
           <TranscriptIcon />
           Transcript
         </h3>
-        <div className={styles.transcriptPanel__actions}>
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -492,24 +499,24 @@ export function TranscriptPanel({
       </div>
 
       {/* Info bar */}
-      <div className={styles.transcriptPanel__info}>
+      <div className="flex items-center gap-4 p-2 px-4 text-xs text-text-secondary border-b border-surface-1">
         {transcript.language && (
-          <span className={styles.transcriptPanel__infoItem}>
+          <span className="flex items-center gap-1">
             {transcript.language.toUpperCase()}
           </span>
         )}
         {transcript.durationSeconds && (
-          <span className={styles.transcriptPanel__infoItem}>
+          <span className="flex items-center gap-1">
             {formatTime(transcript.durationSeconds)}
           </span>
         )}
         {transcript.speakerCount && transcript.speakerCount > 0 && (
-          <span className={styles.transcriptPanel__infoItem}>
+          <span className="flex items-center gap-1">
             {transcript.speakerCount} {transcript.speakerCount === 1 ? "speaker" : "speakers"}
           </span>
         )}
         {transcript.isEdited && (
-          <span className={styles.transcriptPanel__infoItem} title="Edited">
+          <span className="flex items-center gap-1" title="Edited">
             Edited
           </span>
         )}
@@ -517,8 +524,8 @@ export function TranscriptPanel({
 
       {/* Export options */}
       {showExport && (
-        <div className={styles.transcriptExport}>
-          <span className={styles.transcriptExport__label}>Export as:</span>
+        <div className="flex items-center gap-2 p-2 px-4 text-[13px] bg-surface-1 border-b border-surface-2">
+          <span className="text-text-secondary">Export as:</span>
           <Button variant="ghost" size="sm" onClick={() => handleExport("vtt")}>
             VTT
           </Button>
@@ -532,17 +539,17 @@ export function TranscriptPanel({
       )}
 
       {/* Search */}
-      <div className={styles.transcriptPanel__search}>
+      <div className="flex items-center gap-2 p-2 px-4 bg-surface-1 border-b border-surface-2">
         <SearchIcon />
         <input
           type="text"
-          className={styles.transcriptPanel__searchInput}
+          className="flex-1 px-2 py-1.5 text-[13px] text-text bg-surface-0 border border-surface-2 rounded-md focus:outline-none focus:border-primary placeholder:text-text-tertiary"
           placeholder="Search transcript..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {searchQuery && (
-          <span className={styles.transcriptPanel__searchCount}>
+          <span className="text-xs text-text-secondary">
             {filteredWords.length} {filteredWords.length === 1 ? "match" : "matches"}
           </span>
         )}
@@ -550,7 +557,7 @@ export function TranscriptPanel({
 
       {/* Error */}
       {error && (
-        <div className={styles.transcriptPanel__error}>
+        <div className="flex flex-col gap-2 p-3 px-4 text-[13px] text-red-500 bg-red-500/10">
           <span>{error}</span>
           <Button variant="ghost" size="sm" onClick={() => setError(null)}>
             Dismiss
@@ -559,21 +566,23 @@ export function TranscriptPanel({
       )}
 
       {/* Content */}
-      <div className={styles.transcriptPanel__content} ref={contentRef}>
+      <div className="flex-1 overflow-y-auto p-4" ref={contentRef}>
         {words.length === 0 ? (
-          <div className={styles.transcriptPanel__empty}>
-            <p>No words found</p>
+          <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
+            <p className="m-0 text-text-secondary">No words found</p>
           </div>
         ) : searchQuery.trim() ? (
           // Search results view
-          <div className={styles.transcriptSegment}>
-            <div className={styles.transcriptSegment__words}>
+          <div className="mb-4">
+            <div className="leading-relaxed">
               {filteredWords.map((word) => (
                 <span
                   key={word.id}
-                  className={`${styles.transcriptWord} ${
-                    word.id === activeWordId ? styles.transcriptWordActive : ""
-                  } ${word.originalWord ? styles.transcriptWordEdited : ""}`}
+                  className={cn(
+                    "inline px-0.5 text-sm text-text cursor-pointer rounded-sm transition-colors hover:bg-surface-1",
+                    word.id === activeWordId && "bg-primary/20 text-primary hover:bg-primary/30",
+                    word.originalWord && "underline decoration-dotted decoration-text-tertiary"
+                  )}
                   onClick={() => onSeek?.(word.startMs / 1000)}
                   ref={word.id === activeWordId ? activeWordRef : undefined}
                 >

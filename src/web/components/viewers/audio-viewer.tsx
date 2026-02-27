@@ -9,7 +9,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { CaptionOverlay, type TranscriptWord } from "../transcript";
-import styles from "./audio-viewer.module.css";
+import { cn } from "@/web/lib/utils";
 
 /** Waveform data format from server */
 export interface WaveformData {
@@ -414,56 +414,56 @@ export function AudioViewer({
 
   if (error) {
     return (
-      <div className={`${styles.container} ${className || ""}`}>
-        <div className={styles.error}>
-          <svg className={styles.errorIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <div className={cn("relative w-full h-full flex flex-col bg-surface-0 select-none", className)}>
+        <div className="flex flex-col items-center justify-center h-full gap-3 text-text-secondary">
+          <svg className="w-12 h-12 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span className={styles.errorMessage}>{error}</span>
+          <span className="text-sm">{error}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`${styles.container} ${className || ""}`}>
+    <div className={cn("relative w-full h-full flex flex-col bg-surface-0 select-none", className)}>
       {/* Hidden audio element */}
       <audio
         ref={audioRef}
         src={src}
-        className={styles.hiddenAudio}
+        className="hidden"
         preload="metadata"
         autoPlay={autoPlay}
       />
 
       {/* Loading state */}
       {(isLoadingWaveform || isAudioLoading) && (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 text-text-secondary text-sm">
+          <div className="w-8 h-8 border-[3px] border-surface-2 border-t-text-secondary rounded-full animate-spin" />
           <span>Loading audio...</span>
         </div>
       )}
 
       {/* Main content */}
-      <div className={styles.mainContent}>
+      <div className="flex-1 flex flex-col justify-center items-center p-6 gap-6">
         {/* Album art placeholder */}
-        <div className={styles.artwork}>
-          <svg className={styles.artworkIcon} viewBox="0 0 24 24" fill="currentColor">
+        <div className="w-[200px] h-[200px] bg-gradient-to-br from-surface-1 to-surface-0 rounded-xl flex items-center justify-center shadow-lg">
+          <svg className="w-20 h-20 text-text-tertiary" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
         </div>
 
         {/* File info */}
-        <div className={styles.fileInfo}>
-          {name && <h2 className={styles.fileName}>{name}</h2>}
-          {metaDataDisplay && <p className={styles.fileMeta}>{metaDataDisplay}</p>}
+        <div className="text-center">
+          {name && <h2 className="text-text font-semibold text-lg m-0 mb-1 max-w-[400px] overflow-hidden text-ellipsis whitespace-nowrap">{name}</h2>}
+          {metaDataDisplay && <p className="text-text-secondary text-[13px] m-0">{metaDataDisplay}</p>}
         </div>
 
         {/* Caption overlay */}
         {transcriptWords.length > 0 && (
-          <div className={styles.captionContainer}>
+          <div className="relative w-full max-w-[800px] min-h-[60px] flex flex-col items-center justify-center">
             <CaptionOverlay
               words={transcriptWords}
               currentTime={currentTime}
@@ -474,18 +474,18 @@ export function AudioViewer({
         )}
 
         {/* Waveform */}
-        <div className={styles.waveformSection}>
+        <div className="w-full max-w-[800px]">
           <div
             ref={containerRef}
-            className={styles.waveformContainer}
+            className="relative w-full h-20 bg-surface-1 rounded-lg cursor-pointer overflow-hidden"
             onClick={handleWaveformClick}
           >
             {/* Waveform canvas */}
-            <canvas ref={canvasRef} className={styles.waveformCanvas} />
+            <canvas ref={canvasRef} className="w-full h-full" />
 
             {/* Progress overlay */}
             <div
-              className={styles.waveformProgress}
+              className="absolute top-0 left-0 h-full bg-primary/15 pointer-events-none"
               style={{ width: `${progressPercent}%` }}
             />
 
@@ -493,7 +493,7 @@ export function AudioViewer({
             {markerPositions.map((marker) => (
               <div
                 key={marker.id}
-                className={styles.commentMarker}
+                className="absolute top-0 w-0.5 h-full bg-amber-400 cursor-pointer z-[5] transition-colors hover:bg-amber-500 before:content-[''] before:absolute before:-top-1.5 before:-left-1.5 before:w-2 before:h-2 before:bg-amber-400 before:rounded-full"
                 style={{ left: marker.left, backgroundColor: marker.color }}
                 onClick={(e) => handleCommentClick(marker, e)}
                 title={`Comment at ${formatTime(marker.timestamp)}`}
@@ -501,11 +501,11 @@ export function AudioViewer({
             ))}
 
             {/* Playhead */}
-            <div className={styles.playhead} style={{ left: playheadLeft }} />
+            <div className="absolute top-0 w-0.5 h-full bg-primary pointer-events-none z-10 before:content-[''] before:absolute before:-top-1 before:-left-1 before:w-2.5 before:h-2.5 before:bg-primary before:rounded-full" style={{ left: playheadLeft }} />
           </div>
 
           {/* Time display */}
-          <div className={styles.timeDisplay}>
+          <div className="flex justify-between mt-2 text-xs text-text-secondary font-mono tabular-nums">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
@@ -513,18 +513,18 @@ export function AudioViewer({
       </div>
 
       {/* Controls */}
-      <div className={styles.controlsSection}>
-        <div className={styles.controlsRow}>
+      <div className="p-4 pb-6 bg-black/30 border-t border-surface-2">
+        <div className="flex items-center justify-center gap-4">
           {/* Main playback controls */}
-          <div className={styles.mainControls}>
+          <div className="flex items-center gap-2">
             {/* Skip back */}
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-transparent border border-surface-3 rounded-full text-text cursor-pointer transition-all hover:bg-surface-1 hover:border-text-tertiary"
               onClick={() => seekRelative(-10)}
               title="Skip back 10s"
               aria-label="Skip back 10 seconds"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
                 <text x="12" y="15" fontSize="6" textAnchor="middle" fill="currentColor">10</text>
               </svg>
@@ -532,7 +532,7 @@ export function AudioViewer({
 
             {/* Play/Pause */}
             <button
-              className={`${styles.controlButton} ${styles.playButton}`}
+              className="flex items-center justify-center w-12 h-12 bg-primary border-none rounded-full text-text cursor-pointer transition-all hover:bg-primary/80 [&>svg]:w-[22px] [&>svg]:h-[22px]"
               onClick={togglePlay}
               title={isPlaying ? "Pause (Space)" : "Play (Space)"}
               aria-label={isPlaying ? "Pause" : "Play"}
@@ -550,41 +550,41 @@ export function AudioViewer({
 
             {/* Skip forward */}
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-transparent border border-surface-3 rounded-full text-text cursor-pointer transition-all hover:bg-surface-1 hover:border-text-tertiary"
               onClick={() => seekRelative(10)}
               title="Skip forward 10s"
               aria-label="Skip forward 10 seconds"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" />
                 <text x="12" y="15" fontSize="6" textAnchor="middle" fill="currentColor">10</text>
               </svg>
             </button>
           </div>
 
-          <div className={styles.divider} />
+          <div className="w-px h-6 bg-surface-3" />
 
           {/* Volume control */}
-          <div className={styles.volumeControl}>
+          <div className="flex items-center gap-2 min-w-[120px]">
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-transparent border border-surface-3 rounded-full text-text cursor-pointer transition-all hover:bg-surface-1 hover:border-text-tertiary"
               onClick={toggleMute}
               title={isMuted ? "Unmute (M)" : "Mute (M)"}
               aria-label={isMuted ? "Unmute" : "Mute"}
             >
               {isMuted || volume === 0 ? (
-                <svg viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
                 </svg>
               )}
             </button>
             <input
               type="range"
-              className={styles.volumeSlider}
+              className="w-20 h-1 bg-surface-2 rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-text [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-text [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
               min="0"
               max="1"
               step="0.01"
@@ -594,12 +594,12 @@ export function AudioViewer({
             />
           </div>
 
-          <div className={styles.divider} />
+          <div className="w-px h-6 bg-surface-3" />
 
           {/* Speed control */}
-          <div className={styles.speedControl}>
+          <div className="flex items-center gap-2">
             <select
-              className={styles.speedSelect}
+              className="px-2.5 py-1.5 bg-surface-1 border border-surface-3 rounded text-text text-xs cursor-pointer appearance-none min-w-[60px] hover:border-text-tertiary focus:outline-none focus:border-primary"
               value={playbackRate}
               onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
               aria-label="Playback speed"
@@ -618,9 +618,12 @@ export function AudioViewer({
           {/* Caption toggle */}
           {transcriptWords.length > 0 && (
             <>
-              <div className={styles.divider} />
+              <div className="w-px h-6 bg-surface-3" />
               <button
-                className={`${styles.controlButton} ${captionsEnabled ? styles.active : ""}`}
+                className={cn(
+                  "flex items-center justify-center w-9 h-9 bg-transparent border border-surface-3 rounded-full text-text cursor-pointer transition-all hover:bg-surface-1 hover:border-text-tertiary [&>svg]:w-[18px] [&>svg]:h-[18px]",
+                  captionsEnabled && "bg-primary border-primary"
+                )}
                 onClick={() => setCaptionsEnabled(!captionsEnabled)}
                 title={captionsEnabled ? "Hide captions (C)" : "Show captions (C)"}
                 aria-label={captionsEnabled ? "Hide captions" : "Show captions"}
@@ -636,7 +639,7 @@ export function AudioViewer({
       </div>
 
       {/* Keyboard shortcut hint */}
-      <div className={styles.shortcutHint}>
+      <div className="absolute bottom-2 right-4 text-[11px] text-text-tertiary">
         Space: play/pause · ←→: seek · M: mute · C: captions · J/K/L: speed
       </div>
     </div>

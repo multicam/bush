@@ -9,7 +9,7 @@
 import { useState, useCallback, useRef, RefObject } from "react";
 import type { TranscriptWord } from "./types";
 import { formatTime, SPEAKER_COLORS } from "./types";
-import styles from "./transcript.module.css";
+import { cn } from "@/web/lib/utils";
 
 export interface TranscriptSegmentProps {
   /** Words in this segment */
@@ -135,19 +135,19 @@ export function TranscriptSegment({
   );
 
   return (
-    <div className={styles.transcriptSegment}>
+    <div className="mb-4">
       {/* Speaker header */}
-      <div className={styles.transcriptSegment__header}>
-        <div className={styles.speakerLabel}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="inline-flex items-center gap-1">
           <span
-            className={styles.speakerLabel__dot}
+            className="w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: speakerColor }}
           />
           {isRenamingSpeaker ? (
             <input
               ref={speakerInputRef}
               type="text"
-              className={styles.speakerLabel__input}
+              className="w-auto min-w-[4rem] max-w-[10rem] px-1 py-0.5 text-xs font-inherit text-text bg-surface--1 border border-primary rounded outline-none"
               value={speakerRenameValue}
               onChange={(e) => setSpeakerRenameValue(e.target.value)}
               onBlur={handleSpeakerRenameSubmit}
@@ -155,10 +155,10 @@ export function TranscriptSegment({
             />
           ) : (
             <>
-              <span className={styles.speakerLabel__name}>{speakerName}</span>
+              <span className="text-xs font-medium text-text-secondary">{speakerName}</span>
               {canEdit && onSpeakerRename && (
                 <button
-                  className={styles.speakerLabel__edit}
+                  className="inline-flex items-center px-1 py-0.5 text-[11px] font-medium text-text-tertiary bg-none border-none rounded opacity-0 transition-all hover:bg-surface-1 hover:text-text-secondary group-hover:opacity-100"
                   onClick={handleRenameClick}
                   title="Rename speaker"
                 >
@@ -169,7 +169,7 @@ export function TranscriptSegment({
           )}
         </div>
         <button
-          className={styles.transcriptSegment__time}
+          className="text-[11px] font-mono text-text-tertiary bg-transparent border-none cursor-pointer"
           onClick={() => onSeek?.(startTime)}
           title={`Seek to ${formatTime(startTime)}`}
         >
@@ -178,7 +178,7 @@ export function TranscriptSegment({
       </div>
 
       {/* Words */}
-      <div className={styles.transcriptSegment__words}>
+      <div className="leading-relaxed">
         {words.map((word) => {
           const isActive = word.id === activeWordId;
           const isEditing = word.id === editingWordId;
@@ -187,11 +187,11 @@ export function TranscriptSegment({
           return (
             <span key={word.id}>
               {isEditing ? (
-                <span className={styles.transcriptWordEditing}>
+                <span className="inline p-0 bg-transparent">
                   <input
                     ref={inputRef}
                     type="text"
-                    className={styles.transcriptWord__input}
+                    className="min-w-[2rem] max-w-[10rem] px-1 py-0.5 text-sm font-inherit text-text bg-surface--1 border border-primary rounded-sm outline-none"
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
                     onBlur={() => handleWordSubmit(word)}
@@ -200,9 +200,11 @@ export function TranscriptSegment({
                 </span>
               ) : (
                 <span
-                  className={`${styles.transcriptWord} ${
-                    isActive ? styles.transcriptWordActive : ""
-                  } ${isEdited ? styles.transcriptWordEdited : ""}`}
+                  className={cn(
+                    "inline px-0.5 text-sm text-text cursor-pointer rounded-sm transition-colors hover:bg-surface-1",
+                    isActive && "bg-primary/20 text-primary hover:bg-primary/30",
+                    isEdited && "underline decoration-dotted decoration-text-tertiary"
+                  )}
                   onClick={() => handleWordClick(word)}
                   ref={isActive ? activeWordRef : undefined}
                   style={isActive ? { color: speakerColor } : undefined}
