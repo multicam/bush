@@ -67,9 +67,15 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
-// Mock crypto.randomUUID for tests
+// Mock crypto.randomUUID for tests - returns unique values each call
+// First 8 characters must be unique since toast.tsx uses .slice(0, 8)
+let uuidCounter = 0;
 Object.defineProperty(crypto, "randomUUID", {
-  value: () => "test-uuid-1234-5678-9abc",
+  value: () => {
+    uuidCounter++;
+    const uniquePart = uuidCounter.toString().padStart(8, "0");
+    return `${uniquePart}-1234-5678-9abc-def0`;
+  },
 });
 
 // Mock localStorage
