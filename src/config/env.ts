@@ -138,6 +138,9 @@ const envSchema = z.object({
   // Backup
   LITESTREAM_ENABLED: z.coerce.boolean().default(false),
 
+  // Demo Mode - bypasses auth for back-pressure testing
+  DEMO_MODE: z.coerce.boolean().default(false),
+
   // Next.js Public Variables (also available server-side)
   NEXT_PUBLIC_API_URL: z.string().url().optional(),
   NEXT_PUBLIC_WS_URL: z.string().optional(),
@@ -153,6 +156,10 @@ const envSchema = z.object({
     if (isDefaultHost || isDefaultPort || isDefaultFrom) {
       return false;
     }
+  }
+  // Warn if DEMO_MODE is enabled in production
+  if (data.DEMO_MODE && data.NODE_ENV === "production") {
+    console.error("WARNING: DEMO_MODE enabled in production!");
   }
   return true;
 }, {
@@ -218,6 +225,7 @@ function loadConfig(): Env {
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,
       LITESTREAM_ENABLED: false,
+      DEMO_MODE: false,
       NEXT_PUBLIC_APP_NAME: "Bush",
       // Media Processing
       FFMPEG_PATH: "/usr/bin/ffmpeg",
@@ -305,3 +313,8 @@ export const isTest = config.NODE_ENV === "test";
  * Check if we're in production mode
  */
 export const isProd = config.NODE_ENV === "production";
+
+/**
+ * Check if we're in demo mode (auth bypass for back-pressure testing)
+ */
+export const isDemo = config.DEMO_MODE === true;

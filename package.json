@@ -24,7 +24,12 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "bun --env-file .env.local src/db/migrate.ts",
     "db:generate": "drizzle-kit generate",
-    "db:seed": "bun --env-file .env.local src/db/seed.ts"
+    "db:seed": "bun --env-file .env.local src/db/seed.ts",
+    "bp:seed": "bun --env-file .env.local src/db/seed.ts",
+    "bp:fixtures": "bash bp/fixtures/generate-fixtures.sh",
+    "bp:test": "DEMO_MODE=true npx playwright test --config bp/playwright.config.ts",
+    "bp:test:headed": "DEMO_MODE=true npx playwright test --config bp/playwright.config.ts --headed",
+    "bp:report": "npx playwright show-report bp/results"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",

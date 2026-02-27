@@ -26,6 +26,10 @@ const sqlite = new Database(config.DATABASE_URL);
 const seed = sqlite.transaction(() => {
   // Clear existing data (in reverse dependency order)
   sqlite.exec(`
+    DELETE FROM collection_assets;
+    DELETE FROM collections;
+    DELETE FROM share_assets;
+    DELETE FROM share_activity;
     DELETE FROM notifications;
     DELETE FROM comments;
     DELETE FROM shares;
@@ -545,6 +549,141 @@ const seed = sqlite.transaction(() => {
     insertNotification.run({ ...notification, createdAt: now });
   }
 
+  // ========================================
+  // VERSION STACKS (for BP UC-15)
+  // ========================================
+  const versionStacks = [
+    {
+      id: generateId("vs", "vstack-commercial-shot1"),
+      projectId: projects[0].id,
+      name: "shot_001_main versions",
+      currentFileId: files[0].id,
+    },
+  ];
+
+  const insertVersionStack = sqlite.prepare(`
+    INSERT INTO version_stacks (id, project_id, name, current_file_id, created_at, updated_at)
+    VALUES (@id, @projectId, @name, @currentFileId, @createdAt, @updatedAt)
+  `);
+
+  for (const vs of versionStacks) {
+    insertVersionStack.run({ ...vs, createdAt: now, updatedAt: now });
+  }
+
+  // Link file to version stack
+  sqlite.prepare(`UPDATE files SET version_stack_id = ? WHERE id = ?`)
+    .run(versionStacks[0].id, files[0].id);
+
+  // ========================================
+  // SHARES (for BP UC-13)
+  // ========================================
+  const shareLinks = [
+    {
+      id: generateId("shr", "share-commercial-review"),
+      accountId: accounts[0].id,
+      projectId: projects[0].id,
+      createdByUserId: users[0].id,
+      name: "Commercial Review",
+      slug: "commercial-review-2024",
+      passphrase: null,
+      expiresAt: null,
+      layout: "grid",
+      allowComments: 1,
+      allowDownloads: 0,
+      showAllVersions: 0,
+      showTranscription: 0,
+      featuredField: null,
+      branding: null,
+    },
+  ];
+
+  const insertShare = sqlite.prepare(`
+    INSERT INTO shares (id, account_id, project_id, created_by_user_id, name, slug, passphrase, expires_at, layout, allow_comments, allow_downloads, show_all_versions, show_transcription, featured_field, branding, created_at, updated_at)
+    VALUES (@id, @accountId, @projectId, @createdByUserId, @name, @slug, @passphrase, @expiresAt, @layout, @allowComments, @allowDownloads, @showAllVersions, @showTranscription, @featuredField, @branding, @createdAt, @updatedAt)
+  `);
+
+  for (const share of shareLinks) {
+    insertShare.run({ ...share, createdAt: now, updatedAt: now });
+  }
+
+  // Share assets — add first two commercial files to the share
+  const shareAssets = [
+    {
+      id: generateId("sa", "share-asset-01"),
+      shareId: shareLinks[0].id,
+      fileId: files[0].id,
+      sortOrder: 0,
+    },
+    {
+      id: generateId("sa", "share-asset-02"),
+      shareId: shareLinks[0].id,
+      fileId: files[1].id,
+      sortOrder: 1,
+    },
+  ];
+
+  const insertShareAsset = sqlite.prepare(`
+    INSERT INTO share_assets (id, share_id, file_id, sort_order, created_at)
+    VALUES (@id, @shareId, @fileId, @sortOrder, @createdAt)
+  `);
+
+  for (const sa of shareAssets) {
+    insertShareAsset.run({ ...sa, createdAt: now });
+  }
+
+  // ========================================
+  // COLLECTIONS (for BP UC-14)
+  // ========================================
+  const seedCollections = [
+    {
+      id: generateId("col", "collection-hero-shots"),
+      projectId: projects[0].id,
+      createdByUserId: users[0].id,
+      name: "Hero Shots",
+      description: "Best takes for the commercial",
+      type: "team",
+      filterRules: null,
+      isDynamic: 0,
+      defaultView: "grid",
+    },
+  ];
+
+  const insertCollection = sqlite.prepare(`
+    INSERT INTO collections (id, project_id, created_by_user_id, name, description, type, filter_rules, is_dynamic, default_view, created_at, updated_at)
+    VALUES (@id, @projectId, @createdByUserId, @name, @description, @type, @filterRules, @isDynamic, @defaultView, @createdAt, @updatedAt)
+  `);
+
+  for (const col of seedCollections) {
+    insertCollection.run({ ...col, createdAt: now, updatedAt: now });
+  }
+
+  // Collection assets — add files to the collection
+  const collAssets = [
+    {
+      id: generateId("ca", "col-asset-01"),
+      collectionId: seedCollections[0].id,
+      fileId: files[0].id,
+      sortOrder: 0,
+      addedByUserId: users[0].id,
+    },
+    {
+      id: generateId("ca", "col-asset-02"),
+      collectionId: seedCollections[0].id,
+      fileId: files[1].id,
+      sortOrder: 1,
+      addedByUserId: users[0].id,
+    },
+  ];
+
+  const insertCollectionAsset = sqlite.prepare(`
+    INSERT INTO collection_assets (id, collection_id, file_id, sort_order, added_by_user_id, created_at)
+    VALUES (@id, @collectionId, @fileId, @sortOrder, @addedByUserId, @createdAt)
+  `);
+
+  for (const ca of collAssets) {
+    insertCollectionAsset.run({ ...ca, createdAt: now });
+  }
+
   console.log("\n✅ Database seeded successfully!");
   console.log("\nSeeded data:");
   console.log(`  - ${accounts.length} accounts`);
@@ -556,6 +695,9 @@ const seed = sqlite.transaction(() => {
   console.log(`  - ${files.length} files`);
   console.log(`  - ${comments.length} comments`);
   console.log(`  - ${notifications.length} notifications`);
+  console.log(`  - ${versionStacks.length} version stacks`);
+  console.log(`  - ${shareLinks.length} shares (${shareAssets.length} assets)`);
+  console.log(`  - ${seedCollections.length} collections (${collAssets.length} assets)`);
 });
 
 seed();

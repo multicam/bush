@@ -116,9 +116,32 @@ async function extractWorkOSSession(cookieHeader: string): Promise<SessionData |
 }
 
 /**
+ * Demo session for back-pressure testing (deterministic IDs matching seed.ts)
+ */
+function getDemoSession(): SessionData {
+  return {
+    sessionId: "demo-session",
+    userId: "usr_0e7b8c3e3b7f94ed81538a56",
+    email: "alice@alpha.studio",
+    displayName: "Alice Chen",
+    currentAccountId: "acc_7877e0d885c4b988e2437c67",
+    accountRole: "owner",
+    workosOrganizationId: "demo-org",
+    workosUserId: "workos_user_alice",
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+    avatarUrl: null,
+  };
+}
+
+/**
  * Extract session from cookie or bearer token
  */
 async function extractSession(c: Context): Promise<SessionData | null> {
+  if (config.DEMO_MODE) {
+    return getDemoSession();
+  }
+
   // Try bearer token first (API access)
   const bearerToken = parseBearerToken(c);
   if (bearerToken) {

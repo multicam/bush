@@ -44,6 +44,10 @@ build/
 coverage/
 .nyc_output/
 
+# -- BP (back-pressure) test artifacts --
+bp/screenshots/bush/
+bp/results/
+
 # -- IDE --
 .idea/
 .vscode/settings.json

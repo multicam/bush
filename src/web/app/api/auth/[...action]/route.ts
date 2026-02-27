@@ -46,12 +46,51 @@ function setBushSessionCookie(response: NextResponse, session: SessionData): voi
   });
 }
 
+// Demo mode constants - deterministic IDs matching seed.ts
+const DEMO_MODE = process.env.DEMO_MODE === "true";
+const DEMO_USER_ID = "usr_0e7b8c3e3b7f94ed81538a56";
+const DEMO_ACCOUNT_ID = "acc_7877e0d885c4b988e2437c67";
+
 /**
  * GET /api/auth/session - Get current session state
  *
  * Returns both WorkOS session (from AuthKit) and Bush session (from Redis).
  */
 async function getSession(_request: NextRequest) {
+  if (DEMO_MODE) {
+    const authService = await getAuthService();
+    const accounts = await authService.getUserAccounts(DEMO_USER_ID);
+    const currentAccount = accounts[0];
+    return NextResponse.json({
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        id: DEMO_USER_ID,
+        email: "alice@alpha.studio",
+        firstName: "Alice",
+        lastName: "Chen",
+        displayName: "Alice Chen",
+        avatarUrl: null,
+      },
+      currentAccount: currentAccount
+        ? {
+            id: currentAccount.accountId,
+            name: currentAccount.accountName,
+            slug: currentAccount.accountSlug,
+            role: currentAccount.role,
+          }
+        : { id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" },
+      accounts: accounts.length > 0
+        ? accounts.map((a) => ({
+            id: a.accountId,
+            name: a.accountName,
+            slug: a.accountSlug,
+            role: a.role,
+          }))
+        : [{ id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" }],
+    });
+  }
+
   // Use withAuth to get the WorkOS session info
   const authInfo = await withAuth();
 
@@ -155,6 +194,10 @@ async function getSession(_request: NextRequest) {
  * GET /api/auth/login - Redirect to WorkOS AuthKit
  */
 async function login(request: NextRequest) {
+  if (DEMO_MODE) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   const redirect = request.nextUrl.searchParams.get("redirect") || "/dashboard";
 
   // Use WorkOS AuthKit's getSignInUrl for proper URL generation
@@ -294,6 +337,10 @@ async function callback(request: NextRequest) {
  * POST /api/auth/logout - Clear session
  */
 async function logout(request: NextRequest) {
+  if (DEMO_MODE) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   const bushSessionCookie = request.cookies.get(BUSH_SESSION_COOKIE);
 
   if (bushSessionCookie) {
