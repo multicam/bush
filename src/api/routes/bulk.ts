@@ -3,6 +3,11 @@
  *
  * API routes for bulk file and folder operations.
  * Reference: specs/04-api-reference.md Section 7
+ *
+ * Rate Limiting: Bulk operations are rate-limited to 10 requests per minute
+ * per client. This is stricter than standard API endpoints (100 req/min) because
+ * bulk operations are resource-intensive and can process up to 100 items per request.
+ * Rate limit preset: 'bulk' (see src/api/rate-limit.ts)
  */
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
@@ -13,12 +18,21 @@ import { generateId } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
+import { bulkRateLimit } from "../rate-limit.js";
 import type { CustomFieldValue } from "../../db/schema.js";
 
 const app = new Hono();
 
 // Apply authentication to all routes
 app.use("*", authMiddleware());
+
+// Apply rate limiting to all bulk operations
+// Rate limit: 10 requests per minute per client (preset: 'bulk')
+// This is stricter than standard endpoints because bulk operations:
+// - Can process up to 100 items per request
+// - May involve storage operations (copy)
+// - Can cause significant database load
+app.use("*", bulkRateLimit);
 
 /** Maximum items per bulk request */
 const MAX_BULK_ITEMS = 100;

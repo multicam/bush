@@ -56,7 +56,21 @@ vi.mock("../config/index.js", () => ({
     WS_RATE_LIMIT_MESSAGES: 100,
     WS_RATE_LIMIT_WINDOW_MS: 60000,
     WS_MAX_CONNECTIONS_PER_USER: 10,
+    LOG_LEVEL: "info",
   },
+  scrubSecrets: (s: string) => s,
+  isDev: false,
+  isTest: true,
+}));
+
+vi.mock("../lib/logger.js", () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+  scrubSecrets: (s: string) => s,
 }));
 
 vi.mock("../db/index.js", () => ({

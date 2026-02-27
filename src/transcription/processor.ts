@@ -17,6 +17,8 @@ import {
   MAX_DURATION_SECONDS,
 } from "./types.js";
 import { emitWebhookEvent } from "../api/routes/index.js";
+import { realpathSync, existsSync, statSync } from "fs";
+import { basename, isAbsolute, join } from "path";
 
 /**
  * Maximum number of words to store per transcript
@@ -24,13 +26,131 @@ import { emitWebhookEvent } from "../api/routes/index.js";
  * At ~150 words per minute, 100,000 words = ~11 hours of audio
  */
 const MAX_WORDS_PER_TRANSCRIPT = 100_000;
+
+/**
+ * Allowed binary names for FFmpeg executable
+ * Using an allowlist prevents path traversal and arbitrary binary execution
+ */
+const ALLOWED_FFMPEG_BINARIES = ["ffmpeg", "ffmpeg.exe"] as const;
+
+/**
+ * Shell metacharacters that could be used for command injection
+ * These characters should never appear in a safe binary path
+ */
+const SHELL_METACHARACTERS_PATTERN = /[;&|`$(){}[\]<>"'\\!*?~]/;
+
+/**
+ * Cached validated FFmpeg path
+ * Validation is performed once and cached for subsequent calls
+ */
+let validatedFFmpegPath: string | null = null;
+
+/**
+ * Validate FFmpeg path to prevent command injection attacks
+ *
+ * Security measures:
+ * 1. Must be an absolute path (prevents PATH-based attacks)
+ * 2. Must not contain shell metacharacters
+ * 3. Binary name must be in allowlist (prevents arbitrary binary execution)
+ * 4. Path must exist and be a regular file
+ * 5. Resolved path (after symlink resolution) must also be absolute
+ *
+ * @param ffmpegPath - Path to validate from configuration
+ * @returns The validated path safe to use with spawn()
+ * @throws Error if path fails validation
+ */
+function validateFFmpegPath(ffmpegPath: string): string {
+  // Check for empty path
+  if (!ffmpegPath || ffmpegPath.trim() === "") {
+    throw new Error("FFmpeg path cannot be empty");
+  }
+
+  // Must be an absolute path to prevent PATH-based attacks
+  if (!isAbsolute(ffmpegPath)) {
+    throw new Error(
+      `FFmpeg path must be absolute: ${ffmpegPath}. Relative paths are not allowed.`
+    );
+  }
+
+  // Check for shell metacharacters that could enable command injection
+  if (SHELL_METACHARACTERS_PATTERN.test(ffmpegPath)) {
+    throw new Error(
+      `FFmpeg path contains potentially dangerous characters: ${ffmpegPath}`
+    );
+  }
+
+  // Verify binary name is in allowlist
+  const binaryName = basename(ffmpegPath);
+  if (!ALLOWED_FFMPEG_BINARIES.includes(binaryName as typeof ALLOWED_FFMPEG_BINARIES[number])) {
+    throw new Error(
+      `FFmpeg binary name must be one of: ${ALLOWED_FFMPEG_BINARIES.join(", ")}. Got: ${binaryName}`
+    );
+  }
+
+  // Verify path exists
+  if (!existsSync(ffmpegPath)) {
+    throw new Error(
+      `FFmpeg path does not exist: ${ffmpegPath}. Please ensure FFmpeg is installed.`
+    );
+  }
+
+  // Verify it's a regular file (not a directory or device)
+  try {
+    const stats = statSync(ffmpegPath);
+    if (!stats.isFile()) {
+      throw new Error(`FFmpeg path is not a regular file: ${ffmpegPath}`);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("not a regular file")) {
+      throw err;
+    }
+    throw new Error(`Cannot access FFmpeg path: ${ffmpegPath}`);
+  }
+
+  // Resolve symlinks and verify the real path is also absolute and safe
+  try {
+    const realPath = realpathSync(ffmpegPath);
+
+    // Real path must also be absolute
+    if (!isAbsolute(realPath)) {
+      throw new Error(`FFmpeg resolved path is not absolute: ${realPath}`);
+    }
+
+    // Real path must not contain shell metacharacters
+    if (SHELL_METACHARACTERS_PATTERN.test(realPath)) {
+      throw new Error(
+        `FFmpeg resolved path contains potentially dangerous characters: ${realPath}`
+      );
+    }
+
+    // Return the original path (symlinks are ok, we validated the target)
+    return ffmpegPath;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("not absolute")) {
+      throw err;
+    }
+    throw new Error(`Cannot resolve FFmpeg path: ${ffmpegPath}`);
+  }
+}
+
+/**
+ * Get validated FFmpeg path with caching
+ * Validates on first call and caches the result
+ *
+ * @returns Validated FFmpeg path safe to use with spawn()
+ */
+function getValidatedFFmpegPath(): string {
+  if (validatedFFmpegPath === null) {
+    validatedFFmpegPath = validateFFmpegPath(config.FFMPEG_PATH);
+  }
+  return validatedFFmpegPath;
+}
 import { DeepgramProvider } from "./providers/deepgram.js";
 import { FasterWhisperProvider } from "./providers/faster-whisper.js";
 import type { ITranscriptionProvider } from "./types.js";
 import { getStorageProvider } from "../storage/index.js";
 import { spawn } from "child_process";
 import { writeFile, unlink, readFile } from "fs/promises";
-import { join } from "path";
 import { randomUUID } from "crypto";
 import { Worker, Queue } from "bullmq";
 import { getRedisOptions } from "../media/queue.js";
@@ -74,9 +194,10 @@ async function extractAudioForTranscription(
 
   await writeFile(inputPath, fileBuffer);
 
-  // Extract audio using FFmpeg
+  // Extract audio using FFmpeg with validated path (prevents command injection)
+  const ffmpegPath = getValidatedFFmpegPath();
   await new Promise<void>((resolve, reject) => {
-    const ffmpeg = spawn(config.FFMPEG_PATH, [
+    const ffmpeg = spawn(ffmpegPath, [
       "-i", inputPath,
       "-vn",                    // No video
       "-acodec", "pcm_s16le",   // 16-bit PCM

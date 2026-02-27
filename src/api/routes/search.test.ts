@@ -622,6 +622,29 @@ describe("Search Routes", () => {
     });
 
     // -----------------------------------------------------------------------
+    // Helper: escapeLikePattern - LIKE wildcards are escaped in transcript word search
+    // -----------------------------------------------------------------------
+    it("escapes LIKE wildcards in transcript word matching query", async () => {
+      mockAccessibleProjects([{ id: "prj_123" }]);
+      // File search returns no results, transcript search returns one match
+      mockAll.mockReturnValueOnce([]);
+      mockAll.mockReturnValueOnce([mockTranscriptRow]);
+      mockGet.mockReturnValueOnce(mockWordTimestamp);
+
+      // Query contains LIKE wildcards: % and _
+      const queryWithWildcards = "test%file_name";
+      const res = await app.request(`/?q=${encodeURIComponent(queryWithWildcards)}`, { method: "GET" });
+
+      expect(res.status).toBe(200);
+      // Find the transcript word lookup call (third prepare call)
+      // It should have escaped % and _ in the LIKE pattern
+      const transcriptWordCall = mockGet.mock.calls[0];
+      const likePattern = transcriptWordCall[1] as string;
+      // The pattern should escape % and _ with backslash
+      expect(likePattern).toBe("%test\\%file\\_name%");
+    });
+
+    // -----------------------------------------------------------------------
     // Folder is null when file has no folder
     // -----------------------------------------------------------------------
     it("sets folder relationship to null when file has no folder", async () => {

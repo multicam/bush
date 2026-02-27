@@ -17,6 +17,9 @@ import { AuthenticationError, generateRequestId } from "../errors/index.js";
 import { SESSION_KEY, REQUEST_CONTEXT_KEY } from "../permissions/middleware.js";
 import type { SessionData } from "../auth/types.js";
 import { config } from "../config/index.js";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger("Auth");
 
 /**
  * Session cookie name
@@ -112,7 +115,7 @@ async function extractWorkOSSession(cookieHeader: string): Promise<SessionData |
       session.user.id
     );
   } catch (error) {
-    console.error("[Auth] Failed to unseal wos-session:", error);
+    log.error("Failed to unseal wos-session", error instanceof Error ? error : undefined);
     return null;
   }
 }
@@ -157,16 +160,13 @@ async function extractSession(c: Context): Promise<SessionData | null> {
         const sessionId = tokenParts.slice(3).join("_") || tokenParts[2];
         const session = await sessionCache.get(userId, sessionId);
         if (!session) {
-          console.log(JSON.stringify({
-            level: "warn",
-            message: "Authentication failed: session not found in cache",
+          log.warn("Authentication failed: session not found in cache", {
             auth_method: "bearer_token",
             token_type: "bush_tok",
             user_id: userId,
             path,
             method,
-            timestamp: new Date().toISOString(),
-          }));
+          });
         }
         return session;
       }
@@ -174,15 +174,12 @@ async function extractSession(c: Context): Promise<SessionData | null> {
       // API key authentication - validate and return session
       const session = await apiKeyService.validateKey(bearerToken);
       if (!session) {
-        console.log(JSON.stringify({
-          level: "warn",
-          message: "Authentication failed: invalid API key",
+        log.warn("Authentication failed: invalid API key", {
           auth_method: "api_key",
           key_prefix: bearerToken.substring(0, 12) + "...",
           path,
           method,
-          timestamp: new Date().toISOString(),
-        }));
+        });
       }
       return session;
     } else {
@@ -191,30 +188,24 @@ async function extractSession(c: Context): Promise<SessionData | null> {
         const [userId, sessionId] = parts;
         const session = await sessionCache.get(userId, sessionId);
         if (!session) {
-          console.log(JSON.stringify({
-            level: "warn",
-            message: "Authentication failed: session not found in cache",
+          log.warn("Authentication failed: session not found in cache", {
             auth_method: "bearer_token",
             token_type: "legacy",
             user_id: userId,
             path,
             method,
-            timestamp: new Date().toISOString(),
-          }));
+          });
         }
         return session;
       }
     }
     // Invalid bearer token format
-    console.log(JSON.stringify({
-      level: "warn",
-      message: "Authentication failed: invalid bearer token format",
+    log.warn("Authentication failed: invalid bearer token format", {
       auth_method: "bearer_token",
       token_type: "unknown",
       path,
       method,
-      timestamp: new Date().toISOString(),
-    }));
+    });
     return null;
   }
 
@@ -232,15 +223,12 @@ async function extractSession(c: Context): Promise<SessionData | null> {
       return cached;
     }
     // Session cookie parsed but not found in cache
-    console.log(JSON.stringify({
-      level: "warn",
-      message: "Authentication failed: session cookie valid but not found in cache",
+    log.warn("Authentication failed: session cookie valid but not found in cache", {
       auth_method: "session_cookie",
       user_id: bushSessionData.userId,
       path,
       method,
-      timestamp: new Date().toISOString(),
-    }));
+    });
   }
 
   // Fall back to wos-session cookie (WorkOS AuthKit)
@@ -271,16 +259,13 @@ export function authMiddleware(options: { optional?: boolean } = {}): Middleware
         });
       } else if (!options.optional) {
         // Log failed authentication attempt
-        console.log(JSON.stringify({
-          level: "warn",
-          message: "Authentication failed: no valid session found",
+        log.warn("Authentication failed: no valid session found", {
           path,
           method,
           has_cookie: !!c.req.header("cookie"),
           has_auth_header: !!c.req.header("authorization"),
           request_id: requestId,
-          timestamp: new Date().toISOString(),
-        }));
+        });
         throw new AuthenticationError("Authentication required");
       } else {
         c.set(REQUEST_CONTEXT_KEY, { requestId });
@@ -292,7 +277,11 @@ export function authMiddleware(options: { optional?: boolean } = {}): Middleware
       if (error instanceof AuthenticationError) {
         throw error;
       }
-      console.error("[Auth] Unexpected error during authentication:", error);
+      log.error("Unexpected error during authentication", error instanceof Error ? error : undefined, {
+        request_id: requestId,
+        path,
+        method,
+      });
       throw new AuthenticationError("Authentication failed");
     }
   };

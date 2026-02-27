@@ -8,6 +8,9 @@
 import Redis from "ioredis";
 import { config } from "../config/index.js";
 import type { RealtimeEvent, ChannelType } from "./event-bus.js";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger("RedisPubSub");
 
 // ============================================================================
 // Constants
@@ -133,16 +136,16 @@ export class RedisPubSubManager {
       });
 
       this.subscriber.on("error", (err) => {
-        console.error("[RedisPubSub] Subscriber error:", err);
+        log.error("Subscriber error", err instanceof Error ? err : undefined);
       });
 
       // Connect both clients
       await Promise.all([this.publisher.ping(), this.subscriber.connect()]);
 
       this.initialized = true;
-      console.log("[RedisPubSub] Initialized");
+      log.info("Initialized");
     } catch (error) {
-      console.error("[RedisPubSub] Failed to initialize:", error);
+      log.error("Failed to initialize", error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -161,7 +164,7 @@ export class RedisPubSubManager {
     }
     this.activeRedisChannels.clear();
     this.initialized = false;
-    console.log("[RedisPubSub] Shutdown complete");
+    log.info("Shutdown complete");
   }
 
   /**
@@ -198,7 +201,7 @@ export class RedisPubSubManager {
     if (!this.activeRedisChannels.has(redisChannel)) {
       await this.subscriber.subscribe(redisChannel);
       this.activeRedisChannels.add(redisChannel);
-      console.log(`[RedisPubSub] Subscribed to ${redisChannel}`);
+      log.debug(`Subscribed to ${redisChannel}`);
     }
   }
 
@@ -215,7 +218,7 @@ export class RedisPubSubManager {
     if (this.activeRedisChannels.has(redisChannel)) {
       await this.subscriber.unsubscribe(redisChannel);
       this.activeRedisChannels.delete(redisChannel);
-      console.log(`[RedisPubSub] Unsubscribed from ${redisChannel}`);
+      log.debug(`Unsubscribed from ${redisChannel}`);
     }
   }
 
@@ -471,7 +474,7 @@ export class RedisPubSubManager {
         });
       }
     } catch (error) {
-      console.error("[RedisPubSub] Failed to parse message:", error);
+      log.error("Failed to parse message", error instanceof Error ? error : undefined);
     }
   }
 

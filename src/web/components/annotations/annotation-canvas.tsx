@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import type {
   AnnotationCanvasProps,
   AnnotationShape,
@@ -250,6 +250,29 @@ export function AnnotationCanvas({
   const [freehandPoints, setFreehandPoints] = useState<Point[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Use refs to track current state values without triggering callback recreation
+  const isDrawingRef = useRef(isDrawing);
+  const startPointRef = useRef(startPoint);
+  const currentPointRef = useRef(currentPoint);
+  const freehandPointsRef = useRef(freehandPoints);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isDrawingRef.current = isDrawing;
+  }, [isDrawing]);
+
+  useEffect(() => {
+    startPointRef.current = startPoint;
+  }, [startPoint]);
+
+  useEffect(() => {
+    currentPointRef.current = currentPoint;
+  }, [currentPoint]);
+
+  useEffect(() => {
+    freehandPointsRef.current = freehandPoints;
+  }, [freehandPoints]);
+
   // Get canvas context
   const getContext = useCallback(() => {
     const canvas = canvasRef.current;
@@ -320,9 +343,11 @@ export function AnnotationCanvas({
   );
 
   // Handle mouse move - continue drawing
+  // Uses refs for state checks to maintain stable callback reference
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!isDrawing || !startPoint || readOnly || !isActive) return;
+      // Read from refs to avoid dependency on rapidly changing state
+      if (!isDrawingRef.current || !startPointRef.current || readOnly || !isActive) return;
 
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -342,8 +367,11 @@ export function AnnotationCanvas({
       // Calculate shape for preview
       let previewShape: Partial<AnnotationShape> | undefined;
 
-      if (tool !== "freehand" && startPoint) {
-        const normalizedStart = normalizePoint(startPoint, width, height);
+      const currentStartPoint = startPointRef.current;
+      const currentFreehandPoints = freehandPointsRef.current;
+
+      if (tool !== "freehand" && currentStartPoint) {
+        const normalizedStart = normalizePoint(currentStartPoint, width, height);
         const normalizedCurrent = normalizePoint(point, width, height);
 
         previewShape = {
@@ -355,10 +383,10 @@ export function AnnotationCanvas({
           color,
           strokeWidth,
         };
-      } else if (tool === "freehand" && freehandPoints.length > 0) {
+      } else if (tool === "freehand" && currentFreehandPoints.length > 0) {
         previewShape = {
           type: "freehand",
-          points: freehandPoints,
+          points: currentFreehandPoints,
           color,
           strokeWidth,
         };
@@ -371,12 +399,11 @@ export function AnnotationCanvas({
       }
     },
     [
-      isDrawing,
-      startPoint,
+      // Removed state dependencies that change frequently during drawing
+      // Now using refs for: isDrawing, startPoint, freehandPoints
       readOnly,
       isActive,
       tool,
-      freehandPoints,
       color,
       strokeWidth,
       width,
@@ -387,23 +414,30 @@ export function AnnotationCanvas({
   );
 
   // Handle mouse up - finish drawing
+  // Uses refs for state values to maintain stable callback reference
   const handleMouseUp = useCallback(() => {
-    if (!isDrawing || !startPoint || !currentPoint || readOnly || !isActive) return;
+    // Read current values from refs to avoid dependency on rapidly changing state
+    const currentIsDrawing = isDrawingRef.current;
+    const currentStartPoint = startPointRef.current;
+    const currentCurrentPoint = currentPointRef.current;
+    const currentFreehandPoints = freehandPointsRef.current;
 
-    const normalizedStart = normalizePoint(startPoint, width, height);
-    const normalizedEnd = normalizePoint(currentPoint, width, height);
+    if (!currentIsDrawing || !currentStartPoint || !currentCurrentPoint || readOnly || !isActive) return;
+
+    const normalizedStart = normalizePoint(currentStartPoint, width, height);
+    const normalizedEnd = normalizePoint(currentCurrentPoint, width, height);
 
     let shape: Omit<AnnotationShape, "id" | "createdAt"> | undefined;
 
-    if (tool === "freehand" && freehandPoints.length > 1) {
-      const bounds = getBoundsFromPoints(freehandPoints);
+    if (tool === "freehand" && currentFreehandPoints.length > 1) {
+      const bounds = getBoundsFromPoints(currentFreehandPoints);
       shape = {
         type: "freehand",
         x: bounds.x,
         y: bounds.y,
         width: bounds.width,
         height: bounds.height,
-        points: freehandPoints,
+        points: currentFreehandPoints,
         color,
         strokeWidth,
       };
@@ -440,13 +474,11 @@ export function AnnotationCanvas({
       drawAnnotations(ctx);
     }
   }, [
-    isDrawing,
-    startPoint,
-    currentPoint,
+    // Removed state dependencies that change frequently during drawing
+    // Now using refs for: isDrawing, startPoint, currentPoint, freehandPoints
     readOnly,
     isActive,
     tool,
-    freehandPoints,
     color,
     strokeWidth,
     width,
@@ -504,9 +536,11 @@ export function AnnotationCanvas({
   );
 
   // Handle touch move - continue drawing (mobile support)
+  // Uses refs for state checks to maintain stable callback reference
   const handleTouchMove = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
-      if (!isDrawing || !startPoint || readOnly || !isActive || e.touches.length !== 1) return;
+      // Read from refs to avoid dependency on rapidly changing state
+      if (!isDrawingRef.current || !startPointRef.current || readOnly || !isActive || e.touches.length !== 1) return;
 
       e.preventDefault();
 
@@ -520,8 +554,11 @@ export function AnnotationCanvas({
       // Calculate shape for preview
       let previewShape: Partial<AnnotationShape> | undefined;
 
-      if (tool !== "freehand" && startPoint) {
-        const normalizedStart = normalizePoint(startPoint, width, height);
+      const currentStartPoint = startPointRef.current;
+      const currentFreehandPoints = freehandPointsRef.current;
+
+      if (tool !== "freehand" && currentStartPoint) {
+        const normalizedStart = normalizePoint(currentStartPoint, width, height);
         const normalizedCurrent = normalizePoint(point, width, height);
 
         previewShape = {
@@ -533,10 +570,10 @@ export function AnnotationCanvas({
           color,
           strokeWidth,
         };
-      } else if (tool === "freehand" && freehandPoints.length > 0) {
+      } else if (tool === "freehand" && currentFreehandPoints.length > 0) {
         previewShape = {
           type: "freehand",
-          points: freehandPoints,
+          points: currentFreehandPoints,
           color,
           strokeWidth,
         };
@@ -549,12 +586,11 @@ export function AnnotationCanvas({
       }
     },
     [
-      isDrawing,
-      startPoint,
+      // Removed state dependencies that change frequently during drawing
+      // Now using refs for: isDrawing, startPoint, freehandPoints
       readOnly,
       isActive,
       tool,
-      freehandPoints,
       color,
       strokeWidth,
       width,
@@ -566,14 +602,16 @@ export function AnnotationCanvas({
   );
 
   // Handle touch end - finish drawing (mobile support)
+  // Uses refs to check conditions, maintaining stable callback reference
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
-      if (!isDrawing || !startPoint || !currentPoint || readOnly || !isActive) return;
+      // Read from refs to avoid dependency on rapidly changing state
+      if (!isDrawingRef.current || !startPointRef.current || !currentPointRef.current || readOnly || !isActive) return;
 
       e.preventDefault();
       handleMouseUp();
     },
-    [isDrawing, startPoint, currentPoint, readOnly, isActive, handleMouseUp]
+    [readOnly, isActive, handleMouseUp]
   );
 
   if (!isActive && annotations.length === 0) {

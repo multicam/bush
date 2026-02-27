@@ -4,8 +4,12 @@
  * Base utilities for creating API route handlers.
  */
 import { Hono, type Context } from "hono";
-import type { AppError } from "../errors/index.js";
+import type { AppError, JsonApiErrorResponse } from "../errors/index.js";
 import { toErrorResponse, toAppError, generateRequestId } from "../errors/index.js";
+import { isProd } from "../config/env.js";
+import { createLogger, scrubSecrets } from "../lib/logger.js";
+
+const log = createLogger("API");
 
 /**
  * Create a new Hono router with common configuration
@@ -17,25 +21,41 @@ export function createRouter(): Hono {
 /**
  * Global error handler for API routes
  * Converts errors to JSON:API format
+ *
+ * Security: In production, internal error details (including stack traces) are:
+ * - Logged server-side for debugging
+ * - Never sent to the client (generic message returned instead)
+ * In development, stack traces may be included in responses for debugging.
  */
 export function errorHandler(error: Error, c: Context): Response {
   // Generate request ID if not present
   const requestId = c.get("requestContext")?.requestId ?? generateRequestId();
 
   const appError = toAppError(error);
-  const response = toErrorResponse(appError);
 
-  // Log error for debugging
-  console.error(JSON.stringify({
-    level: "error",
+  // Always log the full error server-side for debugging (with secrets scrubbed)
+  log.error("Unhandled error in request", error, {
     request_id: requestId,
-    error: {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    },
-    timestamp: new Date().toISOString(),
-  }));
+    error_name: error.name,
+    error_message: scrubSecrets(error.message),
+  });
+
+  // In production, sanitize internal server errors to prevent leaking details
+  let response: JsonApiErrorResponse;
+  if (isProd && appError.status === 500) {
+    // Return generic error message without internal details
+    response = {
+      errors: [{
+        title: "Internal Server Error",
+        detail: "An unexpected error occurred. Please try again later.",
+        status: 500,
+        code: "internal_error",
+        meta: { request_id: requestId },
+      }],
+    };
+  } else {
+    response = toErrorResponse(appError);
+  }
 
   // Set rate limit headers if it's a rate limit error
   if ("retryAfter" in appError) {

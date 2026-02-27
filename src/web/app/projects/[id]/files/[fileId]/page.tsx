@@ -84,23 +84,33 @@ export default function FileDetailPage() {
   useEffect(() => {
     if (!projectId || !fileId) return;
 
+    const abortController = new AbortController();
+
     const fetchFile = async () => {
       try {
         setLoadingState("loading");
-        const response = await filesApi.get(projectId, fileId);
+        const response = await filesApi.get(projectId, fileId, { signal: abortController.signal });
         const fileData = extractAttributes(response) as FileItem;
         setFile(fileData);
 
         // Get download URL for viewers
         try {
-          const downloadResponse = await filesApi.download(projectId, fileId);
+          const downloadResponse = await filesApi.download(projectId, fileId, { signal: abortController.signal });
           setDownloadUrl(downloadResponse.meta.download_url);
-        } catch {
+        } catch (error) {
+          // Don't update state if aborted
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return;
+          }
           // Download URL fetch failed - viewers will handle missing URL
         }
 
         setLoadingState("loaded");
       } catch (error) {
+        // Don't update state if request was aborted (component unmounted)
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
         console.error("Failed to fetch file:", error);
         setErrorMessage(getErrorMessage(error));
         setLoadingState("error");
@@ -108,6 +118,10 @@ export default function FileDetailPage() {
     };
 
     fetchFile();
+
+    return () => {
+      abortController.abort();
+    };
   }, [projectId, fileId]);
 
   // Redirect to login if not authenticated

@@ -35,7 +35,22 @@ vi.mock("../config/index.js", () => ({
   config: {
     WORKOS_COOKIE_PASSWORD: "test-workos-password",
     SESSION_SECRET: "test-session-secret-at-least-32-characters",
+    DEMO_MODE: false,
   },
+  scrubSecrets: (s: string) => s,
+  isDev: false,
+  isTest: true,
+}));
+
+// Mock logger
+vi.mock("../lib/logger.js", () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+  scrubSecrets: (s: string) => s,
 }));
 
 // Mock session-cache

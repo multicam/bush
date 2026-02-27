@@ -7,6 +7,9 @@
  */
 import { generateId } from "../shared/id.js";
 import type { Context } from "hono";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger("Errors");
 
 /**
  * JSON:API-style error object
@@ -170,6 +173,16 @@ export class ServiceUnavailableError extends AppError {
 }
 
 /**
+ * CSRF validation error (403 Forbidden)
+ * Used when CSRF token validation fails
+ */
+export class CsrfError extends AppError {
+  constructor(detail: string = "CSRF validation failed") {
+    super("CSRF Validation Failed", detail, 403, "csrf_validation_failed");
+  }
+}
+
+/**
  * Internal server error (500)
  */
 export class InternalServerError extends AppError {
@@ -209,10 +222,11 @@ export function toAppError(error: unknown): AppError {
   }
 
   // Log original error before converting so we don't lose debugging context
+  // Secrets are automatically scrubbed by the logger
   if (error instanceof Error) {
-    console.error("[toAppError] Unexpected error:", error.message, error.stack);
+    log.error("Unexpected error in toAppError", error);
   } else {
-    console.error("[toAppError] Unexpected non-Error thrown:", error);
+    log.error("Unexpected non-Error thrown in toAppError", undefined, { thrown: String(error) });
   }
 
   // Don't leak internal error details to API consumers
@@ -237,55 +251,34 @@ export function generateRequestId(): string {
 
 /**
  * Error logger with structured output
+ * Delegates to the new logger module for consistent secret scrubbing
  */
 export const errorLogger = {
   info(message: string, context: RequestContext, data?: Record<string, unknown>): void {
-    console.log(
-      JSON.stringify({
-        level: "info",
-        message,
-        request_id: context.requestId,
-        user_id: context.userId,
-        account_id: context.accountId,
-        timestamp: new Date().toISOString(),
-        ...data,
-      })
-    );
+    log.info(message, {
+      request_id: context.requestId,
+      user_id: context.userId,
+      account_id: context.accountId,
+      ...data,
+    });
   },
 
   warn(message: string, context: RequestContext, data?: Record<string, unknown>): void {
-    console.warn(
-      JSON.stringify({
-        level: "warn",
-        message,
-        request_id: context.requestId,
-        user_id: context.userId,
-        account_id: context.accountId,
-        timestamp: new Date().toISOString(),
-        ...data,
-      })
-    );
+    log.warn(message, {
+      request_id: context.requestId,
+      user_id: context.userId,
+      account_id: context.accountId,
+      ...data,
+    });
   },
 
   error(message: string, context: RequestContext, error?: Error, data?: Record<string, unknown>): void {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        message,
-        request_id: context.requestId,
-        user_id: context.userId,
-        account_id: context.accountId,
-        timestamp: new Date().toISOString(),
-        error: error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            }
-          : undefined,
-        ...data,
-      })
-    );
+    log.error(message, error, {
+      request_id: context.requestId,
+      user_id: context.userId,
+      account_id: context.accountId,
+      ...data,
+    });
   },
 };
 
@@ -329,7 +322,7 @@ export async function parseJsonBody<T = unknown>(
     }
 
     // Unknown error - log and throw generic error
-    console.error("[parseJsonBody] Unexpected error:", error);
+    log.error("Unexpected error parsing JSON body", error instanceof Error ? error : undefined);
     throw new BadRequestError("Failed to parse request body");
   }
 }

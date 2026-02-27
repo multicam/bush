@@ -3,8 +3,44 @@
  *
  * Typed fetch wrapper for the Bush API with proper error handling.
  * Includes credentials: "include" for session cookies.
+ * Includes CSRF protection for state-changing requests.
  * Reference: IMPLEMENTATION_PLAN.md 1.7b
  */
+
+// ============================================================================
+// CSRF Token Management
+// ============================================================================
+
+/**
+ * CSRF token header name - must match the server-side constant
+ */
+const CSRF_HEADER_NAME = "X-CSRF-Token";
+
+/**
+ * In-memory store for the CSRF token
+ * The token is set when the user authenticates and retrieved from /auth/me responses
+ */
+let csrfToken: string | null = null;
+
+/**
+ * Set the CSRF token for subsequent API requests
+ * Called from auth context when user data is loaded
+ */
+export function setCsrfToken(token: string | null): void {
+  csrfToken = token;
+}
+
+/**
+ * Get the current CSRF token
+ */
+export function getCsrfToken(): string | null {
+  return csrfToken;
+}
+
+/**
+ * HTTP methods that require CSRF protection
+ */
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 // ============================================================================
 // Types
@@ -280,14 +316,23 @@ async function apiFetch<T>(
     }
 
     try {
+      // Build headers object with CSRF token for state-changing requests
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(fetchOptions.headers as Record<string, string> | undefined),
+      };
+
+      // Add CSRF token for state-changing methods (POST, PUT, PATCH, DELETE)
+      // This is required for cookie-based session authentication
+      if (STATE_CHANGING_METHODS.has(method) && csrfToken) {
+        headers[CSRF_HEADER_NAME] = csrfToken;
+      }
+
       const response = await fetch(url, {
         ...fetchOptions,
         signal: combinedSignal,
         credentials: "include", // Include session cookies
-        headers: {
-          "Content-Type": "application/json",
-          ...fetchOptions.headers,
-        },
+        headers,
       });
 
       clearTimeout(timeoutId);
@@ -530,8 +575,10 @@ export const filesApi = {
   /**
    * Get a single file by ID
    */
-  get: async (projectId: string, fileId: string) => {
-    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}`);
+  get: async (projectId: string, fileId: string, options?: { signal?: AbortSignal }) => {
+    return apiFetch<JsonApiSingleResponse<FileAttributes>>(`/projects/${projectId}/files/${fileId}`, {
+      signal: options?.signal,
+    });
   },
 
   /**
@@ -586,9 +633,10 @@ export const filesApi = {
   /**
    * Download a file (convenience method that returns the signed URL)
    */
-  download: async (projectId: string, fileId: string) => {
+  download: async (projectId: string, fileId: string, options?: { signal?: AbortSignal }) => {
     return apiFetch<{ data: JsonApiResource<FileAttributes>; meta: { download_url: string; download_expires_at: string } }>(
-      `/projects/${projectId}/files/${fileId}/download`
+      `/projects/${projectId}/files/${fileId}/download`,
+      { signal: options?.signal }
     );
   },
 

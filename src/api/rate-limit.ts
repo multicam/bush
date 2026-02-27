@@ -68,6 +68,15 @@ export const RATE_LIMIT_PRESETS = {
     windowMs: 60_000,
     maxRequests: 1000,
   },
+  /**
+   * Bulk operation endpoints - 10 req/min
+   * These are resource-intensive operations (copy, delete, move)
+   * that can process up to 100 items per request
+   */
+  bulk: {
+    windowMs: 60_000,
+    maxRequests: 10,
+  },
 } as const;
 
 /**
@@ -232,3 +241,9 @@ export const uploadRateLimit = createRateLimiter("upload");
  * Search rate limiter (30 req/min)
  */
 export const searchRateLimit = createRateLimiter("search");
+
+/**
+ * Bulk operation rate limiter (10 req/min)
+ * For expensive bulk operations like copy, delete, move
+ */
+export const bulkRateLimit = createRateLimiter("bulk");

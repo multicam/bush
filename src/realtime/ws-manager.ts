@@ -20,6 +20,9 @@ import { db } from "../db/index.js";
 import { files, shares, users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { verifyProjectAccess, verifyAccountAccess } from "../api/access-control.js";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger("WebSocket");
 
 // ============================================================================
 // Types
@@ -168,9 +171,9 @@ class WebSocketManager {
         this.broadcastPresenceLeave(channel, resourceId, userId);
       });
 
-      console.log("[WebSocket] Manager initialized with Redis pub/sub");
+      log.info("Manager initialized with Redis pub/sub");
     } catch (error) {
-      console.warn("[WebSocket] Redis pub/sub unavailable, running in single-instance mode:", error);
+      log.warn("Redis pub/sub unavailable, running in single-instance mode", { error: String(error) });
     }
   }
 
@@ -190,7 +193,7 @@ class WebSocketManager {
     // Shutdown Redis pub/sub
     await redisPubSub.shutdown();
 
-    console.log("[WebSocket] Manager shutdown");
+    log.info("Manager shutdown");
   }
 
   /**
@@ -220,7 +223,7 @@ class WebSocketManager {
       try {
         modification();
       } catch (error) {
-        console.error("[WebSocket] Error processing pending modification:", error);
+        log.error("Error processing pending modification", error instanceof Error ? error : undefined);
       }
     }
   }
@@ -322,7 +325,7 @@ class WebSocketManager {
           session: resolvedSession,
         };
       } catch (error) {
-        console.error("[WebSocket] Failed to authenticate wos-session:", error);
+        log.error("Failed to authenticate wos-session", error instanceof Error ? error : undefined);
         return null;
       }
     }
@@ -346,7 +349,7 @@ class WebSocketManager {
       this.connectionsByUser.get(data.userId)!.add(data.connectionId);
     });
 
-    console.log(`[WebSocket] Connection ${data.connectionId} registered for user ${data.userId}`);
+    log.info(`Connection ${data.connectionId} registered for user ${data.userId}`);
 
     // Send connection confirmation
     this.send(ws, {
@@ -394,7 +397,7 @@ class WebSocketManager {
       this.presenceLastUpdate.delete(data.connectionId);
     });
 
-    console.log(`[WebSocket] Connection ${data.connectionId} unregistered`);
+    log.info(`Connection ${data.connectionId} unregistered`);
   }
 
   /**
@@ -513,7 +516,7 @@ class WebSocketManager {
       await redisPubSub.subscribeToChannel(channel, resourceId);
     }
 
-    console.log(`[WebSocket] Connection ${data.connectionId} subscribed to ${channelKey}`);
+    log.debug(`Connection ${data.connectionId} subscribed to ${channelKey}`);
 
     // Handle event recovery (Phase 2)
     if (sinceEventId && redisPubSub.isEnabled()) {
@@ -811,7 +814,7 @@ class WebSocketManager {
     if (redisPubSub.isEnabled()) {
       // Fire-and-forget publish to Redis
       redisPubSub.publishEvent(event).catch((error) => {
-        console.error("[WebSocket] Failed to publish event to Redis:", error);
+        log.error("Failed to publish event to Redis", error instanceof Error ? error : undefined);
       });
     }
 
@@ -889,7 +892,7 @@ class WebSocketManager {
       ws.send(JSON.stringify(message));
       return true;
     } catch (error) {
-      console.error("[WebSocket] Failed to send message:", error);
+      log.error("Failed to send message", error instanceof Error ? error : undefined);
       return false;
     }
   }

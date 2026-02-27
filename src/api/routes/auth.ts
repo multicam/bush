@@ -13,6 +13,7 @@ import { db } from "../../db/index.js";
 import { users, accounts, accountMemberships, workspaces } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
 import { ValidationError, AuthenticationError, parseJsonBody } from "../../errors/index.js";
+import { setupCsrfToken, getCsrfToken, getCsrfTokenHandler } from "../csrf.js";
 
 const app = new Hono();
 
@@ -215,6 +216,7 @@ app.post("/revoke", async (c) => {
  * GET /v4/auth/me - Get current authenticated user and permissions
  *
  * Returns the current user's profile, current account, and available accounts.
+ * Also includes a CSRF token for cookie-based session authentication.
  */
 app.get("/me", async (c) => {
   const session = requireAuth(c);
@@ -261,6 +263,13 @@ app.get("/me", async (c) => {
     .where(eq(workspaces.accountId, session.currentAccountId))
     .limit(100);
 
+  // Ensure CSRF token is set for cookie-based authentication
+  // The token is returned in the response body and also set as an HttpOnly cookie
+  let csrfToken = getCsrfToken(c);
+  if (!csrfToken) {
+    csrfToken = setupCsrfToken(c);
+  }
+
   return c.json({
     data: {
       id: user.id,
@@ -275,6 +284,8 @@ app.get("/me", async (c) => {
           created_at: user.createdAt,
           updated_at: user.updatedAt,
         }),
+        // Include CSRF token for cookie-based auth clients
+        csrf_token: csrfToken,
       },
       relationships: {
         current_account: {
@@ -334,5 +345,17 @@ app.get("/me", async (c) => {
     ],
   });
 });
+
+/**
+ * GET /v4/auth/csrf-token - Get CSRF token for cookie-based authentication
+ *
+ * Returns the current CSRF token. Use this endpoint to fetch a fresh token
+ * if the client doesn't have one or needs to refresh it.
+ *
+ * The token is returned in the response body and also set as an HttpOnly cookie.
+ * Include the token in the X-CSRF-Token header for all state-changing requests
+ * (POST, PUT, PATCH, DELETE) when using cookie-based authentication.
+ */
+app.get("/csrf-token", getCsrfTokenHandler);
 
 export default app;

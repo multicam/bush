@@ -52,6 +52,12 @@ export interface DropdownProps {
   onChange?: (value: string) => void;
   /** Trigger button content */
   trigger: ReactNode;
+  /**
+   * Accessible label for the dropdown trigger button.
+   * REQUIRED when trigger is an icon-only element for screen reader accessibility.
+   * Provides context about what the dropdown controls.
+   */
+  ariaLabel?: string;
   /** Additional trigger button class */
   triggerClassName?: string;
   /** Menu alignment */
@@ -67,6 +73,7 @@ export function Dropdown({
   value,
   onChange,
   trigger,
+  ariaLabel,
   triggerClassName,
   align = "left",
   disabled = false,
@@ -132,7 +139,7 @@ export function Dropdown({
   return (
     <DropdownContext.Provider value={contextValue}>
       <div className={cn("relative inline-block", className)}>
-        <DropdownTrigger disabled={disabled} className={triggerClassName}>
+        <DropdownTrigger disabled={disabled} className={triggerClassName} ariaLabel={ariaLabel}>
           {trigger}
         </DropdownTrigger>
         {isOpen && (
@@ -151,9 +158,11 @@ interface DropdownTriggerProps {
   disabled: boolean;
   className?: string;
   children: ReactNode;
+  /** Accessible label for the trigger button (required for icon-only triggers) */
+  ariaLabel?: string;
 }
 
-function DropdownTrigger({ disabled, className, children }: DropdownTriggerProps) {
+function DropdownTrigger({ disabled, className, children, ariaLabel }: DropdownTriggerProps) {
   const { isOpen, setIsOpen, triggerRef } = useDropdown();
 
   return (
@@ -173,6 +182,7 @@ function DropdownTrigger({ disabled, className, children }: DropdownTriggerProps
       onClick={() => setIsOpen(!isOpen)}
       aria-haspopup="listbox"
       aria-expanded={isOpen}
+      aria-label={ariaLabel}
     >
       {children}
       <ChevronDown

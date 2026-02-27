@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Pencil, X } from "lucide-react";
 import { AnnotationCanvas } from "./annotation-canvas";
 import { AnnotationToolbar } from "./annotation-toolbar";
@@ -68,6 +68,11 @@ export function AnnotationOverlay({
   const [history, setHistory] = useState<HistoryState[]>([{ annotations: [] }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
+  // Ref to track previous external annotations and prevent excessive history pushes
+  const prevExternalAnnotationsRef = useRef<AnnotationShape[]>([]);
+  const pendingHistoryPushRef = useRef<AnnotationShape[] | null>(null);
+  const historyPushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Push state to history - declared before useEffect that uses it
   const pushHistory = useCallback((newAnnotations: AnnotationShape[]) => {
     setHistory((prev) => {
@@ -85,12 +90,52 @@ export function AnnotationOverlay({
     setHistoryIndex((prev) => Math.min(prev + 1, 49));
   }, [historyIndex]);
 
-  // Sync with external annotations
+  // Sync with external annotations - debounced and deduplicated
   useEffect(() => {
-    // Intentional setState to sync with external annotations
+    const prevAnnotations = prevExternalAnnotationsRef.current;
+
+    // Check if annotations have meaningfully changed (by id and content)
+    const hasChanged =
+      prevAnnotations.length !== externalAnnotations.length ||
+      prevAnnotations.some((prev, i) => {
+        const curr = externalAnnotations[i];
+        return (
+          !curr ||
+          prev.id !== curr.id ||
+          JSON.stringify(prev) !== JSON.stringify(curr)
+        );
+      });
+
+    // Always update local annotations to stay in sync
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalAnnotations(externalAnnotations);
-    void pushHistory(externalAnnotations);
+    prevExternalAnnotationsRef.current = externalAnnotations;
+
+    // Only schedule history push if annotations have actually changed
+    if (hasChanged) {
+      // Batch history pushes with a small debounce to prevent rapid successive pushes
+      pendingHistoryPushRef.current = externalAnnotations;
+
+      if (historyPushTimeoutRef.current) {
+        clearTimeout(historyPushTimeoutRef.current);
+      }
+
+      historyPushTimeoutRef.current = setTimeout(() => {
+        if (pendingHistoryPushRef.current !== null) {
+          pushHistory(pendingHistoryPushRef.current);
+          pendingHistoryPushRef.current = null;
+        }
+        historyPushTimeoutRef.current = null;
+      }, 100); // 100ms debounce
+    }
+
+    // Cleanup timeout on unmount or before next effect run
+    return () => {
+      if (historyPushTimeoutRef.current) {
+        clearTimeout(historyPushTimeoutRef.current);
+        historyPushTimeoutRef.current = null;
+      }
+    };
   }, [externalAnnotations, pushHistory]);
 
   // Combined annotations for display

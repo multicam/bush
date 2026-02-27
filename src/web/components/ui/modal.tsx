@@ -131,9 +131,17 @@ export function Modal({
         document.removeEventListener("keydown", handleFocusTrap);
         document.body.style.overflow = "";
 
-        // Restore focus
-        if (previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
+        // Restore focus with safety checks
+        const previousElement = previousActiveElement.current;
+        if (previousElement instanceof HTMLElement) {
+          // Check if the element is still in the DOM and focusable
+          if (document.body.contains(previousElement) && document.activeElement !== previousElement) {
+            previousElement.focus();
+          } else {
+            // Fallback: focus the document body if the original element is gone
+            // This prevents focus from being lost or thrown to an unexpected element
+            document.body.focus();
+          }
         }
       };
     }

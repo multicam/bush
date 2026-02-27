@@ -19,7 +19,7 @@ import {
 import type { AuthState, AccountRole } from "@/auth";
 import { isRoleAtLeast } from "@/auth/types";
 import { getAuthState, login as authLogin, logout as authLogout, switchAccount as authSwitchAccount } from "@/web/lib/auth";
-import { workspacesApi } from "@/web/lib/api";
+import { workspacesApi, setCsrfToken } from "@/web/lib/api";
 
 interface AuthContextValue extends AuthState {
   isLoading: boolean;
@@ -83,6 +83,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ...state,
           isLoading: false,
         });
+
+        // Fetch CSRF token for cookie-based auth if authenticated
+        // This is needed for state-changing requests (POST, PUT, PATCH, DELETE)
+        if (state.isAuthenticated) {
+          fetchCsrfToken();
+        } else {
+          // Clear CSRF token on logout
+          setCsrfToken(null);
+        }
       }
     } catch (error) {
       console.error("[Auth] Failed to refresh auth state:", error);
@@ -94,15 +103,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
           currentAccount: null,
           accounts: [],
         });
+        setCsrfToken(null);
       }
+    }
+  }, []);
+
+  /**
+   * Fetch CSRF token from the API for cookie-based authentication
+   * The token is stored in memory and included in state-changing request headers
+   */
+  const fetchCsrfToken = useCallback(async () => {
+    try {
+      const baseUrl = typeof window !== "undefined" ? "/v4" : (process.env.API_URL || "http://localhost:3001/v4");
+      const response = await fetch(`${baseUrl}/auth/csrf-token`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.data?.token) {
+          setCsrfToken(data.data.token);
+        }
+      }
+    } catch (error) {
+      console.error("[Auth] Failed to fetch CSRF token:", error);
     }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    getAuthState().then((state) => {
+    getAuthState().then(async (state) => {
       if (!cancelled) {
         setAuthState({ ...state, isLoading: false });
+
+        // Fetch CSRF token for cookie-based auth if authenticated
+        if (state.isAuthenticated) {
+          try {
+            const baseUrl = "/v4";
+            const response = await fetch(`${baseUrl}/auth/csrf-token`, {
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data?.data?.token) {
+                setCsrfToken(data.data.token);
+              }
+            }
+          } catch (error) {
+            console.error("[Auth] Failed to fetch CSRF token:", error);
+          }
+        }
       }
     }).catch((error) => {
       console.error("[Auth] Failed to load initial auth state:", error);
@@ -114,6 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           currentAccount: null,
           accounts: [],
         });
+        setCsrfToken(null);
       }
     });
     return () => { cancelled = true; };
@@ -132,6 +184,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       currentAccount: null,
       accounts: [],
     });
+    // Clear CSRF token on logout
+    setCsrfToken(null);
   }, []);
 
   const switchAccount = useCallback(async (accountId: string) => {

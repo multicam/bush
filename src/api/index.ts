@@ -15,6 +15,7 @@ import { sqlite } from "../db/index.js";
 import { redisHealthCheck } from "../redis/index.js";
 import { errorHandler, notFoundHandler } from "./router.js";
 import { standardRateLimit, rateLimit } from "./rate-limit.js";
+import { csrfMiddleware } from "./csrf.js";
 import { wsManager, type WebSocketData } from "../realtime/index.js";
 import type { ServerWebSocket } from "bun";
 
@@ -69,6 +70,14 @@ app.use(
     console.log(scrubSecrets(str));
   })
 );
+
+// Middleware: CSRF protection for cookie-based requests
+// Reference: specs/12-security.md Section 5.4
+// This implements the Double Submit Cookie pattern:
+// - Safe methods (GET, HEAD, OPTIONS): Generate/refresh CSRF token cookie
+// - State-changing methods (POST, PUT, PATCH, DELETE): Validate CSRF token
+// - Bearer token requests are inherently CSRF-safe and bypass validation
+app.use("*", csrfMiddleware());
 
 // Health check endpoint - verifies all dependencies
 app.get("/health", async (c) => {

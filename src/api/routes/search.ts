@@ -105,6 +105,21 @@ function escapeFts5Query(query: string): string {
 }
 
 /**
+ * Escape user input for safe use in SQL LIKE queries.
+ * LIKE wildcards that need escaping:
+ * - Percent (%) - matches any sequence of characters
+ * - Underscore (_) - matches any single character
+ *
+ * We use backslash as the escape character (default in SQLite).
+ */
+function escapeLikePattern(pattern: string): string {
+  return pattern
+    .replace(/\\/g, "\\\\") // Escape backslash first
+    .replace(/%/g, "\\%") // Escape percent
+    .replace(/_/g, "\\_"); // Escape underscore
+}
+
+/**
  * GET /v4/search - Search files and transcripts across accessible projects
  *
  * Query params:
@@ -354,7 +369,7 @@ app.get("/", async (c) => {
           LIMIT 1
         `
         )
-        .get(row.transcript_id, `%${query.split(/\s+/)[0]}%`) as {
+        .get(row.transcript_id, `%${escapeLikePattern(query.split(/\s+/)[0])}%`) as {
         start_ms: number;
         end_ms: number;
         word: string;
