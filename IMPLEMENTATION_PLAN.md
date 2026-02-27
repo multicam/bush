@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.10 - Zod Validation Expansion & Hardcoded URL Resolution)
-**Project status**: All P2 items resolved. All spec references verified and corrected.
+**Last updated**: 2026-02-27 (v0.1.11 - Realtime Phase 2: Redis Pub/Sub, Presence, Event Recovery)
+**Project status**: All P2 and P3 realtime items resolved. Platform is production-ready with horizontal scaling support.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -65,7 +65,7 @@ These are not bugs - they're sensible defaults that work in development and are 
 | Database Schema | 01-data-model.md | 30/30 tables ✓ |
 | Authentication | 02-authentication.md | WorkOS + sessions ✓ |
 | Permissions | 03-permissions.md | 5-level hierarchy ✓ |
-| Realtime | 05-realtime.md | 16 webhook events + 12 realtime events ✓ (Phase 2: Redis, presence) |
+| Realtime | 05-realtime.md | 16 webhook events + 12 realtime events ✓ (Phase 2: Redis pub/sub, presence, event recovery ✓) |
 | Storage | 06-storage.md | S3 + CDN ✓ (CloudFront/Fastly: P3) |
 | Media Processing | 07-media-processing.md | 7 processors ✓ |
 | Transcription | 08-transcription.md | Deepgram + faster-whisper ✓ (AssemblyAI: removed) |
@@ -317,9 +317,14 @@ All implemented features have corresponding spec documentation. No code was foun
 - Features: snapshot creation, WAL streaming, restore with WAL replay, snapshot listing, automatic pruning
 - Added 29 tests in `backup-provider.test.ts`
 
-### [P3] Realtime Phase 2 Features Missing [2d] -- NOT STARTED
+### [P3] Realtime Phase 2 Features Missing [2d] -- RESOLVED (v0.1.11)
 
-- Redis pub/sub, presence, and event recovery not implemented. Single-node WebSocket works; horizontal scaling requires Redis.
+- **Redis Pub/Sub**: Cross-instance event fan-out for horizontal scaling
+- **Presence System**: Redis hash storage with 60-second TTL, status tracking (viewing/idle/commenting)
+- **Event Recovery**: Missed-event replay on reconnect with `sinceEventId`, 1-hour event log TTL
+- Created `src/realtime/redis-pubsub.ts` with `RedisPubSubManager` class
+- Updated `src/realtime/ws-manager.ts` to integrate Redis pub/sub, presence, and event recovery
+- Graceful fallback to single-instance mode when Redis unavailable
 
 ### [P3] Document Processing [4d] -- DEFERRED
 
@@ -461,7 +466,7 @@ Per specs/README.md:
 | **Permissions** | DONE | 5-level hierarchy, all checks wired; some routes use inline checks |
 | **File Storage** | DONE | S3-compatible with CDN support |
 | **Media Processing** | DONE | 7 processors (metadata, thumbnail, proxy, filmstrip, waveform, frame-capture, hls) |
-| **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
+| **Real-time** | DONE | WebSocket + EventEmitter + Redis pub/sub + presence + event recovery |
 | **Email** | DONE | 6 providers (smtp, sendgrid, ses, postmark, resend, console) |
 | **Transcription** | DONE | Deepgram + faster-whisper work; AssemblyAI removed from config enum |
 | **Security** | DONE | Session limits, permissions, and CORS configuration complete |
@@ -475,6 +480,52 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.11 (2026-02-27) - Realtime Phase 2: Redis Pub/Sub, Presence, Event Recovery
+
+Implemented Phase 2 realtime features for horizontal scaling per `specs/05-realtime.md`.
+
+**Features Added:**
+
+1. **Redis Pub/Sub Integration** (`src/realtime/redis-pubsub.ts`)
+   - `RedisPubSubManager` class with separate publisher/subscriber clients
+   - Cross-instance event fan-out for multi-server deployments
+   - Dynamic channel subscription (subscribe/unsubscribe as clients join/leave)
+   - Automatic event storage in Redis list for recovery
+
+2. **Presence System**
+   - Redis hash storage: `bush:presence:{channel}:{resource_id}`
+   - 60-second TTL with refresh on updates
+   - Presence statuses: `viewing`, `idle`, `commenting`
+   - Cursor position tracking for video/audio
+   - `presence.update` and `presence.leave` broadcasts
+   - `presence.initial` message on subscription with current viewers
+
+3. **Event Recovery**
+   - `sinceEventId` parameter in subscribe messages for reconnection recovery
+   - Redis event log: `bush:events:{channel}:{resource_id}` with 1-hour TTL
+   - Max 1000 events per channel
+   - `subscription.reset` message when gap too large (triggers full state refetch)
+
+4. **WebSocket Manager Updates** (`src/realtime/ws-manager.ts`)
+   - Async `init()` and `shutdown()` methods for Redis initialization
+   - `presence` action support in client messages
+   - User info (name, avatar) in WebSocketData for presence broadcasts
+   - Graceful fallback to single-instance mode when Redis unavailable
+
+**Files Created:**
+- `src/realtime/redis-pubsub.ts` - Redis pub/sub manager (320 lines)
+
+**Files Updated:**
+- `src/realtime/ws-manager.ts` - Integrated Redis pub/sub, presence, event recovery
+- `src/realtime/index.ts` - Exported new types and redisPubSub singleton
+- `src/api/index.ts` - Updated WebSocket initialization for async init
+
+**Verification:**
+- All 135 realtime tests pass
+- All 2908 total tests pass
+- Build succeeds without errors
+- Graceful degradation when Redis unavailable
 
 ### v0.1.10 (2026-02-27) - Zod Validation Expansion & Hardcoded URL Resolution
 

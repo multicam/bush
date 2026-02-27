@@ -3,6 +3,7 @@
  *
  * Manages WebSocket connections for real-time updates.
  * Handles authentication, subscription management, and event broadcasting.
+ * Phase 2: Redis pub/sub for horizontal scaling, presence, event recovery.
  * Reference: specs/05-realtime.md
  * Reference: specs/README.md "Realtime Architecture"
  */
@@ -10,12 +11,13 @@ import type { ServerWebSocket } from "bun";
 import { unsealData } from "iron-session";
 import { randomBytes } from "crypto";
 import { eventBus, type RealtimeEvent, type ChannelType } from "./event-bus.js";
+import { redisPubSub, type PresenceState, type PresenceUser } from "./redis-pubsub.js";
 import { sessionCache, parseSessionCookie } from "../auth/session-cache.js";
 import { authService } from "../auth/service.js";
 import { config } from "../config/index.js";
 import type { SessionData } from "../auth/types.js";
 import { db } from "../db/index.js";
-import { files, shares } from "../db/schema.js";
+import { files, shares, users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { verifyProjectAccess, verifyAccountAccess } from "../api/access-control.js";
 
@@ -43,6 +45,10 @@ export interface WebSocketData {
   connectionId: string;
   /** Authenticated user ID */
   userId: string;
+  /** User display name for presence */
+  userName: string;
+  /** User avatar URL for presence */
+  userAvatarUrl: string | null;
   /** Session data */
   session: SessionData;
   /** Connected at timestamp */
@@ -57,10 +63,14 @@ export interface WebSocketData {
  * Client-to-server message format
  */
 interface ClientMessage {
-  action: "subscribe" | "unsubscribe" | "ping";
+  action: "subscribe" | "unsubscribe" | "ping" | "presence";
   channel?: ChannelType;
   resourceId?: string;
   projectId?: string;
+  /** For event recovery on reconnect */
+  sinceEventId?: string;
+  /** Presence state for presence action */
+  state?: PresenceState;
 }
 
 /**
@@ -128,21 +138,46 @@ class WebSocketManager {
   /** Queue of pending modifications */
   private pendingModifications: Array<() => void> = [];
 
+  /** Presence rate limiting: last presence update per connection */
+  private presenceLastUpdate = new Map<string, number>();
+
   /**
    * Initialize the WebSocket manager
    * Subscribes to the event bus for broadcasting
+   * Initializes Redis pub/sub for cross-instance communication (Phase 2)
    */
-  init(): void {
+  async init(): Promise<void> {
     this.eventBusUnsubscribe = eventBus.onEvent((event) => {
       this.broadcastEvent(event);
     });
-    console.log("[WebSocket] Manager initialized");
+
+    // Initialize Redis pub/sub (Phase 2)
+    try {
+      await redisPubSub.init();
+
+      // Set up callbacks for Redis messages
+      redisPubSub.onMessage((message) => {
+        this.handleRedisMessage(message);
+      });
+
+      redisPubSub.onPresence((channel, resourceId, presence) => {
+        this.broadcastPresenceUpdate(channel, resourceId, presence);
+      });
+
+      redisPubSub.onPresenceLeave((channel, resourceId, userId) => {
+        this.broadcastPresenceLeave(channel, resourceId, userId);
+      });
+
+      console.log("[WebSocket] Manager initialized with Redis pub/sub");
+    } catch (error) {
+      console.warn("[WebSocket] Redis pub/sub unavailable, running in single-instance mode:", error);
+    }
   }
 
   /**
    * Shutdown the WebSocket manager
    */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     if (this.eventBusUnsubscribe) {
       this.eventBusUnsubscribe();
       this.eventBusUnsubscribe = null;
@@ -150,6 +185,11 @@ class WebSocketManager {
     this.connections.clear();
     this.connectionsByUser.clear();
     this.connectionsByChannel.clear();
+    this.presenceLastUpdate.clear();
+
+    // Shutdown Redis pub/sub
+    await redisPubSub.shutdown();
+
     console.log("[WebSocket] Manager shutdown");
   }
 
@@ -188,7 +228,12 @@ class WebSocketManager {
   /**
    * Authenticate a WebSocket connection from cookies
    */
-  async authenticate(cookieHeader: string): Promise<{ userId: string; session: SessionData } | null> {
+  async authenticate(cookieHeader: string): Promise<{
+    userId: string;
+    userName: string;
+    userAvatarUrl: string | null;
+    session: SessionData;
+  } | null> {
     if (!cookieHeader) {
       return null;
     }
@@ -198,7 +243,19 @@ class WebSocketManager {
     if (bushSessionData) {
       const session = await sessionCache.get(bushSessionData.userId, bushSessionData.sessionId);
       if (session) {
-        return { userId: bushSessionData.userId, session };
+        // Fetch user info for presence
+        const [user] = await db
+          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .from(users)
+          .where(eq(users.id, bushSessionData.userId))
+          .limit(1);
+
+        return {
+          userId: bushSessionData.userId,
+          userName: user?.name || "Unknown",
+          userAvatarUrl: user?.avatarUrl || null,
+          session,
+        };
       }
     }
 
@@ -250,7 +307,20 @@ class WebSocketManager {
         );
 
         const resolvedSession = await bushSession;
-        return { userId, session: resolvedSession };
+
+        // Fetch user info for presence
+        const [user] = await db
+          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        return {
+          userId,
+          userName: user?.name || `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() || "Unknown",
+          userAvatarUrl: user?.avatarUrl || session.user.profilePictureUrl,
+          session: resolvedSession,
+        };
       } catch (error) {
         console.error("[WebSocket] Failed to authenticate wos-session:", error);
         return null;
@@ -288,9 +358,19 @@ class WebSocketManager {
 
   /**
    * Unregister a WebSocket connection
+   * Phase 2: Removes presence from all subscribed channels
    */
-  unregister(ws: ServerWebSocket<WebSocketData>): void {
+  async unregister(ws: ServerWebSocket<WebSocketData>): Promise<void> {
     const data = ws.data;
+
+    // Remove presence from all subscribed channels (Phase 2)
+    if (redisPubSub.isEnabled()) {
+      for (const channelKey of data.subscriptions) {
+        const [channel, ...resourceIdParts] = channelKey.split(":") as [ChannelType, ...string[]];
+        const resourceId = resourceIdParts.join(":");
+        await redisPubSub.removePresence(channel, resourceId, data.userId);
+      }
+    }
 
     this.safeModify(() => {
       // Remove from all channels
@@ -309,6 +389,9 @@ class WebSocketManager {
 
       // Remove connection
       this.connections.delete(data.connectionId);
+
+      // Clean up presence rate limit tracking
+      this.presenceLastUpdate.delete(data.connectionId);
     });
 
     console.log(`[WebSocket] Connection ${data.connectionId} unregistered`);
@@ -347,7 +430,7 @@ class WebSocketManager {
     switch (msg.action) {
       case "subscribe":
         if (msg.channel && msg.resourceId) {
-          await this.handleSubscribe(ws, msg.channel, msg.resourceId);
+          await this.handleSubscribe(ws, msg.channel, msg.resourceId, msg.sinceEventId);
         }
         break;
 
@@ -361,6 +444,12 @@ class WebSocketManager {
         this.send(ws, { type: "pong", timestamp: new Date().toISOString() });
         break;
 
+      case "presence":
+        if (msg.channel && msg.resourceId && msg.state) {
+          await this.handlePresence(ws, msg.channel, msg.resourceId, msg.state);
+        }
+        break;
+
       default:
         this.send(ws, {
           type: "error",
@@ -372,11 +461,13 @@ class WebSocketManager {
 
   /**
    * Handle subscription request
+   * Phase 2: Supports event recovery with sinceEventId
    */
   private async handleSubscribe(
     ws: ServerWebSocket<WebSocketData>,
     channel: ChannelType,
-    resourceId: string
+    resourceId: string,
+    sinceEventId?: string
   ): Promise<void> {
     const data = ws.data;
     const channelKey: ChannelKey = `${channel}:${resourceId}`;
@@ -404,6 +495,10 @@ class WebSocketManager {
       return;
     }
 
+    // Check if this is the first subscriber for this channel
+    const isFirstSubscriber = !this.connectionsByChannel.has(channelKey) ||
+      this.connectionsByChannel.get(channelKey)!.size === 0;
+
     // Add subscription
     data.subscriptions.add(channelKey);
 
@@ -413,34 +508,225 @@ class WebSocketManager {
     }
     this.connectionsByChannel.get(channelKey)!.add(data.connectionId);
 
+    // Subscribe to Redis channel (Phase 2)
+    if (isFirstSubscriber && redisPubSub.isEnabled()) {
+      await redisPubSub.subscribeToChannel(channel, resourceId);
+    }
+
     console.log(`[WebSocket] Connection ${data.connectionId} subscribed to ${channelKey}`);
 
+    // Handle event recovery (Phase 2)
+    if (sinceEventId && redisPubSub.isEnabled()) {
+      const missedEvents = await redisPubSub.getMissedEvents(channel, resourceId, sinceEventId);
+
+      if (missedEvents === null) {
+        // Gap too large - client must reset
+        this.send(ws, {
+          type: "subscription.reset",
+          channel,
+          resourceId,
+          reason: "event_gap_too_large",
+          message: "Too many events missed. Please refetch full state.",
+        });
+        return;
+      }
+
+      // Send missed events
+      for (const event of missedEvents) {
+        this.send(ws, {
+          channel,
+          resourceId,
+          event: event.type,
+          eventId: event.eventId,
+          timestamp: event.timestamp,
+          data: event.data,
+        });
+      }
+    }
+
+    // Send subscription confirmed
     this.send(ws, {
       type: "subscription.confirmed",
       channel,
       resourceId,
     });
+
+    // Send current presence (Phase 2)
+    if (redisPubSub.isEnabled()) {
+      const presence = await redisPubSub.getPresence(channel, resourceId);
+      if (presence.length > 0) {
+        this.send(ws, {
+          type: "presence.initial",
+          channel,
+          resourceId,
+          presence,
+        });
+      }
+    }
   }
 
   /**
    * Handle unsubscribe request
+   * Phase 2: Removes presence and unsubscribes from Redis when last client leaves
    */
-  private handleUnsubscribe(
+  private async handleUnsubscribe(
     ws: ServerWebSocket<WebSocketData>,
     channel: ChannelType,
     resourceId: string
-  ): void {
+  ): Promise<void> {
     const data = ws.data;
     const channelKey: ChannelKey = `${channel}:${resourceId}`;
 
+    // Remove presence (Phase 2)
+    if (redisPubSub.isEnabled()) {
+      await redisPubSub.removePresence(channel, resourceId, data.userId);
+    }
+
     data.subscriptions.delete(channelKey);
+
+    // Check if this was the last subscriber
+    const wasLastSubscriber = this.connectionsByChannel.has(channelKey) &&
+      this.connectionsByChannel.get(channelKey)!.size === 1;
+
     this.removeFromChannel(channelKey, data.connectionId);
+
+    // Unsubscribe from Redis channel when last client leaves (Phase 2)
+    if (wasLastSubscriber && redisPubSub.isEnabled()) {
+      await redisPubSub.unsubscribeFromChannel(channel, resourceId);
+    }
 
     this.send(ws, {
       type: "subscription.unconfirmed",
       channel,
       resourceId,
     });
+  }
+
+  /**
+   * Handle presence update (Phase 2)
+   * Rate limited to 10 updates per 10 seconds per connection
+   */
+  private async handlePresence(
+    ws: ServerWebSocket<WebSocketData>,
+    channel: ChannelType,
+    resourceId: string,
+    state: PresenceState
+  ): Promise<void> {
+    const data = ws.data;
+    const channelKey: ChannelKey = `${channel}:${resourceId}`;
+
+    // Must be subscribed to the channel
+    if (!data.subscriptions.has(channelKey)) {
+      this.send(ws, {
+        type: "error",
+        code: "not_subscribed",
+        message: "Must be subscribed to update presence",
+      });
+      return;
+    }
+
+    // Rate limit presence updates (10 per 10 seconds)
+    const now = Date.now();
+    const lastUpdate = this.presenceLastUpdate.get(data.connectionId) || 0;
+    if (now - lastUpdate < 1000) { // 1 second minimum between updates
+      return; // Silently drop
+    }
+    this.presenceLastUpdate.set(data.connectionId, now);
+
+    // Update presence in Redis
+    if (redisPubSub.isEnabled()) {
+      await redisPubSub.updatePresence(
+        channel,
+        resourceId,
+        data.userId,
+        { name: data.userName, avatar_url: data.userAvatarUrl },
+        state
+      );
+    }
+  }
+
+  /**
+   * Handle message received from Redis pub/sub (Phase 2)
+   */
+  private handleRedisMessage(message: { channel: ChannelType; resourceId: string; event: RealtimeEvent }): void {
+    const channelKey: ChannelKey = `${message.channel}:${message.resourceId}`;
+
+    // Broadcast to local subscribers
+    const connectionIds = this.connectionsByChannel.get(channelKey);
+    if (!connectionIds) return;
+
+    const connIdSnapshot = [...connectionIds];
+
+    for (const connId of connIdSnapshot) {
+      const ws = this.connections.get(connId);
+      if (!ws) continue;
+
+      // Skip the actor (don't send their own events back)
+      if (ws.data.userId === message.event.actorId) continue;
+
+      this.send(ws, {
+        channel: message.channel,
+        resourceId: message.resourceId,
+        event: message.event.type,
+        eventId: message.event.eventId,
+        timestamp: message.event.timestamp,
+        data: message.event.data,
+      });
+    }
+  }
+
+  /**
+   * Broadcast presence update to local subscribers (Phase 2)
+   */
+  private broadcastPresenceUpdate(channel: ChannelType, resourceId: string, presence: PresenceUser): void {
+    const channelKey: ChannelKey = `${channel}:${resourceId}`;
+    const connectionIds = this.connectionsByChannel.get(channelKey);
+    if (!connectionIds) return;
+
+    const connIdSnapshot = [...connectionIds];
+
+    for (const connId of connIdSnapshot) {
+      const ws = this.connections.get(connId);
+      if (!ws) continue;
+
+      // Don't send presence back to the user who originated it
+      if (ws.data.userId === presence.id) continue;
+
+      this.send(ws, {
+        type: "presence.update",
+        channel,
+        resourceId,
+        user: {
+          id: presence.id,
+          name: presence.name,
+          avatar_url: presence.avatar_url,
+        },
+        state: presence.state,
+      });
+    }
+  }
+
+  /**
+   * Broadcast presence leave to local subscribers (Phase 2)
+   */
+  private broadcastPresenceLeave(channel: ChannelType, resourceId: string, userId: string): void {
+    const channelKey: ChannelKey = `${channel}:${resourceId}`;
+    const connectionIds = this.connectionsByChannel.get(channelKey);
+    if (!connectionIds) return;
+
+    const connIdSnapshot = [...connectionIds];
+
+    for (const connId of connIdSnapshot) {
+      const ws = this.connections.get(connId);
+      if (!ws) continue;
+
+      this.send(ws, {
+        type: "presence.leave",
+        channel,
+        resourceId,
+        user_id: userId,
+      });
+    }
   }
 
   /**
@@ -518,8 +804,17 @@ class WebSocketManager {
 
   /**
    * Broadcast an event to all subscribed connections
+   * Phase 2: Also publishes to Redis for cross-instance distribution
    */
   private broadcastEvent(event: RealtimeEvent): void {
+    // Publish to Redis for cross-instance distribution (Phase 2)
+    if (redisPubSub.isEnabled()) {
+      // Fire-and-forget publish to Redis
+      redisPubSub.publishEvent(event).catch((error) => {
+        console.error("[WebSocket] Failed to publish event to Redis:", error);
+      });
+    }
+
     // Set broadcast flag to queue any modifications during iteration
     this.isBroadcasting = true;
 

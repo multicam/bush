@@ -251,8 +251,10 @@ app.route("/v4", v4);
 app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
-// Initialize WebSocket manager
-wsManager.init();
+// Initialize WebSocket manager (async, but we don't block server startup)
+wsManager.init().catch((error) => {
+  console.warn("[API] Failed to initialize Redis pub/sub, running in single-instance mode:", error);
+});
 
 // Start server
 console.log(`\n🚀 Bush API Server starting...`);
@@ -281,6 +283,8 @@ async function fetchHandler(req: Request, server: { upgrade: (req: Request, opti
     const wsData: WebSocketData = {
       connectionId: wsManager.generateConnectionId(),
       userId: authResult.userId,
+      userName: authResult.userName,
+      userAvatarUrl: authResult.userAvatarUrl,
       session: authResult.session,
       connectedAt: new Date(),
       subscriptions: new Set(),
