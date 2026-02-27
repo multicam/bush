@@ -20,19 +20,16 @@ export function NotificationBell({
   const displayCount = unreadCount > 99 ? "99+" : String(unreadCount);
 
   return (
-    <button
+    <div
       className={`
         relative flex items-center justify-center
         w-10 h-10 p-0
         bg-transparent border-none rounded-sm
-        cursor-pointer transition-colors
-        hover:bg-surface-2
+        transition-colors
         ${isOpen ? "bg-surface-3" : ""}
-        disabled:opacity-50 disabled:cursor-not-allowed
+        ${isLoading ? "opacity-50" : ""}
       `.replace(/\s+/g, " ").trim()}
-      onClick={onClick}
-      aria-label={`Notifications${showBadge ? ` (${unreadCount} unread)` : ""}`}
-      disabled={isLoading}
+      aria-hidden="true"
     >
       <Bell
         className="w-5 h-5 text-secondary transition-colors group-hover:text-primary"
@@ -47,6 +44,6 @@ export function NotificationBell({
           {displayCount}
         </Badge>
       )}
-    </button>
+    </div>
   );
 }

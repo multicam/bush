@@ -1184,8 +1184,8 @@ export const versionStacksApi = {
  * Extract attributes from a JSON:API resource
  */
 export function extractAttributes<T>(response: JsonApiSingleResponse<T>): T & { id: string } {
-  const { id, attributes } = response.data;
-  return { id, ...attributes };
+  const { id, attributes } = response.data ?? { id: "", attributes: {} as T };
+  return { id, ...(attributes ?? ({} as T)) };
 }
 
 /**
