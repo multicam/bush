@@ -660,3 +660,53 @@ export const bulkMetadataSchema = z.object({
   file_ids: z.array(z.string().min(1)).min(1, "At least one file ID is required").max(100),
   metadata: z.record(z.unknown()),
 });
+
+// ============================================================================
+// ACCOUNT SCHEMAS
+// ============================================================================
+
+/**
+ * Account slug validation - alphanumeric with hyphens, no leading/trailing hyphens
+ */
+const accountSlugRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+const slugErrorMessage = "Slug must be lowercase alphanumeric with hyphens, 3-63 characters, cannot start or end with hyphen";
+
+/**
+ * Create account request body schema
+ */
+export const createAccountSchema = z.object({
+  name: z.string().min(1, "Account name is required").max(255, "Account name must be 255 characters or less"),
+  slug: z.string()
+    .min(3, "Slug must be at least 3 characters")
+    .max(63, "Slug must be 63 characters or less")
+    .regex(accountSlugRegex, slugErrorMessage),
+});
+
+/**
+ * Update account request body schema
+ */
+export const updateAccountSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  slug: z.string()
+    .min(3, "Slug must be at least 3 characters")
+    .max(63, "Slug must be 63 characters or less")
+    .regex(accountSlugRegex, slugErrorMessage)
+    .optional(),
+});
+
+// ============================================================================
+// METADATA SCHEMAS
+// ============================================================================
+
+/**
+ * Update file metadata request body schema
+ * Validates built-in metadata fields (custom fields validated separately due to DB lookup)
+ */
+export const updateFileMetadataSchema = z.object({
+  rating: z.number().int().min(1, "Rating must be between 1 and 5").max(5, "Rating must be between 1 and 5").optional(),
+  status: z.string().max(100, "Status must be 100 characters or less").optional(),
+  keywords: z.array(z.string().max(100)).max(50, "Cannot have more than 50 keywords").optional(),
+  notes: z.string().max(10000, "Notes must be 10000 characters or less").optional(),
+  assignee_id: z.string().nullable().optional(),
+  custom: z.record(z.unknown()).optional(),
+});

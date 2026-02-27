@@ -14,6 +14,8 @@ import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyAccountMembership } from "../access-control.js";
 import { getEmailService } from "../../lib/email/index.js";
+import { validateBody, parseBody } from "../validation.js";
+import { createAccountSchema, updateAccountSchema } from "../validation.js";
 import { sessionCache } from "../../auth/session-cache.js";
 import type { AccountRole } from "../../auth/types.js";
 
@@ -102,16 +104,7 @@ app.get("/:id", async (c) => {
  */
 app.post("/", async (c) => {
   const session = requireAuth(c);
-  const body = await c.req.json();
-
-  // Validate input
-  if (!body.name || typeof body.name !== "string") {
-    throw new ValidationError("Account name is required", { pointer: "/data/attributes/name" });
-  }
-
-  if (!body.slug || typeof body.slug !== "string") {
-    throw new ValidationError("Account slug is required", { pointer: "/data/attributes/slug" });
-  }
+  const body = await validateBody(c, createAccountSchema);
 
   // Check if slug is already taken
   const existing = await db
@@ -166,7 +159,11 @@ app.post("/", async (c) => {
 app.patch("/:id", async (c) => {
   const session = requireAuth(c);
   const accountId = c.req.param("id");
-  const body = await c.req.json();
+  const body = await parseBody(c, updateAccountSchema);
+
+  if (!body) {
+    throw new ValidationError("Request body is required");
+  }
 
   // Verify user is owner or content_admin
   const memberRole = await verifyAccountMembership(session.userId, accountId, "content_admin");

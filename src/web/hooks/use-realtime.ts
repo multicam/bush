@@ -114,8 +114,12 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
       onStateChangeRef.current?.(state);
     });
 
+    // Track if we initiated the connection
+    let didConnect = false;
+
     // Auto-connect if enabled
     if (autoConnect) {
+      didConnect = true;
       socket.connect().catch((error) => {
         console.error("[useRealtime] Connection failed:", error);
       });
@@ -123,6 +127,10 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
 
     return () => {
       unsubscribe();
+      // Disconnect if this hook initiated the connection
+      if (didConnect) {
+        socket.disconnect();
+      }
     };
   }, [autoConnect]);
 

@@ -460,13 +460,17 @@ describe("Auth Routes", () => {
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue(mockAllAccounts),
+              where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue(mockAllAccounts),
+              }),
             }),
           }),
         } as any)
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue(mockWorkspaces),
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue(mockWorkspaces),
+            }),
           }),
         } as any);
 
@@ -552,13 +556,17 @@ describe("Auth Routes", () => {
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
             }),
           }),
         } as any)
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([]),
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
           }),
         } as any);
 
@@ -618,13 +626,17 @@ describe("Auth Routes", () => {
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
             }),
           }),
         } as any)
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([]),
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
           }),
         } as any);
 
@@ -664,13 +676,17 @@ describe("Auth Routes", () => {
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
             }),
           }),
         } as any)
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([]),
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
           }),
         } as any);
 
@@ -731,13 +747,17 @@ describe("Auth Routes", () => {
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue(mockAllAccounts),
+              where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue(mockAllAccounts),
+              }),
             }),
           }),
         } as any)
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue(mockWorkspaces),
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue(mockWorkspaces),
+            }),
           }),
         } as any);
 

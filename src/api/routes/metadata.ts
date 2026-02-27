@@ -12,6 +12,8 @@ import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, RESOURCE_TYPES, formatDates } from "../response.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
+import { validateBody } from "../validation.js";
+import { updateFileMetadataSchema } from "../validation.js";
 import type { TechnicalMetadata, CustomFieldValue } from "../../db/schema.js";
 
 const app = new Hono();
@@ -142,7 +144,7 @@ app.get("/files/:fileId/metadata", async (c) => {
 app.put("/files/:fileId/metadata", async (c) => {
   const session = requireAuth(c);
   const fileId = c.req.param("fileId");
-  const body = await c.req.json();
+  const body = await validateBody(c, updateFileMetadataSchema);
 
   // Get the file
   const [file] = await db
@@ -164,32 +166,20 @@ app.put("/files/:fileId/metadata", async (c) => {
   // Build updates for built-in fields
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  // Handle built-in editable fields
+  // Handle built-in editable fields (validated by Zod schema)
   if (body.rating !== undefined) {
-    if (typeof body.rating !== "number" || body.rating < 1 || body.rating > 5) {
-      throw new ValidationError("Rating must be between 1 and 5", { pointer: "/data/attributes/rating" });
-    }
     updates.rating = body.rating;
   }
 
   if (body.status !== undefined) {
-    if (typeof body.status !== "string") {
-      throw new ValidationError("Status must be a string", { pointer: "/data/attributes/status" });
-    }
     updates.assetStatus = body.status;
   }
 
   if (body.keywords !== undefined) {
-    if (!Array.isArray(body.keywords) || !body.keywords.every((k: unknown) => typeof k === "string")) {
-      throw new ValidationError("Keywords must be an array of strings", { pointer: "/data/attributes/keywords" });
-    }
     updates.keywords = body.keywords;
   }
 
   if (body.notes !== undefined) {
-    if (typeof body.notes !== "string") {
-      throw new ValidationError("Notes must be a string", { pointer: "/data/attributes/notes" });
-    }
     updates.notes = body.notes;
   }
 

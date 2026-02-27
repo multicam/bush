@@ -237,7 +237,7 @@ app.get("/me", async (c) => {
     .where(eq(accounts.id, session.currentAccountId))
     .limit(1);
 
-  // Get all accounts user has access to
+  // Get all accounts user has access to (with limit to prevent unbounded queries)
   const allAccounts = await db
     .select({
       id: accounts.id,
@@ -248,16 +248,18 @@ app.get("/me", async (c) => {
     })
     .from(accountMemberships)
     .innerJoin(accounts, eq(accountMemberships.accountId, accounts.id))
-    .where(eq(accountMemberships.userId, session.userId));
+    .where(eq(accountMemberships.userId, session.userId))
+    .limit(100);
 
-  // Get workspaces for current account
+  // Get workspaces for current account (with limit to prevent unbounded queries)
   const workspacesList = await db
     .select({
       id: workspaces.id,
       name: workspaces.name,
     })
     .from(workspaces)
-    .where(eq(workspaces.accountId, session.currentAccountId));
+    .where(eq(workspaces.accountId, session.currentAccountId))
+    .limit(100);
 
   return c.json({
     data: {

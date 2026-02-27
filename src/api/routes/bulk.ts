@@ -78,28 +78,42 @@ app.post("/files/move", async (c) => {
   const succeeded: string[] = [];
   const failed: { id: string; error: string }[] = [];
 
+  // Batch fetch all files in one query (fixes N+1)
+  const fetchedFiles = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        inArray(files.id, fileIds),
+        isNull(files.deletedAt)
+      )
+    );
+
+  // Create a map for O(1) lookup
+  const fileMap = new Map(fetchedFiles.map((f) => [f.id, f]));
+
+  // Collect unique project IDs for batch access verification
+  const uniqueProjectIds = [...new Set(fetchedFiles.map((f) => f.projectId))];
+  const projectAccessCache = new Map<string, boolean>();
+
+  // Batch verify all unique source project accesses
+  for (const projectId of uniqueProjectIds) {
+    const accessResult = await verifyProjectAccess(projectId, session.currentAccountId);
+    projectAccessCache.set(projectId, accessResult !== null);
+  }
+
   // Process each file
   for (const fileId of fileIds) {
     try {
-      // Get file
-      const [file] = await db
-        .select()
-        .from(files)
-        .where(
-          and(
-            eq(files.id, fileId),
-            isNull(files.deletedAt)
-          )
-        )
-        .limit(1);
+      const file = fileMap.get(fileId);
 
       if (!file) {
         failed.push({ id: fileId, error: "File not found" });
         continue;
       }
 
-      // Verify source project access
-      const srcAccess = await verifyProjectAccess(file.projectId, session.currentAccountId);
+      // Check cached project access result
+      const srcAccess = projectAccessCache.get(file.projectId);
       if (!srcAccess) {
         failed.push({ id: fileId, error: "Access denied to source project" });
         continue;
@@ -197,29 +211,44 @@ app.post("/files/copy", async (c) => {
   const failed: { id: string; error: string }[] = [];
   const copiedIds: { original: string; copy: string }[] = [];
 
+  // Batch fetch all files in one query (fixes N+1)
+  const fetchedFiles = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        inArray(files.id, fileIds),
+        isNull(files.deletedAt)
+      )
+    );
+
+  // Create a map for O(1) lookup
+  const fileMap = new Map(fetchedFiles.map((f) => [f.id, f]));
+
+  // Collect unique project IDs for batch access verification
+  const uniqueProjectIds = [...new Set(fetchedFiles.map((f) => f.projectId))];
+  const projectAccessCache = new Map<string, boolean>();
+
+  // Batch verify all unique source project accesses
+  for (const projectId of uniqueProjectIds) {
+    const accessResult = await verifyProjectAccess(projectId, session.currentAccountId);
+    projectAccessCache.set(projectId, accessResult !== null);
+  }
+
   // First pass: validate all files and calculate total size
   const filesToCopy: { id: string; file: typeof files.$inferSelect }[] = [];
   let totalSize = 0;
 
   for (const fileId of fileIds) {
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(
-        and(
-          eq(files.id, fileId),
-          isNull(files.deletedAt)
-        )
-      )
-      .limit(1);
+    const file = fileMap.get(fileId);
 
     if (!file) {
       failed.push({ id: fileId, error: "File not found" });
       continue;
     }
 
-    // Verify source project access
-    const srcAccess = await verifyProjectAccess(file.projectId, session.currentAccountId);
+    // Check cached project access result
+    const srcAccess = projectAccessCache.get(file.projectId);
     if (!srcAccess) {
       failed.push({ id: fileId, error: "Access denied to source project" });
       continue;

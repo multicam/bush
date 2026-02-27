@@ -208,6 +208,32 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Get retry delay from response's Retry-After header (for 429 responses)
+ * Returns milliseconds to wait, or null if header is not present/invalid
+ */
+function getRetryAfterDelay(response: Response): number | null {
+  const retryAfter = response.headers.get("Retry-After");
+  if (!retryAfter) {
+    return null;
+  }
+
+  // Try parsing as seconds (most common format)
+  const seconds = parseInt(retryAfter, 10);
+  if (!isNaN(seconds) && seconds > 0) {
+    return seconds * 1000;
+  }
+
+  // Try parsing as HTTP date
+  const date = new Date(retryAfter);
+  if (!isNaN(date.getTime())) {
+    const delay = date.getTime() - Date.now();
+    return delay > 0 ? delay : null;
+  }
+
+  return null;
+}
+
+/**
  * Typed fetch wrapper with credentials, timeout, retry, and abort support
  */
 async function apiFetch<T>(
@@ -270,7 +296,9 @@ async function apiFetch<T>(
       if (!response.ok) {
         // Check if we should retry
         if (shouldRetry && attempt < maxRetries && isRetryableError(null, response)) {
-          const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+          // For 429 responses, prefer Retry-After header over exponential backoff
+          const retryAfterDelay = response.status === 429 ? getRetryAfterDelay(response) : null;
+          const delay = retryAfterDelay ?? (RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
           await sleep(delay);
           continue;
         }

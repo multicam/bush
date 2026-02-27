@@ -1,8 +1,8 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 2
-**Coverage**: 86.05% statements (target: 80%)
+**Iteration**: 3
+**Coverage**: 86.09% statements (target: 80%)
 **Tests**: 2808 passing, 41 skipped
 
 ## Issue Tracker
@@ -19,15 +19,15 @@
 ### High (code smells, missing validation)
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
-| H1 | src/api/routes/auth.ts | 251-260 | Missing pagination on /auth/me - unbounded queries | pending |
-| H2 | src/api/routes/bulk.ts | 204-229 | N+1 query problem in bulk file copy | pending |
+| H1 | src/api/routes/auth.ts | 251-260 | Missing pagination on /auth/me - unbounded queries | **fixed** |
+| H2 | src/api/routes/bulk.ts | 204-229 | N+1 query problem in bulk file copy | **fixed** |
 | H3 | src/api/routes/bulk.ts | 293-301 | Race condition in storage usage updates - non-atomic | **fixed** |
-| H4 | src/api/routes/accounts.ts | 105-106 | Manual validation instead of Zod schema | pending |
-| H5 | src/api/routes/metadata.ts | 145 | Missing Zod validation on PUT endpoint | pending |
+| H4 | src/api/routes/accounts.ts | 105-106 | Manual validation instead of Zod schema | **fixed** |
+| H5 | src/api/routes/metadata.ts | 145 | Missing Zod validation on PUT endpoint | **fixed** |
 | H6 | src/web/components/viewers/video-viewer.tsx | 453-463 | Stale closure with duration variable in shuttle controls | **fixed** |
 | H7 | src/web/components/notifications/notification-dropdown.tsx | 144-150 | window.location.href causes full page reload - use router.push | **fixed** |
-| H8 | src/web/hooks/use-realtime.ts | 106-127 | Socket not disconnected on unmount - confusing behavior | pending |
-| H9 | src/web/lib/api.ts | 196 | Retry logic incomplete for 429 responses | pending |
+| H8 | src/web/hooks/use-realtime.ts | 106-127 | Socket not disconnected on unmount - confusing behavior | **fixed** |
+| H9 | src/web/lib/api.ts | 196 | Retry logic incomplete for 429 responses | **fixed** |
 | H10 | src/auth/session-cache.ts | 403-436 | Legacy cookie format support - security risk | pending |
 | H11 | src/api/routes/webhooks.ts | 445-463 | SSRF risk - webhook test allows arbitrary URLs | pending |
 
@@ -86,6 +86,12 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 3 -- 2026-02-27
+- Fixed: H1 (query limits), H2 (N+1 fix), H4 (Zod validation), H5 (Zod validation), H8 (socket cleanup), H9 (429 retry)
+- Tests: 2808 passing, 41 skipped
+- Coverage: 86.09% statements
+- Status: 6 high issues fixed, tests green, typecheck passes
+
 ### Iteration 2 -- 2026-02-27
 - Fixed: C2 (validated config for provider), C3 (theme error logging), C5 (WebSocket cleanup)
 - Tests: 2808 passing, 41 skipped

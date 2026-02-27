@@ -186,6 +186,76 @@ function mockSelectAlways(results: unknown[]) {
 }
 
 /**
+ * Set up db.select for bulk operations with new query order:
+ * 1. Account query (with limit) - returns accountArray
+ * 2. Files batch query (no limit) - returns filesArray
+ */
+function mockSelectBulkOrder(filesArray: unknown[], accountArray: unknown[]) {
+  let callCount = 0;
+  vi.mocked(db.select).mockImplementation(() => {
+    callCount++;
+    if (callCount === 1) {
+      // First call: account query (with .limit())
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue(accountArray),
+          }),
+        }),
+      } as never;
+    } else {
+      // Second call: files batch query (resolves without .limit())
+      return {
+        from: () => ({
+          where: vi.fn().mockResolvedValue(filesArray),
+        }),
+      } as never;
+    }
+  });
+}
+
+/**
+ * Set up db.select for bulk move operations (files batch query only, no account).
+ * The move endpoint only queries files without .limit().
+ */
+function mockSelectBulkMove(filesArray: unknown[]) {
+  vi.mocked(db.select).mockImplementation(() => ({
+    from: () => ({
+      where: vi.fn().mockResolvedValue(filesArray),
+    }),
+  }) as never);
+}
+
+/**
+ * Set up db.select for bulk move with folder destination:
+ * 1. Folder lookup (with limit)
+ * 2. Files batch query (no limit)
+ */
+function mockSelectBulkMoveWithFolder(folderArray: unknown[], filesArray: unknown[]) {
+  let callCount = 0;
+  vi.mocked(db.select).mockImplementation(() => {
+    callCount++;
+    if (callCount === 1) {
+      // First call: folder lookup (with .limit())
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue(folderArray),
+          }),
+        }),
+      } as never;
+    } else {
+      // Second call: files batch query (no .limit())
+      return {
+        from: () => ({
+          where: vi.fn().mockResolvedValue(filesArray),
+        }),
+      } as never;
+    }
+  });
+}
+
+/**
  * Set up db.update to succeed (resolves undefined).
  */
 function mockUpdateSuccess() {
@@ -249,9 +319,9 @@ describe("POST /files/move", () => {
   });
 
   it("returns 200 with succeeded list when moving files to a project", async () => {
-    // dest project access check, then file lookup (per file)
+    // dest project access check, then files batch query
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-    mockSelectSequence([FILE_ROW]); // file lookup for file_001
+    mockSelectBulkMove([FILE_ROW]); // files batch query
 
     mockUpdateSuccess();
 
@@ -271,8 +341,8 @@ describe("POST /files/move", () => {
   });
 
   it("returns 200 moving files to a folder destination", async () => {
-    // First select call = dest folder lookup; subsequent = file lookup
-    mockSelectSequence([DEST_FOLDER_ROW], [FILE_ROW]);
+    // First select call = dest folder lookup; second = files batch query
+    mockSelectBulkMoveWithFolder([DEST_FOLDER_ROW], [FILE_ROW]);
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
     mockUpdateSuccess();
 
@@ -293,7 +363,7 @@ describe("POST /files/move", () => {
 
   it("returns 200 moving files to a root destination", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-    mockSelectAlways([FILE_ROW]);
+    mockSelectBulkMove([FILE_ROW]);
     mockUpdateSuccess();
 
     const res = await app.request("/files/move", {
@@ -366,7 +436,7 @@ describe("POST /files/move", () => {
   });
 
   it("returns 500 when destination folder does not exist", async () => {
-    mockSelectSequence([]); // empty = folder not found
+    mockSelectBulkMoveWithFolder([], [FILE_ROW]); // empty folder = not found
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
 
     const res = await app.request("/files/move", {
@@ -397,9 +467,9 @@ describe("POST /files/move", () => {
   });
 
   it("adds file to failed list when file is not found", async () => {
-    // dest project access: granted; file lookup: not found
+    // dest project access: granted; files batch query: not found
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-    mockSelectAlways([]); // file not found
+    mockSelectBulkMove([]); // files not found
 
     const res = await app.request("/files/move", {
       method: "POST",
@@ -424,7 +494,7 @@ describe("POST /files/move", () => {
       .mockResolvedValueOnce({ id: "proj_002" } as never) // dest
       .mockResolvedValueOnce(null as never); // src
 
-    mockSelectAlways([FILE_ROW]);
+    mockSelectBulkMove([FILE_ROW]);
 
     const res = await app.request("/files/move", {
       method: "POST",
@@ -443,18 +513,7 @@ describe("POST /files/move", () => {
   it("processes multiple files and tracks succeeded/failed separately", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
     // file_001 found, file_002 not found
-    let selectCallCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const result = selectCallCount === 0 ? [FILE_ROW] : [];
-      selectCallCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(result),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkMove([FILE_ROW]);
 
     mockUpdateSuccess();
 
@@ -475,7 +534,7 @@ describe("POST /files/move", () => {
 
   it("calls db.update to move the file", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-    mockSelectAlways([FILE_ROW]);
+    mockSelectBulkMove([FILE_ROW]);
     mockUpdateSuccess();
 
     await app.request("/files/move", {
@@ -505,19 +564,7 @@ describe("POST /files/copy", () => {
 
   it("returns 200 with succeeded list on successful copy to project", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-    // select: account, file
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
     mockInsertSuccess();
     mockUpdateSuccess();
 
@@ -540,19 +587,7 @@ describe("POST /files/copy", () => {
 
   it("includes 'Copy of' prefix in copied file name", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
 
     const insertValuesSpy = vi.fn().mockResolvedValue(undefined);
     vi.mocked(db.insert).mockReturnValue({ values: insertValuesSpy } as never);
@@ -574,19 +609,7 @@ describe("POST /files/copy", () => {
 
   it("calls storage.copyObject for ready files", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW]; // status: "ready"
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]); // status: "ready"
     mockInsertSuccess();
     mockUpdateSuccess();
 
@@ -605,19 +628,7 @@ describe("POST /files/copy", () => {
   it("does not call storage.copyObject for non-ready files", async () => {
     const pendingFile = { ...FILE_ROW, status: "pending" };
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [pendingFile];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([pendingFile], [ACCOUNT_ROW]);
     mockInsertSuccess();
     mockUpdateSuccess();
 
@@ -715,19 +726,7 @@ describe("POST /files/copy", () => {
   it("fails all files when storage quota is exceeded", async () => {
     const bigFile = { ...FILE_ROW, fileSizeBytes: 200 * 1024 * 1024 }; // 200 MB > 90 MB remaining
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [bigFile];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([bigFile], [ACCOUNT_ROW]);
 
     const res = await app.request("/files/copy", {
       method: "POST",
@@ -746,20 +745,8 @@ describe("POST /files/copy", () => {
 
   it("adds file to failed list when file is not found", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      // account first, then no file
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    // No files found in batch query
+    mockSelectBulkOrder([], [ACCOUNT_ROW]);
 
     const res = await app.request("/files/copy", {
       method: "POST",
@@ -779,19 +766,7 @@ describe("POST /files/copy", () => {
     vi.mocked(verifyProjectAccess)
       .mockResolvedValueOnce({ id: "proj_002" } as never) // dest
       .mockResolvedValueOnce(null as never); // src file
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
 
     const res = await app.request("/files/copy", {
       method: "POST",
@@ -809,19 +784,7 @@ describe("POST /files/copy", () => {
 
   it("updates storage used bytes after successful copy", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
     mockInsertSuccess();
     mockUpdateSuccess();
 
@@ -840,19 +803,7 @@ describe("POST /files/copy", () => {
   it("still succeeds even if storage.copyObject fails", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
     vi.mocked(storage.copyObject).mockRejectedValue(new Error("S3 error"));
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
     mockInsertSuccess();
     mockUpdateSuccess();
 
@@ -873,19 +824,7 @@ describe("POST /files/copy", () => {
 
   it("uses generateId to create a new file ID for each copy", async () => {
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_002" } as never);
-
-    let callCount = 0;
-    vi.mocked(db.select).mockImplementation(() => {
-      const results = callCount === 0 ? [ACCOUNT_ROW] : [FILE_ROW];
-      callCount++;
-      return {
-        from: () => ({
-          where: () => ({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      } as never;
-    });
+    mockSelectBulkOrder([FILE_ROW], [ACCOUNT_ROW]);
     mockInsertSuccess();
     mockUpdateSuccess();
 
