@@ -7,6 +7,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { notificationsApi } from "@/web/lib/api";
 import { useUserEvents } from "@/web/hooks/use-realtime";
 import { useAuth } from "@/web/context";
@@ -21,6 +22,7 @@ export function NotificationDropdown({
   onMarkAllRead,
 }: NotificationDropdownProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,13 +142,13 @@ export function NotificationDropdown({
         );
       }
 
-      // Navigate to relevant context
+      // Navigate to relevant context using client-side navigation
       if (notification.data.file_id) {
-        window.location.href = `/files/${notification.data.file_id}`;
+        router.push(`/files/${notification.data.file_id}`);
       } else if (notification.data.project_id) {
-        window.location.href = `/projects/${notification.data.project_id}`;
+        router.push(`/projects/${notification.data.project_id}`);
       } else if (notification.data.share_id) {
-        window.location.href = `/shares/${notification.data.share_id}`;
+        router.push(`/shares/${notification.data.share_id}`);
       }
 
       onClose();

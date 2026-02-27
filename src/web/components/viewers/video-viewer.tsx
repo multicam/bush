@@ -458,9 +458,10 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       const speed = SHUTTLE_SPEEDS[speedIndex];
 
       const delta = (direction === "forward" ? 1 : -1) * speed * 0.1;
-      video.currentTime = Math.max(0, Math.min(video.currentTime + delta, duration));
+      // Read duration directly from video element to avoid stale closure
+      video.currentTime = Math.max(0, Math.min(video.currentTime + delta, video.duration || 0));
     }, 500);
-  }, [duration]);
+  }, []);
 
   const stopShuttle = useCallback(() => {
     if (shuttleIntervalRef.current) {

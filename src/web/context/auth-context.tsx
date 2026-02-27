@@ -65,22 +65,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     accounts: [],
   });
 
+  // Track mounted state to prevent updates after unmount
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const state = await getAuthState();
-      setAuthState({
-        ...state,
-        isLoading: false,
-      });
+      if (isMountedRef.current) {
+        setAuthState({
+          ...state,
+          isLoading: false,
+        });
+      }
     } catch (error) {
       console.error("[Auth] Failed to refresh auth state:", error);
-      setAuthState({
-        isAuthenticated: false,
-        isLoading: false,
-        user: null,
-        currentAccount: null,
-        accounts: [],
-      });
+      if (isMountedRef.current) {
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          currentAccount: null,
+          accounts: [],
+        });
+      }
     }
   }, []);
 

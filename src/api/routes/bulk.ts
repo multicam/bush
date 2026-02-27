@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
 import { files, folders, accounts, customFields } from "../../db/schema.js";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { generateId } from "../router.js";
 import { NotFoundError, ValidationError } from "../../errors/index.js";
@@ -289,12 +289,12 @@ app.post("/files/copy", async (c) => {
     }
   }
 
-  // Update storage usage if any copies succeeded
+  // Update storage usage if any copies succeeded (atomic increment to prevent race conditions)
   if (copiedIds.length > 0) {
     await db
       .update(accounts)
       .set({
-        storageUsedBytes: account.storageUsedBytes + totalSize,
+        storageUsedBytes: sql`${accounts.storageUsedBytes} + ${totalSize}`,
         updatedAt: now,
       })
       .where(eq(accounts.id, session.currentAccountId));
@@ -380,7 +380,7 @@ app.post("/files/delete", async (c) => {
           })
           .where(
             and(
-              sql`${files.id} IN (${sql.raw(filesToDelete.map(() => "?").join(","))})`,
+              inArray(files.id, filesToDelete),
               isNull(files.deletedAt)
             )
           );
