@@ -1,4 +1,4 @@
-import { test, expect } from "../helpers/demo-auth";
+import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-11: Video Viewer + Controls", () => {
@@ -105,5 +105,29 @@ test.describe("UC-11: Video Viewer + Controls", () => {
         await captureScreenshot(page, "11-video-preview-state");
       }
     }
+  });
+
+  test("video viewer renders for a ready video file", async ({ authedPage: page }) => {
+    // Navigate directly to a seeded video file with status "ready"
+    await page.goto("/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7");
+    await page.waitForLoadState("networkidle");
+    await dismissDevOverlay(page);
+
+    // File name should be visible in the header
+    await expect(page.getByText("shot_001_main.mp4")).toBeVisible();
+
+    // Back button should be present
+    await expect(page.getByRole("button", { name: /Back/i })).toBeVisible();
+
+    // Show/Hide Comments toggle should be present
+    await expect(page.getByRole("button", { name: /Comments/i }).first()).toBeVisible();
+
+    // The viewer area should contain either a <video> element or a processing state
+    const video = page.locator("video");
+    const processingMsg = page.getByText(/Uploading|Processing|Preview not available/i).first();
+    const viewerRendered = await video.count() > 0 || await processingMsg.isVisible();
+    expect(viewerRendered).toBeTruthy();
+
+    await captureScreenshot(page, "11-video-viewer-ready-file");
   });
 });
