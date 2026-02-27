@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
   test: {
@@ -26,6 +27,20 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.test.tsx",
       ],
+    },
+  },
+  resolve: {
+    alias: {
+      "@/config": path.resolve(__dirname, "src/config/index.ts"),
+      "@/config/env": path.resolve(__dirname, "src/config/env.ts"),
+      "@/db": path.resolve(__dirname, "src/db/index.ts"),
+      "@/db/schema": path.resolve(__dirname, "src/db/schema.ts"),
+      "@/api": path.resolve(__dirname, "src/api/index.ts"),
+      "@/auth": path.resolve(__dirname, "src/auth/index.ts"),
+      "@/redis": path.resolve(__dirname, "src/redis/index.ts"),
+      "@/permissions": path.resolve(__dirname, "src/permissions/index.ts"),
+      "@/web": path.resolve(__dirname, "src/web"),
+      "@/shared": path.resolve(__dirname, "src/shared"),
     },
   },
 });

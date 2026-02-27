@@ -6,8 +6,9 @@
  */
 "use client";
 
+import { Grid3X3, List, Square } from "lucide-react";
+import { cn } from "@/web/lib/utils";
 import type { ViewMode, CardSize } from "./types";
-import styles from "./view-controls.module.css";
 
 interface ViewControlsProps {
   viewMode: ViewMode;
@@ -23,114 +24,88 @@ export function ViewControls({
   onCardSizeChange,
 }: ViewControlsProps) {
   return (
-    <div className={styles.container}>
+    <div className="flex items-center gap-3">
       {/* View mode toggle */}
-      <div className={styles.group} role="group" aria-label="View mode">
+      <div className="flex items-center bg-surface-3 rounded-sm p-0.5" role="group" aria-label="View mode">
         <button
-          className={`${styles.button} ${viewMode === "grid" ? styles.active : ""}`}
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
+            "text-text-secondary transition-all duration-100",
+            "hover:text-text-primary hover:bg-surface-2",
+            "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1",
+            viewMode === "grid" && "text-accent bg-surface-2"
+          )}
           onClick={() => onViewModeChange("grid")}
           aria-pressed={viewMode === "grid"}
           title="Grid view"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-          </svg>
-          <span className={styles.buttonLabel}>Grid</span>
+          <Grid3X3 size={16} />
+          <span className="text-xs font-medium hidden @sm:inline">Grid</span>
         </button>
         <button
-          className={`${styles.button} ${viewMode === "list" ? styles.active : ""}`}
+          className={cn(
+            "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
+            "text-text-secondary transition-all duration-100",
+            "hover:text-text-primary hover:bg-surface-2",
+            "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1",
+            viewMode === "list" && "text-accent bg-surface-2"
+          )}
           onClick={() => onViewModeChange("list")}
           aria-pressed={viewMode === "list"}
           title="List view"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="8" y1="6" x2="21" y2="6" />
-            <line x1="8" y1="12" x2="21" y2="12" />
-            <line x1="8" y1="18" x2="21" y2="18" />
-            <line x1="3" y1="6" x2="3.01" y2="6" />
-            <line x1="3" y1="12" x2="3.01" y2="12" />
-            <line x1="3" y1="18" x2="3.01" y2="18" />
-          </svg>
-          <span className={styles.buttonLabel}>List</span>
+          <List size={16} />
+          <span className="text-xs font-medium hidden @sm:inline">List</span>
         </button>
       </div>
 
       {/* Card size toggle (only in grid mode) */}
       {viewMode === "grid" && (
-        <div className={styles.group} role="group" aria-label="Card size">
+        <div className="flex items-center bg-surface-3 rounded-sm p-0.5" role="group" aria-label="Card size">
           <button
-            className={`${styles.button} ${cardSize === "small" ? styles.active : ""}`}
+            className={cn(
+              "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
+              "text-text-secondary transition-all duration-100",
+              "hover:text-text-primary hover:bg-surface-2",
+              "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1",
+              cardSize === "small" && "text-accent bg-surface-2"
+            )}
             onClick={() => onCardSizeChange("small")}
             aria-pressed={cardSize === "small"}
             title="Small cards"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            <span className={styles.buttonLabel}>S</span>
+            <Square size={12} fill="currentColor" />
+            <span className="text-xs font-medium">S</span>
           </button>
           <button
-            className={`${styles.button} ${cardSize === "medium" ? styles.active : ""}`}
+            className={cn(
+              "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
+              "text-text-secondary transition-all duration-100",
+              "hover:text-text-primary hover:bg-surface-2",
+              "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1",
+              cardSize === "medium" && "text-accent bg-surface-2"
+            )}
             onClick={() => onCardSizeChange("medium")}
             aria-pressed={cardSize === "medium"}
             title="Medium cards"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            <span className={styles.buttonLabel}>M</span>
+            <Square size={14} fill="currentColor" />
+            <span className="text-xs font-medium">M</span>
           </button>
           <button
-            className={`${styles.button} ${cardSize === "large" ? styles.active : ""}`}
+            className={cn(
+              "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
+              "text-text-secondary transition-all duration-100",
+              "hover:text-text-primary hover:bg-surface-2",
+              "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1",
+              cardSize === "large" && "text-accent bg-surface-2"
+            )}
             onClick={() => onCardSizeChange("large")}
             aria-pressed={cardSize === "large"}
             title="Large cards"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            <span className={styles.buttonLabel}>L</span>
+            <Square size={16} fill="currentColor" />
+            <span className="text-xs font-medium">L</span>
           </button>
         </div>
       )}

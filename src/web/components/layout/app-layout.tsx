@@ -31,7 +31,6 @@ import {
   LogOut,
   User,
   ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import type { AuthState } from "@/auth";
 

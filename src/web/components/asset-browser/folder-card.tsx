@@ -7,9 +7,10 @@
 "use client";
 
 import { useCallback } from "react";
+import { Folder } from "lucide-react";
 import type { AssetFolder, CardSize } from "./types";
 import { CARD_SIZE_DIMENSIONS } from "./types";
-import styles from "./folder-card.module.css";
+import { cn } from "@/web/lib/utils";
 
 interface FolderCardProps {
   folder: AssetFolder;
@@ -41,7 +42,13 @@ export function FolderCard({ folder, cardSize, onClick }: FolderCardProps) {
 
   return (
     <div
-      className={styles.card}
+      className={cn(
+        "flex flex-col bg-surface-2 border-2 border-transparent rounded-lg",
+        "cursor-pointer overflow-hidden",
+        "transition-all duration-100",
+        "hover:bg-surface-3 hover:border-border-default",
+        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+      )}
       style={{ width: dimensions.width }}
       onClick={handleClick}
       role="button"
@@ -51,15 +58,22 @@ export function FolderCard({ folder, cardSize, onClick }: FolderCardProps) {
     >
       {/* Icon */}
       <div
-        className={styles.iconContainer}
+        className="flex items-center justify-center bg-amber-500/10"
         style={{ height: dimensions.thumbnailHeight }}
       >
-        <span className={styles.folderIcon}>📁</span>
+        <Folder
+          size={48}
+          className="text-amber-500/80 transition-transform duration-100 group-hover:opacity-100 group-hover:scale-105"
+          strokeWidth={1.5}
+        />
       </div>
 
       {/* Info */}
-      <div className={styles.info}>
-        <span className={styles.name} title={folder.name}>
+      <div className="flex flex-col gap-1 p-3 min-h-0">
+        <span
+          className="text-[13px] font-medium text-text-primary whitespace-nowrap overflow-hidden text-ellipsis"
+          title={folder.name}
+        >
           {folder.name}
         </span>
       </div>

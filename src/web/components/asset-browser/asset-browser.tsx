@@ -12,8 +12,8 @@ import { useState, useCallback, useMemo } from "react";
 import { AssetGrid } from "./asset-grid";
 import { AssetList } from "./asset-list";
 import { ViewControls } from "./view-controls";
+import { Spinner } from "@/web/components/ui";
 import type { AssetBrowserProps, AssetFile, ViewMode, CardSize, AssetFolder } from "./types";
-import styles from "./asset-browser.module.css";
 
 export function AssetBrowser({
   projectId: _projectId,
@@ -114,23 +114,23 @@ export function AssetBrowser({
   // Loading state
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading assets...</p>
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col items-center justify-center p-16 text-center text-text-secondary">
+          <Spinner size="lg" />
+          <p className="mt-4 m-0">Loading assets...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
+    <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className={styles.toolbar}>
-        <div className={styles.info}>
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-2 border-b border-border-default">
+        <div className="text-sm text-text-secondary">
           {files.length + folders.length} items
           {selectedIds.length > 0 && (
-            <span className={styles.selectionCount}>
+            <span className="text-accent font-medium ml-1">
               • {selectedIds.length} selected
             </span>
           )}
@@ -144,7 +144,7 @@ export function AssetBrowser({
       </div>
 
       {/* Content */}
-      <div className={styles.content}>
+      <div className="flex-1 overflow-auto bg-surface-1">
         {viewMode === "grid" ? (
           <AssetGrid
             files={sortedFiles}

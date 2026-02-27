@@ -8,8 +8,9 @@
 "use client";
 
 import { useMemo } from "react";
+import { Clock, Maximize2, Star, Tag } from "lucide-react";
+import { cn } from "@/web/lib/utils";
 import type { AssetFile, CardSize } from "./types";
-import styles from "./metadata-badges.module.css";
 
 /**
  * Format duration in seconds to a compact string
@@ -38,44 +39,6 @@ export function formatResolution(width: number, height: number): string {
   return `${width}×${height}`;
 }
 
-/** Star icon for rating */
-function StarIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
-
-/** Clock icon for duration */
-function ClockIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-/** Maximize icon for resolution */
-function MaximizeIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-    </svg>
-  );
-}
-
-/** Tag icon for keywords */
-function TagIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-      <line x1="7" y1="7" x2="7.01" y2="7" />
-    </svg>
-  );
-}
-
 interface MetadataBadgesProps {
   file: AssetFile;
   cardSize: CardSize;
@@ -89,14 +52,14 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
 
   // Build badge list with priority ordering
   const badges = useMemo(() => {
-    const result: Array<{ type: string; label: string; icon?: React.ReactNode; className?: string }> = [];
+    const result: Array<{ type: string; label: string; icon?: React.ReactNode; variant?: string }> = [];
 
     // 1. Duration (for video/audio)
     if (file.duration !== null && file.duration !== undefined && file.duration > 0) {
       result.push({
         type: "duration",
         label: formatDuration(file.duration),
-        icon: <ClockIcon />,
+        icon: <Clock size={10} />,
       });
     }
 
@@ -105,7 +68,7 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "resolution",
         label: formatResolution(file.width, file.height),
-        icon: <MaximizeIcon />,
+        icon: <Maximize2 size={10} />,
       });
     }
 
@@ -114,8 +77,8 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "rating",
         label: String(file.rating),
-        icon: <StarIcon />,
-        className: styles.ratingBadge,
+        icon: <Star size={10} fill="currentColor" />,
+        variant: "rating",
       });
     }
 
@@ -124,7 +87,7 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "status",
         label: file.assetStatus,
-        className: styles.statusBadge,
+        variant: "status",
       });
     }
 
@@ -133,8 +96,8 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "keyword",
         label: file.keywords[0],
-        icon: <TagIcon />,
-        className: styles.keywordBadge,
+        icon: <Tag size={10} />,
+        variant: "keyword",
       });
     }
 
@@ -146,15 +109,23 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
   }
 
   return (
-    <div className={styles.badges}>
+    <div className="flex flex-wrap gap-1 px-2 pb-1">
       {badges.map((badge) => (
         <span
           key={badge.type}
-          className={`${styles.badge} ${badge.className || ""}`}
+          className={cn(
+            "inline-flex items-center gap-1 px-1.5 py-0.5",
+            "text-[10px] font-medium rounded",
+            "whitespace-nowrap overflow-hidden text-ellipsis max-w-full",
+            badge.variant === "rating" && "text-amber-500 bg-amber-500/10",
+            badge.variant === "status" && "text-info bg-info/10",
+            badge.variant === "keyword" && "text-violet-400 bg-violet-400/10",
+            !badge.variant && "text-text-secondary bg-surface-3"
+          )}
           title={badge.label}
         >
-          {badge.icon}
-          <span className={styles.badgeLabel}>{badge.label}</span>
+          {badge.icon && <span className="flex-shrink-0 opacity-70">{badge.icon}</span>}
+          <span className="overflow-hidden text-ellipsis">{badge.label}</span>
         </span>
       ))}
     </div>

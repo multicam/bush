@@ -10,11 +10,12 @@
 
 import { useCallback, useRef, useMemo, useEffect, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { FolderOpen, Loader2 } from "lucide-react";
 import { AssetCard } from "./asset-card";
 import { FolderCard } from "./folder-card";
 import type { AssetGridProps, AssetFile, AssetFolder, CardSize } from "./types";
 import { CARD_SIZE_DIMENSIONS } from "./types";
-import styles from "./asset-grid.module.css";
+import { cn } from "@/web/lib/utils";
 
 // Estimate rows based on card size - enables virtualization for lists > 50 items
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -152,10 +153,10 @@ export function AssetGrid({
   // Empty state
   if (allItems.length === 0) {
     return (
-      <div className={styles.empty}>
-        <div className={styles.emptyIcon}>📂</div>
-        <p className={styles.emptyText}>No files or folders</p>
-        <p className={styles.emptyHint}>Upload files or create folders to get started</p>
+      <div className="flex flex-col items-center justify-center p-16 text-center">
+        <FolderOpen size={64} className="text-text-muted mb-4" strokeWidth={1.5} />
+        <p className="text-base font-medium text-text-secondary mb-2">No files or folders</p>
+        <p className="text-sm text-text-muted m-0">Upload files or create folders to get started</p>
       </div>
     );
   }
@@ -163,7 +164,15 @@ export function AssetGrid({
   // Non-virtualized rendering for small lists (faster for few items)
   if (!useVirtualization) {
     return (
-      <div className={styles.grid} data-size={cardSize}>
+      <div
+        className={cn(
+          "grid gap-4 p-4",
+          cardSize === "small" && "grid-cols-[repeat(auto-fill,minmax(160px,1fr))]",
+          cardSize === "medium" && "grid-cols-[repeat(auto-fill,minmax(220px,1fr))]",
+          cardSize === "large" && "grid-cols-[repeat(auto-fill,minmax(300px,1fr))]",
+          "max-sm:gap-3 max-sm:p-3 max-sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))]"
+        )}
+      >
         {/* Folders first */}
         {folders.map((folder) => (
           <FolderCard
@@ -193,7 +202,7 @@ export function AssetGrid({
   return (
     <div
       ref={containerRef}
-      className={styles.virtualizedContainer}
+      className="w-full p-4 box-border"
       style={{ height: "100%", overflow: "auto" }}
     >
       <div
@@ -217,11 +226,11 @@ export function AssetGrid({
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className={styles.loadingTrigger}
+                className="flex items-center justify-center p-4"
               >
                 {isLoadingMore && (
-                  <div className={styles.loadingMore}>
-                    <div className={styles.spinner} />
+                  <div className="flex items-center gap-2 text-sm text-text-secondary">
+                    <Loader2 size={16} className="animate-spin" />
                     <span>Loading more...</span>
                   </div>
                 )}
@@ -244,7 +253,15 @@ export function AssetGrid({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <div className={styles.virtualizedRow} data-size={cardSize}>
+              <div
+                className={cn(
+                  "flex gap-4 py-2",
+                  cardSize === "small" && "[&>*]:max-w-[200px]",
+                  cardSize === "medium" && "[&>*]:max-w-[280px]",
+                  cardSize === "large" && "[&>*]:max-w-[380px]",
+                  "[&>*]:flex-1 [&>*]:min-w-0"
+                )}
+              >
                 {row.map((item) => {
                   // Check if it's a folder (has parentId)
                   if ("parentId" in item) {

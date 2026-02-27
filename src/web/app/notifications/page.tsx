@@ -11,7 +11,7 @@ import { notificationsApi, type NotificationType } from "@/web/lib/api";
 import { useUserEvents } from "@/web/hooks/use-realtime";
 import { useAuth } from "@/web/context";
 import { AppLayout } from "@/web/components/layout";
-import { Spinner, Badge, Button } from "@/web/components/ui";
+import { Spinner, Badge } from "@/web/components/ui";
 import {
   NOTIFICATION_ICONS,
   formatRelativeTime,

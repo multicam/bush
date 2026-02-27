@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.102 - Design System Phase 3 Complete)
-**Project status**: Phase 3 (Layout) complete. Next: Phase 4 (CSS Module Migration).
+**Last updated**: 2026-02-27 (v0.0.103 - Design System Phase 4 Started)
+**Project status**: Phase 4 (CSS Module Migration) in progress. 8 small files migrated.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -138,11 +138,13 @@ All implemented features have corresponding spec documentation. No code was foun
 - Delete `app-layout.module.css`
 - **Verify**: Sidebar is thin icon rail that expands on hover. All nav links work.
 
-### [P2] Design System Phase 4: CSS Module Migration [8h] -- NOT STARTED
+### [P2] Design System Phase 4: CSS Module Migration [8h] -- IN PROGRESS
 
-- Convert all 34 CSS modules to Tailwind classes
+- Convert all 33 CSS modules to Tailwind classes
 - Work smallest → largest (8 small, 9 medium, 7 large, 10 extra-large)
 - For each: replace `styles.className` with Tailwind in TSX, delete `.module.css`
+- **Progress**: 8 small files migrated (view-controls, folder-card, asset-browser, metadata-badges, login, asset-grid, asset-card, signup)
+- **Remaining**: 25 files (18 medium, 7 large)
 - **Verify**: Zero `import styles from` lines remain. All pages render correctly.
 
 ### [P2] Design System Phase 5: New Components [6h] -- NOT STARTED
@@ -419,6 +421,40 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.103 (2026-02-27) - Design System Phase 4: CSS Module Migration (Part 1)
+
+Started converting CSS modules to Tailwind CSS classes. Migrated 8 smallest files.
+
+**Components Migrated:**
+- `view-controls.tsx` - View mode (grid/list) and card size (S/M/L) toggles with Lucide icons
+- `folder-card.tsx` - Folder cards with Lucide Folder icon
+- `asset-browser.tsx` - Main browser with toolbar and loading states
+- `metadata-badges.tsx` - Duration/resolution/rating/status badges with Lucide icons
+- `asset-grid.tsx` - Virtualized grid with empty state, infinite scroll
+- `asset-card.tsx` - Asset cards with thumbnails, selection, status badges
+- `login/page.tsx` - Login page with centered card layout
+- `signup/page.tsx` - Signup page with feature list and Lucide icons
+
+**Files Deleted (CSS Modules):**
+- `src/web/components/asset-browser/view-controls.module.css` (54 lines)
+- `src/web/components/asset-browser/folder-card.module.css` (56 lines)
+- `src/web/components/asset-browser/asset-browser.module.css` (63 lines)
+- `src/web/components/asset-browser/metadata-badges.module.css` (78 lines)
+- `src/web/components/asset-browser/asset-grid.module.css` (122 lines)
+- `src/web/components/asset-browser/asset-card.module.css` (125 lines)
+- `src/web/app/login/login.module.css` (88 lines)
+- `src/web/app/signup/signup.module.css` (127 lines)
+
+**Bug Fixes:**
+- Fixed `Button` unused import in `notifications/page.tsx`
+- Fixed `ChevronUp` unused import in `app-layout.tsx`
+- Fixed `Spinner` import in `asset-grid.tsx` - use `Loader2` from lucide-react
+- Added path aliases to `vitest.config.ts` for web component tests
+
+**Remaining Work:**
+- 25 CSS modules remaining (18 medium, 7 large)
+- Total lines remaining: ~8,500 lines
 
 ### v0.0.102 (2026-02-27) - Design System Phase 3: Layout
 
