@@ -36,3 +36,31 @@ export type { BadgeProps, BadgeVariant, BadgeSize } from "./badge.js";
 
 export { Avatar } from "./avatar.js";
 export type { AvatarProps, AvatarSize } from "./avatar.js";
+
+export { KeyboardLegend } from "./keyboard-legend.js";
+export type { KeyboardLegendProps, KeyboardShortcut, ShortcutGroup } from "./keyboard-legend.js";
+
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonAvatar,
+  SkeletonCard,
+  SkeletonAssetCard,
+  SkeletonTableRow,
+  SkeletonComment,
+  SkeletonGrid,
+  SkeletonTable,
+  SkeletonCommentList,
+} from "./skeleton.js";
+export type {
+  SkeletonProps,
+  SkeletonTextProps,
+  SkeletonAvatarProps,
+  SkeletonCardProps,
+  SkeletonAssetCardProps,
+  SkeletonTableRowProps,
+  SkeletonCommentProps,
+  SkeletonGridProps,
+  SkeletonTableProps,
+  SkeletonCommentListProps,
+} from "./skeleton.js";

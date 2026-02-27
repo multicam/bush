@@ -7,3 +7,4 @@
 
 export { Dropzone, type DropzoneProps, type DroppedFile } from "./dropzone";
 export { UploadQueue, type UploadQueueProps, type QueuedFile } from "./upload-queue";
+export { UploadDrawer, type UploadDrawerProps } from "./upload-drawer";

@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.104 - Design System Phase 4 Complete)
-**Project status**: Phase 4 (CSS Module Migration) complete. All CSS modules migrated to Tailwind.
+**Last updated**: 2026-02-27 (v0.0.105 - Design System Phase 5 Complete)
+**Project status**: Phase 5 (New Components) complete. Command Palette, Keyboard Legend, Skeleton loading, and Upload Drawer implemented.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -149,13 +149,14 @@ All implemented features have corresponding spec documentation. No code was foun
 - Zero `import styles from` lines remain
 - **Verify**: `bun run build` succeeds, all pages render correctly
 
-### [P2] Design System Phase 5: New Components [6h] -- NOT STARTED
+### [P2] Design System Phase 5: New Components [6h] -- RESOLVED (v0.0.105)
 
-- Build Command Palette (Cmd+K, 560px, z-900, grouped results)
-- Build Keyboard Legend (? key, modal overlay, kbd badges)
-- Build Skeleton loading states (shimmer animation)
-- Build Upload Drawer (bottom viewport, per-file progress, auto-dismiss)
-- **Verify**: Cmd+K opens palette, ? shows legend, skeletons appear during loading.
+- Built Command Palette (Cmd+K, 560px, z-900, grouped results, recent items, actions)
+- Built Keyboard Legend (? key, modal overlay, kbd badges, grouped by context)
+- Built Skeleton loading components (text, avatar, card, asset card, table, comment, grid)
+- Built Upload Drawer (bottom viewport, per-file progress, auto-dismiss, collapsed state)
+- All components use Tailwind CSS and design tokens
+- **Verify**: `bun run build` succeeds, all tests pass.
 
 ### [P2] Design System Phase 6: Polish + Cleanup [4h] -- NOT STARTED
 
@@ -423,6 +424,66 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.105 (2026-02-27) - Design System Phase 5: New Components
+
+Implemented four new design system components per specs/21-design-components.md.
+
+**Components Added:**
+
+1. **Keyboard Legend** (`src/web/components/ui/keyboard-legend.tsx`)
+   - Triggered by `?` key when no input is focused
+   - Modal overlay listing contextual shortcuts
+   - Grouped by context (Global, Navigation, Asset Grid, Viewer, Comments)
+   - `<kbd>` styled badges per spec
+
+2. **Skeleton Loading** (`src/web/components/ui/skeleton.tsx`)
+   - Base `Skeleton` component with shimmer animation
+   - `SkeletonText` - multi-line text placeholder
+   - `SkeletonAvatar` - avatar placeholder (sm/md/lg/xl sizes)
+   - `SkeletonCard` - card with optional image, title, description
+   - `SkeletonAssetCard` - asset card matching asset-card.tsx layout
+   - `SkeletonTableRow` - table row placeholder
+   - `SkeletonComment` - comment with avatar and text lines
+   - `SkeletonGrid` - grid of asset cards
+   - `SkeletonTable` - table with header and rows
+   - `SkeletonCommentList` - comment list with optional replies
+
+3. **Upload Drawer** (`src/web/components/upload/upload-drawer.tsx`)
+   - Fixed bottom positioning, full width
+   - Auto-shows when uploads start
+   - Auto-dismisses 3s after all uploads complete
+   - Collapsed/expanded states
+   - Per-file progress with pause/resume/cancel
+   - Keyboard shortcut: Cmd+Shift+U to toggle
+
+4. **Command Palette** (`src/web/components/search/command-palette.tsx`)
+   - Triggered by Cmd+K / Ctrl+K
+   - Search across files and commands
+   - Recent items when input is empty (localStorage persisted)
+   - Action commands (Go to Dashboard, Upload Files, New Folder, etc.)
+   - Keyboard navigation (arrow keys, Enter, Escape)
+   - Grouped results with kbd shortcut hints
+
+**Bug Fixes:**
+- Fixed missing React import in `annotation-toolbar.tsx`
+
+**Files Created:**
+- `src/web/components/ui/keyboard-legend.tsx` (280 lines)
+- `src/web/components/ui/skeleton.tsx` (310 lines)
+- `src/web/components/upload/upload-drawer.tsx` (320 lines)
+- `src/web/components/search/command-palette.tsx` (450 lines)
+
+**Files Updated:**
+- `src/web/components/ui/index.ts` - Added exports for new components
+- `src/web/components/upload/index.ts` - Added UploadDrawer export
+- `src/web/components/search/index.ts` - Added CommandPalette export
+- `src/web/styles/theme.css` - Enhanced shimmer animation with gradient
+
+**Verification:**
+- All 87 test files pass (2674 tests)
+- Build succeeds without errors
+- All components use Tailwind CSS and design tokens
 
 ### v0.0.104 (2026-02-27) - Design System Phase 4: CSS Module Migration Complete
 
