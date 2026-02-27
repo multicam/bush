@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.100 - Design System Phase 1 Complete)
-**Project status**: Phase 1 (Theme + Fonts) complete. Next: Phase 2 (UI Primitives).
+**Last updated**: 2026-02-27 (v0.0.101 - Design System Phase 2 Complete)
+**Project status**: Phase 2 (UI Primitives) complete. Next: Phase 3 (Layout).
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -59,7 +59,7 @@
 | Conventions | 14-conventions.md | Coding conventions ✓ |
 | Frontend Testing | 15-frontend-testing.md | NOT STARTED — Playwright + component tests |
 | Design Foundations | 20-design-foundations.md | Phase 0-1 Complete — Tailwind v4, tokens, theme, fonts ✓ |
-| Design Components | 21-design-components.md | NOT STARTED — Component migration, new components |
+| Design Components | 21-design-components.md | PARTIAL — UI primitives done, CSS modules remaining |
 
 ### No Orphaned Code Detected
 
@@ -87,10 +87,11 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-**Backend P2 items resolved.** Design System Phases 0-1 complete. Phases 2-6 and Frontend Testing remain.
+**Backend P2 items resolved.** Design System Phases 0-2 complete. Phases 3-6 and Frontend Testing remain.
 
 ### Previously Completed P2 Items
 
+- ~~Design System Phase 2: UI Primitives~~ — v0.0.101 (Migrated 10 components to Tailwind, Lucide icons, removed ~700 lines old CSS)
 - ~~Design System Phase 1: Theme + Fonts~~ — v0.0.100 (Theme context, dark/light toggle, font loading, anti-FOUC)
 
 - ~~Notifications Never Created From Routes~~ — v0.0.89
@@ -127,15 +128,6 @@ All implemented features have corresponding spec documentation. No code was foun
 - Dark theme is now default with light theme toggle
 - Fonts loaded via next/font/google
 - Anti-FOUC script prevents flash during page load
-
-### [P2] Design System Phase 2: UI Primitives [4h] -- NOT STARTED
-
-- Migrate all 10 components in `src/web/components/ui/` to Tailwind
-- Replace BEM class composition with Tailwind class maps
-- Replace inline SVGs with Lucide React icons
-- Keep same TypeScript interfaces (consuming code unchanged)
-- Components: Button, Input, Select, Badge, Spinner, Avatar, Modal, Toast, Tooltip, Dropdown
-- **Verify**: All pages render correctly with new styling. `bun run typecheck` passes.
 
 ### [P2] Design System Phase 3: Layout [4h] -- NOT STARTED
 
@@ -427,6 +419,42 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.101 (2026-02-27) - Design System Phase 2: UI Primitives
+
+Migrated all 10 UI primitive components to Tailwind CSS and Lucide React icons.
+
+**Components Migrated:**
+- Button - Tailwind classes, size/variant maps, focus ring
+- Input - Tailwind classes, error states, icon support
+- Select - Tailwind classes, ChevronDown icon from Lucide
+- Badge - Tailwind classes, variant color maps
+- Spinner - Lucide Loader2 icon with animate-spin
+- Avatar - Tailwind classes, rounded-md per spec
+- Modal - Tailwind classes, X icon from Lucide, backdrop blur
+- Toast - Tailwind classes, Lucide status icons
+- Tooltip - Tailwind classes, fixed positioning
+- Dropdown - Tailwind classes, ChevronDown/Check icons from Lucide
+
+**Changes:**
+- Installed `lucide-react` package
+- Removed ~700 lines of old BEM-style CSS from globals.css
+- All components use `cn()` utility for class composition
+- TypeScript interfaces unchanged (backward compatible)
+
+**Files:**
+- `src/web/components/ui/button.tsx` - Tailwind + Spinner from ui/spinner
+- `src/web/components/ui/input.tsx` - Tailwind + cn utility
+- `src/web/components/ui/select.tsx` - Tailwind + Lucide ChevronDown
+- `src/web/components/ui/badge.tsx` - Tailwind variant maps
+- `src/web/components/ui/spinner.tsx` - Lucide Loader2 + cn utility
+- `src/web/components/ui/avatar.tsx` - Tailwind size maps
+- `src/web/components/ui/modal.tsx` - Tailwind + Lucide X
+- `src/web/components/ui/toast.tsx` - Tailwind + Lucide icons
+- `src/web/components/ui/tooltip.tsx` - Tailwind + cn utility
+- `src/web/components/ui/dropdown.tsx` - Tailwind + Lucide icons
+- `src/web/app/globals.css` - Removed old component CSS
+- `package.json` - Added lucide-react dependency
 
 ### v0.0.100 (2026-02-27) - Design System Phase 1: Theme + Fonts
 

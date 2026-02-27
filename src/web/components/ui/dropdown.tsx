@@ -2,11 +2,13 @@
  * Bush Platform - Dropdown Component
  *
  * Accessible dropdown menu component with keyboard navigation.
- * Reference: QW3 Component Library Foundation
+ * Reference: specs/21-design-components.md
  */
 "use client";
 
 import { useState, useRef, useEffect, useCallback, createContext, useContext, type ReactNode, type RefObject } from "react";
+import { ChevronDown, Check } from "lucide-react";
+import { cn } from "@/web/lib/utils";
 
 export interface DropdownItem {
   type?: "item";
@@ -65,13 +67,12 @@ export function Dropdown({
   value,
   onChange,
   trigger,
-  triggerClassName = "",
+  triggerClassName,
   align = "left",
   disabled = false,
-  className = "",
+  className,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // Use the value prop directly as the source of truth, defaulting to null
   const selectedValue = value ?? null;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -128,11 +129,9 @@ export function Dropdown({
     menuRef,
   };
 
-  const containerClasses = ["dropdown", className].filter(Boolean).join(" ");
-
   return (
     <DropdownContext.Provider value={contextValue}>
-      <div className={containerClasses}>
+      <div className={cn("relative inline-block", className)}>
         <DropdownTrigger disabled={disabled} className={triggerClassName}>
           {trigger}
         </DropdownTrigger>
@@ -150,43 +149,36 @@ export function Dropdown({
 
 interface DropdownTriggerProps {
   disabled: boolean;
-  className: string;
+  className?: string;
   children: ReactNode;
 }
 
 function DropdownTrigger({ disabled, className, children }: DropdownTriggerProps) {
   const { isOpen, setIsOpen, triggerRef } = useDropdown();
 
-  const triggerClasses = [
-    "dropdown-trigger",
-    className,
-  ].filter(Boolean).join(" ");
-
   return (
     <button
       ref={triggerRef}
       type="button"
-      className={triggerClasses}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 px-3 py-2",
+        "text-body-sm font-medium text-text-primary",
+        "bg-surface-2 border border-border-default rounded-sm",
+        "cursor-pointer transition-colors duration-fast",
+        "hover:bg-surface-3",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        className
+      )}
       disabled={disabled}
       onClick={() => setIsOpen(!isOpen)}
       aria-haspopup="listbox"
       aria-expanded={isOpen}
     >
       {children}
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        style={{
-          transition: "transform 0.15s ease",
-          transform: `rotate(${isOpen ? 180 : 0}deg)`,
-        }}
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+      <ChevronDown
+        className="size-4 transition-transform duration-fast"
+        style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+      />
     </button>
   );
 }
@@ -239,19 +231,20 @@ function DropdownMenu({
     }
   };
 
-  const menuClasses = [
-    "dropdown-menu",
-    `dropdown-menu--${align}`,
-  ].filter(Boolean).join(" ");
-
   return (
     <div
       ref={menuRef}
-      className={menuClasses}
+      className={cn(
+        "absolute top-full mt-1 min-w-40",
+        "bg-surface-1 border border-border-default rounded-md",
+        "shadow-lg z-dropdown",
+        "animate-fade-in",
+        align === "left" ? "left-0" : "right-0"
+      )}
       role="listbox"
       onKeyDown={handleKeyDown}
     >
-      <ul style={{ listStyle: "none", margin: 0, padding: "0.25rem" }}>
+      <ul className="list-none m-0 p-1">
         {options.map((option, index) => {
           if (option.type === "separator") {
             return <DropdownMenuSeparator key={`sep-${index}`} />;
@@ -278,43 +271,36 @@ function DropdownMenuItem({ option, isFocused }: DropdownMenuItemProps) {
   const { selectedValue, onSelect } = useDropdown();
   const isSelected = selectedValue === option.value;
 
-  const itemClasses = [
-    "dropdown-item",
-    isFocused ? "dropdown-item--focused" : "",
-    isSelected ? "dropdown-item--selected" : "",
-  ].filter(Boolean).join(" ");
-
   return (
     <li>
       <button
         type="button"
-        className={itemClasses}
+        className={cn(
+          "flex items-center gap-2 w-full px-3 py-2",
+          "text-body-sm text-text-primary",
+          "bg-transparent border-none rounded-sm cursor-pointer",
+          "transition-colors duration-fast",
+          "text-left",
+          "hover:bg-surface-2",
+          isFocused && "bg-surface-2",
+          isSelected && "font-medium",
+          "disabled:opacity-60 disabled:cursor-not-allowed"
+        )}
         disabled={option.disabled}
         onClick={() => !option.disabled && onSelect(option.value)}
         role="option"
         aria-selected={isSelected}
       >
-        {option.icon && <span style={{ flexShrink: 0 }}>{option.icon}</span>}
-        <span style={{ flex: 1, textAlign: "left" }}>{option.label}</span>
-        {isSelected && (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
+        {option.icon && <span className="shrink-0">{option.icon}</span>}
+        <span className="flex-1 text-left">{option.label}</span>
+        {isSelected && <Check className="size-4" />}
       </button>
     </li>
   );
 }
 
 function DropdownMenuSeparator() {
-  return <li className="dropdown-separator" role="separator" />;
+  return <li className="my-1 border-t border-border-default" role="separator" />;
 }
 
 export default Dropdown;

@@ -2,12 +2,13 @@
  * Bush Platform - Tooltip Component
  *
  * Accessible tooltip component with positioning.
- * Reference: QW3 Component Library Foundation
+ * Reference: specs/21-design-components.md
  */
 "use client";
 
 import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type FocusEvent } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "@/web/lib/utils";
 
 export type TooltipPosition = "top" | "right" | "bottom" | "left";
 
@@ -31,8 +32,8 @@ export interface TooltipProps {
 export function Tooltip({
   content,
   position = "top",
-  showDelay = 300,
-  hideDelay = 100,
+  showDelay = 500,
+  hideDelay = 0,
   disabled = false,
   portalContainer,
   children,
@@ -186,7 +187,7 @@ export function Tooltip({
         onFocus={handleFocus}
         onBlur={handleBlur}
         aria-describedby={isVisible ? "tooltip" : undefined}
-        style={{ display: "inline-flex" }}
+        className="inline-flex"
       >
         {children}
       </span>
@@ -196,7 +197,12 @@ export function Tooltip({
           <div
             ref={tooltipRef}
             id="tooltip"
-            className="tooltip"
+            className={cn(
+              "fixed px-3 py-2 text-caption font-medium text-text-primary",
+              "bg-surface-3 rounded-xs shadow-md",
+              "max-w-64 z-tooltip pointer-events-none",
+              "animate-fade-in"
+            )}
             role="tooltip"
             style={{
               left: coords.x,
@@ -205,7 +211,7 @@ export function Tooltip({
           >
             {content}
             <div
-              className="tooltip-arrow"
+              className="absolute size-2 bg-surface-3 rotate-45"
               style={{
                 left: arrowCoords.x,
                 top: arrowCoords.y,

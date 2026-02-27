@@ -2,8 +2,10 @@
  * Bush Platform - Avatar Component
  *
  * User avatar with fallback to initials.
- * Reference: QW3 Component Library Foundation
+ * Reference: specs/21-design-components.md
  */
+
+import { cn } from "@/web/lib/utils";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl";
 
@@ -20,24 +22,29 @@ export interface AvatarProps {
   className?: string;
 }
 
+const sizeClasses: Record<AvatarSize, string> = {
+  sm: "size-7 text-[12px]", // 28px
+  md: "size-9 text-[14px]", // 36px
+  lg: "size-11 text-[16px]", // 44px
+  xl: "size-14 text-[20px]", // 56px
+};
+
 export function Avatar({
   src,
   alt,
   name,
   size = "md",
-  className = "",
+  className,
 }: AvatarProps) {
   const initials = getInitials(name);
 
-  const classes = [
-    "avatar",
-    `avatar--${size}`,
-    className,
-  ].filter(Boolean).join(" ");
-
   return (
     <div
-      className={classes}
+      className={cn(
+        "flex items-center justify-center rounded-md bg-surface-2 text-text-secondary font-medium overflow-hidden shrink-0",
+        sizeClasses[size],
+        className
+      )}
       role={alt ? "img" : undefined}
       aria-label={alt}
     >
@@ -45,7 +52,7 @@ export function Avatar({
         <img
           src={src}
           alt={alt || ""}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          className="w-full h-full object-cover"
         />
       ) : (
         <span aria-hidden="true">{initials}</span>

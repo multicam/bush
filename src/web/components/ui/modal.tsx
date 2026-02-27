@@ -2,12 +2,14 @@
  * Bush Platform - Modal Component
  *
  * Accessible modal dialog component with focus trap and escape key support.
- * Reference: QW3 Component Library Foundation
+ * Reference: specs/21-design-components.md
  */
 "use client";
 
 import React, { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { cn } from "@/web/lib/utils";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -38,6 +40,14 @@ export interface ModalProps {
   footer?: React.ReactNode;
 }
 
+const sizeClasses: Record<ModalSize, string> = {
+  sm: "max-w-md", // 400px
+  md: "max-w-[520px]",
+  lg: "max-w-[680px]",
+  xl: "max-w-[860px]",
+  full: "max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]",
+};
+
 /**
  * Get all focusable elements within a container
  */
@@ -58,7 +68,7 @@ export function Modal({
   closeOnOverlayClick = true,
   closeOnEscape = true,
   portalContainer,
-  className = "",
+  className,
   children,
   footer,
 }: ModalProps) {
@@ -138,15 +148,14 @@ export function Modal({
 
   if (!open) return null;
 
-  const modalClasses = [
-    "modal",
-    `modal--${size}`,
-    className,
-  ].filter(Boolean).join(" ");
-
   const modalContent = (
     <div
-      className="modal-overlay"
+      className={cn(
+        "fixed inset-0 z-modal",
+        "bg-surface-0/60 backdrop-blur-sm",
+        "flex items-center justify-center p-4",
+        "animate-fade-in"
+      )}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -155,36 +164,38 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={modalClasses}
+        className={cn(
+          "bg-surface-1 rounded-lg shadow-xl",
+          "w-full max-h-[calc(100vh-2rem)]",
+          "flex flex-col",
+          "animate-modal-in",
+          sizeClasses[size],
+          className
+        )}
         tabIndex={-1}
       >
         {(title || showCloseButton) && (
-          <header className="modal-header">
+          <header className="flex items-center justify-between px-6 py-4 border-b border-border-default">
             {title && (
-              <h2 id="modal-title" className="modal-title">
+              <h2 id="modal-title" className="text-lg font-semibold text-text-primary m-0">
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button
                 type="button"
-                className="modal-close"
+                className={cn(
+                  "flex items-center justify-center",
+                  "size-8 p-0",
+                  "bg-transparent border-none rounded-sm",
+                  "text-text-secondary cursor-pointer",
+                  "transition-colors duration-fast",
+                  "hover:bg-surface-2 hover:text-text-primary"
+                )}
                 onClick={onClose}
                 aria-label="Close modal"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X className="size-5" />
               </button>
             )}
           </header>
@@ -194,8 +205,12 @@ export function Modal({
             {description}
           </p>
         )}
-        <div className="modal-body">{children}</div>
-        {footer && <footer className="modal-footer">{footer}</footer>}
+        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+        {footer && (
+          <footer className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-default">
+            {footer}
+          </footer>
+        )}
       </div>
     </div>
   );
