@@ -5,15 +5,19 @@
  * Supported providers:
  * - console: Logs emails to console (development)
  * - smtp: Generic SMTP (production-ready)
- * - sendgrid: SendGrid API (TODO)
- * - ses: AWS SES (TODO)
- * - postmark: Postmark API (TODO)
- * - resend: Resend API (TODO)
+ * - sendgrid: SendGrid API
+ * - ses: AWS SES API
+ * - postmark: Postmark API
+ * - resend: Resend API
  */
 import { config } from "../../config/env";
 import { EmailService } from "../email";
 import { ConsoleEmailProvider, createConsoleProvider } from "./console";
 import { SmtpEmailProvider, createSmtpProvider } from "./smtp";
+import { ResendEmailProvider, createResendProvider } from "./resend";
+import { SendGridEmailProvider, createSendGridProvider } from "./sendgrid";
+import { SesEmailProvider, createSesProvider } from "./ses";
+import { PostmarkEmailProvider, createPostmarkProvider } from "./postmark";
 
 // Re-export types and classes
 export type {
@@ -31,6 +35,14 @@ export { EmailService } from "../email";
 export { ConsoleEmailProvider, createConsoleProvider };
 export { SmtpEmailProvider, createSmtpProvider };
 export type { SmtpConfig } from "./smtp";
+export { ResendEmailProvider, createResendProvider };
+export type { ResendConfig } from "./resend";
+export { SendGridEmailProvider, createSendGridProvider };
+export type { SendGridConfig } from "./sendgrid";
+export { SesEmailProvider, createSesProvider };
+export type { SesConfig } from "./ses";
+export { PostmarkEmailProvider, createPostmarkProvider };
+export type { PostmarkConfig } from "./postmark";
 
 /**
  * Supported email provider types
@@ -43,15 +55,13 @@ export type EmailProviderType = "console" | "sendgrid" | "ses" | "postmark" | "r
 export interface EmailConfig {
   provider: EmailProviderType;
   from: string;
-  // Provider-specific options would be added here
-  // e.g., apiKey for SendGrid, region for SES, etc.
 }
 
 /**
  * Create an email service with the configured provider
  *
  * Provider is determined by EMAIL_PROVIDER environment variable.
- * Falls back to console provider if provider is not implemented.
+ * Falls back to SMTP provider if provider is not configured.
  */
 export function createEmailService(
   providerType?: EmailProviderType
@@ -69,36 +79,48 @@ export function createEmailService(
       emailProvider = createSmtpProvider();
       break;
 
+    case "resend":
+      if (!config.RESEND_API_KEY) {
+        console.warn(
+          "RESEND_API_KEY not configured. Falling back to SMTP provider."
+        );
+        emailProvider = createSmtpProvider();
+      } else {
+        emailProvider = createResendProvider();
+      }
+      break;
+
     case "sendgrid":
-      // TODO: Implement SendGrid provider
-      console.warn(
-        "SendGrid email provider not yet implemented. Falling back to SMTP provider."
-      );
-      emailProvider = createSmtpProvider();
+      if (!config.SENDGRID_API_KEY) {
+        console.warn(
+          "SENDGRID_API_KEY not configured. Falling back to SMTP provider."
+        );
+        emailProvider = createSmtpProvider();
+      } else {
+        emailProvider = createSendGridProvider();
+      }
       break;
 
     case "ses":
-      // TODO: Implement AWS SES provider
-      console.warn(
-        "AWS SES email provider not yet implemented. Falling back to SMTP provider."
-      );
-      emailProvider = createSmtpProvider();
+      if (!config.AWS_SES_ACCESS_KEY || !config.AWS_SES_SECRET_KEY) {
+        console.warn(
+          "AWS_SES_ACCESS_KEY or AWS_SES_SECRET_KEY not configured. Falling back to SMTP provider."
+        );
+        emailProvider = createSmtpProvider();
+      } else {
+        emailProvider = createSesProvider();
+      }
       break;
 
     case "postmark":
-      // TODO: Implement Postmark provider
-      console.warn(
-        "Postmark email provider not yet implemented. Falling back to SMTP provider."
-      );
-      emailProvider = createSmtpProvider();
-      break;
-
-    case "resend":
-      // TODO: Implement Resend provider
-      console.warn(
-        "Resend email provider not yet implemented. Falling back to SMTP provider."
-      );
-      emailProvider = createSmtpProvider();
+      if (!config.POSTMARK_SERVER_TOKEN) {
+        console.warn(
+          "POSTMARK_SERVER_TOKEN not configured. Falling back to SMTP provider."
+        );
+        emailProvider = createSmtpProvider();
+      } else {
+        emailProvider = createPostmarkProvider();
+      }
       break;
 
     default:

@@ -582,13 +582,13 @@ describe("Email Service", () => {
       expect(service.providerName).toBe("smtp");
     });
 
-    it("should fallback to smtp for unimplemented providers", () => {
+    it("should fallback to smtp when provider API key not configured", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       const service = createEmailService("sendgrid");
       expect(service.providerName).toBe("smtp");
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("SendGrid")
+        expect.stringContaining("SENDGRID_API_KEY not configured")
       );
 
       warnSpy.mockRestore();

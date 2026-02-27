@@ -72,8 +72,10 @@ interface EmailTemplateContent {
  *
  * Simple template rendering using string interpolation.
  * For production, consider using a proper template engine like Handlebars or EJS.
+ *
+ * Exported for use by other email providers that render templates locally.
  */
-function renderTemplate(template: EmailTemplate, data: Record<string, unknown>): EmailTemplateContent {
+export function renderTemplate(template: EmailTemplate, data: Record<string, unknown>): EmailTemplateContent {
   switch (template) {
     case "member-invitation": {
       const d = data as {

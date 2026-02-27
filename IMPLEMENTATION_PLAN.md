@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.97 - PDF Text Layer)
+**Last updated**: 2026-02-27 (v0.0.98 - Email Provider APIs)
 **Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2 items resolved.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -21,7 +21,7 @@
 | **Media Processors** | 7 | metadata, thumbnail, proxy, waveform, filmstrip, frame-capture, hls |
 | **Email Templates** | 10 | All implemented via SMTP provider |
 | **WebSocket Events** | 26 | 26 distinct event types (all wired via emit helpers) |
-| **TODO Comments** | 8 | 8 informational (email provider stubs) |
+| **TODO Comments** | 0 | All email provider stubs resolved |
 
 ---
 
@@ -33,8 +33,8 @@
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **TODO Comments** | 8 | 8 email provider stubs (P3) |
-| **Placeholder Implementations** | 4 | SendGrid, SES, Postmark, Resend → fallback to SMTP |
+| **TODO Comments** | 0 | All email provider stubs resolved |
+| **Placeholder Implementations** | 0 | All email providers now have native API implementations |
 | **Skipped Tests** | 2 | permissions-integration (conditional), VTT round-trip (bug) |
 | **Dead Code Paths** | 0 | — |
 | **Missing Endpoints** | 1 | /docs referenced but returns 404 (P3) |
@@ -128,9 +128,18 @@ All implemented features have corresponding spec documentation. No code was foun
 - All validation tests (24) pass
 - Remaining routes still use manual validation (can be migrated incrementally)
 
-### [P3] Email Provider Stubs [4h] -- NOT STARTED
+### [P3] Email Provider Stubs [4h] -- RESOLVED (v0.0.98)
 
-- SendGrid, SES, Postmark, Resend fall back to SMTP with `console.warn` (`src/lib/email/index.ts:72-108`). SMTP works; native API integrations deferred. (CONFIRMED - 8 TODO comments for email provider stubs)
+- Implemented native API integrations for SendGrid, AWS SES, Postmark, and Resend email providers
+- Created `src/lib/email/resend.ts` - Resend API provider
+- Created `src/lib/email/sendgrid.ts` - SendGrid API provider
+- Created `src/lib/email/ses.ts` - AWS SES API provider with AWS Signature Version 4 signing
+- Created `src/lib/email/postmark.ts` - Postmark API provider
+- Updated `src/lib/email/index.ts` factory to use new providers when API keys are configured
+- Added environment variables: `RESEND_API_KEY`, `SENDGRID_API_KEY`, `AWS_SES_ACCESS_KEY`, `AWS_SES_SECRET_KEY`, `AWS_SES_REGION`, `POSTMARK_SERVER_TOKEN`
+- All providers share template rendering via exported `renderTemplate()` from smtp.ts
+- Providers fall back to SMTP if API keys are not configured (graceful degradation)
+- Added 33 new tests for the provider implementations
 
 ### [P3] Auth Context Swallows Errors [30m] -- RESOLVED (v0.0.90)
 
@@ -327,7 +336,7 @@ Per specs/README.md:
 | **File Storage** | DONE | S3-compatible with CDN support |
 | **Media Processing** | DONE | 7 processors (metadata, thumbnail, proxy, filmstrip, waveform, frame-capture, hls) |
 | **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
-| **Email** | DONE | SMTP provider with 10 templates (API providers fall back to SMTP) |
+| **Email** | DONE | SMTP + Resend/SendGrid/SES/Postmark providers with 10 templates |
 | **Transcription** | DONE | Deepgram + faster-whisper work; AssemblyAI removed from config enum |
 | **Security** | DONE | Session limits, permissions, and CORS configuration complete |
 | **Webhooks** | DONE | Registration and delivery now wired |
@@ -340,6 +349,41 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.98 (2026-02-27) - Email Provider API Implementations
+
+Implemented native API integrations for all email providers that were previously stubs. Each provider now makes real API calls instead of falling back to SMTP.
+
+**Features:**
+- **Resend Provider** - Preferred for new deployments, simple API with Bearer token auth
+- **SendGrid Provider** - Established provider with comprehensive error handling
+- **AWS SES Provider** - AWS-native with Signature Version 4 signing
+- **Postmark Provider** - Strong deliverability focus
+
+**Files:**
+- `src/lib/email/resend.ts` - Resend API provider
+- `src/lib/email/sendgrid.ts` - SendGrid API provider
+- `src/lib/email/ses.ts` - AWS SES API provider with AWS SigV4
+- `src/lib/email/postmark.ts` - Postmark API provider
+- `src/lib/email/index.ts` - Updated factory to use new providers
+- `src/lib/email/smtp.ts` - Exported `renderTemplate()` for sharing
+- `src/config/env.ts` - Added email provider API key configs
+- `src/lib/email/resend.test.ts` - 8 tests
+- `src/lib/email/sendgrid.test.ts` - 8 tests
+- `src/lib/email/ses.test.ts` - 9 tests
+- `src/lib/email/postmark.test.ts` - 8 tests
+
+**Configuration:**
+- `RESEND_API_KEY` - Resend API key
+- `SENDGRID_API_KEY` - SendGrid API key
+- `AWS_SES_ACCESS_KEY` - AWS SES access key
+- `AWS_SES_SECRET_KEY` - AWS SES secret key
+- `AWS_SES_REGION` - AWS region (default: us-east-1)
+- `POSTMARK_SERVER_TOKEN` - Postmark server token
+
+**Graceful degradation:**
+- All providers fall back to SMTP if API keys are not configured
+- Warning logged when falling back
 
 ### v0.0.97 (2026-02-27) - PDF Text Layer Fix
 

@@ -24,6 +24,11 @@ export const SECRET_KEYS = [
   "SESSION_SECRET",
   "DEEPGRAM_API_KEY",
   "ASSEMBLYAI_API_KEY",
+  "RESEND_API_KEY",
+  "SENDGRID_API_KEY",
+  "AWS_SES_ACCESS_KEY",
+  "AWS_SES_SECRET_KEY",
+  "POSTMARK_SERVER_TOKEN",
 ] as const;
 
 /**
@@ -107,6 +112,13 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional().default(""),
   SMTP_FROM: z.string().email().default("noreply@bush.local"),
   SMTP_SECURE: z.coerce.boolean().default(false),
+  // Email provider API keys
+  RESEND_API_KEY: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  AWS_SES_ACCESS_KEY: z.string().optional(),
+  AWS_SES_SECRET_KEY: z.string().optional(),
+  AWS_SES_REGION: z.string().default("us-east-1"),
+  POSTMARK_SERVER_TOKEN: z.string().optional(),
 
   // Session
   SESSION_SECRET: z.string().min(32),
@@ -235,6 +247,12 @@ function loadConfig(): Env {
       SMTP_PASS: "",
       SMTP_FROM: "noreply@bush.local",
       SMTP_SECURE: false,
+      RESEND_API_KEY: "",
+      SENDGRID_API_KEY: "",
+      AWS_SES_ACCESS_KEY: "",
+      AWS_SES_SECRET_KEY: "",
+      AWS_SES_REGION: "us-east-1",
+      POSTMARK_SERVER_TOKEN: "",
     } as Env;
   }
 

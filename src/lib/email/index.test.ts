@@ -1,256 +1,116 @@
 /**
  * Tests for Email Service Factory
+ *
+ * Note: These tests verify the factory function without mocking providers.
+ * Individual provider tests are in their respective test files.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { EmailService } from "../email";
-
-// Mock the console provider
-const mockConsoleProvider = {
-  name: "console",
-  send: vi.fn().mockResolvedValue({ success: true, messageId: "test-id" }),
-  sendTemplate: vi.fn().mockResolvedValue({ success: true, messageId: "test-id" }),
-};
-
-// Mock the smtp provider
-const mockSmtpProvider = {
-  name: "smtp",
-  send: vi.fn().mockResolvedValue({ success: true, messageId: "smtp-test-id" }),
-  sendTemplate: vi.fn().mockResolvedValue({ success: true, messageId: "smtp-test-id" }),
-  close: vi.fn(),
-};
-
-vi.mock("./console.js", () => ({
-  ConsoleEmailProvider: vi.fn(() => mockConsoleProvider),
-  createConsoleProvider: vi.fn(() => mockConsoleProvider),
-}));
-
-vi.mock("./smtp.js", () => ({
-  SmtpEmailProvider: vi.fn(() => mockSmtpProvider),
-  createSmtpProvider: vi.fn(() => mockSmtpProvider),
-}));
-
-// Mock the EmailService constructor
-vi.mock("../email", () => ({
-  EmailService: vi.fn((provider) => ({ provider, send: vi.fn() })),
-}));
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  createEmailService,
+  getEmailService,
+  resetEmailService,
+  setEmailService,
+  ConsoleEmailProvider,
+  SmtpEmailProvider,
+  ResendEmailProvider,
+  SendGridEmailProvider,
+  SesEmailProvider,
+  PostmarkEmailProvider,
+  createConsoleProvider,
+  createSmtpProvider,
+} from "./index";
 
 describe("Email Service Factory", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetEmailService();
+  });
+
+  describe("exports", () => {
+    it("exports ConsoleEmailProvider", () => {
+      expect(ConsoleEmailProvider).toBeDefined();
+    });
+
+    it("exports SmtpEmailProvider", () => {
+      expect(SmtpEmailProvider).toBeDefined();
+    });
+
+    it("exports ResendEmailProvider", () => {
+      expect(ResendEmailProvider).toBeDefined();
+    });
+
+    it("exports SendGridEmailProvider", () => {
+      expect(SendGridEmailProvider).toBeDefined();
+    });
+
+    it("exports SesEmailProvider", () => {
+      expect(SesEmailProvider).toBeDefined();
+    });
+
+    it("exports PostmarkEmailProvider", () => {
+      expect(PostmarkEmailProvider).toBeDefined();
+    });
+
+    it("exports createConsoleProvider", () => {
+      expect(createConsoleProvider).toBeDefined();
+    });
+
+    it("exports createSmtpProvider", () => {
+      expect(createSmtpProvider).toBeDefined();
+    });
   });
 
   describe("createEmailService", () => {
-    it("creates email service with console provider", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
-
-      createEmailService("console");
-
-      expect(createConsoleProvider).toHaveBeenCalled();
-      expect(EmailService).toHaveBeenCalledWith(mockConsoleProvider);
+    it("creates email service with console provider", () => {
+      const service = createEmailService("console");
+      expect(service).toBeDefined();
+      expect(service.providerName).toBe("console");
     });
 
-    it("creates email service with smtp provider", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      createEmailService("smtp");
-
-      expect(createSmtpProvider).toHaveBeenCalled();
-      expect(EmailService).toHaveBeenCalledWith(mockSmtpProvider);
-    });
-
-    it("falls back to smtp for sendgrid (not implemented)", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("sendgrid");
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "SendGrid email provider not yet implemented. Falling back to SMTP provider."
-      );
-      expect(createSmtpProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("falls back to smtp for ses (not implemented)", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("ses");
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "AWS SES email provider not yet implemented. Falling back to SMTP provider."
-      );
-      expect(createSmtpProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("falls back to smtp for postmark (not implemented)", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("postmark");
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Postmark email provider not yet implemented. Falling back to SMTP provider."
-      );
-      expect(createSmtpProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("falls back to smtp for resend (not implemented)", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("resend");
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Resend email provider not yet implemented. Falling back to SMTP provider."
-      );
-      expect(createSmtpProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("falls back to smtp for unknown provider", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createSmtpProvider } = await import("./smtp.js");
-
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      createEmailService("unknown" as any);
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Unknown email provider 'unknown'. Falling back to SMTP provider."
-      );
-      expect(createSmtpProvider).toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it("defaults to provider from config (console in test env)", async () => {
-      vi.resetModules();
-      const { createEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
-
-      // In test environment, config.EMAIL_PROVIDER returns "console"
-      createEmailService();
-
-      expect(createConsoleProvider).toHaveBeenCalled();
+    it("creates email service with smtp provider", () => {
+      // SMTP provider requires config, so this should work in test env
+      // which has defaults
+      const service = createEmailService("smtp");
+      expect(service).toBeDefined();
+      expect(service.providerName).toBe("smtp");
     });
   });
 
   describe("getEmailService", () => {
-    it("creates singleton on first call", async () => {
-      vi.resetModules();
-      const { getEmailService } = await import("./index.js");
-      const { createConsoleProvider } = await import("./console.js");
-
-      getEmailService();
-
-      expect(createConsoleProvider).toHaveBeenCalled();
+    it("creates singleton on first call", () => {
+      const service = getEmailService();
+      expect(service).toBeDefined();
     });
 
-    it("returns same instance on subsequent calls", async () => {
-      vi.resetModules();
-
-      const { getEmailService } = await import("./index.js");
-
+    it("returns same instance on subsequent calls", () => {
       const service1 = getEmailService();
       const service2 = getEmailService();
-
       expect(service1).toBe(service2);
     });
   });
 
   describe("resetEmailService", () => {
-    it("resets the singleton", async () => {
-      vi.resetModules();
-
-      const { getEmailService, resetEmailService } = await import("./index.js");
-
+    it("resets the singleton", () => {
       const service1 = getEmailService();
       resetEmailService();
       const service2 = getEmailService();
-
-      // After reset, a new service should be created
-      // Since EmailService is mocked, we can't directly compare,
-      // but we can verify resetEmailService sets the singleton to null
       expect(service1).toBeDefined();
       expect(service2).toBeDefined();
+      expect(service1).not.toBe(service2);
     });
   });
 
   describe("setEmailService", () => {
-    it("sets a custom email service", async () => {
-      vi.resetModules();
-
-      const { getEmailService, setEmailService } = await import("./index.js");
-
-      const customService = { provider: "custom", send: vi.fn() } as unknown as EmailService;
+    it("sets a custom email service", () => {
+      const customService = {
+        provider: { name: "custom" },
+        providerName: "custom",
+        send: async () => ({ success: true }),
+        sendTemplate: async () => ({ success: true }),
+        from: { email: "test@example.com" },
+      } as any;
       setEmailService(customService);
-
       const service = getEmailService();
-
       expect(service).toBe(customService);
-    });
-  });
-
-  describe("exports", () => {
-    it("exports EmailService", async () => {
-      vi.resetModules();
-      const { EmailService } = await import("./index.js");
-      expect(EmailService).toBeDefined();
-    });
-
-    it("exports ConsoleEmailProvider", async () => {
-      vi.resetModules();
-      const { ConsoleEmailProvider } = await import("./index.js");
-      expect(ConsoleEmailProvider).toBeDefined();
-    });
-
-    it("exports createConsoleProvider", async () => {
-      vi.resetModules();
-      const { createConsoleProvider } = await import("./index.js");
-      expect(createConsoleProvider).toBeDefined();
-    });
-
-    it("exports SmtpEmailProvider", async () => {
-      vi.resetModules();
-      const { SmtpEmailProvider } = await import("./index.js");
-      expect(SmtpEmailProvider).toBeDefined();
-    });
-
-    it("exports createSmtpProvider", async () => {
-      vi.resetModules();
-      const { createSmtpProvider } = await import("./index.js");
-      expect(createSmtpProvider).toBeDefined();
-    });
-
-    it("exports types", async () => {
-      vi.resetModules();
-      // Type exports are compile-time only, but we can verify the module loads
-      const emailModule = await import("./index.js");
-      expect(emailModule).toBeDefined();
     });
   });
 });
