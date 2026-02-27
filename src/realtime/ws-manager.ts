@@ -98,19 +98,13 @@ type ChannelKey = `${ChannelType}:${string}`;
 // ============================================================================
 
 /**
- * Maximum subscriptions per connection
+ * Get configurable rate limits from environment
+ * Reference: specs/05-realtime.md Section 10.3
  */
-const MAX_SUBSCRIPTIONS = 50;
-
-/**
- * Rate limit: max messages per minute
- */
-const RATE_LIMIT_MESSAGES = 100;
-
-/**
- * Rate limit window in milliseconds
- */
-const RATE_LIMIT_WINDOW = 60 * 1000;
+const getMaxSubscriptions = () => config.WS_MAX_SUBSCRIPTIONS;
+const getRateLimitMessages = () => config.WS_RATE_LIMIT_MESSAGES;
+const getRateLimitWindow = () => config.WS_RATE_LIMIT_WINDOW_MS;
+const getMaxConnectionsPerUser = () => config.WS_MAX_CONNECTIONS_PER_USER;
 
 /**
  * WebSocket connection manager
@@ -388,7 +382,7 @@ class WebSocketManager {
     const channelKey: ChannelKey = `${channel}:${resourceId}`;
 
     // Check subscription limit
-    if (data.subscriptions.size >= MAX_SUBSCRIPTIONS && !data.subscriptions.has(channelKey)) {
+    if (data.subscriptions.size >= getMaxSubscriptions() && !data.subscriptions.has(channelKey)) {
       this.send(ws, {
         type: "subscription.rejected",
         channel,
@@ -507,13 +501,13 @@ class WebSocketManager {
    */
   private checkRateLimit(data: WebSocketData): boolean {
     const now = Date.now();
-    const windowStart = now - RATE_LIMIT_WINDOW;
+    const windowStart = now - getRateLimitWindow();
 
     // Filter out old timestamps
     data.messageTimestamps = data.messageTimestamps.filter((ts) => ts > windowStart);
 
     // Check limit
-    if (data.messageTimestamps.length >= RATE_LIMIT_MESSAGES) {
+    if (data.messageTimestamps.length >= getRateLimitMessages()) {
       return false;
     }
 

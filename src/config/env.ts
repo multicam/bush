@@ -140,6 +140,12 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
   TRUST_PROXY: z.coerce.boolean().default(false),
 
+  // WebSocket Rate Limiting
+  WS_MAX_SUBSCRIPTIONS: z.coerce.number().int().positive().default(50),
+  WS_RATE_LIMIT_MESSAGES: z.coerce.number().int().positive().default(100),
+  WS_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+  WS_MAX_CONNECTIONS_PER_USER: z.coerce.number().int().positive().default(10),
+
   // Upload
   UPLOAD_MAX_FILE_SIZE: z.coerce.number().int().positive().default(10737418240),
   UPLOAD_PRESIGNED_URL_EXPIRY: z.coerce.number().int().positive().default(3600),
@@ -240,6 +246,10 @@ function loadConfig(): Env {
       RATE_LIMIT_WINDOW_MS: 60000,
       RATE_LIMIT_MAX_REQUESTS: 100,
       TRUST_PROXY: false,
+      WS_MAX_SUBSCRIPTIONS: 50,
+      WS_RATE_LIMIT_MESSAGES: 100,
+      WS_RATE_LIMIT_WINDOW_MS: 60000,
+      WS_MAX_CONNECTIONS_PER_USER: 10,
       UPLOAD_MAX_FILE_SIZE: 5368709120,
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,

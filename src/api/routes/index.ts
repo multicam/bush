@@ -26,4 +26,4 @@ export {
   getVersionStackComments,
   createVersionStackComment,
 } from "./comments.js";
-export { getShareBySlug } from "./shares.js";
+export { getShareBySlug, listProjectShares } from "./shares.js";

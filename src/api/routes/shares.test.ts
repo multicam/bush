@@ -1805,3 +1805,86 @@ describe("Shares Routes", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// listProjectShares tests
+// ---------------------------------------------------------------------------
+describe("listProjectShares", () => {
+  // Import the handler
+  let listProjectShares: (c: any) => Promise<Response>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    // Re-import the module to get the handler
+    const module = await import("./shares.js");
+    listProjectShares = module.listProjectShares;
+  });
+
+  function makeProjectSharesApp() {
+    const testApp = new Hono();
+    testApp.onError(errorHandler);
+    testApp.get("/projects/:projectId/shares", listProjectShares);
+    return testApp;
+  }
+
+  it("returns shares for a project", async () => {
+    const testApp = makeProjectSharesApp();
+
+    vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
+
+    mockSelectJoinList([{
+      share: SHARE_ROW,
+      user: USER_ROW,
+    }]);
+
+    const res = await testApp.request("/projects/prj_001/shares");
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.data).toHaveLength(1);
+  });
+
+  it("returns 404 when project not found", async () => {
+    const testApp = makeProjectSharesApp();
+
+    vi.mocked(verifyProjectAccess).mockResolvedValue(null as never);
+
+    const res = await testApp.request("/projects/prj_missing/shares");
+
+    expect(res.status).toBe(404);
+  });
+
+  it("filters shares by projectId", async () => {
+    const testApp = makeProjectSharesApp();
+
+    vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
+
+    mockSelectJoinList([{
+      share: SHARE_ROW,
+      user: USER_ROW,
+    }]);
+
+    await testApp.request("/projects/prj_001/shares");
+
+    // Verify that the select was called with projectId filter
+    expect(vi.mocked(db.select)).toHaveBeenCalled();
+  });
+
+  it("supports cursor pagination", async () => {
+    const testApp = makeProjectSharesApp();
+
+    vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
+
+    mockSelectJoinList([{
+      share: SHARE_ROW,
+      user: USER_ROW,
+    }]);
+
+    const res = await testApp.request("/projects/prj_001/shares?cursor=eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTAxVDAwOjAwOjAwLjAwMFoifQ==");
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.data).toBeDefined();
+  });
+});

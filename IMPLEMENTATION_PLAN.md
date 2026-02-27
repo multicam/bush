@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.07 - CloudFront/Fastly CDN Providers)
+**Last updated**: 2026-02-27 (v0.1.08 - WebSocket Config & Project Shares)
 **Project status**: All P2 items resolved. All spec references verified and corrected.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -12,7 +12,7 @@
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| **API Endpoints** | 122 | 20 route modules: files(15), projects(9), shares(10), version-stacks(10), accounts(7), workspaces(7), folders(8), comments(9), bulk(7), collections(7), webhooks(6), notifications(6), transcription(7), auth(4), custom-fields(5), metadata(3), users(3), search(2), captions(3), docs(1) |
+| **API Endpoints** | 123 | 20 route modules: files(15), projects(9), shares(11), version-stacks(10), accounts(7), workspaces(7), folders(8), comments(9), bulk(7), collections(7), webhooks(6), notifications(6), transcription(7), auth(4), custom-fields(5), metadata(3), users(3), search(2), captions(3), docs(1) |
 | **Database Tables** | 30 | schema.ts defines 30 tables + 2 FTS5 virtual tables |
 | **Test Files** | 98 | 90 backend tests + 8 frontend tests (5 component + 3 E2E) |
 | **E2E Tests** | 3 specs | auth.spec.ts, dashboard.spec.ts (1 suite skipped), accessibility.spec.ts |
@@ -340,13 +340,18 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - API routes (18 files), media processing (9 files), realtime (3 files), transcription (5 files) have 0% coverage
 
-### [P3] WebSocket Rate Limit Configuration [30m] -- DEFERRED
+### [P3] WebSocket Rate Limit Configuration [30m] -- RESOLVED (v0.1.08)
 
-- Rate limiting constants hardcoded in `ws-manager.ts`; should be configurable via env
+- Added WebSocket rate limit environment variables: `WS_MAX_SUBSCRIPTIONS`, `WS_RATE_LIMIT_MESSAGES`, `WS_RATE_LIMIT_WINDOW_MS`, `WS_MAX_CONNECTIONS_PER_USER`
+- Updated `ws-manager.ts` to use configurable values from config instead of hardcoded constants
+- Added WebSocket configuration section to `.env.example`
 
-### [P3] Missing API Endpoint [30m] -- DEFERRED
+### [P3] Missing API Endpoint [30m] -- RESOLVED (v0.1.08)
 
-- `GET /v4/projects/:project_id/shares` — use `/accounts/:accountId/shares?project_id=...` as workaround
+- Implemented `GET /v4/projects/:project_id/shares` endpoint
+- Added `listProjectShares` handler in `shares.ts` with project access verification
+- Mounted route at `/v4/projects/:projectId/shares` in API index
+- Added tests for the new endpoint
 
 ### [P3] Stale Spec References [15m] -- RESOLVED (v0.0.109)
 
@@ -465,6 +470,44 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.08 (2026-02-27) - WebSocket Rate Limit Configuration & Project Shares Endpoint
+
+Implemented configurable WebSocket rate limits and added the missing project-level shares endpoint.
+
+**Features Added:**
+
+1. **WebSocket Rate Limit Configuration** (`src/config/env.ts`)
+   - `WS_MAX_SUBSCRIPTIONS` - Max subscriptions per connection (default: 50)
+   - `WS_RATE_LIMIT_MESSAGES` - Max messages per minute per connection (default: 100)
+   - `WS_RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds (default: 60000)
+   - `WS_MAX_CONNECTIONS_PER_USER` - Max concurrent connections per user (default: 10)
+
+2. **WebSocket Manager Update** (`src/realtime/ws-manager.ts`)
+   - Replaced hardcoded constants with configurable values from `config`
+   - Added getter functions that read from environment configuration
+
+3. **Project Shares Endpoint** (`src/api/routes/shares.ts`)
+   - Added `GET /v4/projects/:projectId/shares` endpoint
+   - Returns list of shares for a specific project
+   - Requires project access verification
+   - Supports cursor pagination
+
+**Files Updated:**
+- `src/config/env.ts` - Added WebSocket rate limit environment variables
+- `src/realtime/ws-manager.ts` - Updated to use configurable rate limits
+- `src/api/routes/shares.ts` - Added `listProjectShares` handler
+- `src/api/routes/index.ts` - Exported `listProjectShares` function
+- `src/api/index.ts` - Mounted project shares route
+- `.env.example` - Added WebSocket configuration section
+
+**Tests Added:**
+- `src/realtime/ws-manager.test.ts` - Added configurable rate limit tests
+- `src/api/routes/shares.test.ts` - Added `listProjectShares` endpoint tests
+
+**Verification:**
+- All 2867 tests pass (97 test files)
+- Build succeeds without errors
 
 ### v0.1.07 (2026-02-27) - CloudFront and Fastly CDN Providers
 

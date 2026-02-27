@@ -52,6 +52,10 @@ vi.mock("../config/index.js", () => ({
   config: {
     WORKOS_COOKIE_PASSWORD: "test-password",
     SESSION_SECRET: "test-session-secret-at-least-32-chars",
+    WS_MAX_SUBSCRIPTIONS: 50,
+    WS_RATE_LIMIT_MESSAGES: 100,
+    WS_RATE_LIMIT_WINDOW_MS: 60000,
+    WS_MAX_CONNECTIONS_PER_USER: 10,
   },
 }));
 
@@ -580,6 +584,63 @@ describe("WebSocket Manager", () => {
       const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
       const message = JSON.parse(lastCall[0]);
       expect(message.type).toBe("pong");
+    });
+  });
+
+  describe("configurable rate limits", () => {
+    it("uses WS_RATE_LIMIT_MESSAGES from config", async () => {
+      // This test verifies the configurable rate limit is used
+      // The mock config sets WS_RATE_LIMIT_MESSAGES to 100
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Clear previous calls
+      mockWs.send.mockClear();
+
+      // Send exactly 100 messages (the limit)
+      for (let i = 0; i < 100; i++) {
+        await wsManager.handleMessage(mockWs, JSON.stringify({ action: "ping" }));
+      }
+
+      // The 100th message should still succeed (pong responses)
+      const pongCalls = mockWs.send.mock.calls.filter((call: any[]) => {
+        const msg = JSON.parse(call[0]);
+        return msg.type === "pong";
+      });
+      expect(pongCalls.length).toBe(100);
+
+      // The 101st message should be rate limited
+      await wsManager.handleMessage(mockWs, JSON.stringify({ action: "ping" }));
+
+      const rateLimitedCalls = mockWs.send.mock.calls.filter((call: any[]) => {
+        const msg = JSON.parse(call[0]);
+        return msg.code === "rate_limited";
+      });
+      expect(rateLimitedCalls.length).toBe(1);
+    });
+
+    it("uses WS_MAX_SUBSCRIPTIONS from config", async () => {
+      // This test verifies the configurable subscription limit is used
+      // The mock config sets WS_MAX_SUBSCRIPTIONS to 50
+      mockWs = createMockWs();
+      wsManager.register(mockWs);
+
+      // Add 50 subscriptions (the limit)
+      for (let i = 0; i < 50; i++) {
+        mockWs.data.subscriptions.add(`project:proj_${i}`);
+      }
+
+      // Try to subscribe to one more
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_new" })
+      );
+
+      // Should be rejected
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.rejected");
+      expect(message.reason).toBe("subscription_limit_exceeded");
     });
   });
 

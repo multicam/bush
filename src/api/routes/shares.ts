@@ -972,4 +972,57 @@ export async function getShareBySlug(c: Context) {
   );
 }
 
+/**
+ * GET /v4/projects/:projectId/shares - List shares for a project
+ * Reference: specs/04-api-reference.md Section 6.9
+ * Permission: View (to see shares exist), Edit & Share+ (to see full details)
+ */
+export async function listProjectShares(c: Context) {
+  const session = requireAuth(c);
+  const projectId = c.req.param("projectId")!;
+  const limit = parseLimit(c.req.query("limit"));
+  const cursor = c.req.query("cursor");
+
+  // Verify project access
+  const projectAccess = await verifyProjectAccess(projectId, session.currentAccountId);
+  if (!projectAccess) {
+    throw new NotFoundError("project", projectId);
+  }
+
+  // Build query conditions
+  const conditions = [eq(shares.projectId, projectId)];
+
+  // Apply cursor pagination
+  if (cursor) {
+    const cursorData = decodeCursor(cursor);
+    if (cursorData?.createdAt) {
+      conditions.push(lt(shares.createdAt, new Date(cursorData.createdAt as string)));
+    }
+  }
+
+  // Get shares with creator info
+  const results = await db
+    .select({
+      share: shares,
+      user: users,
+    })
+    .from(shares)
+    .innerJoin(users, eq(shares.createdByUserId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(shares.createdAt))
+    .limit(limit + 1);
+
+  const items = results.slice(0, limit).map((r) => ({
+    ...formatDates(r.share),
+    created_by: formatDates(r.user),
+    asset_count: 0, // Will be populated separately if needed
+  }));
+
+  return sendCollection(c, items, RESOURCE_TYPES.SHARE, {
+    basePath: `/v4/projects/${projectId}/shares`,
+    limit,
+    totalCount: results.length,
+  });
+}
+
 export default app;

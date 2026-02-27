@@ -41,7 +41,7 @@ import {
   transcriptionRoutes,
   captionsRoutes,
 } from "./routes/index.js";
-import { getShareBySlug } from "./routes/index.js";
+import { getShareBySlug, listProjectShares } from "./routes/index.js";
 
 const app = new Hono();
 
@@ -207,6 +207,9 @@ v4.route("/shares/:id/activity", shareRoutes);
 
 // Account shares (nested under accounts)
 v4.route("/accounts/:accountId/shares", shareRoutes);
+
+// Project shares (nested under projects)
+v4.get("/projects/:projectId/shares", listProjectShares);
 
 // Public share access by slug (no auth required, rate limited to prevent brute force)
 v4.get("/shares/slug/:slug", rateLimit({ preset: "auth", keyPrefix: "rl:public-share" }), getShareBySlug);
