@@ -8,6 +8,7 @@
 import { config } from "../config/index.js";
 import { S3StorageProvider } from "./s3-provider.js";
 import { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
+import { S3BackupProvider, NoBackupProvider } from "./backup-provider.js";
 import type {
   IStorageProvider,
   StorageKey,
@@ -23,6 +24,7 @@ import type {
   ICDNProvider,
   CDNProviderType,
 } from "./cdn-types.js";
+import type { IBackupProvider } from "./backup-types.js";
 
 // Singleton storage provider instance
 let _storageProvider: IStorageProvider | null = null;
@@ -32,6 +34,9 @@ let _initializationPromise: Promise<IStorageProvider> | null = null;
 
 // Singleton CDN provider instance
 let _cdnProvider: ICDNProvider | null = null;
+
+// Singleton backup provider instance
+let _backupProvider: IBackupProvider | null = null;
 
 /**
  * Get the configured storage provider instance (thread-safe lazy initialization)
@@ -149,6 +154,51 @@ export async function disposeCDNProvider(): Promise<void> {
   if (_cdnProvider) {
     _cdnProvider = null;
     console.log("[Storage] CDN provider disposed");
+  }
+}
+
+/**
+ * Get the configured backup provider instance (lazy initialization)
+ */
+export function getBackupProvider(): IBackupProvider {
+  if (_backupProvider) {
+    return _backupProvider;
+  }
+
+  // Check if backups are enabled
+  if (!config.BACKUP_ENABLED || !config.BACKUP_STORAGE_BUCKET) {
+    _backupProvider = new NoBackupProvider();
+    return _backupProvider;
+  }
+
+  // Determine if we need path-style URLs (MinIO, B2 need this)
+  const needsPathStyle =
+    config.STORAGE_PROVIDER === "minio" ||
+    config.STORAGE_PROVIDER === "b2" ||
+    (config.STORAGE_ENDPOINT?.includes("localhost") ?? false);
+
+  _backupProvider = new S3BackupProvider({
+    enabled: config.BACKUP_ENABLED,
+    bucket: config.BACKUP_STORAGE_BUCKET,
+    retentionDays: config.BACKUP_RETENTION_DAYS,
+    snapshotIntervalHours: config.BACKUP_SNAPSHOT_INTERVAL_HOURS,
+    storageProvider: config.STORAGE_PROVIDER as "s3" | "r2" | "minio" | "b2",
+    endpoint: config.STORAGE_ENDPOINT,
+    region: config.STORAGE_REGION,
+    accessKey: config.STORAGE_ACCESS_KEY,
+    secretKey: config.STORAGE_SECRET_KEY,
+  });
+
+  return _backupProvider;
+}
+
+/**
+ * Dispose of the backup provider (for graceful shutdown)
+ */
+export async function disposeBackupProvider(): Promise<void> {
+  if (_backupProvider) {
+    _backupProvider = null;
+    console.log("[Storage] Backup provider disposed");
   }
 }
 
@@ -379,3 +429,11 @@ export type {
 } from "./cdn-types.js";
 export { DEFAULT_CACHE_TTL, SIGNED_CONTENT_TYPES } from "./cdn-types.js";
 export { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
+
+// Backup exports
+export type {
+  IBackupProvider,
+  BackupSnapshot,
+  BackupConfig,
+} from "./backup-types.js";
+export { S3BackupProvider, NoBackupProvider } from "./backup-provider.js";

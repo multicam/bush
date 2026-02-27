@@ -136,7 +136,10 @@ const envSchema = z.object({
   UPLOAD_MULTIPART_CHUNK_SIZE: z.coerce.number().int().positive().default(10485760),
 
   // Backup
-  LITESTREAM_ENABLED: z.coerce.boolean().default(false),
+  BACKUP_ENABLED: z.coerce.boolean().default(false),
+  BACKUP_STORAGE_BUCKET: z.string().optional(),
+  BACKUP_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+  BACKUP_SNAPSHOT_INTERVAL_HOURS: z.coerce.number().int().positive().default(24),
 
   // Demo Mode - bypasses auth for back-pressure testing
   DEMO_MODE: z.coerce.boolean().default(false),
@@ -224,7 +227,10 @@ function loadConfig(): Env {
       UPLOAD_MAX_FILE_SIZE: 5368709120,
       UPLOAD_PRESIGNED_URL_EXPIRY: 3600,
       UPLOAD_MULTIPART_CHUNK_SIZE: 10485760,
-      LITESTREAM_ENABLED: false,
+      BACKUP_ENABLED: false,
+      BACKUP_STORAGE_BUCKET: "",
+      BACKUP_RETENTION_DAYS: 30,
+      BACKUP_SNAPSHOT_INTERVAL_HOURS: 24,
       DEMO_MODE: false,
       NEXT_PUBLIC_APP_NAME: "Bush",
       // Media Processing

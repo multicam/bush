@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.109 - Stale Spec References Fixed)
+**Last updated**: 2026-02-27 (v0.1.06 - BackupProvider Implementation)
 **Project status**: All P2 items resolved. All spec references verified and corrected.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -14,7 +14,7 @@
 |--------|-------|-------|
 | **API Endpoints** | 122 | 20 route modules: files(15), projects(9), shares(10), version-stacks(10), accounts(7), workspaces(7), folders(8), comments(9), bulk(7), collections(7), webhooks(6), notifications(6), transcription(7), auth(4), custom-fields(5), metadata(3), users(3), search(2), captions(3), docs(1) |
 | **Database Tables** | 30 | schema.ts defines 30 tables + 2 FTS5 virtual tables |
-| **Test Files** | 90 | 82 backend tests + 8 frontend tests (5 component + 3 E2E) |
+| **Test Files** | 98 | 90 backend tests + 8 frontend tests (5 component + 3 E2E) |
 | **E2E Tests** | 3 specs | auth.spec.ts, dashboard.spec.ts (1 suite skipped), accessibility.spec.ts |
 | **Spec Files** | 20 | Comprehensive specifications (00-30 numbered + README.md index) |
 | **Frontend Components** | 56 | TSX components (non-test) |
@@ -304,9 +304,13 @@ All implemented features have corresponding spec documentation. No code was foun
 - Storage keys already defined for master playlist, variant playlists, and segments
 - CDN types already support HLS content types with appropriate cache TTLs
 
-### [P3] BackupProvider Not Implemented [4h] -- NOT STARTED
+### [P3] BackupProvider Not Implemented [4h] -- RESOLVED (v0.1.06)
 
-- `BACKUP_STORAGE_BUCKET` defined in env.ts but BackupProvider class not implemented. Backup storage feature is stub only.
+- Implemented `S3BackupProvider` class with full backup/restore functionality
+- Created `IBackupProvider` interface per `specs/06-storage.md` Section 3
+- Added backup configuration to env.ts: `BACKUP_ENABLED`, `BACKUP_STORAGE_BUCKET`, `BACKUP_RETENTION_DAYS`, `BACKUP_SNAPSHOT_INTERVAL_HOURS`
+- Features: snapshot creation, WAL streaming, restore with WAL replay, snapshot listing, automatic pruning
+- Added 29 tests in `backup-provider.test.ts`
 
 ### [P3] Realtime Phase 2 Features Missing [2d] -- NOT STARTED
 
@@ -457,6 +461,54 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.06 (2026-02-27) - BackupProvider Implementation
+
+Implemented the BackupProvider per `specs/06-storage.md` Section 3 for SQLite database backup and recovery.
+
+**Features Added:**
+
+1. **Backup Provider Interface** (`src/storage/backup-types.ts`)
+   - `IBackupProvider` interface with healthCheck, streamWAL, writeSnapshot, restore, listSnapshots, pruneSnapshots, getLatestSnapshot
+   - `BackupSnapshot` type for snapshot metadata
+   - `BackupConfig` type for provider configuration
+
+2. **S3BackupProvider Implementation** (`src/storage/backup-provider.ts`)
+   - S3-compatible storage for backup destination
+   - Snapshot creation with metadata (size, timestamp, ID)
+   - WAL streaming for continuous replication
+   - Restore from snapshot with optional WAL replay
+   - Automatic pruning of old snapshots based on retention policy
+   - `NoBackupProvider` for when backups are disabled
+
+3. **Environment Configuration** (`src/config/env.ts`)
+   - `BACKUP_ENABLED` - Enable/disable backup feature
+   - `BACKUP_STORAGE_BUCKET` - S3 bucket for backups
+   - `BACKUP_RETENTION_DAYS` - Days to keep snapshots (default: 30)
+   - `BACKUP_SNAPSHOT_INTERVAL_HOURS` - Hours between snapshots (default: 24)
+
+4. **Storage Integration** (`src/storage/index.ts`)
+   - `getBackupProvider()` function for singleton access
+   - `disposeBackupProvider()` for graceful shutdown
+   - Exported backup types and providers
+
+**Bug Fixes:**
+- Fixed unused `onClick` parameter in `notification-bell.tsx`
+
+**Files Created:**
+- `src/storage/backup-types.ts` - Backup provider types
+- `src/storage/backup-provider.ts` - S3BackupProvider and NoBackupProvider
+- `src/storage/backup-provider.test.ts` - 29 tests for backup providers
+
+**Files Updated:**
+- `src/config/env.ts` - Added backup configuration
+- `src/storage/index.ts` - Added backup provider exports
+- `.env.example` - Updated backup configuration section
+- `src/web/components/notifications/notification-bell.tsx` - Fixed unused parameter
+
+**Verification:**
+- All 2837 tests pass (97 test files)
+- Build succeeds without errors
 
 ### v0.0.109 (2026-02-27) - Stale Spec References Fixed
 

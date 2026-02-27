@@ -13,7 +13,7 @@ import type { NotificationBellProps } from "./types";
 export function NotificationBell({
   unreadCount,
   isOpen,
-  onClick,
+  onClick: _onClick,
   isLoading,
 }: NotificationBellProps) {
   const showBadge = unreadCount > 0;
