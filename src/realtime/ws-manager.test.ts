@@ -1016,4 +1016,116 @@ describe("WebSocket Manager", () => {
       expect(stats.totalConnections).toBe(1);
     });
   });
+
+  describe("Redis pub/sub error handling", () => {
+    it("handles Redis publish errors gracefully during broadcast", async () => {
+      // Re-mock redis-pubsub to enable Redis and have publishEvent throw
+      vi.doMock("./redis-pubsub.js", () => ({
+        redisPubSub: {
+          init: vi.fn().mockResolvedValue(undefined),
+          isEnabled: vi.fn().mockReturnValue(true),
+          onMessage: vi.fn(),
+          onPresence: vi.fn(),
+          onPresenceLeave: vi.fn(),
+          subscribeToChannel: vi.fn().mockResolvedValue(undefined),
+          unsubscribeFromChannel: vi.fn().mockResolvedValue(undefined),
+          removePresence: vi.fn().mockResolvedValue(undefined),
+          updatePresence: vi.fn().mockResolvedValue(undefined),
+          getPresence: vi.fn().mockResolvedValue([]),
+          getMissedEvents: vi.fn().mockResolvedValue(null),
+          publishEvent: vi.fn().mockRejectedValue(new Error("Redis connection lost")),
+          shutdown: vi.fn().mockResolvedValue(undefined),
+        },
+      }));
+
+      vi.resetModules();
+      const { wsManager: freshManager } = await import("./ws-manager.js");
+      const { eventBus } = await import("./event-bus.js");
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      freshManager.init();
+
+      mockWs = createMockWs();
+      freshManager.register(mockWs);
+
+      await freshManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      // Broadcast event - should not throw even if Redis publish fails
+      onEventCallback({
+        type: "file.status_changed",
+        eventId: "evt_test",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_1",
+        actorId: "user_other",
+        data: { fileId: "file_test", oldStatus: "processing", newStatus: "ready", changedBy: "user_other" },
+      });
+
+      // Manager should still be functional
+      const stats = freshManager.getStats();
+      expect(stats.totalConnections).toBe(1);
+
+      freshManager.shutdown();
+    });
+  });
+
+  describe("WebSocket send error handling", () => {
+    it("handles send errors gracefully during broadcast", async () => {
+      const { eventBus } = await import("./event-bus.js");
+      const { verifyProjectAccess } = await import("../api/access-control.js");
+
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: { id: "proj_1" } as any,
+        workspace: { id: "ws_1" } as any,
+      });
+
+      // Create a WebSocket that throws on send
+      mockWs = {
+        data: {
+          connectionId: "conn_123",
+          userId: "user_1",
+          session: createMockSession(),
+          connectedAt: new Date(),
+          subscriptions: new Set<string>(),
+          messageTimestamps: [],
+        },
+        send: vi.fn().mockImplementation(() => {
+          throw new Error("WebSocket closed");
+        }),
+        close: vi.fn(),
+      };
+
+      wsManager.register(mockWs);
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "project", resourceId: "proj_1" })
+      );
+
+      const onEventCallback = vi.mocked(eventBus.onEvent).mock.calls[0][0];
+
+      // Broadcast event - should not throw even if send fails
+      onEventCallback({
+        type: "file.status_changed",
+        eventId: "evt_test",
+        timestamp: new Date().toISOString(),
+        projectId: "proj_1",
+        actorId: "user_other",
+        data: { fileId: "file_test", oldStatus: "processing", newStatus: "ready", changedBy: "user_other" },
+      });
+
+      // Manager should still be functional
+      const stats = wsManager.getStats();
+      expect(stats.totalConnections).toBe(1);
+    });
+  });
 });

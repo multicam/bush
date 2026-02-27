@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 20
-**Coverage**: 89.83% statements (target: 80%)
-**Tests**: 3196 passing, 41 skipped
+**Iteration**: 21
+**Coverage**: 89.89% statements (target: 80%)
+**Tests**: 3198 passing, 41 skipped
 
 ## Spec Gaps & Analysis (Phase 0)
 
@@ -92,7 +92,7 @@
 | src/api/index.ts | 0% | 0% | 0% | SKIP | Server entry point |
 | src/media/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
 | src/scheduled/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
-| src/realtime/ws-manager.ts | 74.67% | 76.99% | 88% | MEDIUM | Add Redis pub/sub tests |
+| src/realtime/ws-manager.ts | 76.9% | 78.99% | 88% | LOW | Add share channel tests |
 | src/transcription/processor.ts | 60.35% | 76.74% | 62.5% | MEDIUM | Add error path tests |
 | src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | Add CDN/Backup init tests |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | LOW | Edge cases only |
@@ -104,6 +104,20 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 21 -- 2026-02-27
+- Focus: Coverage improvement for ws-manager.ts error paths
+- Coverage: 89.83% → 89.89% (+0.06pp)
+- Tests: 3196 → 3198 (+2 new tests)
+- Test file expanded:
+  - src/realtime/ws-manager.test.ts: 48 → 50 tests (+2 tests for error handling)
+- Coverage improvements:
+  - src/realtime/ws-manager.ts: 74.67% → 76.9% (+2.23pp)
+  - src/realtime overall: 82.66% → 83.9% (+1.24pp)
+- New test cases:
+  - Redis publish error handling during broadcast (graceful degradation)
+  - WebSocket send error handling during broadcast (graceful degradation)
+- Status: All tests green (3198 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 20 -- 2026-02-27
 - Focus: Coverage improvement for ws-manager.ts (broadcasting, presence, permissions)
 - Coverage: 89.46% → 89.83% (+0.37pp)
