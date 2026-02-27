@@ -39,11 +39,13 @@ Before reviewing, run this 4-step verification to detect drift between specs and
 ## Phase 1: Triage & Fix
 
 1. If @REVIEW_PLAN.md does not exist, this is the first iteration. Run `bun test` and `bun run typecheck` to establish baseline. Then spawn 4 parallel Opus subagents to triage the codebase:
-   - **Agent 1 — Backend**: Route handlers (auth checks, input validation, error handling, SQL injection, unbounded queries, N+1, missing indexes, race conditions, resource cleanup).
-   - **Agent 2 — Frontend**: React components (error boundaries, memory leaks, stale closures, dependency arrays, cleanup functions), hooks, API client (error handling, retry logic), state management.
-   - **Agent 3 — Tests**: Run `bun test:coverage`, identify files below 80% statement coverage, untested error paths, modules with zero tests, brittle/unclear tests.
+   - **Agent 1 — Backend**: Route handlers (auth checks, input validation, error handling, SQL injection, unbounded queries, N+1, missing indexes, race conditions, resource cleanup) -- Deep code reviw and code smells.
+   - **Agent 2 — Frontend**: React components (error boundaries, memory leaks, stale closures, dependency arrays, cleanup functions), hooks, API client (error handling, retry logic), state management -- Deep code reviw and code smells.
+   - **Agent 3 — Tests**: Run `bun test:coverage`, identify files below 80% statement coverage, untested error paths, modules with zero tests, brittle/unclear tests -- Run the full test suite, validate all test pass.
    - **Agent 4 — Security & Smells**: OWASP top 10 patterns, dead code, unused imports, orphaned files, inconsistent patterns, type safety gaps (`any`, assertions, missing null checks).
+   - **Agent 5 - Refactor**: Analyse the codebase for refactor oportunities, accross all the layers. Rank the refactors from trivial to complex. 
    Compile findings into @REVIEW_PLAN.md using the template below. Ultrathink.
+   Compile refactor opportunities into @REFACTOR_PLAN.md using the template below. Ultrathink.
 
 ## Phase 2: Fix Issues & Improve Coverage
 

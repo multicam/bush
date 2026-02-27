@@ -43,7 +43,9 @@ Before reviewing, run this 4-step verification to detect drift between specs and
    - **Agent 2 -- Frontend**: React components (error boundaries, memory leaks, stale closures, dependency arrays, cleanup functions), hooks, API client (error handling, retry logic), state management.
    - **Agent 3 -- Tests**: Run `bun test:coverage`, identify files below 80% statement coverage, untested error paths, modules with zero tests, brittle/unclear tests.
    - **Agent 4 -- Security & Smells**: OWASP top 10 patterns, dead code, unused imports, orphaned files, inconsistent patterns, type safety gaps (`any`, assertions, missing null checks).
-   Compile findings into @REVIEW_PLAN.md using the template below. Deep think.
+   - **Agent 5 - Refactor**: Analyse the codebase for refactor oportunities, accross all the layers. Rank the refactors from trivial to complex. 
+   Compile findings into @REVIEW_PLAN.md using the template below. Ultrathink.
+   Compile refactor opportunities into @REFACTOR_PLAN.md using the template below. Ultrathink.
 
 ## Phase 2: Fix Issues & Improve Coverage
 

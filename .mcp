@@ -8,7 +8,7 @@
         "--viewport", "1920x1080",
         "--acceptInsecureCerts",
         "--no-usage-statistics",
-        "--logFile", "/tmp/chrome-devtools-mcp--bush.log"
+        "--logFile", "/tmp/chrome-devtools-mcp--bush-json.log"
       ],
       "env": {
         "DEBUG": "",
