@@ -13,6 +13,7 @@ import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates 
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError } from "../../errors/index.js";
 import { verifyProjectAccess, verifyFolderAccess } from "../access-control.js";
+import { validateBody, parseBody, createFolderSchema, updateFolderSchema, moveFolderSchema } from "../validation.js";
 import { permissionService } from "../../permissions/service.js";
 
 const app = new Hono();
@@ -151,7 +152,7 @@ app.get("/:id/children", async (c) => {
 app.post("/", async (c) => {
   const session = requireAuth(c);
   const projectId = c.req.param("projectId")!;
-  const body = await c.req.json();
+  const body = await validateBody(c, createFolderSchema);
 
   // Verify project access
   const access = await verifyProjectAccess(projectId, session.currentAccountId);
@@ -168,11 +169,6 @@ app.post("/", async (c) => {
   );
   if (!canEdit) {
     throw new AuthorizationError("You do not have permission to create folders in this project");
-  }
-
-  // Validate input
-  if (!body.name || typeof body.name !== "string") {
-    throw new ValidationError("Folder name is required", { pointer: "/data/attributes/name" });
   }
 
   // Check for duplicate folder name in root
@@ -225,7 +221,7 @@ app.post("/", async (c) => {
 app.post("/:id/folders", async (c) => {
   const session = requireAuth(c);
   const parentFolderId = c.req.param("id");
-  const body = await c.req.json();
+  const body = await validateBody(c, createFolderSchema);
 
   // Verify parent folder access
   const access = await verifyFolderAccess(parentFolderId, session.currentAccountId);
@@ -242,11 +238,6 @@ app.post("/:id/folders", async (c) => {
   );
   if (!canEdit) {
     throw new AuthorizationError("You do not have permission to create folders in this project");
-  }
-
-  // Validate input
-  if (!body.name || typeof body.name !== "string") {
-    throw new ValidationError("Folder name is required", { pointer: "/data/attributes/name" });
   }
 
   // Check for duplicate folder name
@@ -299,7 +290,7 @@ app.post("/:id/folders", async (c) => {
 app.patch("/:id", async (c) => {
   const session = requireAuth(c);
   const folderId = c.req.param("id");
-  const body = await c.req.json();
+  const body = await parseBody(c, updateFolderSchema);
 
   // Verify folder access
   const access = await verifyFolderAccess(folderId, session.currentAccountId);
@@ -318,10 +309,10 @@ app.patch("/:id", async (c) => {
     throw new AuthorizationError("You do not have permission to update folders in this project");
   }
 
-  // Build updates
+  // Build updates (body may be undefined if empty)
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (body.name !== undefined) {
+  if (body?.name !== undefined) {
     // Check for duplicate name in same location
     const existing = await db
       .select({ id: folders.id })
@@ -348,7 +339,7 @@ app.patch("/:id", async (c) => {
     updates.path = parentPath ? `${parentPath}/${body.name}` : `/${body.name}`;
   }
 
-  if (body.is_restricted !== undefined) {
+  if (body?.is_restricted !== undefined) {
     updates.isRestricted = body.is_restricted;
   }
 
@@ -406,7 +397,7 @@ app.delete("/:id", async (c) => {
 app.post("/:id/move", async (c) => {
   const session = requireAuth(c);
   const folderId = c.req.param("id");
-  const body = await c.req.json();
+  const body = await parseBody(c, moveFolderSchema);
 
   // Verify folder access
   const access = await verifyFolderAccess(folderId, session.currentAccountId);
@@ -434,15 +425,18 @@ app.post("/:id/move", async (c) => {
   let newParentPath = "/";
   let newDepth = 0;
 
-  if (body.parent_id) {
+  // Support both parent_id and destination_parent_id for flexibility
+  const targetParentId = body?.parent_id ?? body?.destination_parent_id ?? null;
+
+  if (targetParentId) {
     // Verify new parent folder
-    const parentAccess = await verifyFolderAccess(body.parent_id, session.currentAccountId);
+    const parentAccess = await verifyFolderAccess(targetParentId, session.currentAccountId);
     if (!parentAccess) {
-      throw new NotFoundError("folder", body.parent_id);
+      throw new NotFoundError("folder", targetParentId);
     }
 
     // Can't move folder into itself or its descendants
-    if (body.parent_id === folderId || parentAccess.folder.path.startsWith(access.folder.path + "/")) {
+    if (targetParentId === folderId || parentAccess.folder.path.startsWith(access.folder.path + "/")) {
       throw new ValidationError("Cannot move folder into itself or one of its descendants");
     }
 
@@ -451,7 +445,7 @@ app.post("/:id/move", async (c) => {
       throw new ValidationError("Cannot move folder to a different project");
     }
 
-    newParentId = body.parent_id;
+    newParentId = targetParentId;
     newParentPath = parentAccess.folder.path;
     newDepth = parentAccess.folder.depth + 1;
   }

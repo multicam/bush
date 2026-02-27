@@ -487,6 +487,8 @@ export const createProjectSchema = z.object({
 export const updateProjectSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).optional(),
+  is_restricted: z.boolean().optional(),
+  archived: z.boolean().optional(),
 });
 
 // ============================================================================
@@ -499,6 +501,7 @@ export const updateProjectSchema = z.object({
 export const createFolderSchema = z.object({
   name: z.string().min(1, "Folder name is required").max(255, "Folder name must be 255 characters or less"),
   parent_id: z.string().optional(),
+  is_restricted: z.boolean().optional(),
 });
 
 /**
@@ -506,12 +509,14 @@ export const createFolderSchema = z.object({
  */
 export const updateFolderSchema = z.object({
   name: z.string().min(1).max(255).optional(),
+  is_restricted: z.boolean().optional(),
 });
 
 /**
  * Move folder request body schema
  */
 export const moveFolderSchema = z.object({
+  parent_id: z.string().nullable().optional(),
   destination_project_id: z.string().optional(),
   destination_parent_id: z.string().nullable().optional(),
 });

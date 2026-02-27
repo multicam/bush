@@ -12,6 +12,7 @@ import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
 import { NotFoundError, ValidationError, AuthorizationError, parseJsonBody } from "../../errors/index.js";
+import { validateBody, parseBody, createProjectSchema, updateProjectSchema } from "../validation.js";
 import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js";
 import { permissionService } from "../../permissions/service.js";
 import type { PermissionLevel } from "../../permissions/types.js";
@@ -80,16 +81,7 @@ app.get("/:id", async (c) => {
  */
 app.post("/", async (c) => {
   const session = requireAuth(c);
-  const body = await c.req.json();
-
-  // Validate input
-  if (!body.name || typeof body.name !== "string") {
-    throw new ValidationError("Project name is required", { pointer: "/data/attributes/name" });
-  }
-
-  if (!body.workspace_id || typeof body.workspace_id !== "string") {
-    throw new ValidationError("Workspace ID is required", { pointer: "/data/relationships/workspace/id" });
-  }
+  const body = await validateBody(c, createProjectSchema);
 
   // Verify workspace belongs to current account
   const workspace = await verifyWorkspaceAccess(body.workspace_id, session.currentAccountId);
@@ -172,7 +164,7 @@ app.post("/", async (c) => {
 app.patch("/:id", async (c) => {
   const session = requireAuth(c);
   const projectId = c.req.param("id");
-  const body = await c.req.json();
+  const body = await parseBody(c, updateProjectSchema);
 
   // Verify project belongs to current account
   const access = await verifyProjectAccess(projectId, session.currentAccountId);
@@ -191,20 +183,20 @@ app.patch("/:id", async (c) => {
     throw new AuthorizationError("You do not have permission to edit this project");
   }
 
-  // Build updates
+  // Build updates (body may be undefined if empty)
   const updates: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.name !== undefined) {
+  if (body?.name !== undefined) {
     updates.name = body.name;
   }
-  if (body.description !== undefined) {
+  if (body?.description !== undefined) {
     updates.description = body.description;
   }
-  if (body.is_restricted !== undefined) {
+  if (body?.is_restricted !== undefined) {
     updates.isRestricted = body.is_restricted;
   }
-  if (body.archived === true) {
+  if (body?.archived === true) {
     updates.archivedAt = new Date();
-  } else if (body.archived === false) {
+  } else if (body?.archived === false) {
     updates.archivedAt = null;
   }
 
