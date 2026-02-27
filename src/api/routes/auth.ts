@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { formatDates } from "../response.js";
 import { sessionCache } from "../../auth/session-cache.js";
+import { authService } from "../../auth/service.js";
 import { db } from "../../db/index.js";
 import { users, accounts, accountMemberships, workspaces } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
@@ -17,6 +18,58 @@ const app = new Hono();
 
 // Apply authentication to all routes (optional for token endpoint which may use refresh token)
 app.use("*", authMiddleware({ optional: true }));
+
+/**
+ * POST /v4/auth/callback-session - Internal endpoint for Next.js auth callback
+ *
+ * Called by the Next.js auth callback route to create a Bush session after
+ * WorkOS authentication. This runs on Bun (has bun:sqlite access) so the
+ * Next.js callback doesn't need to import the DB layer directly.
+ */
+app.post("/callback-session", async (c) => {
+  const body = await parseJsonBody<{
+    workos_user_id: string;
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    avatar_url?: string;
+    organization_id: string;
+  }>(c, { allowEmpty: false });
+
+  if (!body.workos_user_id || !body.email) {
+    throw new ValidationError("workos_user_id and email are required");
+  }
+
+  const { userId } = await authService.findOrCreateUser({
+    workosUserId: body.workos_user_id,
+    email: body.email,
+    firstName: body.first_name,
+    lastName: body.last_name,
+    avatarUrl: body.avatar_url,
+    organizationId: body.organization_id || "",
+  });
+
+  const userAccounts = await authService.getUserAccounts(userId);
+
+  if (userAccounts.length === 0) {
+    throw new ValidationError("User has no accounts");
+  }
+
+  const defaultAccount = userAccounts[0];
+  const session = await authService.createSession(
+    userId,
+    defaultAccount.accountId,
+    body.organization_id || "",
+    body.workos_user_id
+  );
+
+  return c.json({
+    data: {
+      user_id: session.userId,
+      session_id: session.sessionId,
+    },
+  });
+});
 
 /**
  * POST /v4/auth/token - Exchange refresh token for new access token

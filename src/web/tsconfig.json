@@ -36,6 +36,7 @@
       "@/shared/*": ["shared/*"],
       "@/web/context": ["web/context/index.ts"],
       "@/web/context/*": ["web/context/*"],
+      "@/web/components/*": ["web/components/*"],
       "@/web/components/ui": ["web/components/ui/index.ts"],
       "@/web/components/ui/*": ["web/components/ui/*"],
       "@/web/components/layout": ["web/components/layout/index.ts"],

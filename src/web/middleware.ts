@@ -35,6 +35,8 @@ export default authkitMiddleware({
       "/api/auth/logout",
       // Share links (public access)
       "/share/:path*",
+      // WebSocket upgrade (auth handled by API server)
+      "/ws",
       // API health check
       "/api/health",
     ],

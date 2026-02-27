@@ -253,7 +253,7 @@ Vitest with the v8 coverage provider. Run all tests with `bun run test`. Coverag
 
 #### Coverage Scope
 
-Backend `src/` only. The web frontend (`src/web/`) is excluded from coverage metrics. Also excluded: `src/db/migrate.ts`, `src/db/seed.ts`, and all test files themselves.
+Backend `src/` only (excluding `src/web/`). Also excluded: `src/db/migrate.ts`, `src/db/seed.ts`, and all test files themselves. Frontend testing (E2E, component tests, accessibility) is covered separately in `15-frontend-testing.md`.
 
 #### Coverage Targets
 

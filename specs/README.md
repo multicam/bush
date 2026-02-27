@@ -42,6 +42,7 @@ Bush is a professional media review and collaboration platform for video, audio,
 | [12-security.md](./12-security.md) | Content security, audit logging, encryption, compliance targets |
 | [13-billing.md](./13-billing.md) | Usage-based billing, storage + processing meters, soft-block |
 | [14-conventions.md](./14-conventions.md) | Error handling, ID generation, code patterns, testing |
+| [15-frontend-testing.md](./15-frontend-testing.md) | E2E (Playwright), component tests, accessibility, visual regression |
 
 ### Design
 

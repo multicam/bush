@@ -2,62 +2,50 @@
  * Bush Platform - WorkOS AuthKit Callback Route
  *
  * Standard AuthKit callback handler for OAuth flow.
- * Uses onSuccess to create Bush session alongside WorkOS session.
+ * Calls the Hono API to create a Bush session (avoids importing bun:sqlite in Node.js).
  * Reference: https://github.com/workos/authkit-nextjs
- *
- * NOTE: We use dynamic imports for database-dependent modules to avoid
- * bundling bun:sqlite during Next.js build (Node.js doesn't have bun:sqlite).
  */
 import { handleAuth } from "@workos-inc/authkit-nextjs";
 import { cookies } from "next/headers";
 import { BUSH_SESSION_COOKIE } from "@/web/lib/session-cookie";
 
-// Dynamic import for database-dependent module (avoid bundling bun:sqlite in Next.js)
-async function getAuthService() {
-  const { authService } = await import("@/auth");
-  return authService;
-}
+const API_URL = process.env.API_URL || "http://localhost:3001";
 
 export const GET = handleAuth({
   returnPathname: "/dashboard",
   onSuccess: async (data) => {
     const { user, organizationId } = data;
 
-    // Use dynamic import to avoid bundling bun:sqlite
-    const authService = await getAuthService();
-
-    // Create or find Bush user
-    const { userId } = await authService.findOrCreateUser({
-      workosUserId: user.id,
-      email: user.email,
-      firstName: user.firstName ?? undefined,
-      lastName: user.lastName ?? undefined,
-      avatarUrl: user.profilePictureUrl ?? undefined,
-      organizationId: organizationId || "",
+    // Call the Hono API (runs on Bun, has bun:sqlite access) to create session
+    const response = await fetch(`${API_URL}/v4/auth/callback-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workos_user_id: user.id,
+        email: user.email,
+        first_name: user.firstName ?? undefined,
+        last_name: user.lastName ?? undefined,
+        avatar_url: user.profilePictureUrl ?? undefined,
+        organization_id: organizationId || "",
+      }),
     });
 
-    // Get user's accounts
-    const accounts = await authService.getUserAccounts(userId);
-
-    if (accounts.length > 0) {
-      // Create Bush session in Redis
-      const defaultAccount = accounts[0];
-      const bushSession = await authService.createSession(
-        userId,
-        defaultAccount.accountId,
-        organizationId || "",
-        user.id
-      );
-
-      // Set Bush session cookie (store only the session token, not the full session data)
-      const cookieStore = await cookies();
-      cookieStore.set(BUSH_SESSION_COOKIE, `${bushSession.userId}:${bushSession.sessionId}`, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 604800, // 7 days
-        path: "/",
-      });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[Auth Callback] Failed to create session:", response.status, errorText);
+      return;
     }
+
+    const result = await response.json() as { data: { user_id: string; session_id: string } };
+
+    // Set Bush session cookie
+    const cookieStore = await cookies();
+    cookieStore.set(BUSH_SESSION_COOKIE, `${result.data.user_id}:${result.data.session_id}`, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 604800, // 7 days
+      path: "/",
+    });
   },
 });

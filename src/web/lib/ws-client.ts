@@ -90,9 +90,9 @@ export type ConnectionStateHandler = (state: ConnectionState) => void;
 const BACKOFF_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
 
 /**
- * Maximum backoff delay (reserved for future use)
+ * Maximum number of reconnection attempts before giving up
  */
-const _MAX_BACKOFF = 30000;
+const MAX_RECONNECT_ATTEMPTS = 10;
 
 /**
  * BushSocket client for real-time updates
@@ -365,6 +365,12 @@ export class BushSocket {
    * Schedule reconnection with exponential backoff
    */
   private scheduleReconnect(): void {
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.warn(`[BushSocket] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`);
+      this.setState("disconnected");
+      return;
+    }
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }
@@ -375,7 +381,7 @@ export class BushSocket {
     this.setState("reconnecting");
     this.reconnectAttempts++;
 
-    console.log(`[BushSocket] Reconnecting in ${delay + jitter}ms (attempt ${this.reconnectAttempts})`);
+    console.log(`[BushSocket] Reconnecting in ${delay + jitter}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect().catch((error) => {
