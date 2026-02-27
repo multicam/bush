@@ -99,7 +99,7 @@ export interface ICDNProvider {
 }
 
 /**
- * CDN provider configuration
+ * CDN provider configuration (base)
  */
 export interface CDNConfig {
   /** Provider type */
@@ -112,6 +112,34 @@ export interface CDNConfig {
   apiKey?: string;
   /** Storage bucket name (for constructing origin URLs) */
   storageBucket?: string;
+}
+
+/**
+ * CloudFront-specific CDN configuration
+ */
+export interface CloudFrontCDNConfig extends CDNConfig {
+  provider: "cloudfront";
+  /** CloudFront distribution ID (for invalidation API) */
+  distributionId: string;
+  /** CloudFront key pair ID (for signed URLs) */
+  keyPairId: string;
+  /** Private key for signing URLs (PEM format) */
+  privateKey: string;
+  /** AWS region for CloudFront API calls (optional, defaults to us-east-1) */
+  region?: string;
+}
+
+/**
+ * Fastly-specific CDN configuration
+ */
+export interface FastlyCDNConfig extends CDNConfig {
+  provider: "fastly";
+  /** Fastly API key for purge operations */
+  apiKey: string;
+  /** Fastly service ID */
+  serviceId: string;
+  /** Token signing key for URL authentication (optional) */
+  tokenSigningKey?: string;
 }
 
 /**

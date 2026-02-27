@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.06 - BackupProvider Implementation)
+**Last updated**: 2026-02-27 (v0.1.07 - CloudFront/Fastly CDN Providers)
 **Project status**: All P2 items resolved. All spec references verified and corrected.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -36,7 +36,7 @@
 | Category | Count | Details |
 |----------|-------|---------|
 | **TODO Comments** | 0 | All email provider stubs resolved |
-| **Placeholder Implementations** | 2 | CloudFront/Fastly CDN providers fall back to NoCDNProvider |
+| **Placeholder Implementations** | 0 | All CDN providers implemented |
 | **Skipped Tests** | 1 | dashboard.spec.ts authenticated suite (needs test credentials) |
 | **Dead Code Paths** | 0 | — |
 | **Stale Spec References** | 0 | All fixed in v0.0.109 |
@@ -355,10 +355,14 @@ All implemented features have corresponding spec documentation. No code was foun
 - Fixed `rate-limit.ts:6` - wrong section reference: `specs/12-security.md Section 5.1`
 - Fixed `proxy.ts:262` - wrong section number: `specs/07-media-processing.md Section 9`
 
-### [P3] CloudFront/Fastly CDN Providers [4h] -- NOT STARTED
+### [P3] CloudFront/Fastly CDN Providers [4h] -- RESOLVED (v0.1.07)
 
-- `src/storage/cdn-provider.ts` - CloudFront and Fastly fall back to NoCDNProvider
-- Need implementations for enterprise CDN support
+- Implemented `CloudFrontCDNProvider` class with RSA-signed URLs and AWS invalidation API
+- Implemented `FastlyCDNProvider` class with token-based URLs and Fastly purge API
+- Added CloudFront config: `CDN_CLOUDFRONT_DISTRIBUTION_ID`, `CDN_CLOUDFRONT_KEY_PAIR_ID`, `CDN_CLOUDFRONT_PRIVATE_KEY`, `CDN_CLOUDFRONT_REGION`
+- Added Fastly config: `CDN_FASTLY_API_KEY`, `CDN_FASTLY_SERVICE_ID`
+- Updated factory in `storage/index.ts` to instantiate correct providers
+- Added 46 CDN provider tests (Bunny: 18, CloudFront: 10, Fastly: 13, NoCDN: 5)
 
 ---
 
@@ -461,6 +465,50 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.07 (2026-02-27) - CloudFront and Fastly CDN Providers
+
+Implemented CloudFront and Fastly CDN providers per `specs/06-storage.md` Section 5, replacing the NoCDNProvider fallbacks with full implementations.
+
+**Features Added:**
+
+1. **CloudFrontCDNProvider** (`src/storage/cdn-provider.ts`)
+   - RSA-signed URLs with CloudFront policy format
+   - CloudFront invalidation API via AWS Signature Version 4
+   - Support for canned policies with expiration times
+   - Wildcard prefix invalidation support
+
+2. **FastlyCDNProvider** (`src/storage/cdn-provider.ts`)
+   - Token-based URL signing with HMAC-SHA256
+   - Single URL purge via PURGE HTTP method
+   - Bulk prefix purge via Fastly API with wildcard paths
+   - Near-instant cache invalidation (~1-5 seconds)
+
+3. **CloudFront Configuration** (`src/config/env.ts`)
+   - `CDN_CLOUDFRONT_DISTRIBUTION_ID` - CloudFront distribution ID
+   - `CDN_CLOUDFRONT_KEY_PAIR_ID` - Key pair ID for signed URLs
+   - `CDN_CLOUDFRONT_PRIVATE_KEY` - PEM-encoded private key [SECRET]
+   - `CDN_CLOUDFRONT_REGION` - AWS region for invalidation API (default: us-east-1)
+
+4. **Fastly Configuration** (`src/config/env.ts`)
+   - `CDN_FASTLY_API_KEY` - Fastly API key for purge operations [SECRET]
+   - `CDN_FASTLY_SERVICE_ID` - Fastly service ID
+
+5. **Type Definitions** (`src/storage/cdn-types.ts`)
+   - `CloudFrontCDNConfig` interface with CloudFront-specific options
+   - `FastlyCDNConfig` interface with Fastly-specific options
+
+**Files Created/Updated:**
+- `src/storage/cdn-provider.ts` - Added CloudFrontCDNProvider and FastlyCDNProvider classes
+- `src/storage/cdn-types.ts` - Added CloudFront and Fastly config types
+- `src/storage/index.ts` - Updated factory to instantiate new providers
+- `src/config/env.ts` - Added CloudFront and Fastly environment variables
+- `src/storage/cdn-provider.test.ts` - Added 28 new tests (46 total CDN tests)
+- `.env.example` - Added CloudFront and Fastly configuration section
+
+**Verification:**
+- All 175 storage tests pass (6 test files)
+- Build succeeds without errors
 
 ### v0.1.06 (2026-02-27) - BackupProvider Implementation
 

@@ -7,7 +7,7 @@
  */
 import { config } from "../config/index.js";
 import { S3StorageProvider } from "./s3-provider.js";
-import { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
+import { BunnyCDNProvider, CloudFrontCDNProvider, FastlyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
 import { S3BackupProvider, NoBackupProvider } from "./backup-provider.js";
 import type {
   IStorageProvider,
@@ -118,7 +118,7 @@ export function getCDNProvider(): ICDNProvider {
     return _cdnProvider;
   }
 
-  const cdnConfig = {
+  const baseConfig = {
     provider: config.CDN_PROVIDER as CDNProviderType,
     baseUrl: config.CDN_BASE_URL || "",
     signingKey: config.CDN_SIGNING_KEY,
@@ -126,18 +126,47 @@ export function getCDNProvider(): ICDNProvider {
     storageBucket: config.STORAGE_BUCKET_DERIVATIVES || config.STORAGE_BUCKET,
   };
 
-  switch (cdnConfig.provider) {
+  switch (baseConfig.provider) {
     case "bunny":
-      _cdnProvider = new BunnyCDNProvider(cdnConfig);
+      _cdnProvider = new BunnyCDNProvider(baseConfig);
       break;
-    case "cloudfront":
-    case "fastly":
-      // Placeholder - fall through to no CDN for now
-      console.warn(
-        `[Storage] CDN provider '${cdnConfig.provider}' not yet implemented, using no CDN`
-      );
-      _cdnProvider = new NoCDNProvider();
+    case "cloudfront": {
+      // CloudFront requires additional configuration
+      if (!config.CDN_CLOUDFRONT_DISTRIBUTION_ID || !config.CDN_CLOUDFRONT_KEY_PAIR_ID || !config.CDN_CLOUDFRONT_PRIVATE_KEY) {
+        console.warn(
+          "[Storage] CloudFront CDN requires CDN_CLOUDFRONT_DISTRIBUTION_ID, CDN_CLOUDFRONT_KEY_PAIR_ID, and CDN_CLOUDFRONT_PRIVATE_KEY"
+        );
+        _cdnProvider = new NoCDNProvider();
+      } else {
+        _cdnProvider = new CloudFrontCDNProvider({
+          ...baseConfig,
+          provider: "cloudfront",
+          distributionId: config.CDN_CLOUDFRONT_DISTRIBUTION_ID,
+          keyPairId: config.CDN_CLOUDFRONT_KEY_PAIR_ID,
+          privateKey: config.CDN_CLOUDFRONT_PRIVATE_KEY,
+          region: config.CDN_CLOUDFRONT_REGION,
+        });
+      }
       break;
+    }
+    case "fastly": {
+      // Fastly requires API key and service ID
+      if (!config.CDN_FASTLY_API_KEY || !config.CDN_FASTLY_SERVICE_ID) {
+        console.warn(
+          "[Storage] Fastly CDN requires CDN_FASTLY_API_KEY and CDN_FASTLY_SERVICE_ID"
+        );
+        _cdnProvider = new NoCDNProvider();
+      } else {
+        _cdnProvider = new FastlyCDNProvider({
+          ...baseConfig,
+          provider: "fastly",
+          apiKey: config.CDN_FASTLY_API_KEY,
+          serviceId: config.CDN_FASTLY_SERVICE_ID,
+          tokenSigningKey: config.CDN_SIGNING_KEY,
+        });
+      }
+      break;
+    }
     case "none":
     default:
       _cdnProvider = new NoCDNProvider();
@@ -422,13 +451,15 @@ export type {
   ICDNProvider,
   CDNProviderType,
   CDNConfig,
+  CloudFrontCDNConfig,
+  FastlyCDNConfig,
   CDNContentType,
   CDNDeliveryOptions,
   CDNDeliveryResult,
   CDNInvalidationResult,
 } from "./cdn-types.js";
 export { DEFAULT_CACHE_TTL, SIGNED_CONTENT_TYPES } from "./cdn-types.js";
-export { BunnyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
+export { BunnyCDNProvider, CloudFrontCDNProvider, FastlyCDNProvider, NoCDNProvider } from "./cdn-provider.js";
 
 // Backup exports
 export type {
