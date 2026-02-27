@@ -2,8 +2,9 @@
  * Bush Platform - Authentication Middleware
  *
  * Hono middleware for authenticating requests using sessions or bearer tokens.
- * Supports WorkOS session cookie (wos-session) for browser access and
- * bush_session cookie / bearer tokens for API access.
+ * Supports WorkOS session cookie (wos-session) for browser access,
+ * bush_session cookie / bearer tokens for API access, and
+ * bush_key_ prefixed API keys for service-to-service authentication.
  * Reference: specs/02-authentication.md
  * Reference: specs/04-api-reference.md Section 2
  */
@@ -11,6 +12,7 @@ import type { Context, MiddlewareHandler, Next } from "hono";
 import { unsealData } from "iron-session";
 import { sessionCache, parseSessionCookie } from "../auth/session-cache.js";
 import { authService } from "../auth/service.js";
+import { apiKeyService } from "./api-key-service.js";
 import { AuthenticationError, generateRequestId } from "../errors/index.js";
 import { SESSION_KEY, REQUEST_CONTEXT_KEY } from "../permissions/middleware.js";
 import type { SessionData } from "../auth/types.js";
@@ -153,7 +155,8 @@ async function extractSession(c: Context): Promise<SessionData | null> {
         return sessionCache.get(userId, sessionId);
       }
     } else if (bearerToken.startsWith("bush_key_")) {
-      return null;
+      // API key authentication - validate and return session
+      return apiKeyService.validateKey(bearerToken);
     } else {
       const parts = bearerToken.split(":");
       if (parts.length === 2) {

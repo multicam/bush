@@ -12,6 +12,24 @@ vi.mock("iron-session", () => ({
   unsealData: vi.fn(),
 }));
 
+// Mock API key service
+vi.mock("./api-key-service.js", () => ({
+  apiKeyService: {
+    validateKey: vi.fn(),
+    createKey: vi.fn(),
+    listKeys: vi.fn(),
+    getKey: vi.fn(),
+    updateKey: vi.fn(),
+    revokeKey: vi.fn(),
+    deleteKey: vi.fn(),
+  },
+  generateApiKey: vi.fn(),
+  extractKeyPrefix: vi.fn(),
+  hashKey: vi.fn(),
+  verifyKey: vi.fn(),
+  API_KEY_PREFIX: "bush_key_",
+}));
+
 // Mock config
 vi.mock("../config/index.js", () => ({
   config: {
@@ -51,6 +69,7 @@ import type { SessionData } from "../auth/types.js";
 import { unsealData } from "iron-session";
 import { sessionCache, parseSessionCookie } from "../auth/session-cache.js";
 import { authService } from "../auth/service.js";
+import { apiKeyService } from "./api-key-service.js";
 
 // Helper to create mock Hono context with full request interface
 function createMockContext(session?: SessionData, headers: Record<string, string> = {}): Context {
@@ -217,9 +236,11 @@ describe("Authentication Middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("should return 401 for bush_key_ prefix (API keys not supported)", async () => {
+    it("should return 401 for invalid/non-existent API key", async () => {
+      vi.mocked(apiKeyService.validateKey).mockResolvedValueOnce(null);
+
       const c = createMockContext(undefined, {
-        authorization: "Bearer bush_key_abc123",
+        authorization: "Bearer bush_key_nonexistent123456789012345678901234567890",
       });
 
       const next = vi.fn().mockResolvedValue(undefined);

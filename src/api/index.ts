@@ -40,6 +40,7 @@ import {
   webhookRoutes,
   transcriptionRoutes,
   captionsRoutes,
+  apiKeysRoutes,
 } from "./routes/index.js";
 import { getShareBySlug, listProjectShares } from "./routes/index.js";
 
@@ -231,6 +232,9 @@ v4.route("/accounts/:accountId/webhooks", webhookRoutes);
 
 // Webhook operations (standalone)
 v4.route("/webhooks", webhookRoutes);
+
+// API Keys (nested under accounts)
+v4.route("/accounts/:accountId/api-keys", apiKeysRoutes);
 
 // Transcription (nested under files)
 v4.route("/files/:fileId/transcription", transcriptionRoutes);

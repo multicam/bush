@@ -274,4 +274,5 @@ export const RESOURCE_TYPES = {
   WEBHOOK: "webhook",
   TRANSCRIPT: "transcript",
   CAPTION: "caption",
+  API_KEY: "api_key",
 } as const;

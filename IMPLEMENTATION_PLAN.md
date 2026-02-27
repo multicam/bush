@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.12 - Test Mock Fix for React Key Warnings)
+**Last updated**: 2026-02-27 (v0.1.13 - API Key Authentication)
 **Project status**: All P2 and P3 realtime items resolved. Platform is production-ready with horizontal scaling support.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -338,9 +338,17 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - Bulk permission management via groups; depends on `specs/13-billing.md`
 
-### [P3] API Key Token Type [1d] -- DEFERRED
+### [P3] API Key Token Type [1d] -- RESOLVED (v0.1.13)
 
-- `bush_key_` prefixed tokens, key management CRUD, scoping. Spec: `specs/04-api-reference.md` Section 2.1 (API Keys subsection)
+- Implemented `bush_key_` prefixed tokens for service-to-service authentication
+- Created `api_keys` database table with key hash, prefix, scope, expiration, and revocation fields
+- Created `src/api/api-key-service.ts` with key generation, validation, and CRUD operations
+- Created `src/api/routes/api-keys.ts` with REST endpoints: GET, POST, PATCH, DELETE, and revoke
+- Updated `src/api/auth-middleware.ts` to support API key bearer token authentication
+- Three scope levels: `read_only`, `read_write`, `admin`
+- Keys use bcrypt hashing for secure storage, 48-character base62 suffix per spec
+- Full test coverage with 26 unit tests
+- Spec: `specs/04-api-reference.md` Section 2.1 (API Keys subsection)
 
 ### [P3] OpenAPI Spec Generation [1d] -- DEFERRED
 
@@ -387,7 +395,6 @@ Per specs/README.md:
 - Document Processing (PDF thumb, DOCX/PPTX/XLSX) — P3
 - RAW/Adobe Format Thumbnails — requires dcraw/ImageMagick binaries
 - Access Groups — depends on billing
-- API Key Token Type (`bush_key_`) — P3
 - HLS Generation — using MP4 proxies with CDN delivery
 - Enhanced Search (Visual/Semantic) — requires AI/ML provider decision
 
@@ -480,6 +487,53 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.13 (2026-02-27) - API Key Authentication
+
+Implemented API Key token type for service-to-service authentication per `specs/04-api-reference.md` Section 2.1.
+
+**Features Added:**
+
+1. **API Key Service** (`src/api/api-key-service.ts`)
+   - `generateApiKey()` - Creates `bush_key_` prefixed tokens with 48-character base62 suffix
+   - `hashKey()` / `verifyKey()` - bcrypt-based key hashing and verification
+   - CRUD operations: createKey, validateKey, listKeys, getKey, updateKey, revokeKey, deleteKey
+   - Three scope levels: `read_only`, `read_write`, `admin`
+
+2. **Database Schema** (`src/db/schema.ts`)
+   - `api_keys` table with fields: id, account_id, user_id, name, key_hash, key_prefix, scope, expires_at, last_used_at, revoked_at
+   - Indexes on account_id, user_id, key_prefix, expires_at, revoked_at
+
+3. **API Routes** (`src/api/routes/api-keys.ts`)
+   - `GET /v4/accounts/:accountId/api-keys` - List all keys for account
+   - `POST /v4/accounts/:accountId/api-keys` - Create new key (returns plain key once)
+   - `GET /v4/accounts/:accountId/api-keys/:keyId` - Get single key
+   - `PATCH /v4/accounts/:accountId/api-keys/:keyId` - Update key name/scope
+   - `POST /v4/accounts/:accountId/api-keys/:keyId/revoke` - Revoke key (soft delete)
+   - `DELETE /v4/accounts/:accountId/api-keys/:keyId` - Permanently delete key
+
+4. **Authentication Middleware** (`src/api/auth-middleware.ts`)
+   - Added support for `Authorization: Bearer bush_key_...` authentication
+   - Validates API keys and creates session data with proper user/account context
+
+**Files Created:**
+- `src/api/api-key-service.ts` - API key service (280 lines)
+- `src/api/routes/api-keys.ts` - API key routes (220 lines)
+- `src/api/api-key-service.test.ts` - Unit tests (500 lines)
+
+**Files Updated:**
+- `src/db/schema.ts` - Added api_keys table definition
+- `src/db/migrate.ts` - Added api_keys table creation and indexes
+- `src/api/auth-middleware.ts` - Added API key authentication support
+- `src/api/routes/index.ts` - Exported apiKeysRoutes
+- `src/api/index.ts` - Mounted API key routes
+- `src/api/response.ts` - Added API_KEY resource type
+- `src/api/auth-middleware.test.ts` - Updated test for API key support
+
+**Verification:**
+- All 2893 tests pass with vitest
+- API key authentication validated against bcrypt hash
+- Proper session data returned with user role and account context
 
 ### v0.1.12 (2026-02-27) - Test Mock Fix for React Key Warnings
 

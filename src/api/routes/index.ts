@@ -22,6 +22,7 @@ export { default as notificationRoutes, createNotification, NOTIFICATION_TYPES }
 export { default as collectionRoutes } from "./collections.js";
 export { default as webhookRoutes, emitWebhookEvent } from "./webhooks.js";
 export { default as transcriptionRoutes, captionsApp as captionsRoutes } from "./transcription.js";
+export { default as apiKeysRoutes } from "./api-keys.js";
 export {
   getVersionStackComments,
   createVersionStackComment,

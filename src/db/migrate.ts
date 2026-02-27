@@ -457,6 +457,27 @@ sqlite.exec(`
   );
 
   -- ============================================
+  -- API KEYS
+  -- ============================================
+
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    key_prefix TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT 'read_only',
+    expires_at INTEGER,
+    last_used_at INTEGER,
+    revoked_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  -- ============================================
   -- INDEXES
   -- ============================================
 
@@ -544,6 +565,13 @@ sqlite.exec(`
 
   -- Notification Settings indexes
   CREATE UNIQUE INDEX IF NOT EXISTS notification_settings_user_id_idx ON notification_settings(user_id);
+
+  -- API Keys indexes
+  CREATE INDEX IF NOT EXISTS api_keys_account_id_idx ON api_keys(account_id);
+  CREATE INDEX IF NOT EXISTS api_keys_user_id_idx ON api_keys(user_id);
+  CREATE INDEX IF NOT EXISTS api_keys_key_prefix_idx ON api_keys(key_prefix);
+  CREATE INDEX IF NOT EXISTS api_keys_expires_at_idx ON api_keys(expires_at);
+  CREATE INDEX IF NOT EXISTS api_keys_revoked_at_idx ON api_keys(revoked_at);
 
   -- ============================================
   -- FTS5 VIRTUAL TABLES

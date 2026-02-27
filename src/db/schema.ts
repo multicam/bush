@@ -657,6 +657,43 @@ export const captions = sqliteTable("captions", {
 }));
 
 /**
+ * API Key scopes
+ */
+export type ApiKeyScope = "read_only" | "read_write" | "admin";
+
+/**
+ * API Keys - Service-to-service authentication tokens
+ * Reference: specs/02-authentication.md Section 10.1
+ * Reference: specs/04-api-reference.md Section 2.1
+ */
+export const apiKeys = sqliteTable("api_keys", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // Hash of the key for secure storage (bcrypt)
+  keyHash: text("key_hash").notNull(),
+  // First 12 characters after prefix for identification (e.g., "bush_key_abc1" -> "abc1")
+  keyPrefix: text("key_prefix").notNull(),
+  // Permission scope
+  scope: text("scope", { enum: ["read_only", "read_write", "admin"] }).notNull().default("read_only"),
+  // Optional expiration
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  // Usage tracking
+  lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+  // Soft delete
+  revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  accountIdx: index("api_keys_account_id_idx").on(table.accountId),
+  userIdx: index("api_keys_user_id_idx").on(table.userId),
+  keyPrefixIdx: index("api_keys_key_prefix_idx").on(table.keyPrefix),
+  expiresIdx: index("api_keys_expires_at_idx").on(table.expiresAt),
+  revokedIdx: index("api_keys_revoked_at_idx").on(table.revokedAt),
+}));
+
+/**
  * Notification Settings - User preferences for notification types
  */
 export const notificationSettings = sqliteTable("notification_settings", {
