@@ -291,6 +291,7 @@ export const comments = sqliteTable("comments", {
   userIdx: index("comments_user_id_idx").on(table.userId),
   parentIdx: index("comments_parent_id_idx").on(table.parentId),
   versionStackIdx: index("comments_version_stack_id_idx").on(table.versionStackId),
+  createdAtIndex: index("comments_created_at_idx").on(table.createdAt),
 }));
 
 /**

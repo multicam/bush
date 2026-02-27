@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 3
-**Coverage**: 86.09% statements (target: 80%)
-**Tests**: 2808 passing, 41 skipped
+**Iteration**: 4
+**Coverage**: 83.43% statements (target: 80%)
+**Tests**: 2893 passing, 41 skipped
 
 ## Issue Tracker
 
@@ -28,15 +28,15 @@
 | H7 | src/web/components/notifications/notification-dropdown.tsx | 144-150 | window.location.href causes full page reload - use router.push | **fixed** |
 | H8 | src/web/hooks/use-realtime.ts | 106-127 | Socket not disconnected on unmount - confusing behavior | **fixed** |
 | H9 | src/web/lib/api.ts | 196 | Retry logic incomplete for 429 responses | **fixed** |
-| H10 | src/auth/session-cache.ts | 403-436 | Legacy cookie format support - security risk | pending |
-| H11 | src/api/routes/webhooks.ts | 445-463 | SSRF risk - webhook test allows arbitrary URLs | pending |
+| H10 | src/auth/session-cache.ts | 403-436 | Legacy cookie format support - security risk | **fixed** |
+| H11 | src/api/routes/webhooks.ts | 445-463 | SSRF risk - webhook test allows arbitrary URLs | **fixed** |
 
 ### Medium (refactoring, test gaps)
 | # | File | Line | Issue | Status |
 |---|------|------|-------|--------|
-| M1 | src/db/schema.ts | 274-294 | Missing index on comments.created_at for ordering | pending |
+| M1 | src/db/schema.ts | 274-294 | Missing index on comments.created_at for ordering | **fixed** |
 | M2 | src/api/router.ts | 29-38 | Stack traces leaked in production error responses | pending |
-| M3 | src/api/routes/comments.ts | 114 | Unbounded comment text length - no DB constraint | pending |
+| M3 | src/api/routes/comments.ts | 114 | Unbounded comment text length - no DB constraint | **fixed** |
 | M4 | src/api/routes/search.ts | 87-105 | LIKE wildcards not escaped in FTS5 query | pending |
 | M5 | src/api/routes/bulk.ts | - | No rate limiting on expensive bulk operations | pending |
 | M6 | src/config/env.ts | 187-205 | BackupProvider env var defined but class not implemented | pending |
@@ -48,7 +48,7 @@
 | M12 | Multiple | - | Extensive console.log usage - secrets exposure risk | pending |
 | M13 | Multiple | - | No CSRF protection for cookie-based requests | pending |
 | M14 | src/transcription/processor.ts | 80 | FFmpeg spawn with configurable path - command injection risk | pending |
-| M15 | src/api/auth-middleware.ts | - | Failed authentication not logged | pending |
+| M15 | src/api/auth-middleware.ts | - | Failed authentication not logged | **fixed** |
 
 ### Low (style, naming, minor cleanup)
 | # | File | Line | Issue | Status |
@@ -86,6 +86,12 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 4 -- 2026-02-27
+- Fixed: H10 (legacy cookie config option), H11 (SSRF protection in webhooks), M1 (comments.created_at index), M3 (already had max length in validation), M15 (failed auth logging)
+- Tests: 2893 passing, 41 skipped
+- Coverage: 83.43% statements
+- Status: All 11 high issues resolved, 4 medium issues fixed, tests green
+
 ### Iteration 3 -- 2026-02-27
 - Fixed: H1 (query limits), H2 (N+1 fix), H4 (Zod validation), H5 (Zod validation), H8 (socket cleanup), H9 (429 retry)
 - Tests: 2808 passing, 41 skipped

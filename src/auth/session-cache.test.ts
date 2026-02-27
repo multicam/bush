@@ -41,7 +41,9 @@ vi.mock("../config/index.js", () => ({
   config: {
     SESSION_SECRET: "test-secret-for-testing-at-least-32-chars",
     MAX_CONCURRENT_SESSIONS: 10, // Use default limit
+    SESSION_ALLOW_LEGACY_COOKIE: true, // Allow legacy cookies in tests
   },
+  isProd: false, // Not in production mode for tests
 }));
 
 describe("sessionCache", () => {

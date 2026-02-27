@@ -144,6 +144,9 @@ async function extractSession(c: Context): Promise<SessionData | null> {
     return getDemoSession();
   }
 
+  const path = c.req.path;
+  const method = c.req.method;
+
   // Try bearer token first (API access)
   const bearerToken = parseBearerToken(c);
   if (bearerToken) {
@@ -152,18 +155,66 @@ async function extractSession(c: Context): Promise<SessionData | null> {
       if (tokenParts.length >= 3) {
         const userId = tokenParts[2];
         const sessionId = tokenParts.slice(3).join("_") || tokenParts[2];
-        return sessionCache.get(userId, sessionId);
+        const session = await sessionCache.get(userId, sessionId);
+        if (!session) {
+          console.log(JSON.stringify({
+            level: "warn",
+            message: "Authentication failed: session not found in cache",
+            auth_method: "bearer_token",
+            token_type: "bush_tok",
+            user_id: userId,
+            path,
+            method,
+            timestamp: new Date().toISOString(),
+          }));
+        }
+        return session;
       }
     } else if (bearerToken.startsWith("bush_key_")) {
       // API key authentication - validate and return session
-      return apiKeyService.validateKey(bearerToken);
+      const session = await apiKeyService.validateKey(bearerToken);
+      if (!session) {
+        console.log(JSON.stringify({
+          level: "warn",
+          message: "Authentication failed: invalid API key",
+          auth_method: "api_key",
+          key_prefix: bearerToken.substring(0, 12) + "...",
+          path,
+          method,
+          timestamp: new Date().toISOString(),
+        }));
+      }
+      return session;
     } else {
       const parts = bearerToken.split(":");
       if (parts.length === 2) {
         const [userId, sessionId] = parts;
-        return sessionCache.get(userId, sessionId);
+        const session = await sessionCache.get(userId, sessionId);
+        if (!session) {
+          console.log(JSON.stringify({
+            level: "warn",
+            message: "Authentication failed: session not found in cache",
+            auth_method: "bearer_token",
+            token_type: "legacy",
+            user_id: userId,
+            path,
+            method,
+            timestamp: new Date().toISOString(),
+          }));
+        }
+        return session;
       }
     }
+    // Invalid bearer token format
+    console.log(JSON.stringify({
+      level: "warn",
+      message: "Authentication failed: invalid bearer token format",
+      auth_method: "bearer_token",
+      token_type: "unknown",
+      path,
+      method,
+      timestamp: new Date().toISOString(),
+    }));
     return null;
   }
 
@@ -180,6 +231,16 @@ async function extractSession(c: Context): Promise<SessionData | null> {
     if (cached) {
       return cached;
     }
+    // Session cookie parsed but not found in cache
+    console.log(JSON.stringify({
+      level: "warn",
+      message: "Authentication failed: session cookie valid but not found in cache",
+      auth_method: "session_cookie",
+      user_id: bushSessionData.userId,
+      path,
+      method,
+      timestamp: new Date().toISOString(),
+    }));
   }
 
   // Fall back to wos-session cookie (WorkOS AuthKit)
@@ -194,6 +255,8 @@ async function extractSession(c: Context): Promise<SessionData | null> {
 export function authMiddleware(options: { optional?: boolean } = {}): MiddlewareHandler {
   return async (c: Context, next: Next) => {
     const requestId = generateRequestId();
+    const path = c.req.path;
+    const method = c.req.method;
 
     try {
       const session = await extractSession(c);
@@ -207,6 +270,17 @@ export function authMiddleware(options: { optional?: boolean } = {}): Middleware
           accountId: session.currentAccountId,
         });
       } else if (!options.optional) {
+        // Log failed authentication attempt
+        console.log(JSON.stringify({
+          level: "warn",
+          message: "Authentication failed: no valid session found",
+          path,
+          method,
+          has_cookie: !!c.req.header("cookie"),
+          has_auth_header: !!c.req.header("authorization"),
+          request_id: requestId,
+          timestamp: new Date().toISOString(),
+        }));
         throw new AuthenticationError("Authentication required");
       } else {
         c.set(REQUEST_CONTEXT_KEY, { requestId });

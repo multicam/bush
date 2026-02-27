@@ -6,7 +6,7 @@
  * Reference: specs/02-authentication.md Section "Redis Session Cache"
  */
 import { getRedis } from "../redis/index.js";
-import { config } from "../config/index.js";
+import { config, isProd } from "../config/index.js";
 import type { SessionData } from "./types.js";
 import { getSessionCacheKey } from "./types.js";
 import crypto from "crypto";
@@ -370,6 +370,11 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
   // Parse cookies from header
   const cookies = cookieHeader.split(";").map(c => c.trim());
 
+  // Determine if legacy formats are allowed
+  // In production, default to false (reject legacy formats)
+  // In development/test, default to true (allow legacy for easier migration)
+  const allowLegacy = config.SESSION_ALLOW_LEGACY_COOKIE ?? !isProd;
+
   for (const cookie of cookies) {
     if (cookie.startsWith(`${SESSION_COOKIE_NAME}=`)) {
       const value = cookie.slice(SESSION_COOKIE_NAME.length + 1);
@@ -392,7 +397,7 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
               };
             }
           } catch {
-            // Invalid base64 or JSON, fall through to legacy format
+            // Invalid base64 or JSON, fall through to legacy format if allowed
           }
         }
         // If signature verification fails, don't fall through to legacy format
@@ -400,8 +405,12 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
         continue;
       }
 
-      // Legacy format support (unsigned, for backward compatibility during migration)
-      // WARNING: This should be removed after migration period
+      // Legacy format support - only if explicitly allowed
+      if (!allowLegacy) {
+        // Reject legacy formats in production for security
+        continue;
+      }
+
       // Try base64-encoded JSON format (set by Next.js auth callback)
       try {
         const decoded = Buffer.from(value, "base64").toString();
@@ -410,7 +419,8 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
           // Log warning about legacy cookie format
           console.warn(
             "[session] Legacy unsigned cookie format detected. " +
-            "Session will be migrated to signed format on next refresh."
+            "Session will be migrated to signed format on next refresh. " +
+            "Set SESSION_ALLOW_LEGACY_COOKIE=false to reject legacy formats."
           );
           return {
             userId: parsed.userId as string,
@@ -427,7 +437,8 @@ export function parseSessionCookie(cookieHeader: string): { userId: string; sess
       if (parts.length === 2) {
         console.warn(
           "[session] Legacy plain cookie format detected. " +
-          "Session will be migrated to signed format on next refresh."
+          "Session will be migrated to signed format on next refresh. " +
+          "Set SESSION_ALLOW_LEGACY_COOKIE=false to reject legacy formats."
         );
         return {
           userId: parts[0],

@@ -11,12 +11,127 @@ import { eq, and, desc } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import { sendSingle, sendCollection, sendNoContent, RESOURCE_TYPES, formatDates } from "../response.js";
 import { generateId, parseLimit } from "../router.js";
-import { NotFoundError } from "../../errors/index.js";
+import { NotFoundError, ValidationError } from "../../errors/index.js";
 import { verifyAccountAccess } from "../access-control.js";
 import crypto from "crypto";
 import { validateBody, parseBody, createWebhookSchema, updateWebhookSchema, normalizeWebhookEvents } from "../validation.js";
+import dns from "dns";
+import { promisify } from "util";
+
+const dnsLookup = promisify(dns.lookup);
 
 const app = new Hono();
+
+/**
+ * Check if a URL points to a private or internal IP address (SSRF protection)
+ * Blocks requests to:
+ * - Loopback addresses (127.0.0.0/8, ::1)
+ * - Link-local addresses (169.254.0.0/16, fe80::/10)
+ * - Private IPv4 ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+ * - Private IPv6 ranges (fc00::/7)
+ * - Localhost hostname
+ * - Hostnames that resolve to private IPs
+ */
+async function isPrivateUrl(url: string): Promise<boolean> {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return true; // Invalid URL, treat as private to be safe
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  // Block localhost hostname
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+    return true;
+  }
+
+  // Block hostnames that look like IP addresses directly
+  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  const ipv6Regex = /^([0-9a-fA-F:]+)$/;
+
+  // Check if hostname is already an IP
+  if (ipv4Regex.test(hostname)) {
+    return isPrivateIPv4(hostname);
+  }
+
+  if (ipv6Regex.test(hostname) && hostname.includes(":")) {
+    return isPrivateIPv6(hostname);
+  }
+
+  // Resolve hostname to IP and check
+  try {
+    const { address, family } = await dnsLookup(hostname);
+    if (family === 4) {
+      return isPrivateIPv4(address);
+    } else {
+      return isPrivateIPv6(address);
+    }
+  } catch {
+    // DNS resolution failed - could be internal network, block it
+    return true;
+  }
+}
+
+/**
+ * Check if an IPv4 address is private/internal
+ */
+function isPrivateIPv4(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(isNaN)) return true;
+
+  const [a, b] = parts;
+
+  // Loopback: 127.0.0.0/8
+  if (a === 127) return true;
+
+  // Link-local: 169.254.0.0/16
+  if (a === 169 && b === 254) return true;
+
+  // Private: 10.0.0.0/8
+  if (a === 10) return true;
+
+  // Private: 172.16.0.0/12
+  if (a === 172 && b >= 16 && b <= 31) return true;
+
+  // Private: 192.168.0.0/16
+  if (a === 192 && b === 168) return true;
+
+  // Reserved: 0.0.0.0/8
+  if (a === 0) return true;
+
+  // Broadcast: 255.255.255.255
+  if (a === 255 && b === 255 && parts[2] === 255 && parts[3] === 255) return true;
+
+  return false;
+}
+
+/**
+ * Check if an IPv6 address is private/internal
+ */
+function isPrivateIPv6(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+
+  // Loopback: ::1
+  if (normalized === "::1" || normalized === "0:0:0:0:0:0:0:1") return true;
+
+  // Link-local: fe80::/10
+  if (normalized.startsWith("fe80:") || normalized.startsWith("fe8") ||
+      normalized.startsWith("fe9") || normalized.startsWith("fea") ||
+      normalized.startsWith("feb")) return true;
+
+  // Unique local (private): fc00::/7
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+
+  // Embedded IPv4 - extract and check
+  const ipv4Match = normalized.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (ipv4Match) {
+    return isPrivateIPv4(ipv4Match[1]);
+  }
+
+  return false;
+}
 
 // Apply authentication to all routes
 app.use("*", authMiddleware());
@@ -401,6 +516,14 @@ app.post("/:id/test", async (c) => {
   const access = await verifyAccountAccess(webhook.accountId, session.currentAccountId);
   if (!access) {
     throw new NotFoundError("webhook", webhookId);
+  }
+
+  // SSRF protection: Block requests to private/internal IP addresses
+  const isPrivate = await isPrivateUrl(webhook.url);
+  if (isPrivate) {
+    throw new ValidationError(
+      "Webhook URL must point to a public address. Private/internal URLs are not allowed."
+    );
   }
 
   // Create test payload
