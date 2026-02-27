@@ -90,6 +90,7 @@ const envSchema = z.object({
   WORKER_PROXY_CONCURRENCY: z.coerce.number().int().positive().default(2),
   WORKER_WAVEFORM_CONCURRENCY: z.coerce.number().int().positive().default(4),
   WORKER_METADATA_CONCURRENCY: z.coerce.number().int().positive().default(8),
+  WORKER_HLS_CONCURRENCY: z.coerce.number().int().positive().default(2),
 
   // Transcription
   TRANSCRIPTION_PROVIDER: z.enum(["deepgram", "faster-whisper"]).optional().default("deepgram"),
@@ -224,6 +225,7 @@ function loadConfig(): Env {
       WORKER_PROXY_CONCURRENCY: 2,
       WORKER_WAVEFORM_CONCURRENCY: 4,
       WORKER_METADATA_CONCURRENCY: 8,
+      WORKER_HLS_CONCURRENCY: 2,
       TRANSCRIPTION_PROVIDER: "deepgram",
       TRANSCRIPTION_MAX_DURATION: 7200,
       EMAIL_PROVIDER: "console",

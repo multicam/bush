@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.95 - API Documentation Endpoint)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2/P3 items verified via 12 parallel research agents.
+**Last updated**: 2026-02-27 (v0.0.96 - HLS Generation Processor)
+**Project status**: **MVP FUNCTIONALLY COMPLETE** - All Phase 1, 2, and 3 core features implemented. Database migration drift resolved. All P2 items resolved.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -14,11 +14,11 @@
 |--------|-------|-------|
 | **API Endpoints** | 151 | 18 route modules: files(17), projects(11), version-stacks(11), accounts(10), workspaces(10), bulk(9), folders(9), comments(8), collections(7), webhooks(7), transcription(7), notifications(7), shares(6), custom-fields(6), auth(3), metadata(3), users(3), search(2) |
 | **Database Tables** | 34 | schema.ts defines 34 tables with full coverage |
-| **Test Files** | 96 | 95 .test.ts + 1 .test.tsx |
+| **Test Files** | 97 | 96 .test.ts + 1 .test.tsx |
 | **Spec Files** | 19 | Comprehensive specifications (00-30 numbered + README.md index) |
 | **Frontend Components** | 53 | TSX components (non-test) |
 | **Web Pages** | 16 | Next.js App Router pages + 2 API routes |
-| **Media Processors** | 6 | metadata, thumbnail, proxy, waveform, filmstrip, frame-capture |
+| **Media Processors** | 7 | metadata, thumbnail, proxy, waveform, filmstrip, frame-capture, hls |
 | **Email Templates** | 10 | All implemented via SMTP provider |
 | **WebSocket Events** | 26 | 26 distinct event types (all wired via emit helpers) |
 | **TODO Comments** | 9 | 1 minor (PDF text layer), 8 informational (email provider stubs) |
@@ -184,9 +184,17 @@ All implemented features have corresponding spec documentation. No code was foun
 - Added permission checks to all folder routes (create, update, delete, move) - requires appropriate permissions on project
 - Routes now use `permissionService.canPerformAction()` for consistent permission enforcement per spec
 
-### [P3] HLS Generation Not Implemented [1d] -- NOT STARTED
+### [P3] HLS Generation Not Implemented [1d] -- RESOLVED (v0.0.96)
 
-- HLS generation is listed in types but no processor exists. Currently using MP4 proxies with CDN delivery as workaround.
+- Created `src/media/processors/hls.ts` - HLS segmentation processor
+- Segments video files into HLS format with configurable segment duration (default 6 seconds)
+- Generates per-resolution variant playlists (360p, 540p, 720p, 1080p, 4k)
+- Creates master playlist referencing all variants for adaptive streaming
+- Added HLS queue (`media:hls`) to queue configuration
+- Added `WORKER_HLS_CONCURRENCY` config option (default: 2)
+- Video viewer already supports HLS via `hlsSrc` prop
+- Storage keys already defined for master playlist, variant playlists, and segments
+- CDN types already support HLS content types with appropriate cache TTLs
 
 ### [P3] BackupProvider Not Implemented [4h] -- NOT STARTED
 
@@ -314,7 +322,7 @@ Per specs/README.md:
 | **Authentication** | DONE | WorkOS AuthKit, session limits |
 | **Permissions** | DONE | 5-level hierarchy, all checks wired; some routes use inline checks |
 | **File Storage** | DONE | S3-compatible with CDN support |
-| **Media Processing** | DONE | 6 processors (HLS not implemented) |
+| **Media Processing** | DONE | 7 processors (metadata, thumbnail, proxy, filmstrip, waveform, frame-capture, hls) |
 | **Real-time** | DONE | WebSocket + EventEmitter (Phase 2 features missing: Redis, presence) |
 | **Email** | DONE | SMTP provider with 10 templates (API providers fall back to SMTP) |
 | **Transcription** | DONE | Deepgram + faster-whisper work; AssemblyAI removed from config enum |
@@ -329,6 +337,32 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.96 (2026-02-27) - HLS Generation Processor
+
+Implemented HLS segmentation for adaptive video streaming. The processor takes video files and generates HLS-compliant output including:
+
+**Features:**
+- Segments video into HLS format with configurable segment duration (default 6 seconds)
+- Generates per-resolution variant playlists (360p, 540p, 720p, 1080p, 4k)
+- Creates master playlist referencing all variants for adaptive bitrate streaming
+- Never upscales - only generates resolutions at or below source resolution
+- Integrates with existing storage infrastructure (storage keys, CDN types)
+
+**Files:**
+- `src/media/processors/hls.ts` - HLS segmentation processor
+- `src/media/processors/hls.test.ts` - 14 tests covering all processor functionality
+- `src/media/types.ts` - Added HLSJobData, HLSJobResult, HLS queue name, HLS timeout
+- `src/media/worker.ts` - Added HLS processor registration
+- `src/media/queue.ts` - Added HLS queue routing
+- `src/media/media-types.test.ts` - Updated queue count test
+- `src/media/worker.test.ts` - Added HLS worker config test
+- `src/config/env.ts` - Added WORKER_HLS_CONCURRENCY config option
+
+**Infrastructure already in place:**
+- Video viewer already supports HLS via `hlsSrc` prop
+- Storage keys already defined for master playlist, variant playlists, and segments
+- CDN types already support HLS content types with appropriate cache TTLs
 
 ### v0.0.95 (2026-02-27) - API Documentation Endpoint
 

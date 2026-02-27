@@ -57,8 +57,12 @@ describe("media types", () => {
       expect(QUEUE_NAMES.WAVEFORM).toBe("media:waveform");
     });
 
-    it("has exactly 5 queue names", () => {
-      expect(Object.keys(QUEUE_NAMES)).toHaveLength(5);
+    it("has HLS queue name", () => {
+      expect(QUEUE_NAMES.HLS).toBe("media:hls");
+    });
+
+    it("has exactly 6 queue names", () => {
+      expect(Object.keys(QUEUE_NAMES)).toHaveLength(6);
     });
   });
 

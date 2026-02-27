@@ -209,6 +209,7 @@ describe("media/worker.ts", () => {
       [QUEUE_NAMES.FILMSTRIP]: { concurrency: 1, processor: "filmstrip" },
       [QUEUE_NAMES.PROXY]: { concurrency: 1, processor: "proxy" },
       [QUEUE_NAMES.WAVEFORM]: { concurrency: 1, processor: "waveform" },
+      [QUEUE_NAMES.HLS]: { concurrency: 1, processor: "hls" },
     };
 
     it("defines a config entry for every queue", () => {
@@ -235,6 +236,10 @@ describe("media/worker.ts", () => {
 
     it("sets waveform concurrency to 1", () => {
       expect(WORKER_CONFIG[QUEUE_NAMES.WAVEFORM].concurrency).toBe(1);
+    });
+
+    it("sets hls concurrency to 1", () => {
+      expect(WORKER_CONFIG[QUEUE_NAMES.HLS].concurrency).toBe(1);
     });
 
     it("assigns a processor label to every entry", () => {

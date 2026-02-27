@@ -26,6 +26,7 @@ export const QUEUE_NAMES = {
   FILMSTRIP: "media:filmstrip",
   PROXY: "media:proxy",
   WAVEFORM: "media:waveform",
+  HLS: "media:hls",
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -110,6 +111,18 @@ export interface FrameCaptureJobData extends BaseJobData {
 }
 
 /**
+ * HLS generation job data (video only)
+ */
+export interface HLSJobData extends BaseJobData {
+  type: "hls";
+  resolutions: ProxyResolution[];
+  sourceWidth: number;
+  sourceHeight: number;
+  isHDR: boolean;
+  hdrType?: HDRType;
+}
+
+/**
  * Union of all job data types
  */
 export type MediaJobData =
@@ -118,7 +131,8 @@ export type MediaJobData =
   | FilmstripJobData
   | ProxyJobData
   | WaveformJobData
-  | FrameCaptureJobData;
+  | FrameCaptureJobData
+  | HLSJobData;
 
 /**
  * Job result types
@@ -175,6 +189,15 @@ export interface WaveformJobResult {
   peaksCount: number;
 }
 
+export interface HLSJobResult {
+  masterPlaylistKey: string;
+  resolutions: {
+    resolution: ProxyResolution;
+    playlistKey: string;
+    segmentCount: number;
+  }[];
+}
+
 /**
  * Processing status for an asset
  */
@@ -198,6 +221,7 @@ export const JOB_TIMEOUTS = {
   proxy: 30 * 60 * 1000, // 30 minutes (per resolution)
   waveform: 2 * 60 * 1000, // 2 minutes
   frame_capture: 60 * 1000, // 1 minute
+  hls: 10 * 60 * 1000, // 10 minutes
 } as const;
 
 /**

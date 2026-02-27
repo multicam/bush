@@ -101,6 +101,8 @@ function getQueueNameForJobType(type: MediaJobData["type"]): QueueName {
       return QUEUE_NAMES.PROXY;
     case "waveform":
       return QUEUE_NAMES.WAVEFORM;
+    case "hls":
+      return QUEUE_NAMES.HLS;
     default:
       throw new Error(`Unknown job type: ${type}`);
   }

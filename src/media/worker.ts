@@ -17,6 +17,7 @@ import { processThumbnail } from "./processors/thumbnail.js";
 import { processProxy } from "./processors/proxy.js";
 import { processWaveform } from "./processors/waveform.js";
 import { processFilmstrip } from "./processors/filmstrip.js";
+import { processHLS } from "./processors/hls.js";
 import type { MediaJobData, MetadataJobResult, QueueName } from "./types.js";
 
 // Worker configuration
@@ -40,6 +41,10 @@ const WORKER_CONFIG: Record<QueueName, { concurrency: number; processor: string 
   [QUEUE_NAMES.WAVEFORM]: {
     concurrency: config.WORKER_WAVEFORM_CONCURRENCY,
     processor: "waveform",
+  },
+  [QUEUE_NAMES.HLS]: {
+    concurrency: config.WORKER_HLS_CONCURRENCY,
+    processor: "hls",
   },
 };
 
@@ -106,6 +111,12 @@ async function processJob(job: Job<MediaJobData>): Promise<unknown> {
     case "frame_capture": {
       const { processFrameCapture } = await import("./processors/frame-capture.js");
       return processFrameCapture(data);
+    }
+
+    case "hls": {
+      // Load metadata from database to get source dimensions
+      const metadata = await loadMetadataFromDb(data.assetId);
+      return processHLS(data, metadata);
     }
 
     default:
