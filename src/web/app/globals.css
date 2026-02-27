@@ -1,74 +1,93 @@
+/**
+ * Bush Platform - Global Styles
+ *
+ * This file bridges old CSS variables to new design tokens from tokens.css.
+ * During the migration, old component classes remain here for backward compatibility.
+ *
+ * OLD VARIABLE -> NEW TOKEN MAPPING:
+ * - --color-primary -> --accent (primary actions, links, focus rings)
+ * - --bg-primary -> --surface-1 (page background)
+ * - --bg-secondary -> --surface-2 (cards, panels)
+ * - --bg-tertiary -> --surface-3 (hover states)
+ * - --text-primary -> --text-primary (headings, primary content)
+ * - --text-secondary -> --text-secondary (descriptions, supporting)
+ * - --text-tertiary -> --text-muted (placeholders, disabled)
+ * - --border-color -> --border-default
+ * - --border-color-hover -> --border-hover
+ * - --color-success -> --status-success
+ * - --color-warning -> --status-warning
+ * - --color-error -> --status-error
+ *
+ * Reference: specs/20-design-foundations.md
+ */
+
 :root {
-  /* Colors */
-  --color-primary: #0066ff;
-  --color-primary-hover: #0052cc;
-  --color-secondary: #6b7280;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  /* ============================================
+     BRIDGE OLD VARIABLES TO NEW TOKENS
+     This allows existing code to work with new tokens
+     ============================================ */
 
-  /* Backgrounds */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
+  /* Primary/accent colors */
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-hover);
 
-  /* Text */
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
+  /* Secondary color - maps to text secondary */
+  --color-secondary: var(--text-secondary);
 
-  /* Borders */
-  --border-color: #e5e7eb;
-  --border-color-hover: #d1d5db;
+  /* Status colors - direct mapping */
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-error: var(--status-error);
 
-  /* Border radius */
-  --border-radius: 0.375rem;
-  --border-radius-lg: 0.5rem;
-  --border-radius-full: 9999px;
+  /* Background colors - map to surface tokens */
+  --bg-primary: var(--surface-1);
+  --bg-secondary: var(--surface-2);
+  --bg-tertiary: var(--surface-3);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  /* Text colors - direct mapping */
+  --text-primary: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --text-tertiary: var(--text-muted);
 
-  /* Typography */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Border colors - direct mapping */
+  --border-color: var(--border-default);
+  --border-color-hover: var(--border-hover);
 
-  /* Spacing */
-  --spacing-1: 0.25rem;
-  --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
-  --spacing-4: 1rem;
-  --spacing-5: 1.25rem;
-  --spacing-6: 1.5rem;
-  --spacing-8: 2rem;
+  /* Border radius - map to new tokens */
+  --border-radius: var(--radius-sm);
+  --border-radius-lg: var(--radius-md);
+  --border-radius-full: var(--radius-full);
 
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
+  /* Shadows - direct mapping */
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
 
-  /* Z-index */
-  --z-dropdown: 50;
-  --z-sticky: 100;
-  --z-modal: 1000;
-  --z-toast: 1100;
-  --z-tooltip: 1200;
-}
+  /* Typography - use Inter from next/font */
+  --font-sans: var(--font-sans);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #111827;
-    --bg-secondary: #1f2937;
-    --bg-tertiary: #374151;
-    --text-primary: #f9fafb;
-    --text-secondary: #9ca3af;
-    --text-tertiary: #6b7280;
-    --border-color: #374151;
-    --border-color-hover: #4b5563;
-  }
+  /* Spacing - map to new space tokens */
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+
+  /* Transitions - direct mapping */
+  --transition-fast: var(--duration-fast);
+  --transition-normal: var(--duration-normal);
+  --transition-slow: var(--duration-slow);
+
+  /* Z-index - direct mapping */
+  --z-dropdown: var(--z-dropdown);
+  --z-sticky: var(--z-sticky);
+  --z-modal: var(--z-modal);
+  --z-toast: var(--z-toast);
+  --z-tooltip: var(--z-tooltip);
 }
 
 /* Reset */
@@ -83,16 +102,16 @@
 html,
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background-color: var(--surface-1);
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Focus visible */
+/* Focus visible - use accent color */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -239,7 +258,7 @@ body {
 .input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 64, 23, 0.15);
 }
 
 .input:disabled {
@@ -338,7 +357,7 @@ body {
 .select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 64, 23, 0.15);
 }
 
 .select:disabled {
@@ -511,49 +530,27 @@ body {
 }
 
 .toast--success {
-  background-color: #ecfdf5;
+  background-color: rgba(34, 197, 94, 0.1);
   border-left: 4px solid var(--color-success);
-  color: #065f46;
+  color: var(--status-success);
 }
 
 .toast--error {
-  background-color: #fef2f2;
+  background-color: rgba(239, 68, 68, 0.1);
   border-left: 4px solid var(--color-error);
-  color: #991b1b;
+  color: #fca5a5;
 }
 
 .toast--warning {
-  background-color: #fffbeb;
+  background-color: rgba(245, 158, 11, 0.1);
   border-left: 4px solid var(--color-warning);
-  color: #92400e;
+  color: var(--status-warning);
 }
 
 .toast--info {
-  background-color: #eff6ff;
-  border-left: 4px solid var(--color-primary);
-  color: #1e40af;
-}
-
-@media (prefers-color-scheme: dark) {
-  .toast--success {
-    background-color: rgba(34, 197, 94, 0.1);
-    color: #86efac;
-  }
-
-  .toast--error {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #fca5a5;
-  }
-
-  .toast--warning {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #fcd34d;
-  }
-
-  .toast--info {
-    background-color: rgba(0, 102, 255, 0.1);
-    color: #93c5fd;
-  }
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid var(--status-info);
+  color: var(--status-info);
 }
 
 .toast-title {
@@ -692,7 +689,7 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   color: white;
-  background-color: #1f2937;
+  background-color: var(--surface-2);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
   max-width: 16rem;
@@ -710,7 +707,7 @@ body {
   position: absolute;
   width: 0.5rem;
   height: 0.5rem;
-  background-color: #1f2937;
+  background-color: var(--surface-2);
   transform: rotate(45deg);
 }
 
@@ -759,7 +756,7 @@ body {
 }
 
 .badge--primary {
-  background-color: rgba(0, 102, 255, 0.1);
+  background-color: var(--accent-muted);
   color: var(--color-primary);
 }
 

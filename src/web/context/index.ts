@@ -11,3 +11,9 @@ export {
   useCurrentWorkspace,
   type Workspace,
 } from "./auth-context.js";
+
+export {
+  ThemeProvider,
+  useTheme,
+  type Theme,
+} from "./theme-context.js";

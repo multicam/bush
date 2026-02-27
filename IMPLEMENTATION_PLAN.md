@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.99 - Design System Phase 0 Complete)
-**Project status**: **MVP FUNCTIONALLY COMPLETE** - All backend P2 items resolved. Design System Phase 0 (Infrastructure) complete. Next: Phase 1 (Theme + Fonts) and Frontend Testing.
+**Last updated**: 2026-02-27 (v0.0.100 - Design System Phase 1 Complete)
+**Project status**: Phase 1 (Theme + Fonts) complete. Next: Phase 2 (UI Primitives).
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -58,7 +58,7 @@
 | Billing | 13-billing.md | Free tier limits ✓ (Stripe: Phase 2) |
 | Conventions | 14-conventions.md | Coding conventions ✓ |
 | Frontend Testing | 15-frontend-testing.md | NOT STARTED — Playwright + component tests |
-| Design Foundations | 20-design-foundations.md | NOT STARTED — Tailwind v4, tokens, theme, fonts |
+| Design Foundations | 20-design-foundations.md | Phase 0-1 Complete — Tailwind v4, tokens, theme, fonts ✓ |
 | Design Components | 21-design-components.md | NOT STARTED — Component migration, new components |
 
 ### No Orphaned Code Detected
@@ -87,9 +87,11 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-**Backend P2 items resolved.** Design System Phase 0 complete. Phases 1-6 and Frontend Testing remain.
+**Backend P2 items resolved.** Design System Phases 0-1 complete. Phases 2-6 and Frontend Testing remain.
 
 ### Previously Completed P2 Items
+
+- ~~Design System Phase 1: Theme + Fonts~~ — v0.0.100 (Theme context, dark/light toggle, font loading, anti-FOUC)
 
 - ~~Notifications Never Created From Routes~~ — v0.0.89
 - ~~Webhook Events Never Emitted~~ — v0.0.89
@@ -119,15 +121,12 @@ All implemented features have corresponding spec documentation. No code was foun
 - Wire `theme.css` import in `src/web/app/layout.tsx`
 - **Verify**: `bun run dev` — app starts, no visual changes, Tailwind classes available
 
-### [P2] Design System Phase 1: Theme + Fonts [2h] -- NOT STARTED
+### [P2] Design System Phase 1: Theme + Fonts [2h] -- RESOLVED (v0.0.100)
 
-- Create `src/web/context/theme-context.tsx` (dark/light toggle, localStorage, data-theme attribute)
-- Create `src/web/hooks/use-theme.ts`
-- Add ThemeProvider + anti-FOUC script to `src/web/app/layout.tsx`
-- Load Inter + JetBrains Mono via `next/font/google`
-- Bridge old CSS variables in `src/web/app/globals.css` to new tokens
-- Delete `@media (prefers-color-scheme: dark)` block
-- **Verify**: Toggle data-theme in DevTools → entire app switches. Text renders in Inter.
+- Theme context and toggle implemented
+- Dark theme is now default with light theme toggle
+- Fonts loaded via next/font/google
+- Anti-FOUC script prevents flash during page load
 
 ### [P2] Design System Phase 2: UI Primitives [4h] -- NOT STARTED
 
@@ -428,6 +427,31 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.100 (2026-02-27) - Design System Phase 1: Theme + Fonts
+
+Implemented theme toggle functionality and font loading for the design system. Dark theme is now the default with user-controllable light theme toggle.
+
+**Features:**
+- **Theme Context** - Created `theme-context.tsx` with dark/light toggle, localStorage persistence, and data-theme attribute
+- **useTheme Hook** - Created `use-theme.ts` for convenient theme access in components
+- **Anti-FOUC Script** - Inline script in layout.tsx prevents flash of unstyled content during page load
+- **Google Fonts** - Inter and JetBrains Mono loaded via next/font/google with CSS variable references
+- **Variable Bridging** - Old CSS variables in globals.css now reference new design tokens for backward compatibility
+- **Dark Media Query Removed** - Deleted `@media (prefers-color-scheme: dark)` block in favor of data-theme attribute
+
+**Files:**
+- `src/web/context/theme-context.tsx` (new) - Theme context with dark/light toggle
+- `src/web/hooks/use-theme.ts` (new) - Re-exports useTheme hook
+- `src/web/app/layout.tsx` (modified) - ThemeProvider, anti-FOUC script, font loading
+- `src/web/app/globals.css` (modified) - Old variables bridge to new tokens, dark media query removed
+- `src/web/styles/tokens.css` (modified) - Font variables reference next/font CSS variables
+- `src/web/context/index.ts` (modified) - Export ThemeProvider and useTheme
+
+**Usage:**
+```tsx
+const { theme, setTheme, toggleTheme, isDark } = useTheme();
+```
 
 ### v0.0.99 (2026-02-27) - Design System Phase 0: Infrastructure
 
