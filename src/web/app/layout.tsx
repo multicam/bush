@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-// Import new design system (Tailwind v4 + tokens)
+// Import design system (Tailwind v4 + tokens)
 import "../styles/theme.css";
-// Keep old globals.css for backward compatibility during migration
-import "./globals.css";
+// Import global styles (resets, base styles)
+import "../styles/globals.css";
 import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { AuthProvider, WorkspaceProvider } from "@/web/context";
 import { ThemeProvider } from "@/web/context/theme-context";

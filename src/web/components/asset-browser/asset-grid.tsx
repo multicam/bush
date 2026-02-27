@@ -174,17 +174,18 @@ export function AssetGrid({
         )}
       >
         {/* Folders first */}
-        {folders.map((folder) => (
+        {folders.map((folder, index) => (
           <FolderCard
             key={folder.id}
             folder={folder}
             cardSize={cardSize}
             onClick={handleFolderClick}
+            staggerIndex={index}
           />
         ))}
 
         {/* Files */}
-        {files.map((file) => (
+        {files.map((file, index) => (
           <AssetCard
             key={file.id}
             file={file}
@@ -192,6 +193,7 @@ export function AssetGrid({
             isSelected={selectedIds.includes(file.id)}
             onSelect={handleSelect}
             onClick={handleFileClick}
+            staggerIndex={folders.length + index}
           />
         ))}
       </div>
@@ -272,6 +274,7 @@ export function AssetGrid({
                         folder={folder}
                         cardSize={cardSize}
                         onClick={handleFolderClick}
+                        staggerIndex={0}
                       />
                     );
                   }
@@ -286,6 +289,7 @@ export function AssetGrid({
                       isSelected={selectedIds.includes(file.id)}
                       onSelect={handleSelect}
                       onClick={handleFileClick}
+                      staggerIndex={0}
                     />
                   );
                 })}

@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.105 - Design System Phase 5 Complete)
-**Project status**: Phase 5 (New Components) complete. Command Palette, Keyboard Legend, Skeleton loading, and Upload Drawer implemented.
+**Last updated**: 2026-02-27 (v0.0.106 - Design System Phase 6 Complete)
+**Project status**: Phase 6 (Polish + Cleanup) complete. Corner brackets, staggered animations, drag handles, focus rings implemented. Old globals.css removed.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -87,7 +87,7 @@ All implemented features have corresponding spec documentation. No code was foun
 
 ## P2 - IMPORTANT (Should Fix Before Production)
 
-**Backend P2 items resolved.** Design System Phases 0-2 complete. Phases 3-6 and Frontend Testing remain.
+**Backend P2 items resolved.** Design System Phases 0-6 complete. Frontend Testing remains.
 
 ### Previously Completed P2 Items
 
@@ -158,15 +158,16 @@ All implemented features have corresponding spec documentation. No code was foun
 - All components use Tailwind CSS and design tokens
 - **Verify**: `bun run build` succeeds, all tests pass.
 
-### [P2] Design System Phase 6: Polish + Cleanup [4h] -- NOT STARTED
+### [P2] Design System Phase 6: Polish + Cleanup [4h] -- RESOLVED (v0.0.106)
 
-- Corner bracket hover effects on cards
-- Staggered grid entry animation
-- Drag handle reveal on hover
-- Focus ring (orange glow)
-- Delete old `globals.css` component classes
-- Remove old `globals.css` import from layout
-- **Verify**: `grep -r "module\.css\|0066ff" src/web/` returns zero results.
+- Added corner bracket hover effects on cards (`.corner-brackets` class with 4 border segments)
+- Added staggered grid entry animation (`.animate-grid-enter` with 30ms stagger delays)
+- Added drag handle reveal on hover (`.drag-handle` class with GripVertical icon)
+- Enhanced focus ring with orange glow pulse animation (`.focus-ring-pulse`)
+- Deleted old `src/web/app/globals.css` with bridge variables and utility classes
+- Updated `src/web/app/layout.tsx` to import `../styles/globals.css` only
+- Converted notifications page from inline styles to Tailwind classes
+- **Verify**: `bun run build` succeeds, all 2674 tests pass.
 
 ### [P2] Frontend Testing Setup [4h] -- NOT STARTED
 
@@ -419,11 +420,60 @@ Per specs/README.md:
 | **Testing** | PARTIAL | 95 test files; route/media/realtime coverage 0%; 2 tests skipped |
 | **Documentation** | DONE | Specs complete; /docs endpoint missing (P3) |
 
-**Verdict**: Platform is functionally complete. Backend P2 items resolved. Design System and Frontend Testing are next.
+**Verdict**: Platform is functionally complete. All P2 items resolved. Frontend Testing remains.
 
 ---
 
 ## CHANGE LOG
+
+### v0.0.106 (2026-02-27) - Design System Phase 6: Polish + Cleanup
+
+Completed the final polish phase of the design system per specs/20-design-foundations.md.
+
+**Features Added:**
+
+1. **Corner Bracket Hover Effects** (`theme.css`)
+   - Four 2px border segments at corners
+   - Fade in on hover (`opacity 0→1`, `--duration-normal`)
+   - Applied to cards and grid items via `.corner-brackets` class
+
+2. **Staggered Grid Entry Animation** (`theme.css`)
+   - Items fade + translate-y (8px→0) on enter
+   - Staggered by 30ms per item (`.stagger-1` through `.stagger-12`)
+   - Applied to `AssetCard` and `FolderCard` in non-virtualized grid
+
+3. **Drag Handle Reveal on Hover** (`theme.css`)
+   - `.drag-handle` class with opacity transition
+   - Appears on hover when parent has `.group` class
+   - Added `GripVertical` icon support in `asset-card.tsx`
+
+4. **Focus Ring Pulse Animation** (`theme.css`)
+   - `.focus-ring-pulse` class with subtle pulse effect
+   - Uses `--shadow-accent` for orange glow
+   - Scale animation (1→1.01→1) for visual feedback
+
+**Cleanup:**
+
+- Deleted `src/web/app/globals.css` (218 lines)
+  - Removed bridge variables (old CSS names → new tokens)
+  - Removed duplicate utility classes (now in Tailwind)
+- Updated `src/web/app/layout.tsx` to import only `../styles/globals.css`
+- Converted `src/web/app/notifications/page.tsx` from inline styles to Tailwind
+
+**Files Updated:**
+- `src/web/styles/theme.css` - Added animations and utilities
+- `src/web/components/asset-browser/asset-card.tsx` - Added corner brackets, stagger, drag handle
+- `src/web/components/asset-browser/folder-card.tsx` - Added corner brackets, stagger
+- `src/web/components/asset-browser/asset-grid.tsx` - Pass stagger index to cards
+- `src/web/app/notifications/page.tsx` - Converted to Tailwind classes
+- `src/web/app/layout.tsx` - Updated CSS imports
+
+**Files Deleted:**
+- `src/web/app/globals.css`
+
+**Verification:**
+- All 2674 tests pass (87 test files)
+- Build succeeds without errors
 
 ### v0.0.105 (2026-02-27) - Design System Phase 5: New Components
 

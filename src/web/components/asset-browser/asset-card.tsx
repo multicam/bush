@@ -8,6 +8,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { GripVertical } from "lucide-react";
 import { Badge } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import type { AssetFile, CardSize } from "./types";
@@ -21,11 +22,20 @@ interface AssetCardProps {
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
   onClick?: (file: AssetFile) => void;
+  /** Stagger index for animated grid entry (0-based) */
+  staggerIndex?: number;
+  /** Show drag handle for reordering */
+  showDragHandle?: boolean;
+  /** Callback when drag handle is grabbed */
+  onDragStart?: (file: AssetFile) => void;
 }
 
-export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: AssetCardProps) {
+export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, staggerIndex = 0, showDragHandle = false, onDragStart }: AssetCardProps) {
   const dimensions = CARD_SIZE_DIMENSIONS[cardSize];
   const category = getFileCategory(file.mimeType);
+
+  // Calculate stagger class (cycle through 1-12)
+  const staggerClass = `stagger-${(staggerIndex % 12) + 1}`;
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -74,7 +84,9 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
         "transition-all duration-100",
         "hover:bg-surface-3 hover:border-border-default",
         "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
-        isSelected && "border-accent bg-accent/5"
+        "corner-brackets animate-grid-enter focus-ring-pulse",
+        isSelected && "border-accent bg-accent/5",
+        staggerClass
       )}
       style={{ width: dimensions.width }}
       onClick={handleClick}
@@ -88,6 +100,9 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
       }}
       aria-selected={isSelected}
     >
+      {/* Corner brackets - additional corners for ::before/::after */}
+      <span className="corner-tr" aria-hidden="true" />
+      <span className="corner-bl" aria-hidden="true" />
       {/* Thumbnail */}
       <div
         className={cn(
@@ -137,6 +152,17 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick }: Ass
             <Badge variant={getStatusBadgeVariant()} size="sm">
               {file.status === "processing_failed" ? "failed" : file.status}
             </Badge>
+          </div>
+        )}
+
+        {/* Drag handle - appears on hover for reordering */}
+        {showDragHandle && (
+          <div
+            className="drag-handle absolute bottom-2 right-2 p-1 rounded bg-surface-2/80"
+            onMouseDown={() => onDragStart?.(file)}
+            aria-label="Drag to reorder"
+          >
+            <GripVertical size={14} />
           </div>
         )}
       </div>

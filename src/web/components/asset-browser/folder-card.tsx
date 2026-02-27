@@ -16,10 +16,15 @@ interface FolderCardProps {
   folder: AssetFolder;
   cardSize: CardSize;
   onClick?: (folder: AssetFolder) => void;
+  /** Stagger index for animated grid entry (0-based) */
+  staggerIndex?: number;
 }
 
-export function FolderCard({ folder, cardSize, onClick }: FolderCardProps) {
+export function FolderCard({ folder, cardSize, onClick, staggerIndex = 0 }: FolderCardProps) {
   const dimensions = CARD_SIZE_DIMENSIONS[cardSize];
+
+  // Calculate stagger class (cycle through 1-12)
+  const staggerClass = `stagger-${(staggerIndex % 12) + 1}`;
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -43,11 +48,13 @@ export function FolderCard({ folder, cardSize, onClick }: FolderCardProps) {
   return (
     <div
       className={cn(
-        "flex flex-col bg-surface-2 border-2 border-transparent rounded-lg",
+        "group flex flex-col bg-surface-2 border-2 border-transparent rounded-lg",
         "cursor-pointer overflow-hidden",
         "transition-all duration-100",
         "hover:bg-surface-3 hover:border-border-default",
-        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+        "corner-brackets animate-grid-enter focus-ring-pulse",
+        staggerClass
       )}
       style={{ width: dimensions.width }}
       onClick={handleClick}
@@ -56,6 +63,9 @@ export function FolderCard({ folder, cardSize, onClick }: FolderCardProps) {
       onKeyDown={handleKeyDown}
       aria-label={`Open folder ${folder.name}`}
     >
+      {/* Corner brackets - additional corners for ::before/::after */}
+      <span className="corner-tr" aria-hidden="true" />
+      <span className="corner-bl" aria-hidden="true" />
       {/* Icon */}
       <div
         className="flex items-center justify-center bg-amber-500/10"

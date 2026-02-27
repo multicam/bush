@@ -139,7 +139,7 @@ export default function NotificationsPage() {
     <AppLayout>
       <div className="p-8 max-w-[800px] mx-auto max-[480px]:p-4">
       <div className="flex items-center justify-between mb-6 max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-4">
-        <h1 className="text-2xl font-semibold text-primary">
+        <h1 className="text-2xl font-semibold text-text-primary">
           Notifications
           {unreadCount > 0 && (
             <Badge variant="primary" size="sm" className="ml-2">
@@ -159,12 +159,12 @@ export default function NotificationsPage() {
 
       <div className="flex items-center gap-4 mb-4 px-4 py-3 bg-surface-2 rounded-md">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-secondary" htmlFor="filter">
+          <label className="text-sm text-text-secondary" htmlFor="filter">
             Show:
           </label>
           <select
             id="filter"
-            className="px-3 py-1.5 text-sm bg-surface-1 border border-border-default rounded text-primary cursor-pointer focus:outline-none focus:border-accent"
+            className="px-3 py-1.5 text-sm bg-surface-1 border border-border-default rounded text-text-primary cursor-pointer focus:outline-none focus:border-accent"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
@@ -178,28 +178,11 @@ export default function NotificationsPage() {
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: "1rem",
-            backgroundColor: "rgba(220, 38, 38, 0.1)",
-            borderRadius: "var(--border-radius)",
-            marginBottom: "1rem",
-            color: "var(--color-error)",
-          }}
-        >
+        <div className="p-4 bg-error/10 rounded-md mb-4 text-error">
           {error}
           <button
             onClick={fetchNotifications}
-            style={{
-              marginLeft: "1rem",
-              padding: "0.25rem 0.75rem",
-              fontSize: "0.75rem",
-              background: "transparent",
-              border: "1px solid var(--color-error)",
-              borderRadius: "var(--border-radius)",
-              cursor: "pointer",
-              color: "var(--color-error)",
-            }}
+            className="ml-4 px-3 py-1 text-xs bg-transparent border border-error rounded cursor-pointer text-error"
           >
             Retry
           </button>
@@ -207,46 +190,17 @@ export default function NotificationsPage() {
       )}
 
       {isLoading ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "4rem",
-            gap: "1rem",
-          }}
-        >
+        <div className="flex flex-col items-center justify-center p-16 gap-4">
           <Spinner size="lg" />
-          <span style={{ color: "var(--text-secondary)" }}>
-            Loading notifications...
-          </span>
+          <span className="text-text-secondary">Loading notifications...</span>
         </div>
       ) : notifications.length === 0 ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "4rem",
-            gap: "1rem",
-            backgroundColor: "var(--bg-primary)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "var(--border-radius-lg)",
-          }}
-        >
-          <div style={{ fontSize: "3rem" }}>🔔</div>
-          <div
-            style={{
-              fontSize: "1.125rem",
-              fontWeight: 500,
-              color: "var(--text-primary)",
-            }}
-          >
+        <div className="flex flex-col items-center justify-center p-16 gap-4 bg-surface-1 border border-border-default rounded-lg">
+          <div className="text-5xl">🔔</div>
+          <div className="text-lg font-medium text-text-primary">
             No notifications
           </div>
-          <div style={{ color: "var(--text-tertiary)" }}>
+          <div className="text-text-muted">
             {filter === "unread"
               ? "You've read all your notifications!"
               : "You're all caught up!"}
@@ -258,7 +212,7 @@ export default function NotificationsPage() {
             <div
               key={notification.id}
               className={`flex items-start gap-4 px-5 py-4 border-b border-border-default last:border-b-0 transition-colors cursor-pointer hover:bg-surface-2 ${
-                !notification.read ? "bg-[rgba(0,102,255,0.05)] hover:bg-[rgba(0,102,255,0.1)]" : ""
+                !notification.read ? "bg-accent/5 hover:bg-accent/10" : ""
               }`}
               onClick={() => handleNotificationClick(notification)}
               role="button"
@@ -267,61 +221,23 @@ export default function NotificationsPage() {
                 e.key === "Enter" && handleNotificationClick(notification)
               }
             >
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: "40px",
-                  height: "40px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "var(--bg-secondary)",
-                  borderRadius: "var(--border-radius-full)",
-                  fontSize: "1.125rem",
-                }}
-              >
+              <div className="shrink-0 w-10 h-10 flex items-center justify-center bg-surface-2 rounded-full text-lg">
                 {NOTIFICATION_ICONS[notification.type] || "🔔"}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: "0.9375rem",
-                    fontWeight: 500,
-                    color: "var(--text-primary)",
-                    lineHeight: 1.4,
-                  }}
-                >
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.9375rem] font-medium text-text-primary leading-snug">
                   {notification.title}
                 </div>
                 {notification.body && (
-                  <div
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--text-secondary)",
-                      lineHeight: 1.5,
-                      marginTop: "0.25rem",
-                    }}
-                  >
+                  <div className="text-sm text-text-secondary leading-relaxed mt-1">
                     {notification.body}
                   </div>
                 )}
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--text-tertiary)",
-                    marginTop: "0.375rem",
-                  }}
-                >
+                <div className="text-xs text-text-muted mt-1.5">
                   {formatRelativeTime(notification.createdAt)}
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
+              <div className="flex items-center gap-2">
                 {!notification.read && (
                   <button
                     onClick={(e) => {
@@ -330,26 +246,14 @@ export default function NotificationsPage() {
                     }}
                     title="Mark as read"
                     aria-label="Mark as read"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "32px",
-                      height: "32px",
-                      padding: 0,
-                      background: "transparent",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "var(--border-radius)",
-                      cursor: "pointer",
-                      color: "var(--text-secondary)",
-                    }}
+                    className="flex items-center justify-center w-8 h-8 p-0 bg-transparent border border-border-default rounded cursor-pointer text-text-secondary hover:bg-surface-3 transition-colors"
                   >
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
-                      style={{ width: "16px", height: "16px" }}
+                      strokeWidth={2}
+                      className="w-4 h-4"
                     >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -362,26 +266,14 @@ export default function NotificationsPage() {
                   }}
                   title="Delete"
                   aria-label="Delete notification"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "32px",
-                    height: "32px",
-                    padding: 0,
-                    background: "transparent",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "var(--border-radius)",
-                    cursor: "pointer",
-                    color: "var(--text-secondary)",
-                  }}
+                  className="flex items-center justify-center w-8 h-8 p-0 bg-transparent border border-border-default rounded cursor-pointer text-text-secondary hover:bg-surface-3 transition-colors"
                 >
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
-                    style={{ width: "16px", height: "16px" }}
+                    strokeWidth={2}
+                    className="w-4 h-4"
                   >
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>

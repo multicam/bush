@@ -289,3 +289,152 @@
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* ----------------------------------------
+   STAGGERED GRID ENTRY ANIMATION
+   Items fade + translate-y (8px→0), staggered by 30ms
+   ---------------------------------------- */
+@keyframes gridItemEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-grid-enter {
+  animation: gridItemEnter var(--duration-enter) var(--ease-enter);
+}
+
+/* Stagger delay utilities for grid items */
+.stagger-1 { animation-delay: 30ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 90ms; }
+.stagger-4 { animation-delay: 120ms; }
+.stagger-5 { animation-delay: 150ms; }
+.stagger-6 { animation-delay: 180ms; }
+.stagger-7 { animation-delay: 210ms; }
+.stagger-8 { animation-delay: 240ms; }
+.stagger-9 { animation-delay: 270ms; }
+.stagger-10 { animation-delay: 300ms; }
+.stagger-11 { animation-delay: 330ms; }
+.stagger-12 { animation-delay: 360ms; }
+
+/* ----------------------------------------
+   CORNER BRACKET HOVER EFFECT
+   Four 2px border segments at corners, fade in on hover
+   ---------------------------------------- */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets::before,
+.corner-brackets::after,
+.corner-brackets .corner-tl,
+.corner-brackets .corner-br {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--accent);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-default);
+  pointer-events: none;
+}
+
+/* Top-left corner */
+.corner-brackets::before {
+  top: 0;
+  left: 0;
+  border-width: 2px 0 0 2px;
+  border-radius: 2px 0 0 0;
+}
+
+/* Bottom-right corner */
+.corner-brackets::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 2px 0;
+}
+
+/* Top-right corner */
+.corner-brackets .corner-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-width: 2px 2px 0 0;
+  border-radius: 0 2px 0 0;
+}
+
+/* Bottom-left corner */
+.corner-brackets .corner-bl {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-width: 0 0 2px 2px;
+  border-radius: 0 0 0 2px;
+}
+
+/* Show corners on hover */
+.corner-brackets:hover::before,
+.corner-brackets:hover::after,
+.corner-brackets:hover .corner-tr,
+.corner-brackets:hover .corner-bl,
+.group:hover .corner-brackets::before,
+.group:hover .corner-brackets::after,
+.group:hover .corner-brackets .corner-tr,
+.group:hover .corner-brackets .corner-bl {
+  opacity: 1;
+}
+
+/* ----------------------------------------
+   DRAG HANDLE UTILITY
+   Hidden by default, fades in on hover
+   ---------------------------------------- */
+.drag-handle {
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-default);
+  color: var(--text-muted);
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.group:hover .drag-handle,
+.hover-parent:hover .drag-handle {
+  opacity: 1;
+}
+
+/* ----------------------------------------
+   FOCUS RING PULSE ANIMATION
+   Subtle pulse on focus for interactive elements
+   ---------------------------------------- */
+@keyframes focusPulse {
+  0% {
+    box-shadow: var(--shadow-accent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: var(--shadow-accent), 0 0 16px var(--accent-glow);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: var(--shadow-accent);
+    transform: scale(1);
+  }
+}
+
+.focus-ring-pulse:focus-visible {
+  animation: focusPulse 300ms var(--ease-default);
+}
