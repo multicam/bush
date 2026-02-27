@@ -64,12 +64,41 @@ vi.mock("../router.js", () => ({
   parseLimit: vi.fn().mockReturnValue(50),
 }));
 
+vi.mock("./webhooks.js", () => ({
+  emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./notifications.js", () => ({
+  createNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../permissions/service.js", () => ({
+  permissionService: {
+    canPerformAction: vi.fn().mockResolvedValue(true),
+    getWorkspacePermission: vi.fn().mockResolvedValue({
+      allowed: true,
+      permission: "full_access",
+      source: "direct",
+    }),
+    getProjectPermission: vi.fn().mockResolvedValue({
+      allowed: true,
+      permission: "full_access",
+      source: "direct",
+    }),
+    grantProjectPermission: vi.fn().mockResolvedValue(undefined),
+    revokeProjectPermission: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Import after mocks
 import app from "./projects.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyWorkspaceAccess, verifyProjectAccess } from "../access-control.js";
 import { generateId, parseLimit } from "../router.js";
+import { emitWebhookEvent } from "./webhooks.js";
+import { createNotification } from "./notifications.js";
+import { permissionService } from "../../permissions/service.js";
 
 // Mock session returned by requireAuth
 const mockSession = {
@@ -103,6 +132,18 @@ describe("Project Routes", () => {
 
     // Default: requireAuth always returns the mock session
     vi.mocked(requireAuth).mockReturnValue(mockSession);
+
+    // Reset webhooks and notifications mocks
+    vi.mocked(emitWebhookEvent).mockResolvedValue(undefined);
+    vi.mocked(createNotification).mockResolvedValue("ntf_test123");
+
+    // Reset permission service mocks
+    vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
+    vi.mocked(permissionService.getProjectPermission).mockResolvedValue({
+      allowed: true,
+      permission: "full_access",
+      source: "direct",
+    });
   });
 
   // ---------------------------------------------------------------------------

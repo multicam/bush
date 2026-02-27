@@ -34,6 +34,10 @@ const mockStorage = {
   deleteObject: vi.fn().mockResolvedValue(undefined),
 };
 
+const mockCdn = {
+  invalidatePrefix: vi.fn().mockResolvedValue(undefined),
+};
+
 vi.mock("../storage/index.js", () => ({
   storage: mockStorage,
   storageKeys: {
@@ -43,11 +47,17 @@ vi.mock("../storage/index.js", () => ({
     filmstrip: vi.fn((params: any) => `filmstrip/${params.accountId}/${params.projectId}/${params.assetId}`),
     waveform: vi.fn((params: any, format: string) => `waveform/${params.accountId}/${params.projectId}/${params.assetId}.${format}`),
   },
+  getCDNProvider: () => mockCdn,
 }));
 
 describe("Scheduled Processor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Reset storage and CDN mocks after clearAllMocks
+    mockStorage.deleteObject.mockResolvedValue(undefined);
+    mockCdn.invalidatePrefix.mockResolvedValue(undefined);
+
     vi.resetModules();
   });
 
@@ -77,7 +87,8 @@ describe("Scheduled Processor", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnValue({
+      // Use vi.mocked to properly update the mock
+      vi.mocked(mockDb.select).mockReturnValue({
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
@@ -85,9 +96,7 @@ describe("Scheduled Processor", () => {
             }),
           }),
         }),
-      });
-
-      mockDb.select = mockSelect;
+      } as never);
 
       vi.resetModules();
       const { purgeExpiredFiles } = await import("./processor.js");

@@ -101,11 +101,22 @@ vi.mock("../../storage/index.js", () => ({
     thumbnail: vi.fn().mockReturnValue("storage/thumbnail/key"),
     customThumbnail: vi.fn().mockReturnValue("storage/custom-thumbnail/key"),
   },
+  getCDNProvider: vi.fn().mockReturnValue({
+    providerType: "none",
+    healthCheck: vi.fn().mockResolvedValue(true),
+    getDeliveryUrl: vi.fn().mockResolvedValue({ url: "https://cdn.example.com/key", isSigned: false }),
+    invalidate: vi.fn().mockResolvedValue({ success: true }),
+    invalidatePrefix: vi.fn().mockResolvedValue({ success: true }),
+  }),
 }));
 
 vi.mock("../../media/index.js", () => ({
   enqueueProcessingJobs: vi.fn().mockResolvedValue(undefined),
   enqueueFrameCapture: vi.fn().mockResolvedValue("job_abc123"),
+}));
+
+vi.mock("./index.js", () => ({
+  emitWebhookEvent: vi.fn(),
 }));
 
 // Import after mocks
@@ -116,8 +127,9 @@ import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyProjectAccess } from "../access-control.js";
 import { generateId, parseLimit } from "../router.js";
-import { storage, storageKeys } from "../../storage/index.js";
+import { storage, storageKeys, getCDNProvider } from "../../storage/index.js";
 import { enqueueProcessingJobs, enqueueFrameCapture } from "../../media/index.js";
+import { emitWebhookEvent } from "./index.js";
 
 // ---------------------------------------------------------------------------
 // Test app setup: mount filesApp under a parent with :projectId param
@@ -256,7 +268,7 @@ describe("File Routes", () => {
     vi.mocked(requireAuth).mockReturnValue(mockSession);
     vi.mocked(parseLimit).mockReturnValue(50);
     vi.mocked(generateId).mockReturnValue("fil_test123");
-    vi.mocked(verifyProjectAccess).mockResolvedValue({ project: { id: "prj_123" } } as never);
+    vi.mocked(verifyProjectAccess).mockResolvedValue({ project: { id: "prj_123" }, workspace: { accountId: "acc_123" } } as never);
 
     // Default storage mocks
     vi.mocked(storage.getDownloadUrl).mockResolvedValue({
@@ -287,6 +299,14 @@ describe("File Routes", () => {
     vi.mocked(storageKeys.customThumbnail).mockReturnValue("storage/custom-thumbnail/key");
     vi.mocked(enqueueProcessingJobs).mockResolvedValue(undefined);
     vi.mocked(enqueueFrameCapture).mockResolvedValue("job_abc123" as never);
+    vi.mocked(emitWebhookEvent).mockResolvedValue(undefined);
+    vi.mocked(getCDNProvider).mockReturnValue({
+      providerType: "none",
+      healthCheck: vi.fn().mockResolvedValue(true),
+      getDeliveryUrl: vi.fn().mockResolvedValue({ url: "https://cdn.example.com/key", isSigned: false }),
+      invalidate: vi.fn().mockResolvedValue({ success: true }),
+      invalidatePrefix: vi.fn().mockResolvedValue({ success: true }),
+    } as never);
   });
 
   // =========================================================================

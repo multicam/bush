@@ -24,7 +24,8 @@ import { verifyProjectAccess, verifyAccountAccess } from "../access-control.js";
 import { randomBytes } from "crypto";
 import { getEmailService } from "../../lib/email/index.js";
 import { config } from "../../config/env.js";
-import { emitWebhookEvent, createNotification, NOTIFICATION_TYPES } from "./index.js";
+import { emitWebhookEvent } from "./webhooks.js";
+import { createNotification, NOTIFICATION_TYPES } from "./notifications.js";
 import { validateBody, createShareSchema, updateShareSchema, addShareItemsSchema, shareInviteSchema } from "../validation.js";
 
 // Use Bun's built-in password hashing (bcrypt)

@@ -92,6 +92,27 @@ vi.mock("../../realtime/index.js", () => ({
   emitCommentEvent: vi.fn(),
 }));
 
+vi.mock("./webhooks.js", () => ({
+  emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./notifications.js", () => ({
+  default: vi.fn(),
+  createNotification: vi.fn().mockResolvedValue(undefined),
+  NOTIFICATION_TYPES: {
+    MENTION: "mention",
+    COMMENT_REPLY: "comment_reply",
+    COMMENT_CREATED: "comment_created",
+    UPLOAD: "upload",
+    STATUS_CHANGE: "status_change",
+    SHARE_INVITE: "share_invite",
+    SHARE_VIEWED: "share_viewed",
+    SHARE_DOWNLOADED: "share_downloaded",
+    ASSIGNMENT: "assignment",
+    FILE_PROCESSED: "file_processed",
+  },
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -104,6 +125,8 @@ import { requireAuth } from "../auth-middleware.js";
 import { verifyProjectAccess } from "../access-control.js";
 import { generateId, parseLimit } from "../router.js";
 import { emitCommentEvent } from "../../realtime/index.js";
+import { emitWebhookEvent } from "./webhooks.js";
+import { createNotification } from "./notifications.js";
 
 // ---------------------------------------------------------------------------
 // Mount the sub-app under a parent with :fileId param so c.req.param("fileId")
@@ -287,6 +310,8 @@ describe("Comments Routes", () => {
     vi.mocked(requireAuth).mockReturnValue(SESSION as never);
     vi.mocked(parseLimit).mockReturnValue(50);
     vi.mocked(generateId).mockReturnValue("cmt_test123");
+    vi.mocked(emitWebhookEvent).mockResolvedValue(undefined);
+    vi.mocked(createNotification).mockResolvedValue("ntf_test123");
   });
 
   // -------------------------------------------------------------------------
@@ -861,7 +886,7 @@ describe("Comments Routes", () => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          annotation: { x: 10, y: 20 },
+          annotation: { type: "rectangle", x: 0.1, y: 0.2, width: 0.5, height: 0.5 },
           timestamp: 15,
           duration: 3,
           page: 2,
@@ -870,7 +895,7 @@ describe("Comments Routes", () => {
       });
 
       const updates = setCalled.mock.calls[0][0] as Record<string, unknown>;
-      expect(updates.annotation).toEqual({ x: 10, y: 20 });
+      expect(updates.annotation).toEqual({ type: "rectangle", x: 0.1, y: 0.2, width: 0.5, height: 0.5 });
       expect(updates.timestamp).toBe(15);
       expect(updates.duration).toBe(3);
       expect(updates.page).toBe(2);

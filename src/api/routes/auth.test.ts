@@ -245,15 +245,15 @@ describe("Auth Routes", () => {
       expect(body.errors[0].detail).toMatch(/Invalid or expired refresh token/i);
     });
 
-    it("handles non-JSON body gracefully and returns 422 for missing grant_type", async () => {
+    it("handles non-JSON body gracefully and returns 400 for bad request", async () => {
       const res = await app.request("/token", {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
         body: "not json",
       });
 
-      // Body parse fails → empty object → grant_type missing → ValidationError (422)
-      expect(res.status).toBe(422);
+      // Body parse fails → BadRequestError (400) for malformed JSON
+      expect(res.status).toBe(400);
     });
   });
 

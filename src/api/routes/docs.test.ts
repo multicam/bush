@@ -1,7 +1,7 @@
 /**
  * Tests for API Documentation Route
  */
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
 import docsRoutes from "./docs.js";
 

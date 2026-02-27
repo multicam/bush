@@ -66,12 +66,23 @@ vi.mock("drizzle-orm", () => ({
   isNull: vi.fn((col: any) => col),
 }));
 
+vi.mock("../../permissions/service.js", () => ({
+  permissionService: {
+    canPerformAction: vi.fn(),
+    getWorkspacePermission: vi.fn(),
+    getProjectPermission: vi.fn(),
+    getFolderPermission: vi.fn(),
+    hasGuestReachedProjectLimit: vi.fn(),
+  },
+}));
+
 // Import after mocks
 import foldersApp from "./folders.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
 import { verifyProjectAccess, verifyFolderAccess } from "../access-control.js";
 import { generateId, parseLimit } from "../router.js";
+import { permissionService } from "../../permissions/service.js";
 
 // ---------------------------------------------------------------------------
 // Test app setup: mount foldersApp under a parent with :projectId param so
@@ -151,6 +162,8 @@ describe("Folder Routes", () => {
     vi.mocked(requireAuth).mockReturnValue(mockSession);
     vi.mocked(parseLimit).mockReturnValue(50);
     vi.mocked(generateId).mockReturnValue("fld_test123");
+    // Default permission service to allow all actions
+    vi.mocked(permissionService.canPerformAction).mockResolvedValue(true);
   });
 
   // -------------------------------------------------------------------------

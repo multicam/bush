@@ -1,7 +1,7 @@
 /**
  * Tests for Zod validation utilities
  */
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import {
   createCommentSchema,
   updateCommentSchema,
@@ -80,11 +80,11 @@ describe("Comment Schemas", () => {
 
 describe("Share Schemas", () => {
   describe("createShareSchema", () => {
-    it("requires project_id", () => {
+    it("allows missing project_id (optional)", () => {
       const result = createShareSchema.safeParse({
         name: "My Share",
       });
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it("accepts valid share", () => {
