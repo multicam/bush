@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.101 - Design System Phase 2 Complete)
-**Project status**: Phase 2 (UI Primitives) complete. Next: Phase 3 (Layout).
+**Last updated**: 2026-02-27 (v0.0.102 - Design System Phase 3 Complete)
+**Project status**: Phase 3 (Layout) complete. Next: Phase 4 (CSS Module Migration).
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -129,7 +129,7 @@ All implemented features have corresponding spec documentation. No code was foun
 - Fonts loaded via next/font/google
 - Anti-FOUC script prevents flash during page load
 
-### [P2] Design System Phase 3: Layout [4h] -- NOT STARTED
+### [P2] Design System Phase 3: Layout [4h] -- RESOLVED (v0.0.102)
 
 - Rewrite `src/web/components/layout/app-layout.tsx` — icon rail sidebar (64px → 240px hover)
 - Replace emoji nav icons with Lucide icons
@@ -419,6 +419,34 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.102 (2026-02-27) - Design System Phase 3: Layout
+
+Rebuilt the app layout with icon rail sidebar that expands on hover.
+
+**Features:**
+- **Icon Rail Sidebar** - 64px collapsed, 240px on hover (per spec)
+- **Lucide Icons** - Replaced emoji nav icons with Lucide React icons
+- **No Fixed Header Bar** - Removed top header, pages have their own headers
+- **Theme Toggle** - Sun/Moon icon in sidebar footer
+- **Dark-First Design** - Using new design tokens (surface-0, surface-1, etc.)
+- **Tailwind CSS** - Converted from CSS modules to Tailwind classes
+
+**Components:**
+- `src/web/components/layout/app-layout.tsx` - Complete rewrite with icon rail
+- `src/web/app/notifications/page.tsx` - Added AppLayout wrapper
+
+**Deleted:**
+- `src/web/components/layout/app-layout.module.css` - Removed CSS module
+
+**Navigation Icons (Lucide):**
+- Dashboard: LayoutDashboard
+- Workspaces: Briefcase
+- Projects: FolderOpen
+- Files: FileText
+- Collections: Layers
+- Shares: Share2
+- Settings: Settings
 
 ### v0.0.101 (2026-02-27) - Design System Phase 2: UI Primitives
 

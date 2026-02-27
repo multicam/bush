@@ -10,7 +10,8 @@ import { useEffect, useState, useCallback } from "react";
 import { notificationsApi, type NotificationType } from "@/web/lib/api";
 import { useUserEvents } from "@/web/hooks/use-realtime";
 import { useAuth } from "@/web/context";
-import { Spinner, Badge } from "@/web/components/ui";
+import { AppLayout } from "@/web/components/layout";
+import { Spinner, Badge, Button } from "@/web/components/ui";
 import {
   NOTIFICATION_ICONS,
   formatRelativeTime,
@@ -136,7 +137,8 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className={styles.notificationsPage}>
+    <AppLayout>
+      <div className={styles.notificationsPage}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>
           Notifications
@@ -399,5 +401,6 @@ export default function NotificationsPage() {
         </div>
       )}
     </div>
+    </AppLayout>
   );
 }
