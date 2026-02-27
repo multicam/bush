@@ -536,5 +536,90 @@ describe("Transcription Processor", () => {
       const { enqueueTranscriptionJob } = await import("./processor.js");
       expect(typeof enqueueTranscriptionJob).toBe("function");
     });
+
+    it("enqueues a transcription job with correct parameters", async () => {
+      const mockAdd = vi.fn().mockResolvedValue({ id: "job-456" });
+      const mockClose = vi.fn().mockResolvedValue(undefined);
+
+      // Re-mock bullmq for this specific test
+      vi.doMock("bullmq", () => ({
+        Worker: vi.fn().mockImplementation(() => ({
+          on: vi.fn(),
+          close: vi.fn().mockResolvedValue(undefined),
+        })),
+        Queue: vi.fn().mockImplementation(() => ({
+          add: mockAdd,
+          close: mockClose,
+        })),
+      }));
+
+      // Reimport to get fresh mocks
+      vi.resetModules();
+      const { enqueueTranscriptionJob } = await import("./processor.js");
+
+      await enqueueTranscriptionJob({
+        fileId: "file_789",
+        storageKey: "path/to/video.mp4",
+        durationSeconds: 120,
+        accountId: "account_789",
+        projectId: "project_789",
+        mimeType: "video/mp4",
+      });
+
+      // Verify the job was added
+      expect(mockAdd).toHaveBeenCalledWith(
+        "transcription-file_789",
+        expect.objectContaining({
+          type: "transcription",
+          fileId: "file_789",
+          storageKey: "path/to/video.mp4",
+          durationSeconds: 120,
+          accountId: "account_789",
+          projectId: "project_789",
+          mimeType: "video/mp4",
+        })
+      );
+
+      // Verify queue was closed
+      expect(mockClose).toHaveBeenCalled();
+    });
+
+    it("includes optional language and speaker identification options", async () => {
+      const mockAdd = vi.fn().mockResolvedValue({ id: "job-999" });
+      const mockClose = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock("bullmq", () => ({
+        Worker: vi.fn().mockImplementation(() => ({
+          on: vi.fn(),
+          close: vi.fn().mockResolvedValue(undefined),
+        })),
+        Queue: vi.fn().mockImplementation(() => ({
+          add: mockAdd,
+          close: mockClose,
+        })),
+      }));
+
+      vi.resetModules();
+      const { enqueueTranscriptionJob } = await import("./processor.js");
+
+      await enqueueTranscriptionJob({
+        fileId: "file_lang",
+        storageKey: "path/to/audio.mp3",
+        durationSeconds: 60,
+        accountId: "account_lang",
+        projectId: "project_lang",
+        mimeType: "audio/mp3",
+        language: "es",
+        speakerIdentification: true,
+      });
+
+      expect(mockAdd).toHaveBeenCalledWith(
+        "transcription-file_lang",
+        expect.objectContaining({
+          language: "es",
+          speakerIdentification: true,
+        })
+      );
+    });
   });
 });
