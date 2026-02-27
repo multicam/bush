@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.0.108 - Spec Verification Complete)
-**Project status**: All P2 items resolved. Spec-to-implementation gap analysis verified with 10 parallel research agents.
+**Last updated**: 2026-02-27 (v0.0.109 - Stale Spec References Fixed)
+**Project status**: All P2 items resolved. All spec references verified and corrected.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
 ---
@@ -39,17 +39,8 @@
 | **Placeholder Implementations** | 2 | CloudFront/Fastly CDN providers fall back to NoCDNProvider |
 | **Skipped Tests** | 1 | dashboard.spec.ts authenticated suite (needs test credentials) |
 | **Dead Code Paths** | 0 | — |
-| **Stale Spec References** | 4 | See section below |
+| **Stale Spec References** | 0 | All fixed in v0.0.109 |
 | **Hardcoded URLs** | 6 | localhost URLs that should be configurable |
-
-### Stale Spec References (P3)
-
-| File | Line | Issue | Fix |
-|------|------|-------|-----|
-| `src/web/components/search/global-search.tsx` | 5 | `specs/00_product-reference.md` | Change underscore to hyphen: `specs/00-product-reference.md` |
-| `.env.example` | 9 | `specs/20-configuration-and-secrets.md` | Change to: `specs/30-configuration.md` |
-| `src/api/rate-limit.ts` | 6 | `specs/03-permissions.md Section 21.2` | Spec only has 10 sections; should reference `specs/12-security.md` |
-| `src/media/processors/proxy.ts` | 262 | `specs/07-media-processing.md Section 7` | Change to: `specs/07-media-processing.md Section 9` |
 
 ### Hardcoded URLs (P3)
 
@@ -353,12 +344,12 @@ All implemented features have corresponding spec documentation. No code was foun
 
 - `GET /v4/projects/:project_id/shares` — use `/accounts/:accountId/shares?project_id=...` as workaround
 
-### [P3] Stale Spec References [15m] -- NOT STARTED
+### [P3] Stale Spec References [15m] -- RESOLVED (v0.0.109)
 
-- Fix `global-search.tsx:5` - underscore to hyphen
-- Fix `.env.example:9` - wrong spec number
-- Fix `rate-limit.ts:6` - wrong section reference
-- Fix `proxy.ts:262` - wrong section number
+- Fixed `global-search.tsx:5` - underscore to hyphen: `specs/00-product-reference.md`
+- Fixed `.env.example:9` - wrong spec number: `specs/30-configuration.md`
+- Fixed `rate-limit.ts:6` - wrong section reference: `specs/12-security.md Section 5.1`
+- Fixed `proxy.ts:262` - wrong section number: `specs/07-media-processing.md Section 9`
 
 ### [P3] CloudFront/Fastly CDN Providers [4h] -- NOT STARTED
 
@@ -466,6 +457,23 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.0.109 (2026-02-27) - Stale Spec References Fixed
+
+Fixed all 4 stale spec references identified in the v0.0.108 spec verification.
+
+**Fixes Applied:**
+- `src/web/components/search/global-search.tsx:5` - Changed `specs/00_product-reference.md` to `specs/00-product-reference.md` (underscore to hyphen)
+- `.env.example:9` - Changed `specs/20-configuration-and-secrets.md` to `specs/30-configuration.md` (correct spec file)
+- `src/api/rate-limit.ts:6` - Changed `specs/03-permissions.md Section 21.2` to `specs/12-security.md Section 5.1` (correct spec and section for rate limiting)
+- `src/media/processors/proxy.ts:262` - Changed `specs/07-media-processing.md Section 7` to `specs/07-media-processing.md Section 9` (correct section for HDR processing)
+
+**Files Updated:**
+- `src/web/components/search/global-search.tsx`
+- `.env.example`
+- `src/api/rate-limit.ts`
+- `src/media/processors/proxy.ts`
+- `IMPLEMENTATION_PLAN.md` - Updated statistics (Stale Spec References: 4 → 0)
 
 ### v0.0.108 (2026-02-27) - Spec Verification Complete
 

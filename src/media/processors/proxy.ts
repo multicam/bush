@@ -259,7 +259,7 @@ function buildToneMappingFilter(
   _hdrType: string | null
 ): string {
   // Hable tone mapping with proper color space conversion
-  // Reference: specs/07-media-processing.md Section 7
+  // Reference: specs/07-media-processing.md Section 9
   const toneMapFilter =
     `zscale=t=linear:npl=100,format=gbrpf32le,` +
     `zscale=p=bt709,tonemap=hable:desat=0,` +

@@ -3,7 +3,7 @@
  *
  * Redis-backed rate limiting using sliding window algorithm.
  * Reference: specs/04-api-reference.md Section 5
- * Reference: specs/03-permissions.md Section 21.2
+ * Reference: specs/12-security.md Section 5.1
  */
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { getRedis } from "../redis/index.js";
