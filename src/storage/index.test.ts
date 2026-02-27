@@ -464,3 +464,109 @@ describe("buildStorageKey and parseStorageKey", () => {
     expect(parsed!.filename).toBe("video.mp4");
   });
 });
+
+// Import CDN and backup provider functions
+import {
+  getCDNProvider,
+  disposeCDNProvider,
+  getBackupProvider,
+  disposeBackupProvider,
+} from "./index.js";
+
+// Mock CDN providers
+vi.mock("./cdn-provider.js", () => ({
+  BunnyCDNProvider: vi.fn().mockImplementation(() => ({ provider: "bunny" })),
+  CloudFrontCDNProvider: vi.fn().mockImplementation(() => ({ provider: "cloudfront" })),
+  FastlyCDNProvider: vi.fn().mockImplementation(() => ({ provider: "fastly" })),
+  NoCDNProvider: vi.fn().mockImplementation(() => ({ provider: "none" })),
+}));
+
+// Mock backup providers
+vi.mock("./backup-provider.js", () => ({
+  S3BackupProvider: vi.fn().mockImplementation(() => ({ provider: "s3-backup" })),
+  NoBackupProvider: vi.fn().mockImplementation(() => ({ provider: "no-backup" })),
+}));
+
+describe("getCDNProvider", () => {
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(async () => {
+    await disposeCDNProvider();
+    vi.clearAllMocks();
+    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(async () => {
+    await disposeCDNProvider();
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("should return a CDN provider instance", () => {
+    const provider = getCDNProvider();
+    expect(provider).toBeDefined();
+  });
+
+  it("should return the same instance on multiple calls", () => {
+    const provider1 = getCDNProvider();
+    const provider2 = getCDNProvider();
+    expect(provider1).toBe(provider2);
+  });
+});
+
+describe("disposeCDNProvider", () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  it("should dispose the CDN provider", async () => {
+    getCDNProvider();
+    await disposeCDNProvider();
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Storage] CDN provider disposed");
+  });
+});
+
+describe("getBackupProvider", () => {
+  beforeEach(async () => {
+    await disposeBackupProvider();
+    vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    await disposeBackupProvider();
+  });
+
+  it("should return a backup provider instance", () => {
+    const provider = getBackupProvider();
+    expect(provider).toBeDefined();
+  });
+
+  it("should return the same instance on multiple calls", () => {
+    const provider1 = getBackupProvider();
+    const provider2 = getBackupProvider();
+    expect(provider1).toBe(provider2);
+  });
+});
+
+describe("disposeBackupProvider", () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  it("should dispose the backup provider", async () => {
+    getBackupProvider();
+    await disposeBackupProvider();
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Storage] Backup provider disposed");
+  });
+});

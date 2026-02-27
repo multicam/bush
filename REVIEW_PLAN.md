@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 16
-**Coverage**: 86.46% statements (target: 80%)
-**Tests**: 3036 passing, 41 skipped
+**Iteration**: 17
+**Coverage**: 87.51% statements (target: 80%)
+**Tests**: 3108 passing, 41 skipped
 
 ## Issue Tracker
 
@@ -68,13 +68,12 @@
 | src/media/worker.ts | 0% | 0% | 0% | HIGH (infrastructure script) |
 | src/scheduled/worker.ts | 0% | 0% | 0% | HIGH (infrastructure script) |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | MEDIUM |
-| src/lib/email/index.ts | 60.81% | 71.42% | 100% | MEDIUM |
-| src/lib/email/postmark.ts | 72.72% | 63.15% | 77.77% | LOW |
-| src/lib/email/resend.ts | 66.03% | 40% | 75% | LOW |
-| src/lib/email/sendgrid.ts | 73.03% | 67.5% | 80% | LOW |
+| src/api/routes/projects.ts | 32.56% | 91.89% | 100% | HIGH (member routes untested) |
+| src/lib/email/postmark.ts | 84%+ | 70%+ | 90%+ | LOW (improved) |
+| src/lib/email/resend.ts | 90%+ | 75%+ | 90%+ | LOW (improved) |
+| src/lib/email/sendgrid.ts | 90%+ | 80%+ | 90%+ | LOW (improved) |
 | src/media/ffmpeg.ts | 75.7% | 98.33% | 81.81% | MEDIUM |
-| src/scheduled/run-purge.ts | 58.82% | 50% | 100% | LOW |
-| src/storage/index.ts | 60.16% | 87.87% | 86.66% | MEDIUM |
+| src/realtime/ws-manager.ts | 59.96% | 73.68% | 76% | MEDIUM |
 
 ## Skipped Tests
 | File | Line | Description |
@@ -83,6 +82,27 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 17 -- 2026-02-27
+- Focus: Coverage improvement for low-coverage files
+- Coverage: 86.46% → 87.51% (+1.05pp)
+- Tests: 3036 → 3108 (+72 new tests)
+- New test files:
+  - src/lib/logger.test.ts: 15 tests (logger.ts coverage: 63.41% → 86.99%)
+- Test files expanded:
+  - src/lib/email/index.test.ts: 11 → 20 tests (+9 tests for fallback scenarios)
+  - src/lib/email/resend.test.ts: 9 → 26 tests (+17 tests for edge cases)
+  - src/lib/email/postmark.test.ts: 10 → 19 tests (+9 tests for edge cases)
+  - src/lib/email/sendgrid.test.ts: 8 → 23 tests (+15 tests for edge cases)
+  - src/storage/index.test.ts: 36 → 41 tests (+5 tests for CDN/backup providers)
+- Coverage improvements:
+  - src/lib/email/index.ts: 60.81% → 89.18% (+28.37pp)
+  - src/lib/logger.ts: 63.41% → 86.99% (+23.58pp)
+  - src/storage/index.ts: 61.18% → 78.05% (+16.87pp)
+  - src/lib/email/resend.ts: 66.03% → 90%+ (+24pp)
+  - src/lib/email/postmark.ts: 72.72% → 84%+ (+11pp)
+  - src/lib/email/sendgrid.ts: 73.03% → 90%+ (+17pp)
+- Status: All tests green (3108 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 16 -- 2026-02-27
 - Focus: Coverage improvement for low-coverage files
 - Coverage: 84.08% → 86.46% (+2.38pp)

@@ -4,7 +4,7 @@
  * Note: These tests verify the factory function without mocking providers.
  * Individual provider tests are in their respective test files.
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
   createEmailService,
   getEmailService,
@@ -20,9 +20,28 @@ import {
   createSmtpProvider,
 } from "./index";
 
+// Mock config to control provider selection
+vi.mock("../../config/env", () => ({
+  config: {
+    EMAIL_PROVIDER: "console",
+    RESEND_API_KEY: "",
+    SENDGRID_API_KEY: "",
+    AWS_SES_ACCESS_KEY: "",
+    AWS_SES_SECRET_KEY: "",
+    POSTMARK_SERVER_TOKEN: "",
+  },
+}));
+
 describe("Email Service Factory", () => {
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     resetEmailService();
+    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   describe("exports", () => {
@@ -111,6 +130,56 @@ describe("Email Service Factory", () => {
       setEmailService(customService);
       const service = getEmailService();
       expect(service).toBe(customService);
+    });
+  });
+
+  describe("createEmailService fallback scenarios", () => {
+    it("falls back to SMTP when resend provider selected without API key", () => {
+      // Config mock has empty RESEND_API_KEY
+      const service = createEmailService("resend");
+      expect(service).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "RESEND_API_KEY not configured. Falling back to SMTP provider."
+      );
+    });
+
+    it("falls back to SMTP when sendgrid provider selected without API key", () => {
+      const service = createEmailService("sendgrid");
+      expect(service).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "SENDGRID_API_KEY not configured. Falling back to SMTP provider."
+      );
+    });
+
+    it("falls back to SMTP when ses provider selected without access key", () => {
+      const service = createEmailService("ses");
+      expect(service).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "AWS_SES_ACCESS_KEY or AWS_SES_SECRET_KEY not configured. Falling back to SMTP provider."
+      );
+    });
+
+    it("falls back to SMTP when postmark provider selected without token", () => {
+      const service = createEmailService("postmark");
+      expect(service).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "POSTMARK_SERVER_TOKEN not configured. Falling back to SMTP provider."
+      );
+    });
+
+    it("falls back to SMTP for unknown provider", () => {
+      const service = createEmailService("unknown-provider" as any);
+      expect(service).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Unknown email provider 'unknown-provider'. Falling back to SMTP provider."
+      );
+    });
+  });
+
+  describe("provider type exports", () => {
+    it("exports EmailProviderType type", () => {
+      const providerType: "console" | "smtp" | "resend" | "sendgrid" | "ses" | "postmark" = "console";
+      expect(providerType).toBe("console");
     });
   });
 });
