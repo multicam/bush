@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN - Bush Platform
 
-**Last updated**: 2026-02-27 (v0.1.11 - Realtime Phase 2: Redis Pub/Sub, Presence, Event Recovery)
+**Last updated**: 2026-02-27 (v0.1.12 - Test Mock Fix for React Key Warnings)
 **Project status**: All P2 and P3 realtime items resolved. Platform is production-ready with horizontal scaling support.
 **Source of truth for tech stack**: `specs/README.md` (lines 68-92)
 
@@ -480,6 +480,22 @@ Per specs/README.md:
 ---
 
 ## CHANGE LOG
+
+### v0.1.12 (2026-02-27) - Test Mock Fix for React Key Warnings
+
+Fixed the `crypto.randomUUID` mock in `vitest.web.setup.ts` that was causing React key warnings in toast tests.
+
+**Fix:**
+- The mock returned the same UUID for every call
+- When `toast.tsx` used `.slice(0, 8)` on the UUID, all toasts created within the same millisecond got duplicate IDs
+- Updated the mock to return unique first 8 characters for each call using an incrementing counter
+
+**Files Updated:**
+- `vitest.web.setup.ts` - Fixed UUID mock to generate unique values
+
+**Verification:**
+- All 2867 tests pass
+- No React key warnings in test output
 
 ### v0.1.11 (2026-02-27) - Realtime Phase 2: Redis Pub/Sub, Presence, Event Recovery
 
