@@ -13,7 +13,6 @@ import { useAuth } from "@/web/context";
 import { NotificationList } from "./notification-list";
 import { toNotification, type Notification } from "./types";
 import type { NotificationDropdownProps } from "./types";
-import styles from "./notifications.module.css";
 
 export function NotificationDropdown({
   isOpen,
@@ -189,15 +188,39 @@ export function NotificationDropdown({
     }
   };
 
+  const handleRetry = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await notificationsApi.list({ limit: 20 });
+      if (!isMountedRef.current) return;
+      const items = response.data.map((item) =>
+        toNotification(item.id, item.attributes)
+      );
+      setNotifications(items);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setError("Failed to load notifications");
+      console.error("Failed to fetch notifications:", err);
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div ref={dropdownRef} className={styles.dropdown}>
-      <div className={styles.dropdownHeader}>
-        <span className={styles.dropdownTitle}>Notifications</span>
+    <div
+      ref={dropdownRef}
+      className="absolute top-full right-0 w-[380px] max-h-[480px] bg-surface-1 border border-border-default rounded-lg shadow-lg z-dropdown flex flex-col mt-2 max-[480px]:w-[calc(100vw-2rem)] max-[480px]:-right-4"
+    >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+        <span className="text-sm font-semibold text-primary">Notifications</span>
         {unreadCount > 0 && (
           <button
-            className={styles.markAllButton}
+            className="text-xs text-accent bg-transparent border-none cursor-pointer px-2 py-1 rounded-sm transition-colors hover:bg-surface-2"
             onClick={handleMarkAllRead}
           >
             Mark all as read
@@ -206,30 +229,12 @@ export function NotificationDropdown({
       </div>
 
       {error && (
-        <div className={styles.errorState}>
+        <div className="flex flex-col items-center justify-center p-8 gap-2 text-error">
           <span>{error}</span>
           <button
             disabled={isLoading}
-            onClick={async () => {
-              setIsLoading(true);
-              setError(null);
-              try {
-                const response = await notificationsApi.list({ limit: 20 });
-                if (!isMountedRef.current) return;
-                const items = response.data.map((item) =>
-                  toNotification(item.id, item.attributes)
-                );
-                setNotifications(items);
-              } catch (err) {
-                if (!isMountedRef.current) return;
-                setError("Failed to load notifications");
-                console.error("Failed to fetch notifications:", err);
-              } finally {
-                if (isMountedRef.current) {
-                  setIsLoading(false);
-                }
-              }
-            }}
+            onClick={handleRetry}
+            className="mt-2 px-3 py-1 text-xs text-accent bg-transparent border border-accent rounded-sm cursor-pointer transition-colors hover:bg-accent hover:text-white"
           >
             {isLoading ? "Retrying..." : "Retry"}
           </button>
@@ -244,8 +249,11 @@ export function NotificationDropdown({
         onDelete={handleDelete}
       />
 
-      <div className={styles.dropdownFooter}>
-        <a href="/notifications" className={styles.viewAllLink}>
+      <div className="px-4 py-3 border-t border-border-default text-center">
+        <a
+          href="/notifications"
+          className="text-sm text-accent no-underline hover:underline"
+        >
           View all notifications
         </a>
       </div>

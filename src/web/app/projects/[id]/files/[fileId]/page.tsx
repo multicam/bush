@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, MessageSquare, MessageSquareOff, Download, Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
 import { Button } from "@/web/components/ui";
 import {
@@ -24,7 +25,6 @@ import {
   getErrorMessage,
   type FileAttributes,
 } from "@/web/lib/api";
-import styles from "./file.module.css";
 
 interface FileItem extends FileAttributes {
   id: string;
@@ -56,6 +56,15 @@ function formatFileSize(bytes: number): string {
     unitIndex++;
   }
   return `${size.toFixed(1)} ${units[unitIndex]}`;
+}
+
+/**
+ * Spinner component using Lucide icon
+ */
+function Spinner() {
+  return (
+    <Loader2 className="w-10 h-10 text-accent animate-spin" />
+  );
 }
 
 export default function FileDetailPage() {
@@ -118,9 +127,9 @@ export default function FileDetailPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading file...</p>
+        <div className="flex flex-col items-center justify-center h-screen gap-4">
+          <Spinner />
+          <p className="text-secondary">Loading file...</p>
         </div>
       </AppLayout>
     );
@@ -130,9 +139,9 @@ export default function FileDetailPage() {
   if (loadingState === "error" || !file) {
     return (
       <AppLayout>
-        <div className={styles.error}>
-          <h1>File Not Found</h1>
-          <p>{errorMessage || "The requested file could not be loaded."}</p>
+        <div className="flex flex-col items-center justify-center h-screen gap-4">
+          <h1 className="text-2xl font-semibold text-primary mb-2">File Not Found</h1>
+          <p className="text-secondary mb-4">{errorMessage || "The requested file could not be loaded."}</p>
           <Button onClick={() => router.push(`/projects/${projectId}`)}>
             Back to Project
           </Button>
@@ -143,24 +152,25 @@ export default function FileDetailPage() {
 
   return (
     <AppLayout>
-      <div className={styles.container}>
+      <div className="flex flex-col h-screen bg-surface-2">
         {/* Header */}
-        <header className={styles.header}>
-          <div className={styles.headerLeft}>
+        <header className="flex items-center justify-between px-4 py-3 bg-surface-1 border-b border-border-default shrink-0">
+          <div className="flex items-center gap-4 max-md:flex-col max-md:items-start max-md:gap-2">
             <Button
               variant="secondary"
               onClick={() => router.push(`/projects/${projectId}`)}
             >
-              ← Back
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Button>
-            <div className={styles.fileInfo}>
-              <h1 className={styles.fileName}>{file.name}</h1>
-              <div className={styles.fileMeta}>
+            <div className="flex flex-col gap-1">
+              <h1 className="m-0 text-base font-semibold text-primary">{file.name}</h1>
+              <div className="flex items-center gap-2 text-xs text-secondary max-md:flex-wrap">
                 <span>{formatFileSize(file.fileSizeBytes)}</span>
-                <span>•</span>
+                <span>-</span>
                 <span>{file.mimeType}</span>
-                <span>•</span>
-                <span className={styles.status}>
+                <span>-</span>
+                <span className="px-2 py-0.5 bg-surface-2 rounded capitalize">
                   {file.status === "ready"
                     ? "Ready"
                     : file.status === "processing"
@@ -172,12 +182,22 @@ export default function FileDetailPage() {
               </div>
             </div>
           </div>
-          <div className={styles.headerRight}>
+          <div className="flex items-center gap-3">
             <Button
               variant="secondary"
               onClick={() => setShowComments(!showComments)}
             >
-              {showComments ? "Hide Comments" : "Show Comments"}
+              {showComments ? (
+                <>
+                  <MessageSquareOff className="w-4 h-4 mr-2" />
+                  Hide Comments
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Show Comments
+                </>
+              )}
             </Button>
             {file.status === "ready" && (
               <Button
@@ -190,6 +210,7 @@ export default function FileDetailPage() {
                   }
                 }}
               >
+                <Download className="w-4 h-4 mr-2" />
                 Download
               </Button>
             )}
@@ -197,12 +218,12 @@ export default function FileDetailPage() {
         </header>
 
         {/* Main content */}
-        <div className={styles.content}>
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Viewer */}
-          <div className={styles.viewer}>
+          <div className="relative flex-1 overflow-hidden bg-surface-3 flex items-center justify-center">
             {file.status !== "ready" && (
-              <div className={styles.processingOverlay}>
-                <div className={styles.spinner}></div>
+              <div className="flex flex-col items-center justify-center gap-4 text-secondary">
+                <Spinner />
                 <p>
                   {file.status === "uploading"
                     ? "Uploading file..."
@@ -243,9 +264,9 @@ export default function FileDetailPage() {
             )}
 
             {file.status === "ready" && viewerType === "other" && (
-              <div className={styles.unsupported}>
-                <h2>Preview not available</h2>
-                <p>This file type ({file.mimeType}) cannot be previewed.</p>
+              <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+                <h2 className="m-0 text-xl font-semibold text-primary">Preview not available</h2>
+                <p className="m-0 text-secondary">This file type ({file.mimeType}) cannot be previewed.</p>
                 <Button
                   onClick={async () => {
                     try {
@@ -256,6 +277,7 @@ export default function FileDetailPage() {
                     }
                   }}
                 >
+                  <Download className="w-4 h-4 mr-2" />
                   Download File
                 </Button>
               </div>
@@ -264,7 +286,7 @@ export default function FileDetailPage() {
 
           {/* Comments panel */}
           {showComments && (
-            <div className={styles.commentsPanel}>
+            <div className="w-[360px] border-l border-border-default bg-surface-1 overflow-hidden shrink-0 max-md:absolute max-md:right-0 max-md:top-[60px] max-md:bottom-0 max-md:z-[100] max-md:shadow-[-2px_0_8px_rgba(0,0,0,0.1)]">
               <CommentPanel
                 fileId={fileId}
               />

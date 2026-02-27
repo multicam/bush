@@ -19,7 +19,7 @@ import {
 } from "@/web/lib/upload-client";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import { Button, Badge } from "@/web/components/ui";
-import styles from "./upload.module.css";
+import { Pause, Play, RotateCcw, X } from "lucide-react";
 
 export interface QueuedFile {
   /** Unique ID for this queued upload */
@@ -135,6 +135,40 @@ function formatETA(seconds: number): string {
 }
 
 /**
+ * Get category background color
+ */
+function getCategoryBgClass(category: string): string {
+  switch (category) {
+    case "video":
+      return "bg-purple-500/10";
+    case "audio":
+      return "bg-pink-500/10";
+    case "image":
+      return "bg-emerald-500/10";
+    case "document":
+      return "bg-blue-500/10";
+    default:
+      return "bg-surface-1";
+  }
+}
+
+/**
+ * Get progress bar fill color based on status
+ */
+function getProgressFillClass(status: string): string {
+  switch (status) {
+    case "paused":
+      return "bg-amber-500";
+    case "failed":
+      return "bg-red-500";
+    case "completed":
+      return "bg-emerald-500";
+    default:
+      return "bg-accent";
+  }
+}
+
+/**
  * Individual file upload item in the queue
  */
 interface UploadItemProps {
@@ -194,33 +228,46 @@ function UploadItem({
   const canRemove = isCompleted || isFailed || isCancelled;
   const canRetry = isFailed || isCancelled;
 
+  // Status background color
+  const statusBgClass = isCompleted
+    ? "bg-emerald-500/5"
+    : isFailed
+      ? "bg-red-500/5"
+      : "";
+
   return (
-    <div className={styles.queueItem} data-status={status}>
+    <div
+      className={`flex flex-col gap-3 px-5 py-4 border-b border-border-default transition-colors hover:bg-surface-3 last:border-b-0 ${statusBgClass}`}
+      data-status={status}
+    >
       {/* File info */}
-      <div className={styles.itemInfo}>
-        <div className={styles.itemIcon} data-category={category}>
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex items-center justify-center w-10 h-10 rounded-md text-xl shrink-0 ${getCategoryBgClass(category)}`}
+          data-category={category}
+        >
           {getFileIcon(file.type)}
         </div>
-        <div className={styles.itemDetails}>
-          <span className={styles.itemName} title={file.name}>
+        <div className="flex-1 min-w-0">
+          <span className="block text-sm font-medium text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={file.name}>
             {file.name}
           </span>
-          <div className={styles.itemMeta}>
-            <span className={styles.itemSize}>{formatFileSize(file.size)}</span>
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted">
+            <span>{formatFileSize(file.size)}</span>
             {isInProgress && uploadSpeed > 0 && (
               <>
-                <span className={styles.separator}>•</span>
-                <span className={styles.speed}>{formatSpeed(uploadSpeed)}</span>
+                <span className="text-border-default">•</span>
+                <span className="text-accent">{formatSpeed(uploadSpeed)}</span>
               </>
             )}
             {isInProgress && eta > 0 && (
               <>
-                <span className={styles.separator}>•</span>
-                <span className={styles.eta}>{formatETA(eta)} left</span>
+                <span className="text-border-default">•</span>
+                <span className="text-accent">{formatETA(eta)} left</span>
               </>
             )}
           </div>
-          {error && <div className={styles.itemError}>{error}</div>}
+          {error && <div className="mt-1 text-xs text-red-500">{error}</div>}
         </div>
         <Badge variant={getStatusVariant(status)} size="sm">
           {getStatusLabel(status)}
@@ -229,10 +276,10 @@ function UploadItem({
 
       {/* Progress bar */}
       {(isInProgress || isPaused) && (
-        <div className={styles.progressContainer}>
-          <div className={styles.progressBar}>
+        <div className="flex items-center gap-3 pl-[52px]">
+          <div className="flex-1 h-[6px] bg-surface-1 rounded-[3px] overflow-hidden">
             <div
-              className={styles.progressFill}
+              className={`h-full rounded-[3px] transition-[width] duration-200 ease-out ${getProgressFillClass(status)}`}
               style={{ width: `${percent}%` }}
               role="progressbar"
               aria-valuenow={percent}
@@ -240,7 +287,7 @@ function UploadItem({
               aria-valuemax={100}
             />
           </div>
-          <span className={styles.progressText}>
+          <span className="text-xs text-muted whitespace-nowrap min-w-[100px] text-right">
             {percent.toFixed(1)}%
             {uploadedBytes > 0 && ` (${formatFileSize(uploadedBytes)} / ${formatFileSize(file.size)})`}
           </span>
@@ -248,44 +295,30 @@ function UploadItem({
       )}
 
       {/* Actions */}
-      <div className={styles.itemActions}>
+      <div className="flex items-center gap-1 shrink-0">
         {canPause && (
           <Button variant="ghost" size="sm" onClick={handlePause} aria-label="Pause upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" />
-              <rect x="14" y="4" width="4" height="16" />
-            </svg>
+            <Pause className="w-4 h-4" />
           </Button>
         )}
         {canResume && (
           <Button variant="ghost" size="sm" onClick={handleResume} aria-label="Resume upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5,3 19,12 5,21" />
-            </svg>
+            <Play className="w-4 h-4" />
           </Button>
         )}
         {canRetry && (
           <Button variant="ghost" size="sm" onClick={handleRetry} aria-label="Retry upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="23,4 23,10 17,10" />
-              <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-            </svg>
+            <RotateCcw className="w-4 h-4" />
           </Button>
         )}
         {canCancel && (
           <Button variant="ghost" size="sm" onClick={handleCancel} aria-label="Cancel upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="w-4 h-4" />
           </Button>
         )}
         {canRemove && (
           <Button variant="ghost" size="sm" onClick={handleRemove} aria-label="Remove from queue">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="w-4 h-4" />
           </Button>
         )}
       </div>
@@ -460,11 +493,11 @@ export function UploadQueue({
   }
 
   return (
-    <div className={styles.queue}>
+    <div className="flex flex-col bg-surface-2 border border-border-default rounded-lg overflow-hidden">
       {/* Queue header */}
-      <div className={styles.queueHeader}>
-        <div className={styles.queueTitle}>
-          <h3>Upload Queue</h3>
+      <div className="flex flex-wrap items-center gap-4 px-5 py-4 bg-surface-3 border-b border-border-default">
+        <div className="flex items-center gap-3">
+          <h3 className="m-0 text-base font-semibold text-primary">Upload Queue</h3>
           <Badge variant="default" size="sm">
             {stats.activeCount} of {stats.total}
           </Badge>
@@ -472,14 +505,14 @@ export function UploadQueue({
 
         {/* Overall progress */}
         {stats.activeCount > 0 && (
-          <div className={styles.overallProgress}>
-            <div className={styles.progressBar}>
+          <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+            <div className="flex-1 h-[6px] bg-surface-1 rounded-[3px] overflow-hidden">
               <div
-                className={styles.progressFill}
+                className="h-full bg-accent rounded-[3px] transition-[width]"
                 style={{ width: `${stats.overallProgress}%` }}
               />
             </div>
-            <span className={styles.progressText}>
+            <span className="text-xs text-muted whitespace-nowrap">
               {stats.overallProgress.toFixed(0)}%
               {stats.totalSpeed > 0 && ` • ${formatSpeed(stats.totalSpeed)}`}
             </span>
@@ -487,7 +520,7 @@ export function UploadQueue({
         )}
 
         {/* Queue actions */}
-        <div className={styles.queueActions}>
+        <div className="flex items-center gap-2 ml-auto">
           {stats.failed > 0 && (
             <Button variant="secondary" size="sm" onClick={handleRetryAll}>
               Retry All ({stats.failed})
@@ -507,7 +540,7 @@ export function UploadQueue({
       </div>
 
       {/* Queue items */}
-      <div className={styles.queueItems} style={{ maxHeight }}>
+      <div className="flex flex-col overflow-y-auto" style={{ maxHeight }}>
         {files.map((file) => (
           <UploadItem
             key={file.id}

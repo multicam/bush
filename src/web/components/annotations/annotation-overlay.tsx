@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { Pencil, X } from "lucide-react";
 import { AnnotationCanvas } from "./annotation-canvas";
 import { AnnotationToolbar } from "./annotation-toolbar";
 import type {
@@ -14,7 +15,6 @@ import type {
   AnnotationTool,
 } from "./types";
 import { generateId } from "../../lib/utils";
-import styles from "./annotations.module.css";
 
 export interface AnnotationOverlayProps {
   /** Width of the container */
@@ -161,7 +161,10 @@ export function AnnotationOverlay({
   const canRedo = historyIndex < history.length - 1;
 
   return (
-    <div className={`${styles.overlay} ${className ?? ""}`} style={{ width, height }}>
+    <div
+      className={`absolute top-0 left-0 [&>*]:pointer-events-auto pointer-events-none ${className ?? ""}`}
+      style={{ width, height }}
+    >
       {/* Canvas layer */}
       <AnnotationCanvas
         width={width}
@@ -178,7 +181,7 @@ export function AnnotationOverlay({
 
       {/* Toolbar */}
       {isActive && !readOnly && (
-        <div className={styles.toolbarContainer}>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
           <AnnotationToolbar
             tool={tool}
             color={color}
@@ -200,17 +203,17 @@ export function AnnotationOverlay({
       {!isActive && !readOnly && (
         <button
           type="button"
-          className={styles.toggleButton}
+          className={`
+            absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2
+            border-none rounded-md bg-surface-1/90 text-primary
+            text-sm cursor-pointer transition-all shadow-md
+            hover:bg-surface-2/95 hover:-translate-y-0.5 hover:shadow-lg
+          `}
           onClick={toggleActive}
           title="Enable annotation mode"
           aria-label="Enable annotation mode"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 19l7-7 3 3-7 7-3-3z" />
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-            <path d="M2 2l7.586 7.586" />
-            <circle cx="11" cy="11" r="2" />
-          </svg>
+          <Pencil className="w-5 h-5 opacity-80" />
           <span>Annotate</span>
         </button>
       )}
@@ -219,15 +222,17 @@ export function AnnotationOverlay({
       {isActive && !readOnly && (
         <button
           type="button"
-          className={styles.closeButton}
+          className={`
+            absolute top-3 right-3 flex items-center justify-center
+            w-8 h-8 border-none rounded-md bg-surface-1/90 text-primary
+            cursor-pointer transition-colors shadow-md
+            hover:bg-red-500/80 hover:text-white
+          `}
           onClick={toggleActive}
           title="Exit annotation mode"
           aria-label="Exit annotation mode"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X className="w-5 h-5" />
         </button>
       )}
     </div>

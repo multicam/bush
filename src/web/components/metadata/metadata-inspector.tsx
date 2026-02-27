@@ -8,58 +8,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { Info, ChevronDown, Star, X } from "lucide-react";
 import { Spinner } from "../ui/spinner";
 import { metadataApi, type TechnicalMetadata, type FileMetadataAttributes } from "../../lib/api";
 import { BUILTIN_FIELDS, type BuiltInField } from "./types";
-import styles from "./metadata.module.css";
-
-/** Info icon */
-function InfoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-  );
-}
-
-/** Chevron icon */
-function ChevronIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={collapsed ? styles.sectionChevronCollapsed : styles.sectionChevron}
-      style={{ transform: collapsed ? "rotate(-90deg)" : "none" }}
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-/** Star icon for rating */
-function StarIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
-
-/** X icon for removing keywords */
-function XIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
 
 /** Format duration in seconds to HH:MM:SS */
 function formatDuration(seconds: number | null): string {
@@ -117,18 +69,23 @@ function RatingInput({ value, onChange, disabled }: {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
 
   return (
-    <div className={styles.ratingInput}>
+    <div className="flex flex-row-reverse gap-0.5 justify-end">
       {[5, 4, 3, 2, 1].map((star) => (
         <span
           key={star}
-          className={`${styles.ratingStar} ${disabled ? styles.disabled : ""} ${
-            (hoverValue ?? value ?? 0) >= star ? styles.active : ""
+          className={`cursor-pointer text-muted transition-colors ${
+            disabled ? "cursor-default opacity-50" : ""
+          } ${
+            (hoverValue ?? value ?? 0) >= star ? "text-amber-500" : ""
           }`}
           onClick={() => !disabled && onChange(value === star ? null : star)}
           onMouseEnter={() => !disabled && setHoverValue(star)}
           onMouseLeave={() => setHoverValue(null)}
         >
-          <StarIcon filled={(hoverValue ?? value ?? 0) >= star} />
+          <Star
+            size={16}
+            fill={(hoverValue ?? value ?? 0) >= star ? "currentColor" : "none"}
+          />
         </span>
       ))}
     </div>
@@ -160,13 +117,19 @@ function KeywordsInput({ value, onChange, disabled }: {
   };
 
   return (
-    <div className={styles.keywordsInput}>
+    <div className="flex flex-wrap gap-1 max-w-[180px]">
       {value.map((keyword) => (
-        <span key={keyword} className={styles.keywordTag}>
+        <span
+          key={keyword}
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-3 rounded-full text-[11px] text-primary"
+        >
           {keyword}
           {!disabled && (
-            <span className={styles.keywordRemove} onClick={() => handleRemove(keyword)}>
-              <XIcon />
+            <span
+              className="cursor-pointer opacity-60 hover:opacity-100 flex items-center justify-center"
+              onClick={() => handleRemove(keyword)}
+            >
+              <X size={12} />
             </span>
           )}
         </span>
@@ -174,7 +137,7 @@ function KeywordsInput({ value, onChange, disabled }: {
       {!disabled && (
         <input
           type="text"
-          className={styles.keywordInput}
+          className="border-none bg-transparent text-xs text-primary outline-none w-[60px] min-w-[60px] placeholder:text-muted"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -268,7 +231,7 @@ function MetadataFieldRow({
     if (fieldType === "text") {
       return (
         <textarea
-          className={styles.notesTextarea}
+          className="text-xs text-primary bg-surface-3 border border-accent rounded-sm p-2 w-[180px] min-h-[60px] resize-y outline-none font-inherit focus:border-accent"
           value={(editValue as string) || ""}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleSave}
@@ -280,7 +243,7 @@ function MetadataFieldRow({
     return (
       <input
         type="text"
-        className={styles.fieldValueInput}
+        className="text-xs text-primary bg-surface-3 border border-accent rounded-sm px-2 py-1 w-[180px] text-right outline-none focus:border-accent"
         value={(editValue as string) || ""}
         onChange={(e) => setEditValue(e.target.value)}
         onBlur={handleSave}
@@ -294,13 +257,19 @@ function MetadataFieldRow({
   };
 
   return (
-    <div className={styles.fieldRow}>
-      <div className={styles.fieldName}>
+    <div className="flex items-start justify-between px-4 py-2.5 border-b border-border-default hover:bg-surface-3 last:border-b-0">
+      <div className="text-xs text-secondary shrink-0 w-[100px]">
         {field.name}
-        {isCustom && <span className={styles.customBadge}>Custom</span>}
+        {isCustom && (
+          <span className="inline-flex items-center px-1.5 py-0.5 bg-accent/10 text-accent rounded-sm text-[9px] font-semibold uppercase ml-2">
+            Custom
+          </span>
+        )}
       </div>
       <div
-        className={`${styles.fieldValue} ${isEditableField ? styles.editable : ""}`}
+        className={`text-xs text-primary text-right break-words max-w-[180px] ${
+          isEditableField ? "cursor-pointer px-2 py-1 -m-1 rounded-sm transition-colors hover:bg-surface-3" : ""
+        }`}
         onClick={() => isEditableField && fieldType !== "rating" && fieldType !== "keywords" && setIsEditing(true)}
       >
         {isEditing ? renderEditableInput() : formatValue()}
@@ -322,12 +291,18 @@ function Section({
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   return (
-    <div className={styles.section}>
-      <div className={styles.sectionHeader} onClick={() => setCollapsed(!collapsed)}>
-        <ChevronIcon collapsed={collapsed} />
+    <div className="border-b border-border-default">
+      <div
+        className="px-4 py-3 bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-secondary flex items-center gap-2 cursor-pointer select-none hover:bg-surface-3"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <ChevronDown
+          size={12}
+          className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+        />
         {title}
       </div>
-      <div className={`${styles.sectionContent} ${collapsed ? styles.collapsed : ""}`}>
+      <div className={collapsed ? "hidden" : ""}>
         {children}
       </div>
     </div>
@@ -427,7 +402,7 @@ export function MetadataInspector({
       fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "duration")!, value: tech.duration });
     }
     if (tech.width !== null || tech.height !== null) {
-      fields.push({ field: { id: "resolution", name: "Resolution", type: "read-only", editable: false, category: "technical" } as BuiltInField, value: tech.width && tech.height ? `${tech.width} × ${tech.height}` : null });
+      fields.push({ field: { id: "resolution", name: "Resolution", type: "read-only", editable: false, category: "technical" } as BuiltInField, value: tech.width && tech.height ? `${tech.width} x ${tech.height}` : null });
     }
     if (tech.frameRate !== null) {
       fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "frameRate")!, value: tech.frameRate });
@@ -472,14 +447,14 @@ export function MetadataInspector({
 
   if (isLoading) {
     return (
-      <div className={`${styles.panel} ${className || ""}`}>
-        <div className={styles.header}>
-          <div className={styles.title}>
-            <InfoIcon />
+      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+        <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
+          <div className="text-sm font-semibold text-primary flex items-center gap-2">
+            <Info size={16} />
             Metadata
           </div>
         </div>
-        <div className={styles.loading}>
+        <div className="flex items-center justify-center p-8">
           <Spinner />
         </div>
       </div>
@@ -488,47 +463,47 @@ export function MetadataInspector({
 
   if (error) {
     return (
-      <div className={`${styles.panel} ${className || ""}`}>
-        <div className={styles.header}>
-          <div className={styles.title}>
-            <InfoIcon />
+      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+        <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
+          <div className="text-sm font-semibold text-primary flex items-center gap-2">
+            <Info size={16} />
             Metadata
           </div>
         </div>
-        <div className={styles.error}>{error}</div>
+        <div className="px-4 py-4 text-red-500 text-xs text-center">{error}</div>
       </div>
     );
   }
 
   if (!metadata) {
     return (
-      <div className={`${styles.panel} ${className || ""}`}>
-        <div className={styles.header}>
-          <div className={styles.title}>
-            <InfoIcon />
+      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+        <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
+          <div className="text-sm font-semibold text-primary flex items-center gap-2">
+            <Info size={16} />
             Metadata
           </div>
         </div>
-        <div className={styles.empty}>No metadata available</div>
+        <div className="px-4 py-6 text-center text-muted text-xs">No metadata available</div>
       </div>
     );
   }
 
   return (
-    <div className={`${styles.panel} ${className || ""}`}>
-      <div className={styles.header}>
-        <div className={styles.title}>
-          <InfoIcon />
+    <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+      <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
+        <div className="text-sm font-semibold text-primary flex items-center gap-2">
+          <Info size={16} />
           Metadata
         </div>
       </div>
 
-      <div className={styles.content}>
+      <div className="flex-1 overflow-y-auto">
         {/* File info */}
-        <div className={styles.fileInfo}>
-          <div className={styles.fileName}>{metadata.file.name}</div>
-          <div className={styles.fileMeta}>
-            <div className={styles.fileMetaItem}>
+        <div className="px-4 py-4 border-b border-border-default">
+          <div className="text-sm font-medium text-primary mb-2 break-words">{metadata.file.name}</div>
+          <div className="flex flex-col gap-1">
+            <div className="text-[11px] text-secondary">
               Uploaded {new Date(metadata.file.created_at).toLocaleDateString()}
             </div>
           </div>

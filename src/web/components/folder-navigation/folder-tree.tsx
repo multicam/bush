@@ -7,9 +7,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { ChevronRight, Folder, Home } from "lucide-react";
 import { foldersApi, extractCollectionAttributes, getErrorMessage } from "@/web/lib/api";
 import type { FolderAttributes } from "@/web/lib/api";
-import styles from "./folder-navigation.module.css";
 
 export interface FolderTreeItem extends FolderAttributes {
   id: string;
@@ -86,9 +86,9 @@ function FolderNode({
   );
 
   return (
-    <div className={styles.treeNode}>
+    <div className="flex flex-col">
       <div
-        className={`${styles.treeNodeContent} ${isSelected ? styles.selected : ""}`}
+        className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors select-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${isSelected ? 'bg-accent/10 text-accent' : ''}`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -99,34 +99,26 @@ function FolderNode({
       >
         {hasChildren ? (
           <button
-            className={`${styles.toggleButton} ${isExpanded ? styles.expanded : ""}`}
+            className={`flex items-center justify-center w-5 h-5 p-0 bg-none border-none rounded-sm text-muted cursor-pointer transition-transform hover:bg-surface-3 ${isExpanded ? 'rotate-90' : ''}`}
             onClick={handleToggle}
             type="button"
             aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight className="w-3 h-3" />
           </button>
         ) : (
-          <span className={styles.togglePlaceholder} />
+          <span className="w-5 h-5" />
         )}
-        <span className={styles.folderIcon}>
-          {isExpanded ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-          )}
+        <span className="flex items-center justify-center text-[#f59e0b] flex-shrink-0">
+          <Folder className="w-4 h-4" />
         </span>
-        <span className={styles.folderName}>{folder.name}</span>
+        <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
+          {folder.name}
+        </span>
       </div>
 
       {isExpanded && children.length > 0 && (
-        <div className={styles.treeNodeChildren} role="group">
+        <div className="flex flex-col" role="group">
           {children.map((child) => (
             <FolderNode
               key={child.id}
@@ -237,25 +229,25 @@ export function FolderTree({
 
   if (isLoading && rootFolders.length === 0) {
     return (
-      <div className={styles.treeContainer}>
-        <div className={styles.loading}>Loading folders...</div>
+      <div className="flex flex-col min-h-0 overflow-y-auto text-sm">
+        <div className="p-4 text-center text-muted">Loading folders...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.treeContainer}>
-        <div className={styles.error}>{error}</div>
+      <div className="flex flex-col min-h-0 overflow-y-auto text-sm">
+        <div className="p-4 text-center text-[#ef4444]">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className={styles.treeContainer} role="tree" aria-label="Folder navigation">
+    <div className="flex flex-col min-h-0 overflow-y-auto text-sm" role="tree" aria-label="Folder navigation">
       {showRoot && (
         <div
-          className={`${styles.treeNodeContent} ${selectedFolderId === null ? styles.selected : ""}`}
+          className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${selectedFolderId === null ? 'bg-accent/10 text-accent' : ''}`}
           onClick={handleRootSelect}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -267,14 +259,11 @@ export function FolderTree({
           tabIndex={0}
           aria-selected={selectedFolderId === null}
         >
-          <span className={styles.togglePlaceholder} />
-          <span className={styles.folderIcon}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="currentColor" strokeWidth="2" />
-            </svg>
+          <span className="w-5 h-5" />
+          <span className="flex items-center justify-center text-muted flex-shrink-0">
+            <Home className="w-4 h-4" />
           </span>
-          <span className={styles.folderName}>All Files</span>
+          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">All Files</span>
         </div>
       )}
 
@@ -293,7 +282,7 @@ export function FolderTree({
       ))}
 
       {rootFolders.length === 0 && !showRoot && (
-        <div className={styles.empty}>No folders</div>
+        <div className="p-4 text-center text-muted">No folders</div>
       )}
     </div>
   );

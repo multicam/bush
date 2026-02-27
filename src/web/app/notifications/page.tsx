@@ -18,7 +18,6 @@ import {
   toNotification,
   type Notification,
 } from "@/web/components/notifications";
-import styles from "@/web/components/notifications/notifications.module.css";
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All" },
@@ -138,42 +137,34 @@ export default function NotificationsPage() {
 
   return (
     <AppLayout>
-      <div className={styles.notificationsPage}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>
+      <div className="p-8 max-w-[800px] mx-auto max-[480px]:p-4">
+      <div className="flex items-center justify-between mb-6 max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-4">
+        <h1 className="text-2xl font-semibold text-primary">
           Notifications
           {unreadCount > 0 && (
-            <Badge variant="primary" size="sm" className={styles.unreadBadge}>
+            <Badge variant="primary" size="sm" className="ml-2">
               {unreadCount} unread
             </Badge>
           )}
         </h1>
         {unreadCount > 0 && (
           <button
-            className={styles.markAllButton}
+            className="text-xs text-accent bg-transparent border-none cursor-pointer px-2 py-1 rounded-sm transition-colors hover:bg-surface-2"
             onClick={handleMarkAllRead}
-            style={{
-              padding: "0.5rem 1rem",
-              fontSize: "0.875rem",
-              backgroundColor: "var(--bg-secondary)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "var(--border-radius)",
-              cursor: "pointer",
-            }}
           >
             Mark all as read
           </button>
         )}
       </div>
 
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel} htmlFor="filter">
+      <div className="flex items-center gap-4 mb-4 px-4 py-3 bg-surface-2 rounded-md">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-secondary" htmlFor="filter">
             Show:
           </label>
           <select
             id="filter"
-            className={styles.filterSelect}
+            className="px-3 py-1.5 text-sm bg-surface-1 border border-border-default rounded text-primary cursor-pointer focus:outline-none focus:border-accent"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
@@ -262,12 +253,12 @@ export default function NotificationsPage() {
           </div>
         </div>
       ) : (
-        <div className={styles.pageList}>
+        <div className="bg-surface-1 border border-border-default rounded-lg overflow-hidden">
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`${styles.pageNotificationItem} ${
-                !notification.read ? styles.unread : ""
+              className={`flex items-start gap-4 px-5 py-4 border-b border-border-default last:border-b-0 transition-colors cursor-pointer hover:bg-surface-2 ${
+                !notification.read ? "bg-[rgba(0,102,255,0.05)] hover:bg-[rgba(0,102,255,0.1)]" : ""
               }`}
               onClick={() => handleNotificationClick(notification)}
               role="button"

@@ -8,6 +8,7 @@
 "use client";
 
 import { useCallback, useState, useRef, type DragEvent, type ChangeEvent } from "react";
+import { Upload, XCircle } from "lucide-react";
 import {
   isSupportedMimeType,
   isSupportedExtension,
@@ -16,7 +17,7 @@ import {
   getFileCategory,
   type FileCategory,
 } from "@/shared/file-types";
-import styles from "./upload.module.css";
+import { cn } from "@/shared/cn";
 
 export interface DroppedFile {
   id: string;
@@ -281,22 +282,29 @@ export function Dropzone({
     [handleClick]
   );
 
-  const dropzoneClasses = [
-    styles.dropzone,
-    isDragActive && styles.active,
-    isDragReject && styles.reject,
-    disabled && styles.disabled,
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   // Build accept string for input
   const inputAccept = accept ? accept.join(",") : undefined;
 
   return (
     <div
-      className={dropzoneClasses}
+      className={cn(
+        // Base styles
+        "relative flex flex-col items-center justify-center min-h-[200px] p-8",
+        "border-2 border-dashed border-border-default rounded-lg",
+        "bg-surface-2 cursor-pointer",
+        "transition-colors duration-150",
+        // Hover state
+        "hover:not-disabled:border-accent hover:not-disabled:bg-surface-3",
+        // Focus state
+        "focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15",
+        // Active/drag state
+        isDragActive && !isDragReject && "border-accent bg-accent/5 ring-[3px] ring-accent/15",
+        // Reject state
+        isDragReject && "border-red-500 bg-red-500/5",
+        // Disabled state
+        disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+        className
+      )}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -315,28 +323,30 @@ export function Dropzone({
         accept={inputAccept}
         onChange={handleInputChange}
         disabled={disabled}
-        className={styles.input}
+        className="absolute w-0 h-0 opacity-0 pointer-events-none"
         aria-hidden="true"
         {...(allowFolders ? { webkitdirectory: "", directory: "" } : {})}
       />
 
-      <div className={styles.content}>
-        <div className={styles.icon}>
+      <div className="flex flex-col items-center text-center pointer-events-none">
+        <div
+          className={cn(
+            "flex items-center justify-center w-16 h-16 mb-4",
+            "text-secondary transition-all duration-150",
+            // Hover/active state
+            (isDragActive && !isDragReject) && "text-accent -translate-y-0.5",
+            // Reject state
+            isDragReject && "text-red-500"
+          )}
+        >
           {isDragReject ? (
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M15 9l-6 6M9 9l6 6" />
-            </svg>
+            <XCircle className="w-12 h-12" strokeWidth={1.5} />
           ) : (
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="17,8 12,3 7,8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
+            <Upload className="w-12 h-12" strokeWidth={1.5} />
           )}
         </div>
 
-        <p className={styles.instructions}>
+        <p className="m-0 mb-2 text-base font-medium text-primary">
           {isDragActive
             ? isDragReject
               ? "Some files are not supported"
@@ -345,9 +355,9 @@ export function Dropzone({
         </p>
 
         {!disabled && (
-          <p className={styles.hint}>
+          <p className="m-0 text-sm text-secondary">
             {allowFolders
-              ? `Folders supported • Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
+              ? `Folders supported - Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
               : multiple
                 ? `Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each`
                 : `Max ${formatFileSize(maxFileSize)}`}

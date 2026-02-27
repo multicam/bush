@@ -18,7 +18,7 @@ import {
   type WorkspaceAttributes,
   type ProjectAttributes,
 } from "@/web/lib/api";
-import styles from "./projects.module.css";
+import { Loader2, Grid3X3, List, ChevronDown } from "lucide-react";
 
 interface Workspace extends WorkspaceAttributes {
   id: string;
@@ -147,9 +147,9 @@ export default function ProjectsPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
+        <div className="p-8 max-w-[80rem] mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+            <Loader2 className="w-8 h-8 animate-spin text-accent mb-4" />
             <p>Loading projects...</p>
           </div>
         </div>
@@ -161,10 +161,10 @@ export default function ProjectsPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.error}>
-            <h2>Failed to load projects</h2>
-            <p>{errorMessage}</p>
+        <div className="p-8 max-w-[80rem] mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+            <h2 className="text-primary m-0 mb-2">Failed to load projects</h2>
+            <p className="text-secondary m-0 mb-6">{errorMessage}</p>
             <Button
               variant="primary"
               onClick={() => {
@@ -183,11 +183,11 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className={styles.page}>
-        <div className={styles.header}>
+      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+        <div className="flex items-start justify-between mb-8 sm:flex-col sm:gap-4">
           <div>
-            <h1 className={styles.title}>Projects</h1>
-            <p className={styles.subtitle}>
+            <h1 className="text-3xl font-bold text-primary m-0">Projects</h1>
+            <p className="mt-1 text-sm text-secondary">
               Browse and manage your projects
             </p>
           </div>
@@ -197,41 +197,44 @@ export default function ProjectsPage() {
         </div>
 
         {/* Toolbar */}
-        <div className={styles.toolbar}>
-          <div className={styles.toolbarLeft}>
+        <div className="flex items-center justify-between mb-8 gap-4 md:flex-col md:items-stretch">
+          <div className="flex items-center gap-3 flex-1 md:flex-col">
             <input
               type="text"
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
+              className="w-full max-w-80 px-3 py-2 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15 placeholder:text-muted md:max-w-none"
             />
-            <select
-              value={filterWorkspace || "all"}
-              onChange={(e) => setFilterWorkspace(e.target.value === "all" ? null : e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">All Workspaces</option>
-              {workspaces.map((w) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={filterWorkspace || "all"}
+                onChange={(e) => setFilterWorkspace(e.target.value === "all" ? null : e.target.value)}
+                className="px-3 py-2 pr-8 text-sm bg-surface-1 border border-border-default rounded-md text-primary cursor-pointer appearance-none focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+              >
+                <option value="all">All Workspaces</option>
+                {workspaces.map((w) => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
+            </div>
           </div>
-          <div className={styles.toolbarRight}>
-            <div className={styles.viewToggle}>
+          <div className="flex items-center gap-3">
+            <div className="flex border border-border-default rounded-md overflow-hidden">
               <button
-                className={`${styles.viewBtn} ${viewMode === "grid" ? styles.active : ""}`}
+                className={`px-3 py-2 text-base bg-surface-1 border-none cursor-pointer transition-colors ${viewMode === "grid" ? "bg-surface-2 text-primary" : "text-secondary hover:bg-surface-2"}`}
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
               >
-                +
+                <Grid3X3 className="w-4 h-4" />
               </button>
               <button
-                className={`${styles.viewBtn} ${viewMode === "list" ? styles.active : ""}`}
+                className={`px-3 py-2 text-base bg-surface-1 border-none cursor-pointer transition-colors ${viewMode === "list" ? "bg-surface-2 text-primary" : "text-secondary hover:bg-surface-2"}`}
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
               >
-                =
+                <List className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -239,27 +242,27 @@ export default function ProjectsPage() {
 
         {/* Projects */}
         {viewMode === "grid" ? (
-          <div className={styles.grid}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 sm:grid-cols-1">
             {filteredProjects.map((project) => (
               <a
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className={styles.card}
+                className="flex flex-col p-5 bg-surface-2 border border-border-default rounded-lg no-underline transition-colors hover:border-accent hover:shadow-md"
               >
-                <div className={styles.cardHeader}>
+                <div className="flex justify-end mb-3">
                   <Badge variant={getStatusBadgeVariant(project)} size="sm">
                     {getStatusLabel(project)}
                   </Badge>
                 </div>
-                <h3 className={styles.cardTitle}>{project.name}</h3>
-                <p className={styles.cardDescription}>
+                <h3 className="text-base font-semibold text-primary m-0 mb-2">{project.name}</h3>
+                <p className="text-sm text-secondary leading-6 mb-3 flex-1">
                   {project.description || "No description"}
                 </p>
-                <div className={styles.cardMeta}>
-                  <span className={styles.workspaceName}>{project.workspaceName}</span>
+                <div className="flex items-center gap-2 text-xs text-muted mb-2">
+                  <span className="text-accent">{project.workspaceName}</span>
                 </div>
-                <div className={styles.cardFooter}>
-                  <span className={styles.lastUpdated}>
+                <div className="pt-3 border-t border-border-default">
+                  <span className="text-xs text-muted">
                     Updated {formatRelativeTime(project.updatedAt)}
                   </span>
                 </div>
@@ -267,25 +270,25 @@ export default function ProjectsPage() {
             ))}
           </div>
         ) : (
-          <div className={styles.list}>
+          <div className="flex flex-col bg-surface-2 border border-border-default rounded-lg overflow-hidden">
             {filteredProjects.map((project) => (
               <a
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className={styles.listItem}
+                className="flex items-center justify-between px-5 py-4 no-underline border-b border-border-default last:border-b-0 transition-colors hover:bg-surface-3"
               >
-                <div className={styles.listInfo}>
-                  <h3 className={styles.listTitle}>{project.name}</h3>
-                  <p className={styles.listDescription}>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">{project.name}</h3>
+                  <p className="text-xs text-secondary m-0 whitespace-nowrap overflow-hidden text-ellipsis">
                     {project.description || "No description"}
                   </p>
                 </div>
-                <div className={styles.listMeta}>
-                  <span className={styles.workspaceName}>{project.workspaceName}</span>
+                <div className="flex items-center gap-4 ml-8 md:hidden">
+                  <span className="text-xs text-accent whitespace-nowrap">{project.workspaceName}</span>
                   <Badge variant={getStatusBadgeVariant(project)} size="sm">
                     {getStatusLabel(project)}
                   </Badge>
-                  <span className={styles.lastUpdated}>
+                  <span className="text-xs text-muted whitespace-nowrap">
                     {formatRelativeTime(project.updatedAt)}
                   </span>
                 </div>
@@ -295,8 +298,8 @@ export default function ProjectsPage() {
         )}
 
         {filteredProjects.length === 0 && (
-          <div className={styles.empty}>
-            <p>No projects found</p>
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+            <p className="mb-4">No projects found</p>
             {(searchQuery || filterWorkspace) && (
               <Button
                 variant="secondary"

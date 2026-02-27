@@ -28,6 +28,7 @@
     "@workos-inc/authkit-nextjs": "^2.14.0",
     "@workos-inc/node": "^8.5.0",
     "bullmq": "^5.69.3",
+    "clsx": "^2.1.1",
     "drizzle-orm": "^0.29.0",
     "hono": "^4.0.0",
     "ioredis": "^5.3.0",
@@ -37,6 +38,7 @@
     "pdfjs-dist": "^5.4.624",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.5.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

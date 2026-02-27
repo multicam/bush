@@ -12,13 +12,20 @@
 
 import { useState, useEffect } from "react";
 import {
+  FileVideo,
+  FileAudio,
+  FileImage,
+  FileText,
+  Folder,
+  Loader2,
+} from "lucide-react";
+import {
   sharesApi,
   getErrorMessage,
   type ShareAttributes,
   type FileAttributes,
   type ShareBranding,
 } from "@/web/lib/api";
-import styles from "./share.module.css";
 
 interface PublicSharePageProps {
   params: Promise<{ slug: string }>;
@@ -109,14 +116,15 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
   };
 
   /**
-   * Get file icon based on MIME type
+   * Get file icon based on MIME type using Lucide icons
    */
-  const getFileIcon = (mimeType: string): string => {
-    if (mimeType.startsWith("video/")) return "🎬";
-    if (mimeType.startsWith("audio/")) return "🎵";
-    if (mimeType.startsWith("image/")) return "🖼️";
-    if (mimeType === "application/pdf") return "📄";
-    return "📁";
+  const getFileIcon = (mimeType: string) => {
+    const iconClass = "size-12";
+    if (mimeType.startsWith("video/")) return <FileVideo className={iconClass} />;
+    if (mimeType.startsWith("audio/")) return <FileAudio className={iconClass} />;
+    if (mimeType.startsWith("image/")) return <FileImage className={iconClass} />;
+    if (mimeType === "application/pdf") return <FileText className={iconClass} />;
+    return <Folder className={iconClass} />;
   };
 
   /**
@@ -132,10 +140,10 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
   // Loading state
   if (loadingState === "loading") {
     return (
-      <div className={styles.publicShare} style={{ background: "#111" }}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading share...</p>
+      <div className="min-h-screen flex flex-col bg-surface-1">
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
+          <Loader2 className="size-10 animate-spin text-accent" />
+          <p className="mt-4 text-secondary">Loading share...</p>
         </div>
       </div>
     );
@@ -144,10 +152,12 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
   // Error state
   if (loadingState === "error") {
     return (
-      <div className={styles.publicShare} style={{ background: "#111" }}>
-        <div className={styles.error}>
-          <h2>Share not found</h2>
-          <p>{errorMessage || "This share may have been deleted or expired."}</p>
+      <div className="min-h-screen flex flex-col bg-surface-1">
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] text-center px-6">
+          <h2 className="text-2xl font-semibold text-primary mb-3">Share not found</h2>
+          <p className="text-secondary max-w-md">
+            {errorMessage || "This share may have been deleted or expired."}
+          </p>
         </div>
       </div>
     );
@@ -156,57 +166,59 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
   // Passphrase required
   if (loadingState === "passphrase") {
     const branding = share?.branding || {};
+    const isDark = branding.dark_mode !== false;
 
     return (
       <div
-        className={styles.publicShare}
+        className="min-h-screen flex flex-col"
         style={{
-          background: branding.background_color || "#111",
-          color: branding.dark_mode !== false ? "#fff" : "#111",
+          background: branding.background_color || (isDark ? "#111" : "#f5f5f5"),
+          color: isDark ? "#fff" : "#111",
         }}
       >
-        <form className={styles.passphraseForm} onSubmit={handlePassphraseSubmit}>
+        <form
+          className="flex flex-col items-center justify-center min-h-screen px-6 py-6"
+          onSubmit={handlePassphraseSubmit}
+        >
           <div
-            className={styles.passphraseCard}
+            className="w-full max-w-md p-10 rounded-2xl text-center border border-border-default"
             style={{
-              background: branding.dark_mode !== false ? "#1a1a1a" : "#fff",
-              borderColor: branding.dark_mode !== false ? "#333" : "#ddd",
+              background: isDark ? "#1a1a1a" : "#fff",
             }}
           >
             {branding.logo_url && (
               <img
                 src={branding.logo_url}
                 alt="Logo"
-                style={{ maxWidth: "150px", marginBottom: "24px" }}
+                className="max-w-[150px] mb-6 mx-auto"
               />
             )}
-            <h2 className={styles.passphraseTitle}>Protected Share</h2>
-            <p className={styles.passphraseHint}>
+            <h2 className="text-2xl font-semibold text-primary mb-2">Protected Share</h2>
+            <p className="text-sm text-secondary mb-6">
               Enter the passphrase to access this share
             </p>
             <input
               type="password"
-              className={styles.passphraseInput}
+              className="w-full px-4 py-3.5 text-base border-2 rounded-lg mb-4 transition-colors focus:outline-none focus:border-accent"
+              style={{
+                background: isDark ? "#111" : "#f5f5f5",
+                color: isDark ? "#fff" : "#111",
+                borderColor: passphraseError ? "#ef4444" : (isDark ? "#333" : "#ddd"),
+              }}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               placeholder="Enter passphrase"
               autoFocus
-              style={{
-                background: branding.dark_mode !== false ? "#111" : "#f5f5f5",
-                color: branding.dark_mode !== false ? "#fff" : "#111",
-                borderColor: passphraseError ? "#ef4444" : (branding.dark_mode !== false ? "#333" : "#ddd"),
-              }}
             />
             {passphraseError && (
-              <p className={styles.passphraseError}>{passphraseError}</p>
+              <p className="text-sm text-red-500 mb-4">{passphraseError}</p>
             )}
             <button
               type="submit"
-              className={styles.passphraseSubmit}
+              className="w-full py-3.5 text-base font-semibold text-white rounded-lg transition-opacity hover:opacity-90 disabled:opacity-70"
               disabled={isVerifying}
               style={{
                 background: branding.accent_color || "#4f46e5",
-                opacity: isVerifying ? 0.7 : 1,
               }}
             >
               {isVerifying ? "Verifying..." : "Access Share"}
@@ -224,42 +236,40 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
 
   const branding: ShareBranding = share.branding || {};
   const assets = share.assets || [];
+  const isDark = branding.dark_mode !== false;
 
   return (
     <div
-      className={styles.publicShare}
+      className="min-h-screen flex flex-col"
       style={{
-        background: branding.background_color || "#111",
-        color: branding.dark_mode !== false ? "#fff" : "#111",
+        background: branding.background_color || (isDark ? "#111" : "#f5f5f5"),
+        color: isDark ? "#fff" : "#111",
       }}
     >
       {/* Header */}
       <header
-        className={styles.publicShareHeader}
-        style={{
-          borderBottom: branding.dark_mode !== false ? "1px solid #333" : "1px solid #ddd",
-        }}
+        className="sticky top-0 z-50 px-6 py-4 flex justify-between items-center backdrop-blur-sm border-b border-border-default"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div className="flex items-center gap-4">
           {branding.logo_url && (
             <img
               src={branding.logo_url}
               alt="Logo"
-              style={{ maxWidth: "120px", maxHeight: "40px" }}
+              className="max-w-[120px] max-h-10"
             />
           )}
           {!branding.logo_url && (
             <span
-              className={styles.publicShareLogo}
+              className="text-lg font-bold tracking-tight"
               style={{ color: branding.accent_color || "#4f46e5" }}
             >
               Bush
             </span>
           )}
         </div>
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div className="flex gap-3">
           {share.allowDownloads && (
-            <button className={styles.headerBtn}>
+            <button className="px-4 py-2 text-sm font-medium bg-surface-2 border border-border-default rounded-md cursor-pointer transition-colors hover:bg-surface-3">
               Download All
             </button>
           )}
@@ -267,34 +277,44 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
       </header>
 
       {/* Content */}
-      <main className={styles.publicShareContent}>
-        <div className={styles.publicShareInfo}>
-          <h1 className={styles.publicShareName}>{share.name}</h1>
+      <main className="flex-1 px-6 py-8 max-w-[1400px] mx-auto w-full">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-2xl font-bold tracking-tight text-primary m-0 mb-2">
+            {share.name}
+          </h1>
           {branding.description && (
-            <p className={styles.publicShareDescription}>{branding.description}</p>
+            <p className="text-base text-secondary m-0 mb-3 max-w-[600px]">
+              {branding.description}
+            </p>
           )}
-          <p className={styles.publicShareMeta}>
+          <p className="text-sm text-secondary m-0">
             {assets.length} asset{assets.length !== 1 ? "s" : ""}
           </p>
         </div>
 
         {/* Assets Grid */}
-        <div className={styles.publicShareGrid}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-5 md:gap-3">
           {assets.map((asset, index) => (
             <div
               key={index}
-              className={styles.publicAssetCard}
+              className="rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg border border-border-default"
               style={{
-                background: branding.dark_mode !== false ? "#1a1a1a" : "#fff",
-                borderColor: branding.dark_mode !== false ? "#333" : "#ddd",
+                background: isDark ? "#1a1a1a" : "#fff",
               }}
             >
-              <div className={styles.publicAssetThumbnail}>
+              <div
+                className="aspect-[16/10] flex items-center justify-center text-accent/70"
+                style={{
+                  background: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.05)",
+                }}
+              >
                 {getFileIcon(asset.mimeType)}
               </div>
-              <div className={styles.publicAssetInfo}>
-                <p className={styles.publicAssetName}>{asset.name || asset.originalName}</p>
-                <p className={styles.publicAssetMeta}>
+              <div className="p-4 md:p-3">
+                <p className="text-sm font-medium text-primary m-0 mb-1 truncate overflow-hidden whitespace-nowrap">
+                  {asset.name || asset.originalName}
+                </p>
+                <p className="text-xs text-secondary m-0">
                   {formatFileSize(asset.fileSizeBytes)}
                 </p>
               </div>
@@ -303,21 +323,23 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
         </div>
 
         {assets.length === 0 && (
-          <div className={styles.publicShareEmpty}>
+          <div className="flex items-center justify-center py-16 text-center text-secondary">
             <p>No assets in this share</p>
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer
-        className={styles.publicShareFooter}
-        style={{
-          borderTop: branding.dark_mode !== false ? "1px solid #333" : "1px solid #ddd",
-        }}
-      >
-        <p style={{ fontSize: "12px", color: branding.dark_mode !== false ? "#666" : "#999" }}>
-          Powered by <a href="/" style={{ color: branding.accent_color || "#4f46e5" }}>Bush</a>
+      <footer className="px-6 py-4 text-center mt-auto border-t border-border-default">
+        <p className="text-xs text-secondary">
+          Powered by{" "}
+          <a
+            href="/"
+            className="no-underline font-medium hover:underline"
+            style={{ color: branding.accent_color || "#4f46e5" }}
+          >
+            Bush
+          </a>
         </p>
       </footer>
     </div>

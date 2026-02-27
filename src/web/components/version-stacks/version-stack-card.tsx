@@ -10,8 +10,8 @@
 import { useCallback } from "react";
 import { Badge } from "@/web/components/ui";
 import { getFileCategory, getFileIcon } from "@/shared/file-types";
+import { Layers } from "lucide-react";
 import type { VersionStackCardProps } from "./types";
-import styles from "./version-stack.module.css";
 
 const CARD_SIZE_DIMENSIONS = {
   small: { width: 160, height: 160, thumbnailHeight: 100 },
@@ -56,9 +56,24 @@ export function VersionStackCard({
     .slice(0, 3)
     .map((f) => f.thumbnailUrl);
 
+  // Category-based background colors
+  const categoryBgClasses: Record<string, string> = {
+    video: "bg-amber-100",
+    audio: "bg-blue-100",
+    image: "bg-pink-100",
+    document: "bg-indigo-100",
+  };
+
   return (
     <div
-      className={`${styles.stackCard} ${isSelected ? styles.selected : ""}`}
+      className={`
+        relative flex flex-col rounded-md border bg-surface-1 cursor-pointer transition-all overflow-hidden
+        ${isSelected
+          ? "border-accent bg-blue-50"
+          : "border-border-default hover:border-accent hover:shadow-lg"
+        }
+        focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/30
+      `}
       style={{ width: dimensions.width }}
       onClick={handleClick}
       role="button"
@@ -74,15 +89,23 @@ export function VersionStackCard({
     >
       {/* Thumbnail with stack effect */}
       <div
-        className={styles.stackThumbnail}
+        className={`
+          relative w-full overflow-hidden flex items-center justify-center bg-surface-2
+          ${categoryBgClasses[category] || ""}
+        `}
         style={{ height: dimensions.thumbnailHeight }}
-        data-category={category}
       >
         {/* Stacked background cards (visual effect) */}
         {versionCount > 1 && (
           <>
-            <div className={styles.stackLayer3} />
-            <div className={styles.stackLayer2} />
+            <div
+              className="absolute bg-surface-1 rounded-sm border border-border-default z-[1]"
+              style={{ bottom: 12, left: 8, right: 8, height: "calc(100% - 16px)" }}
+            />
+            <div
+              className="absolute bg-surface-1 rounded-sm border border-border-default z-[2]"
+              style={{ bottom: 6, left: 4, right: 4, height: "calc(100% - 8px)" }}
+            />
           </>
         )}
 
@@ -91,54 +114,52 @@ export function VersionStackCard({
           <img
             src={currentFile.thumbnailUrl}
             alt={stack.name}
-            className={styles.stackMainImage}
+            className="relative w-full h-full object-cover z-[3] rounded-sm"
             loading="lazy"
           />
         ) : (
-          <div className={styles.stackPlaceholder}>
-            <span className={styles.stackIcon}>{getFileIcon(currentFile?.mimeType || "")}</span>
+          <div className="flex items-center justify-center relative z-[3]">
+            <span className="text-3xl">{getFileIcon(currentFile?.mimeType || "")}</span>
           </div>
         )}
 
         {/* Selection checkbox */}
-        <div className={styles.stackCheckbox}>
+        <div
+          className={`
+            absolute top-2 left-2 z-10 bg-surface-1 rounded-sm p-1 transition-opacity
+            ${isSelected ? "opacity-100" : "opacity-0"}
+            group-hover:opacity-100 [.group:hover_&]:opacity-100
+            [.relative:hover_&]:opacity-100
+          `}
+        >
           <input
             type="checkbox"
             checked={isSelected}
             onChange={handleCheckboxChange}
             aria-label={`Select ${stack.name}`}
+            className="w-4 h-4 cursor-pointer"
           />
         </div>
 
         {/* Version count badge */}
-        <div className={styles.stackCount}>
+        <div className="absolute bottom-2 right-2 z-10">
           <Badge variant="default" size="sm">
             {versionCount} v{versionCount !== 1 ? "s" : ""}
           </Badge>
         </div>
 
         {/* Stack indicator icon */}
-        <div className={styles.stackIndicator} title="Version Stack">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect x="2" y="10" width="8" height="2" rx="0.5" opacity="0.5" />
-            <rect x="4" y="7" width="8" height="2" rx="0.5" opacity="0.75" />
-            <rect x="6" y="4" width="8" height="2" rx="0.5" />
-          </svg>
+        <div className="absolute top-2 right-2 z-10 bg-surface-1 rounded-sm p-1 text-secondary" title="Version Stack">
+          <Layers className="w-4 h-4" />
         </div>
       </div>
 
       {/* Info */}
-      <div className={styles.stackInfo}>
-        <span className={styles.stackName} title={stack.name}>
+      <div className="p-3 flex flex-col gap-0.5">
+        <span className="text-sm font-medium truncate" title={stack.name}>
           {stack.name}
         </span>
-        <span className={styles.stackMeta}>
+        <span className="text-xs text-secondary">
           {versionCount} version{versionCount !== 1 ? "s" : ""}
         </span>
       </div>

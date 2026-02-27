@@ -9,8 +9,8 @@
 import { useState, useCallback } from "react";
 import { Button, Input } from "@/web/components/ui";
 import { versionStacksApi, getErrorMessage } from "@/web/lib/api";
+import { X, FileText } from "lucide-react";
 import type { AddToStackModalProps } from "./types";
-import styles from "./version-stack.module.css";
 
 export function AddToStackModal({
   isOpen,
@@ -84,45 +84,60 @@ export function AddToStackModal({
 
   return (
     <div
-      className={styles.modalBackdrop}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-to-stack-title"
     >
-      <div className={styles.modalContent}>
+      <div className="bg-surface-1 rounded-md w-full max-w-[480px] max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
-        <div className={styles.modalHeader}>
-          <h2 id="add-to-stack-title">Add to Version Stack</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-default">
+          <h2 id="add-to-stack-title" className="m-0 text-lg font-semibold text-primary">
+            Add to Version Stack
+          </h2>
           <button
-            className={styles.modalClose}
+            className="bg-none border-none text-2xl text-secondary cursor-pointer p-1 leading-none hover:text-primary transition-colors"
             onClick={handleClose}
             aria-label="Close"
           >
-            &times;
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className={styles.modalBody}>
+        <div className="p-6">
           {/* File info */}
-          <div className={styles.fileInfo}>
-            <span className={styles.fileInfoLabel}>Adding:</span>
-            <span className={styles.fileInfoName} title={file.name}>
+          <div className="flex items-center gap-2 p-3 bg-surface-2 rounded-sm mb-4">
+            <FileText className="w-4 h-4 text-secondary" />
+            <span className="text-sm text-secondary">Adding:</span>
+            <span className="text-sm font-medium truncate" title={file.name}>
               {file.name}
             </span>
           </div>
 
           {/* Mode tabs */}
-          <div className={styles.modeTabs}>
+          <div className="flex gap-0 mb-4 border border-border-default rounded-sm overflow-hidden">
             <button
-              className={`${styles.modeTab} ${mode === "select" ? styles.active : ""}`}
+              className={`
+                flex-1 px-3 py-3 border-none text-sm font-medium cursor-pointer transition-colors
+                ${mode === "select"
+                  ? "bg-accent text-white"
+                  : "bg-surface-1 text-secondary hover:bg-surface-2"
+                }
+              `}
               onClick={() => setMode("select")}
             >
               Add to Existing
             </button>
             <button
-              className={`${styles.modeTab} ${mode === "create" ? styles.active : ""}`}
+              className={`
+                flex-1 px-3 py-3 border-l border-border-default border-none text-sm font-medium cursor-pointer transition-colors
+                ${mode === "create"
+                  ? "bg-accent text-white"
+                  : "bg-surface-1 text-secondary hover:bg-surface-2"
+                }
+              `}
               onClick={() => setMode("create")}
             >
               Create New Stack
@@ -131,19 +146,25 @@ export function AddToStackModal({
 
           {/* Select existing stack */}
           {mode === "select" && (
-            <div className={styles.stacksList}>
+            <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
               {stacks.length === 0 ? (
-                <p className={styles.emptyMessage}>
+                <p className="text-center text-secondary p-4 text-sm">
                   No existing stacks. Create a new stack instead.
                 </p>
               ) : (
                 stacks.map((stack) => (
                   <button
                     key={stack.id}
-                    className={`${styles.stackOption} ${selectedStackId === stack.id ? styles.selected : ""}`}
+                    className={`
+                      flex items-center p-3 bg-surface-1 border rounded-sm cursor-pointer transition-colors text-left
+                      ${selectedStackId === stack.id
+                        ? "border-accent bg-blue-50"
+                        : "border-border-default hover:border-accent hover:bg-blue-50"
+                      }
+                    `}
                     onClick={() => setSelectedStackId(stack.id)}
                   >
-                    <span className={styles.stackOptionName}>{stack.name}</span>
+                    <span className="text-sm font-medium">{stack.name}</span>
                   </button>
                 ))
               )}
@@ -152,8 +173,10 @@ export function AddToStackModal({
 
           {/* Create new stack */}
           {mode === "create" && (
-            <div className={styles.formGroup}>
-              <label htmlFor="new-stack-name">Stack Name</label>
+            <div className="flex flex-col gap-2 mb-4">
+              <label htmlFor="new-stack-name" className="text-sm font-medium text-primary">
+                Stack Name
+              </label>
               <Input
                 id="new-stack-name"
                 type="text"
@@ -168,14 +191,14 @@ export function AddToStackModal({
 
           {/* Error message */}
           {error && (
-            <div className={styles.modalError}>
-              <p>{error}</p>
+            <div className="p-3 bg-red-50 border border-red-300 rounded-sm text-red-600 text-sm mb-4">
+              <p className="m-0">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className={styles.modalFooter}>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border-default">
           <Button variant="ghost" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>

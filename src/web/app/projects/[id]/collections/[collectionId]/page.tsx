@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
 import { Button, Input, Badge } from "@/web/components/ui";
 import { AssetBrowser, type AssetFile } from "@/web/components/asset-browser";
@@ -18,7 +19,6 @@ import {
   type CollectionAssetAttributes,
   type CollectionType,
 } from "@/web/lib/api";
-import styles from "./collection.module.css";
 
 interface Collection extends CollectionAttributes {
   id: string;
@@ -196,10 +196,10 @@ export default function CollectionDetailPage({
   if (!projectId || !collectionId || authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
-            <p>Loading collection...</p>
+        <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+            <p className="text-secondary">Loading collection...</p>
           </div>
         </div>
       </AppLayout>
@@ -210,10 +210,10 @@ export default function CollectionDetailPage({
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.error}>
-            <h2>Failed to load collection</h2>
-            <p>{errorMessage}</p>
+        <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <h2 className="text-lg text-primary m-0 mb-2">Failed to load collection</h2>
+            <p className="text-secondary mb-4">{errorMessage}</p>
             <Button variant="primary" onClick={fetchCollection}>
               Try Again
             </Button>
@@ -225,30 +225,32 @@ export default function CollectionDetailPage({
 
   return (
     <AppLayout>
-      <div className={styles.page}>
+      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
         {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.headerInfo}>
-            <div className={styles.breadcrumb}>
-              <a href={`/projects/${projectId}/collections`}>Collections</a>
+        <div className="flex justify-between items-start mb-6 sm:flex-col sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-sm text-secondary mb-2">
+              <a href={`/projects/${projectId}/collections`} className="text-accent hover:underline no-underline">
+                Collections
+              </a>
               <span>/</span>
               <span>{collection?.name}</span>
             </div>
-            <div className={styles.titleRow}>
-              <h1 className={styles.title}>{collection?.name}</h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-bold text-primary m-0">{collection?.name}</h1>
               <Badge variant={collection?.type === "team" ? "primary" : "default"}>
                 {collection?.type}
               </Badge>
             </div>
             {collection?.description && (
-              <p className={styles.description}>{collection.description}</p>
+              <p className="text-sm text-secondary m-0 mb-2">{collection.description}</p>
             )}
-            <div className={styles.meta}>
+            <div className="flex gap-4 text-xs text-secondary sm:flex-col sm:gap-1">
               <span>{collection?.assetCount} asset{collection?.assetCount !== 1 ? "s" : ""}</span>
               <span>Created by {collection && getCreatorName(collection.creator)}</span>
             </div>
           </div>
-          <div className={styles.actions}>
+          <div className="flex gap-2 ml-4 sm:ml-0">
             <Button variant="secondary" onClick={() => setShowEditModal(true)}>
               Edit
             </Button>
@@ -260,11 +262,17 @@ export default function CollectionDetailPage({
 
         {/* Edit Modal */}
         {showEditModal && (
-          <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h2 className={styles.modalTitle}>Edit Collection</h2>
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-100"
+            onClick={() => setShowEditModal(false)}
+          >
+            <div
+              className="bg-surface-2 rounded-lg p-6 w-full max-w-md shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-semibold text-primary m-0 mb-5">Edit Collection</h2>
               <form onSubmit={handleUpdateCollection}>
-                <div className={styles.formGroup}>
+                <div className="mb-4">
                   <Input
                     label="Name"
                     value={editName}
@@ -273,45 +281,51 @@ export default function CollectionDetailPage({
                     required
                   />
                 </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Description (optional)</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-primary mb-1.5">
+                    Description (optional)
+                  </label>
                   <textarea
-                    className={styles.textarea}
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded bg-surface-1 text-primary resize-y font-inherit focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     placeholder="Describe this collection"
                     rows={3}
                   />
                 </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Visibility</label>
-                  <div className={styles.radioGroup}>
-                    <label className={styles.radioLabel}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-primary mb-1.5">Visibility</label>
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
                       <input
                         type="radio"
                         name="collectionType"
                         value="team"
                         checked={editType === "team"}
                         onChange={() => setEditType("team")}
+                        className="mt-0.5"
                       />
-                      <span>Team</span>
-                      <span className={styles.radioDescription}>Visible to all project members</span>
+                      <span className="font-medium text-primary">Team</span>
+                      <span className="block text-xs text-secondary ml-5">Visible to all project members</span>
                     </label>
-                    <label className={styles.radioLabel}>
+                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
                       <input
                         type="radio"
                         name="collectionType"
                         value="private"
                         checked={editType === "private"}
                         onChange={() => setEditType("private")}
+                        className="mt-0.5"
                       />
-                      <span>Private</span>
-                      <span className={styles.radioDescription}>Only visible to you</span>
+                      <span className="font-medium text-primary">Private</span>
+                      <span className="block text-xs text-secondary ml-5">Only visible to you</span>
                     </label>
                   </div>
                 </div>
-                {editError && <p className={styles.error}>{editError}</p>}
-                <div className={styles.modalActions}>
+                {editError && (
+                  <p className="text-sm text-red-500 mb-4">{editError}</p>
+                )}
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border-default">
                   <Button
                     type="button"
                     variant="secondary"
@@ -334,7 +348,7 @@ export default function CollectionDetailPage({
 
         {/* Bulk Actions */}
         {selectedAssetIds.length > 0 && (
-          <div className={styles.bulkActions}>
+          <div className="flex items-center gap-3 px-4 py-3 bg-surface-3 border border-border-default rounded mb-4 text-sm text-secondary">
             <span>{selectedAssetIds.length} selected</span>
             <Button variant="secondary" size="sm" onClick={handleRemoveSelected}>
               Remove from Collection
@@ -347,14 +361,14 @@ export default function CollectionDetailPage({
 
         {/* Asset Browser */}
         {assets.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>No assets in this collection.</p>
-            <p className={styles.emptyDescription}>
+          <div className="flex flex-col items-center justify-center min-h-[200px] text-center text-secondary bg-surface-2 border border-dashed border-border-default rounded-lg">
+            <p className="text-base text-primary mb-2">No assets in this collection.</p>
+            <p className="max-w-96">
               Add assets to this collection from the project file browser.
             </p>
           </div>
         ) : (
-          <section className={styles.browserSection}>
+          <section className="mt-4">
             <AssetBrowser
               projectId={projectId}
               files={assetFiles}

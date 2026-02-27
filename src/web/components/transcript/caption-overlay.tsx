@@ -9,7 +9,6 @@
 import { useMemo } from "react";
 import type { TranscriptWord } from "./types";
 import { SPEAKER_COLORS, getSpeakerColorIndex } from "./types";
-import styles from "./transcript.module.css";
 
 export interface CaptionOverlayProps {
   /** Words to display */
@@ -90,7 +89,7 @@ export function CaptionOverlay({
   }
 
   return (
-    <div className={`${styles.captionOverlay} ${className}`}>
+    <div className={`absolute bottom-16 left-0 right-0 flex flex-col items-center gap-1 px-8 pointer-events-none ${className}`}>
       {activeCues.map((cue, idx) => {
         const speakerId = cue[0]?.speaker;
         const speakerName = speakerId ? (speakerNames[speakerId] || speakerId) : null;
@@ -102,13 +101,13 @@ export function CaptionOverlay({
           <div key={`${speakerId}-${idx}`}>
             {showSpeakers && speakerName && (
               <div
-                className={styles.captionOverlay__speaker}
+                className="text-xs font-medium px-1.5 py-0.5 text-white bg-black/50 rounded"
                 style={{ color: speakerColor }}
               >
                 {speakerName}
               </div>
             )}
-            <div className={styles.captionOverlay__cue}>
+            <div className="inline-block px-2 py-1 text-base leading-relaxed text-white text-center bg-black/75 rounded">
               {text}
             </div>
           </div>

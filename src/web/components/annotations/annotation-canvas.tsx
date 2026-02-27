@@ -12,7 +12,6 @@ import type {
   AnnotationShape,
   Point,
 } from "./types";
-import styles from "./annotations.module.css";
 
 /**
  * Normalize point coordinates relative to canvas size
@@ -586,7 +585,11 @@ export function AnnotationCanvas({
       ref={canvasRef}
       width={width}
       height={height}
-      className={`${styles.canvas} ${isActive ? styles.active : ""} ${className ?? ""}`}
+      className={`
+        absolute top-0 left-0 bg-transparent
+        ${isActive ? "cursor-crosshair" : "pointer-events-none cursor-crosshair"}
+        ${className ?? ""}
+      `}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

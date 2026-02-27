@@ -10,8 +10,8 @@ import { useState, useCallback } from "react";
 import { Button, Input } from "@/web/components/ui";
 import { formatFileSize } from "@/shared/file-types";
 import { versionStacksApi, getErrorMessage } from "@/web/lib/api";
+import { X } from "lucide-react";
 import type { CreateVersionStackModalProps } from "./types";
-import styles from "./version-stack.module.css";
 
 export function CreateVersionStackModal({
   isOpen,
@@ -112,31 +112,35 @@ export function CreateVersionStackModal({
 
   return (
     <div
-      className={styles.modalBackdrop}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className={styles.modalContent}>
+      <div className="bg-surface-1 rounded-md w-full max-w-[480px] max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
-        <div className={styles.modalHeader}>
-          <h2 id="modal-title">Create Version Stack</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-default">
+          <h2 id="modal-title" className="m-0 text-lg font-semibold text-primary">
+            Create Version Stack
+          </h2>
           <button
-            className={styles.modalClose}
+            className="bg-none border-none text-2xl text-secondary cursor-pointer p-1 leading-none hover:text-primary transition-colors"
             onClick={handleClose}
             aria-label="Close"
           >
-            &times;
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className={styles.modalBody}>
+        <div className="p-6">
           {/* Name input */}
-          <div className={styles.formGroup}>
-            <label htmlFor="stack-name">Stack Name</label>
+          <div className="flex flex-col gap-2 mb-4">
+            <label htmlFor="stack-name" className="text-sm font-medium text-primary">
+              Stack Name
+            </label>
             <Input
               id="stack-name"
               type="text"
@@ -149,18 +153,23 @@ export function CreateVersionStackModal({
           </div>
 
           {/* Files list */}
-          <div className={styles.filesSection}>
-            <label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-primary mb-2">
               Files to Stack ({files.length})
             </label>
-            <ul className={styles.filesList}>
+            <ul className="list-none m-0 p-0 border border-border-default rounded-sm max-h-[200px] overflow-y-auto">
               {files.map((file, index) => (
-                <li key={file.id} className={styles.filesListItem}>
-                  <span className={styles.filesListIndex}>{index + 1}</span>
-                  <span className={styles.filesListName} title={file.name}>
+                <li
+                  key={file.id}
+                  className="flex items-center gap-3 px-3 py-2 border-b border-border-default last:border-b-0"
+                >
+                  <span className="w-6 h-6 flex items-center justify-center bg-surface-2 rounded-full text-xs font-medium text-secondary">
+                    {index + 1}
+                  </span>
+                  <span className="flex-1 text-sm truncate" title={file.name}>
                     {file.name}
                   </span>
-                  <span className={styles.filesListSize}>
+                  <span className="text-xs text-secondary">
                     {formatFileSize(file.fileSizeBytes)}
                   </span>
                 </li>
@@ -170,19 +179,19 @@ export function CreateVersionStackModal({
 
           {/* Error message */}
           {error && (
-            <div className={styles.modalError}>
-              <p>{error}</p>
+            <div className="p-3 bg-red-50 border border-red-300 rounded-sm text-red-600 text-sm mb-4">
+              <p className="m-0">{error}</p>
             </div>
           )}
 
           {/* Info message */}
-          <p className={styles.modalInfo}>
+          <p className="text-sm text-secondary m-0">
             The newest file will be set as the current version. You can change this later.
           </p>
         </div>
 
         {/* Footer */}
-        <div className={styles.modalFooter}>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border-default">
           <Button variant="ghost" onClick={handleClose} disabled={isCreating}>
             Cancel
           </Button>

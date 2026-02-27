@@ -13,7 +13,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
-import styles from "./image-viewer.module.css";
+import { Minus, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export interface ImageViewerProps {
   /** Image URL to display */
@@ -335,7 +336,7 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
   return (
     <div
       ref={containerRef}
-      className={`${styles.container} ${className || ""} ${isPanning ? styles.panning : ""}`}
+      className={`relative w-full h-full overflow-hidden bg-[#1a1a1a] ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} select-none ${className || ''}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -343,8 +344,8 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
       onMouseLeave={handleMouseLeave}
     >
       {!imageSize.loaded && (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 text-muted text-sm">
+          <Loader2 className="w-8 h-8 animate-spin" />
           <span>Loading image...</span>
         </div>
       )}
@@ -353,7 +354,7 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
         ref={imageRef}
         src={src}
         alt={alt}
-        className={styles.image}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none max-h-none transition-opacity duration-200 pointer-events-none"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
           opacity: imageSize.loaded ? 1 : 0,
@@ -362,32 +363,32 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
         draggable={false}
       />
 
-      <div className={styles.controls}>
-        <div className={styles.zoomControls}>
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-3 py-2 bg-black/80 rounded-md backdrop-blur-sm">
+        <div className="flex items-center gap-2">
           <button
             onClick={zoomOut}
             disabled={zoomLevel <= minZoom}
-            className={styles.zoomButton}
+            className="flex items-center justify-center w-7 h-7 bg-transparent border border-[#444] rounded-sm text-white text-lg cursor-pointer transition-colors hover:bg-[#333] hover:border-[#666] disabled:opacity-40 disabled:cursor-not-allowed"
             title="Zoom out (-)"
             aria-label="Zoom out"
           >
-            −
+            <Minus className="w-4 h-4" />
           </button>
-          <span className={styles.zoomLevel}>{zoomPercent}%</span>
+          <span className="min-w-[48px] text-center text-white text-[13px] font-medium">{zoomPercent}%</span>
           <button
             onClick={zoomIn}
             disabled={zoomLevel >= maxZoom}
-            className={styles.zoomButton}
+            className="flex items-center justify-center w-7 h-7 bg-transparent border border-[#444] rounded-sm text-white text-lg cursor-pointer transition-colors hover:bg-[#333] hover:border-[#666] disabled:opacity-40 disabled:cursor-not-allowed"
             title="Zoom in (+)"
             aria-label="Zoom in"
           >
-            +
+            <Plus className="w-4 h-4" />
           </button>
         </div>
-        <div className={styles.viewModes}>
+        <div className="flex gap-1 ml-2 pl-2 border-l border-[#444]">
           <button
             onClick={zoomToFit}
-            className={styles.viewButton}
+            className="px-2.5 py-1 bg-transparent border border-[#444] rounded-sm text-[#ccc] text-xs cursor-pointer transition-colors hover:bg-[#333] hover:border-[#666] hover:text-white"
             title="Fit to screen (0)"
             aria-label="Fit to screen"
           >
@@ -395,7 +396,7 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
           </button>
           <button
             onClick={zoomTo1to1}
-            className={styles.viewButton}
+            className="px-2.5 py-1 bg-transparent border border-[#444] rounded-sm text-[#ccc] text-xs cursor-pointer transition-colors hover:bg-[#333] hover:border-[#666] hover:text-white"
             title="1:1 pixel view (1)"
             aria-label="1:1 pixel view"
           >
@@ -405,14 +406,17 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
       </div>
 
       {shouldShowMiniMap && imageSize.loaded && containerSize.width > 0 && (
-        <div className={styles.miniMap} onClick={handleMiniMapClick}>
+        <div
+          className="absolute bottom-20 right-4 w-[120px] h-20 bg-black/80 border border-[#444] rounded-sm overflow-hidden cursor-pointer"
+          onClick={handleMiniMapClick}
+        >
           <img
             src={src}
             alt="Mini-map navigation"
-            className={styles.miniMapImage}
+            className="w-full h-full object-contain opacity-70"
           />
           <div
-            className={styles.miniMapViewport}
+            className="absolute border-2 border-white bg-white/10 pointer-events-none"
             style={{
               left: `${Math.max(0, Math.min(100, 50 - (panOffset.x / (imageSize.width * zoomLevel)) * 100))}%`,
               top: `${Math.max(0, Math.min(100, 50 - (panOffset.y / (imageSize.height * zoomLevel)) * 100))}%`,

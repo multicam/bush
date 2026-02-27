@@ -14,7 +14,6 @@ import {
 } from "@/web/lib/api";
 import type { Share, ShareFormData, LayoutOption } from "./types";
 import { DEFAULT_SHARE_FORM, LAYOUT_OPTIONS } from "./types";
-import styles from "./shares.module.css";
 
 interface ShareBuilderProps {
   shareId?: string;
@@ -182,30 +181,30 @@ export function ShareBuilder({
 
   if (loading) {
     return (
-      <div className={styles.loading}>
-        <div className={styles.spinner}></div>
-        <p>Loading share...</p>
+      <div className="flex flex-col items-center justify-center p-16">
+        <div className="w-10 h-10 border-3 border-border-default border-t-accent rounded-full animate-spin"></div>
+        <p className="mt-4 text-secondary">Loading share...</p>
       </div>
     );
   }
 
   return (
-    <form className={styles.shareBuilder} onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
       {error && (
-        <div className={styles.error}>
-          <p>{error}</p>
+        <div className="flex flex-col items-center p-16 text-center">
+          <p className="text-red-500">{error}</p>
         </div>
       )}
 
       {/* Basic Info */}
-      <div className={styles.builderSection}>
-        <h3 className={styles.sectionTitle}>Basic Information</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-primary">Basic Information</h3>
 
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Share Name *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-primary">Share Name *</label>
           <input
             type="text"
-            className={styles.formInput}
+            className="px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
             value={formData.name}
             onChange={(e) => handleChange("name", e.target.value)}
             placeholder="Enter a name for this share"
@@ -215,171 +214,191 @@ export function ShareBuilder({
       </div>
 
       {/* Layout Selection */}
-      <div className={styles.builderSection}>
-        <h3 className={styles.sectionTitle}>Layout</h3>
-        <p className={styles.sectionDescription}>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-primary">Layout</h3>
+        <p className="text-[13px] text-secondary">
           Choose how assets will be displayed to viewers
         </p>
 
-        <div className={styles.layoutOptions}>
+        <div className="grid grid-cols-3 gap-3">
           {LAYOUT_OPTIONS.map((option: LayoutOption) => (
             <button
               key={option.value}
               type="button"
-              className={`${styles.layoutOption} ${formData.layout === option.value ? styles.active : ""}`}
+              className={`flex flex-col items-center gap-2 p-4 bg-surface-1 border-2 rounded-md cursor-pointer transition-colors ${
+                formData.layout === option.value
+                  ? "border-accent bg-accent/10"
+                  : "border-border-default hover:border-accent/70"
+              }`}
               onClick={() => handleChange("layout", option.value)}
             >
-              <span className={styles.layoutOptionIcon}>{option.icon}</span>
-              <span className={styles.layoutOptionLabel}>{option.label}</span>
-              <span className={styles.layoutOptionDescription}>{option.description}</span>
+              <span className="text-3xl">{option.icon}</span>
+              <span className="text-sm font-semibold text-primary">{option.label}</span>
+              <span className="text-[11px] text-secondary text-center">{option.description}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Access Settings */}
-      <div className={styles.builderSection}>
-        <h3 className={styles.sectionTitle}>Access Settings</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-primary">Access Settings</h3>
 
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Passphrase (optional)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-primary">Passphrase (optional)</label>
           <input
             type="password"
-            className={styles.formInput}
+            className="px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
             value={formData.passphrase || ""}
             onChange={(e) => handleChange("passphrase", e.target.value || null)}
             placeholder="Leave empty for public access"
           />
-          <span className={styles.formHint}>
+          <span className="text-xs text-secondary/80">
             Viewers will need to enter this passphrase to access the share
           </span>
         </div>
 
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Expiration Date (optional)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-primary">Expiration Date (optional)</label>
           <input
             type="date"
-            className={styles.formInput}
+            className="px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
             value={formData.expires_at || ""}
             onChange={(e) => handleChange("expires_at", e.target.value || null)}
             min={new Date().toISOString().split("T")[0]}
           />
-          <span className={styles.formHint}>
+          <span className="text-xs text-secondary/80">
             The share will no longer be accessible after this date
           </span>
         </div>
       </div>
 
       {/* Permissions */}
-      <div className={styles.builderSection}>
-        <h3 className={styles.sectionTitle}>Permissions</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-primary">Permissions</h3>
 
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Allow Comments</span>
-            <span className={styles.toggleHint}>Viewers can leave feedback on assets</span>
+        <div className="flex justify-between items-center p-3 bg-surface-1 rounded-md">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-primary">Allow Comments</span>
+            <span className="text-xs text-secondary">Viewers can leave feedback on assets</span>
           </div>
           <button
             type="button"
-            className={`${styles.toggle} ${formData.allow_comments ? styles.active : ""}`}
+            className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
+              formData.allow_comments ? "bg-accent" : "bg-border-default"
+            }`}
             onClick={() => handleToggle("allow_comments")}
           >
-            <span className={styles.toggleKnob}></span>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+              formData.allow_comments ? "translate-x-5" : ""
+            }`}></span>
           </button>
         </div>
 
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Allow Downloads</span>
-            <span className={styles.toggleHint}>Viewers can download original files</span>
+        <div className="flex justify-between items-center p-3 bg-surface-1 rounded-md">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-primary">Allow Downloads</span>
+            <span className="text-xs text-secondary">Viewers can download original files</span>
           </div>
           <button
             type="button"
-            className={`${styles.toggle} ${formData.allow_downloads ? styles.active : ""}`}
+            className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
+              formData.allow_downloads ? "bg-accent" : "bg-border-default"
+            }`}
             onClick={() => handleToggle("allow_downloads")}
           >
-            <span className={styles.toggleKnob}></span>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+              formData.allow_downloads ? "translate-x-5" : ""
+            }`}></span>
           </button>
         </div>
 
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Show All Versions</span>
-            <span className={styles.toggleHint}>Display all versions in version stacks</span>
+        <div className="flex justify-between items-center p-3 bg-surface-1 rounded-md">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-primary">Show All Versions</span>
+            <span className="text-xs text-secondary">Display all versions in version stacks</span>
           </div>
           <button
             type="button"
-            className={`${styles.toggle} ${formData.show_all_versions ? styles.active : ""}`}
+            className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
+              formData.show_all_versions ? "bg-accent" : "bg-border-default"
+            }`}
             onClick={() => handleToggle("show_all_versions")}
           >
-            <span className={styles.toggleKnob}></span>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+              formData.show_all_versions ? "translate-x-5" : ""
+            }`}></span>
           </button>
         </div>
 
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Show Transcription</span>
-            <span className={styles.toggleHint}>Display transcriptions for audio/video</span>
+        <div className="flex justify-between items-center p-3 bg-surface-1 rounded-md">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-primary">Show Transcription</span>
+            <span className="text-xs text-secondary">Display transcriptions for audio/video</span>
           </div>
           <button
             type="button"
-            className={`${styles.toggle} ${formData.show_transcription ? styles.active : ""}`}
+            className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
+              formData.show_transcription ? "bg-accent" : "bg-border-default"
+            }`}
             onClick={() => handleToggle("show_transcription")}
           >
-            <span className={styles.toggleKnob}></span>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+              formData.show_transcription ? "translate-x-5" : ""
+            }`}></span>
           </button>
         </div>
       </div>
 
       {/* Branding */}
-      <div className={styles.builderSection}>
-        <h3 className={styles.sectionTitle}>Branding</h3>
-        <p className={styles.sectionDescription}>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-primary">Branding</h3>
+        <p className="text-[13px] text-secondary">
           Customize the appearance of your share page
         </p>
 
-        <div className={styles.brandingEditor}>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Description</label>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-primary">Description</label>
             <textarea
-              className={`${styles.formInput} ${styles.formTextarea}`}
+              className="px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60 min-h-20 resize-y"
               value={formData.branding.description || ""}
               onChange={(e) => handleBrandingChange("description", e.target.value || undefined)}
               placeholder="Add a description to display on the share page"
             />
           </div>
 
-          <div className={styles.colorRow}>
-            <div className={styles.colorField}>
-              <label className={styles.formLabel}>Background Color</label>
-              <div className={styles.colorInput}>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-primary">Background Color</label>
+              <div className="flex gap-2">
                 <input
                   type="color"
-                  className={styles.colorSwatch}
+                  className="w-10 h-10 rounded-md border border-border-default cursor-pointer"
                   value={formData.branding.background_color || "#111111"}
                   onChange={(e) => handleBrandingChange("background_color", e.target.value)}
                 />
                 <input
                   type="text"
-                  className={`${styles.formInput} ${styles.colorText}`}
+                  className="flex-1 px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
                   value={formData.branding.background_color || "#111111"}
                   onChange={(e) => handleBrandingChange("background_color", e.target.value)}
                 />
               </div>
             </div>
 
-            <div className={styles.colorField}>
-              <label className={styles.formLabel}>Accent Color</label>
-              <div className={styles.colorInput}>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-primary">Accent Color</label>
+              <div className="flex gap-2">
                 <input
                   type="color"
-                  className={styles.colorSwatch}
+                  className="w-10 h-10 rounded-md border border-border-default cursor-pointer"
                   value={formData.branding.accent_color || "#4f46e5"}
                   onChange={(e) => handleBrandingChange("accent_color", e.target.value)}
                 />
                 <input
                   type="text"
-                  className={`${styles.formInput} ${styles.colorText}`}
+                  className="flex-1 px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
                   value={formData.branding.accent_color || "#4f46e5"}
                   onChange={(e) => handleBrandingChange("accent_color", e.target.value)}
                 />
@@ -387,36 +406,40 @@ export function ShareBuilder({
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Logo URL</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-primary">Logo URL</label>
             <input
               type="url"
-              className={styles.formInput}
+              className="px-3 py-2.5 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent placeholder:text-secondary/60"
               value={formData.branding.logo_url || ""}
               onChange={(e) => handleBrandingChange("logo_url", e.target.value || undefined)}
               placeholder="https://example.com/logo.png"
             />
           </div>
 
-          <div className={styles.toggleRow}>
-            <div className={styles.toggleInfo}>
-              <span className={styles.toggleLabel}>Dark Mode</span>
-              <span className={styles.toggleHint}>Use dark theme for share page</span>
+          <div className="flex justify-between items-center p-3 bg-surface-1 rounded-md">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-primary">Dark Mode</span>
+              <span className="text-xs text-secondary">Use dark theme for share page</span>
             </div>
             <button
               type="button"
-              className={`${styles.toggle} ${formData.branding.dark_mode !== false ? styles.active : ""}`}
+              className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
+                formData.branding.dark_mode !== false ? "bg-accent" : "bg-border-default"
+              }`}
               onClick={() => handleBrandingChange("dark_mode", formData.branding.dark_mode === false ? true : false)}
             >
-              <span className={styles.toggleKnob}></span>
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                formData.branding.dark_mode !== false ? "translate-x-5" : ""
+              }`}></span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className={styles.builderSection}>
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3 justify-end">
           {onCancel && (
             <Button variant="secondary" onClick={onCancel} disabled={saving}>
               Cancel

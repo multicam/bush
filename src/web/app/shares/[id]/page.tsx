@@ -17,7 +17,7 @@ import {
 } from "@/web/lib/api";
 import { ShareBuilder, ShareActivityFeed } from "@/web/components/shares";
 import type { Share } from "@/web/components/shares/types";
-import styles from "@/web/components/shares/shares.module.css";
+import { Loader2, Copy, ExternalLink } from "lucide-react";
 
 interface ShareDetailProps {
   params: Promise<{ id: string }>;
@@ -88,9 +88,9 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
   if (authLoading || loadingState === "loading" || !shareId) {
     return (
       <AppLayout>
-        <div className={styles.sharesPage}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
+        <div className="min-h-screen p-8">
+          <div className="flex flex-col items-center justify-center py-16 text-muted">
+            <Loader2 className="w-8 h-8 animate-spin mb-4" />
             <p>Loading share...</p>
           </div>
         </div>
@@ -101,10 +101,10 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.sharesPage}>
-          <div className={styles.error}>
-            <h2>Failed to load share</h2>
-            <p>{errorMessage}</p>
+        <div className="min-h-screen p-8">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <h2 className="text-xl font-semibold text-primary mb-2">Failed to load share</h2>
+            <p className="text-secondary mb-4">{errorMessage}</p>
             <Button
               variant="primary"
               onClick={() => window.location.href = "/shares"}
@@ -120,9 +120,9 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
   if (!share) {
     return (
       <AppLayout>
-        <div className={styles.sharesPage}>
-          <div className={styles.error}>
-            <h2>Share not found</h2>
+        <div className="min-h-screen p-8">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <h2 className="text-xl font-semibold text-primary mb-2">Share not found</h2>
             <Button
               variant="primary"
               onClick={() => window.location.href = "/shares"}
@@ -137,71 +137,58 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
 
   return (
     <AppLayout>
-      <div className={styles.sharesPage}>
-        <div className={styles.sharesHeader}>
+      <div className="min-h-screen p-8">
+        <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className={styles.sharesTitle}>{share.name}</h1>
-            <p className={styles.sharesSubtitle}>
+            <h1 className="text-2xl font-semibold text-primary m-0 mb-1">{share.name}</h1>
+            <p className="text-secondary text-sm m-0">
               Share link: {window.location.origin}/s/{share.slug}
             </p>
           </div>
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div className="flex gap-3">
             <Button variant="secondary" onClick={copyShareLink}>
+              <Copy className="w-4 h-4 mr-2" />
               Copy Link
             </Button>
             <Button
               variant="secondary"
               onClick={() => window.open(`/s/${share.slug}`, "_blank")}
             >
+              <ExternalLink className="w-4 h-4 mr-2" />
               Preview
             </Button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", borderBottom: "1px solid var(--color-border, #333)" }}>
+        <div className="flex gap-1 mb-6 border-b border-border-default">
           <button
-            className={`${styles.tab} ${activeTab === "settings" ? styles.tabActive : ""}`}
+            className={`px-5 py-3 bg-none border-none cursor-pointer font-medium transition-colors ${
+              activeTab === "settings"
+                ? "text-primary border-b-2 border-accent"
+                : "text-secondary border-b-2 border-transparent hover:text-primary"
+            }`}
             onClick={() => setActiveTab("settings")}
-            style={{
-              padding: "12px 20px",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "settings" ? "2px solid var(--color-primary, #4f46e5)" : "2px solid transparent",
-              color: activeTab === "settings" ? "var(--color-text, #fff)" : "var(--color-text-muted, #888)",
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
           >
             Settings
           </button>
           <button
-            className={`${styles.tab} ${activeTab === "assets" ? styles.tabActive : ""}`}
+            className={`px-5 py-3 bg-none border-none cursor-pointer font-medium transition-colors ${
+              activeTab === "assets"
+                ? "text-primary border-b-2 border-accent"
+                : "text-secondary border-b-2 border-transparent hover:text-primary"
+            }`}
             onClick={() => setActiveTab("assets")}
-            style={{
-              padding: "12px 20px",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "assets" ? "2px solid var(--color-primary, #4f46e5)" : "2px solid transparent",
-              color: activeTab === "assets" ? "var(--color-text, #fff)" : "var(--color-text-muted, #888)",
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
           >
             Assets ({assets.length})
           </button>
           <button
-            className={`${styles.tab} ${activeTab === "activity" ? styles.tabActive : ""}`}
+            className={`px-5 py-3 bg-none border-none cursor-pointer font-medium transition-colors ${
+              activeTab === "activity"
+                ? "text-primary border-b-2 border-accent"
+                : "text-secondary border-b-2 border-transparent hover:text-primary"
+            }`}
             onClick={() => setActiveTab("activity")}
-            style={{
-              padding: "12px 20px",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "activity" ? "2px solid var(--color-primary, #4f46e5)" : "2px solid transparent",
-              color: activeTab === "activity" ? "var(--color-text, #fff)" : "var(--color-text-muted, #888)",
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
           >
             Activity
           </button>
@@ -217,37 +204,26 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
         )}
 
         {activeTab === "assets" && (
-          <div className={styles.sharesGrid}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {assets.map((asset) => (
               <div
                 key={asset.fileId}
-                className={styles.shareCard}
-                style={{ padding: "12px" }}
+                className="p-3 bg-surface-2 border border-border-default rounded-md"
               >
-                <div
-                  style={{
-                    aspectRatio: "16/9",
-                    background: "var(--color-background, #111)",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <span style={{ fontSize: "32px" }}>📄</span>
+                <div className="aspect-video bg-surface-1 rounded-md flex items-center justify-center mb-3">
+                  <span className="text-3xl">📄</span>
                 </div>
-                <p style={{ fontSize: "14px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p className="text-sm text-primary m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                   {asset.file?.name || `File ${asset.fileId}`}
                 </p>
-                <p style={{ fontSize: "12px", color: "var(--color-text-muted, #888)", margin: "4px 0 0" }}>
+                <p className="text-xs text-muted m-1 mt-0">
                   Order: {asset.sortOrder}
                 </p>
               </div>
             ))}
             {assets.length === 0 && (
-              <div className={styles.sharesEmpty} style={{ gridColumn: "1 / -1" }}>
-                <p>No assets in this share. Add files from a project to get started.</p>
+              <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-secondary">No assets in this share. Add files from a project to get started.</p>
               </div>
             )}
           </div>

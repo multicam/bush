@@ -9,6 +9,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
 import { Button } from "@/web/components/ui";
 import { Dropzone, UploadQueue, type DroppedFile, type QueuedFile } from "@/web/components/upload";
@@ -28,7 +29,6 @@ import {
 } from "@/web/lib/api";
 import { getUploadClient, type UploadProgress } from "@/web/lib/upload-client";
 import { FolderUploadManager, hasFolderStructure, getFolderStructureSummary } from "@/web/lib/folder-upload";
-import styles from "./project.module.css";
 
 interface Project extends ProjectAttributes {
   id: string;
@@ -80,10 +80,10 @@ function CreateFolderModal({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 className={styles.modalTitle}>Create New Folder</h3>
-        <p className={styles.modalSubtitle}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]" onClick={onClose}>
+      <div className="bg-surface-1 rounded-lg p-6 w-full max-w-[400px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-primary mb-1">Create New Folder</h3>
+        <p className="text-sm text-secondary mb-4">
           in {parentFolderName}
         </p>
         <form onSubmit={handleSubmit}>
@@ -92,12 +92,12 @@ function CreateFolderModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Folder name"
-            className={styles.modalInput}
+            className="w-full px-3.5 py-2.5 text-sm border border-border-default rounded-md bg-surface-1 text-primary outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] disabled:bg-surface-3 disabled:cursor-not-allowed"
             autoFocus
             disabled={isCreating}
           />
-          {error && <p className={styles.modalError}>{error}</p>}
-          <div className={styles.modalActions}>
+          {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+          <div className="flex justify-end gap-3 mt-6">
             <Button
               type="button"
               variant="secondary"
@@ -502,9 +502,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (!projectId || authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
+        <div className="p-8 max-w-full mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+            <Loader2 className="w-8 h-8 animate-spin mb-4" />
             <p>Loading project...</p>
           </div>
         </div>
@@ -516,10 +516,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.error}>
-            <h2>Failed to load project</h2>
-            <p>{errorMessage}</p>
+        <div className="p-8 max-w-full mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+            <h2 className="text-primary mb-2">Failed to load project</h2>
+            <p className="text-secondary mb-6">{errorMessage}</p>
             <Button
               variant="primary"
               onClick={() => {
@@ -537,22 +537,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <AppLayout>
-      <div className={styles.page}>
+      <div className="p-8 max-w-full mx-auto">
         {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
+        <div className="flex items-start justify-between mb-6 max-sm:flex-col max-sm:gap-4">
+          <div className="flex items-start gap-4">
             <div>
-              <h1 className={styles.title}>{project?.name || "Project"}</h1>
-              <p className={styles.subtitle}>
+              <h1 className="text-3xl font-bold text-primary m-0">{project?.name || "Project"}</h1>
+              <p className="mt-1 text-sm text-secondary">
                 {project?.description || "No description"}
               </p>
             </div>
           </div>
-          <div className={styles.actions}>
+          <div className="flex items-center gap-3 max-sm:w-full max-sm:justify-end">
             <Button
               variant="secondary"
               onClick={() => setShowSidebar(!showSidebar)}
-              className={styles.toggleSidebarBtn}
+              className="flex items-center gap-2"
             >
               {showSidebar ? "Hide Folders" : "Show Folders"}
             </Button>
@@ -566,7 +566,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Breadcrumbs */}
-        <div className={styles.breadcrumbsContainer}>
+        <div className="mb-6 py-2">
           <Breadcrumbs
             items={breadcrumbItems}
             onNavigate={handleBreadcrumbNavigate}
@@ -575,7 +575,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Upload Dropzone (shown when uploading) */}
         {showDropzone && (
-          <div className={styles.dropzoneContainer}>
+          <div className="mb-8">
             <Dropzone
               onFiles={handleFilesDropped}
               multiple={true}
@@ -585,7 +585,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <Button
               variant="ghost"
               onClick={() => setShowDropzone(false)}
-              className={styles.cancelBtn}
+              className="mt-4"
             >
               Cancel
             </Button>
@@ -594,7 +594,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Upload Queue */}
         {uploadQueue.length > 0 && (
-          <div className={styles.queueContainer}>
+          <div className="mb-8">
             <UploadQueue
               files={uploadQueue}
               projectId={projectId}
@@ -609,12 +609,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         )}
 
         {/* Main Content */}
-        <div className={styles.mainContent}>
+        <div className="flex gap-6 min-h-[500px] max-sm:flex-col">
           {/* Sidebar with folder tree */}
           {showSidebar && (
-            <aside className={styles.sidebar}>
-              <div className={styles.sidebarHeader}>
-                <h3 className={styles.sidebarTitle}>Folders</h3>
+            <aside className="w-[280px] flex-shrink-0 bg-surface-2 border border-border-default rounded-lg overflow-hidden flex flex-col max-sm:w-full max-sm:max-h-[200px]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+                <h3 className="text-sm font-semibold text-primary m-0">Folders</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -638,12 +638,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           )}
 
           {/* Asset Browser */}
-          <section className={styles.browserSection}>
-            <div className={styles.browserHeader}>
-              <div className={styles.browserInfo}>
+          <section className="bg-surface-2 border border-border-default rounded-lg overflow-hidden min-h-[400px] flex-1">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+              <div className="text-sm text-secondary">
                 {folders.length + files.length} items
                 {folders.length > 0 && (
-                  <span className={styles.itemBreakdown}>
+                  <span className="text-secondary/70">
                     {" "}({folders.length} folders, {files.length} files)
                   </span>
                 )}

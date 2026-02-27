@@ -7,8 +7,8 @@
 
 import { useState } from "react";
 import { Badge } from "@/web/components/ui";
+import { Grid3X3, LayoutPanelTop, Eye, MessageSquare, Download, Lock, Clock, Copy, Pencil, MoreVertical, Files, ExternalLink, Trash2 } from "lucide-react";
 import type { ShareWithRelationships, ShareLayout } from "./types";
-import styles from "./shares.module.css";
 
 interface ShareCardProps {
   share: ShareWithRelationships;
@@ -45,18 +45,19 @@ function formatRelativeTime(dateString: string): string {
 }
 
 /**
- * Get layout icon
+ * Get layout icon component
  */
-function getLayoutIcon(layout: ShareLayout): string {
+function getLayoutIcon(layout: ShareLayout): React.ReactNode {
+  const iconClass = "w-4 h-4";
   switch (layout) {
     case "grid":
-      return "▦";
+      return <Grid3X3 className={iconClass} />;
     case "reel":
-      return "▤";
+      return <LayoutPanelTop className={iconClass} />;
     case "viewer":
-      return "▣";
+      return <Eye className={iconClass} />;
     default:
-      return "▦";
+      return <Grid3X3 className={iconClass} />;
   }
 }
 
@@ -99,107 +100,115 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
   };
 
   return (
-    <div className={styles.shareCard}>
-      <div className={styles.shareCardHeader}>
-        <div className={styles.shareLayout}>
-          <span className={styles.layoutIcon}>{getLayoutIcon(share.layout)}</span>
-          <span className={styles.layoutLabel}>{share.layout}</span>
+    <div className="bg-surface-1 border border-border-default rounded-md p-4 transition-colors hover:border-accent hover:shadow-lg">
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-secondary">
+          {getLayoutIcon(share.layout)}
+          <span className="capitalize">{share.layout}</span>
         </div>
         <Badge variant={getStatusBadgeVariant(share)} size="sm">
           {getStatusLabel(share)}
         </Badge>
       </div>
 
-      <h3 className={styles.shareCardTitle}>{share.name}</h3>
+      <h3 className="text-base font-semibold mb-2 text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+        {share.name}
+      </h3>
 
-      <div className={styles.shareCardMeta}>
+      <div className="flex gap-3 text-xs text-secondary mb-2">
         {share.asset_count !== undefined && (
-          <span className={styles.assetCount}>
+          <span className="text-accent">
             {share.asset_count} asset{share.asset_count !== 1 ? "s" : ""}
           </span>
         )}
         {share.created_by && (
-          <span className={styles.creator}>
+          <span>
             by {share.created_by.firstName || share.created_by.email.split("@")[0]}
           </span>
         )}
       </div>
 
-      <div className={styles.shareCardSettings}>
+      <div className="flex gap-2 mb-3">
         {share.allowComments && (
-          <span className={styles.setting} title="Comments enabled">💬</span>
+          <span className="text-sm opacity-70" title="Comments enabled">
+            <MessageSquare className="w-4 h-4" />
+          </span>
         )}
         {share.allowDownloads && (
-          <span className={styles.setting} title="Downloads enabled">⬇️</span>
+          <span className="text-sm opacity-70" title="Downloads enabled">
+            <Download className="w-4 h-4" />
+          </span>
         )}
         {share.passphrase && (
-          <span className={styles.setting} title="Password protected">🔒</span>
+          <span className="text-sm opacity-70" title="Password protected">
+            <Lock className="w-4 h-4" />
+          </span>
         )}
         {share.expiresAt && (
-          <span className={styles.setting} title={`Expires ${new Date(share.expiresAt).toLocaleDateString()}`}>
-            ⏱️
+          <span className="text-sm opacity-70" title={`Expires ${new Date(share.expiresAt).toLocaleDateString()}`}>
+            <Clock className="w-4 h-4" />
           </span>
         )}
       </div>
 
-      <div className={styles.shareCardFooter}>
-        <span className={styles.shareSlug}>/{share.slug}</span>
-        <span className={styles.lastUpdated}>
+      <div className="flex justify-between items-center pt-3 border-t border-border-default text-[11px] text-secondary/80">
+        <span className="font-mono bg-surface-2 px-1.5 py-0.5 rounded-sm">/{share.slug}</span>
+        <span>
           Updated {formatRelativeTime(share.updatedAt)}
         </span>
       </div>
 
-      <div className={styles.shareCardActions}>
+      <div className="flex gap-2 mt-3">
         <button
-          className={styles.actionBtn}
+          className="flex-1 py-2 px-3 text-xs font-medium bg-surface-2 border border-border-default rounded-md text-primary cursor-pointer text-center no-underline transition-colors hover:bg-surface-3 hover:border-accent flex items-center justify-center gap-1.5"
           onClick={handleCopyLink}
           title="Copy link"
         >
-          📋 Copy Link
+          <Copy className="w-3.5 h-3.5" /> Copy Link
         </button>
         <a
           href={`/shares/${share.id}`}
-          className={styles.actionBtn}
+          className="flex-1 py-2 px-3 text-xs font-medium bg-surface-2 border border-border-default rounded-md text-primary cursor-pointer text-center no-underline transition-colors hover:bg-surface-3 hover:border-accent flex items-center justify-center gap-1.5"
           title="Edit share"
         >
-          ✏️ Edit
+          <Pencil className="w-3.5 h-3.5" /> Edit
         </a>
-        <div className={styles.menuContainer}>
+        <div className="relative">
           <button
-            className={styles.menuBtn}
+            className="w-8 p-2 text-base bg-surface-2 border border-border-default rounded-md text-primary cursor-pointer transition-colors hover:bg-surface-3"
             onClick={() => setShowMenu(!showMenu)}
             title="More options"
           >
-            ⋮
+            <MoreVertical className="w-4 h-4" />
           </button>
           {showMenu && (
-            <div className={styles.menu}>
+            <div className="absolute right-0 top-full mt-1 min-w-[140px] bg-surface-1 border border-border-default rounded-md shadow-lg z-[100] overflow-hidden">
               <button
-                className={styles.menuItem}
+                className="flex items-center gap-2 w-full py-2.5 px-3.5 text-[13px] bg-none border-none text-primary cursor-pointer text-left no-underline transition-colors hover:bg-surface-2"
                 onClick={() => {
                   setShowMenu(false);
                   onDuplicate?.(share.id);
                 }}
               >
-                📋 Duplicate
+                <Files className="w-4 h-4" /> Duplicate
               </button>
               <a
                 href={`/s/${share.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={styles.menuItem}
+                className="flex items-center gap-2 w-full py-2.5 px-3.5 text-[13px] bg-none border-none text-primary cursor-pointer text-left no-underline transition-colors hover:bg-surface-2"
                 onClick={() => setShowMenu(false)}
               >
-                👁️ Preview
+                <ExternalLink className="w-4 h-4" /> Preview
               </a>
               <button
-                className={`${styles.menuItem} ${styles.danger}`}
+                className="flex items-center gap-2 w-full py-2.5 px-3.5 text-[13px] bg-none border-none text-red-500 cursor-pointer text-left no-underline transition-colors hover:bg-red-500/10"
                 onClick={() => {
                   setShowMenu(false);
                   onDelete?.(share.id);
                 }}
               >
-                🗑️ Delete
+                <Trash2 className="w-4 h-4" /> Delete
               </button>
             </div>
           )}

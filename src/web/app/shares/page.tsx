@@ -21,7 +21,7 @@ import {
 } from "@/web/lib/api";
 import { ShareCard } from "@/web/components/shares";
 import type { ShareWithRelationships } from "@/web/components/shares/types";
-import styles from "@/web/components/shares/shares.module.css";
+import { Loader2, Link } from "lucide-react";
 
 interface Share extends ShareAttributes {
   id: string;
@@ -146,9 +146,9 @@ export default function SharesPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.sharesPage}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
+        <div className="min-h-screen p-8">
+          <div className="flex flex-col items-center justify-center py-16 text-muted">
+            <Loader2 className="w-8 h-8 animate-spin mb-4" />
             <p>Loading shares...</p>
           </div>
         </div>
@@ -160,10 +160,10 @@ export default function SharesPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.sharesPage}>
-          <div className={styles.error}>
-            <h2>Failed to load shares</h2>
-            <p>{errorMessage}</p>
+        <div className="min-h-screen p-8">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <h2 className="text-xl font-semibold text-primary mb-2">Failed to load shares</h2>
+            <p className="text-secondary mb-4">{errorMessage}</p>
             <Button
               variant="primary"
               onClick={() => {
@@ -181,11 +181,11 @@ export default function SharesPage() {
 
   return (
     <AppLayout>
-      <div className={styles.sharesPage}>
-        <div className={styles.sharesHeader}>
+      <div className="min-h-screen p-8">
+        <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className={styles.sharesTitle}>Shares</h1>
-            <p className={styles.sharesSubtitle}>
+            <h1 className="text-2xl font-semibold text-primary m-0 mb-1">Shares</h1>
+            <p className="text-secondary text-sm m-0">
               Manage share links for presenting assets to stakeholders
             </p>
           </div>
@@ -195,18 +195,18 @@ export default function SharesPage() {
         </div>
 
         {/* Toolbar */}
-        <div className={styles.sharesToolbar}>
+        <div className="flex items-center gap-4 mb-6">
           <input
             type="text"
             placeholder="Search shares..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.sharesSearch}
+            className="px-3 py-2 bg-surface-2 border border-border-default rounded-md text-sm text-primary outline-none focus:border-accent min-w-[240px]"
           />
           <select
             value={filterProject || "all"}
             onChange={(e) => setFilterProject(e.target.value === "all" ? null : e.target.value)}
-            className={styles.sharesFilter}
+            className="px-3 py-2 bg-surface-2 border border-border-default rounded-md text-sm text-primary outline-none focus:border-accent"
           >
             <option value="all">All Projects</option>
             {projects.map((p) => (
@@ -217,7 +217,7 @@ export default function SharesPage() {
 
         {/* Shares Grid */}
         {filteredShares.length > 0 ? (
-          <div className={styles.sharesGrid}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredShares.map((share) => (
               <ShareCard
                 key={share.id}
@@ -228,12 +228,12 @@ export default function SharesPage() {
             ))}
           </div>
         ) : (
-          <div className={styles.sharesEmpty}>
-            <span className={styles.sharesEmptyIcon}>🔗</span>
-            <h3 className={styles.sharesEmptyTitle}>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Link className="w-12 h-12 text-muted mb-4" />
+            <h3 className="text-lg font-medium text-primary m-0 mb-2">
               {searchQuery || filterProject ? "No shares found" : "No shares yet"}
             </h3>
-            <p className={styles.sharesEmptyDescription}>
+            <p className="text-secondary text-sm max-w-md mb-4">
               {searchQuery || filterProject
                 ? "Try adjusting your search or filters"
                 : "Create your first share to start presenting assets to stakeholders"}

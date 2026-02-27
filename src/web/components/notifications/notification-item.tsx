@@ -6,8 +6,8 @@
  */
 "use client";
 
+import { Check, X } from "lucide-react";
 import { NOTIFICATION_ICONS, formatRelativeTime, type NotificationItemProps } from "./types";
-import styles from "./notifications.module.css";
 
 export function NotificationItem({
   notification,
@@ -33,44 +33,50 @@ export function NotificationItem({
 
   return (
     <div
-      className={`${styles.notificationItem} ${!notification.read ? styles.unread : ""}`}
+      className={`
+        flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-border-default last:border-b-0
+        hover:bg-surface-2
+        ${!notification.read ? "bg-[rgba(0,102,255,0.05)] hover:bg-[rgba(0,102,255,0.1)]" : ""}
+      `.replace(/\s+/g, " ").trim()}
       onClick={handleClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
     >
-      <div className={styles.notificationIcon}>{icon}</div>
-      <div className={styles.notificationContent}>
-        <div className={styles.notificationTitle}>{notification.title}</div>
+      <div className="shrink-0 w-9 h-9 flex items-center justify-center bg-surface-2 rounded-full text-base">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-primary leading-snug truncate">
+          {notification.title}
+        </div>
         {notification.body && (
-          <div className={styles.notificationBody}>{notification.body}</div>
+          <div className="text-[0.8125rem] text-secondary leading-snug mt-0.5 overflow-hidden text-ellipsis line-clamp-2">
+            {notification.body}
+          </div>
         )}
-        <div className={styles.notificationTime}>
+        <div className="text-xs text-muted mt-1">
           {formatRelativeTime(notification.createdAt)}
         </div>
       </div>
-      <div className={styles.notificationActions}>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {!notification.read && (
           <button
-            className={styles.actionButton}
+            className="flex items-center justify-center w-7 h-7 p-0 bg-transparent border-none rounded-sm cursor-pointer text-secondary transition-colors hover:bg-surface-3 hover:text-primary"
             onClick={handleMarkRead}
             title="Mark as read"
             aria-label="Mark as read"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         )}
         <button
-          className={styles.actionButton}
+          className="flex items-center justify-center w-7 h-7 p-0 bg-transparent border-none rounded-sm cursor-pointer text-secondary transition-colors hover:bg-surface-3 hover:text-primary"
           onClick={handleDelete}
           title="Delete"
           aria-label="Delete notification"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>

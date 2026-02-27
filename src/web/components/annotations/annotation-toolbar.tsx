@@ -7,10 +7,32 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import {
+  MousePointer2,
+  Square,
+  Circle,
+  ArrowRight,
+  Minus,
+  Pencil,
+  Undo2,
+  Redo2,
+} from "lucide-react";
 import type { AnnotationToolbarProps, AnnotationTool } from "./types";
-import { DEFAULT_COLORS, STROKE_WIDTHS, TOOL_CONFIG } from "./types";
+import { DEFAULT_COLORS, STROKE_WIDTHS } from "./types";
 import { Button } from "../ui/button";
-import styles from "./annotations.module.css";
+
+/**
+ * Tool configuration for UI display with Lucide icons
+ */
+const TOOL_CONFIG_LUCIDE: Record<AnnotationTool, { label: string; icon: React.ReactNode }> = {
+  select: { label: "Select", icon: <MousePointer2 className="w-4 h-4" /> },
+  rectangle: { label: "Rectangle", icon: <Square className="w-4 h-4" /> },
+  ellipse: { label: "Circle", icon: <Circle className="w-4 h-4" /> },
+  arrow: { label: "Arrow", icon: <ArrowRight className="w-4 h-4" /> },
+  line: { label: "Line", icon: <Minus className="w-4 h-4" /> },
+  freehand: { label: "Draw", icon: <Pencil className="w-4 h-4" /> },
+  text: { label: "Text", icon: <span className="text-sm font-bold">T</span> },
+};
 
 /**
  * Tool button component
@@ -26,20 +48,26 @@ function ToolButton({
   onSelect: (tool: AnnotationTool) => void;
   disabled?: boolean;
 }) {
-  const config = TOOL_CONFIG[tool];
+  const config = TOOL_CONFIG_LUCIDE[tool];
   const isActive = tool === currentTool;
 
   return (
     <button
       type="button"
-      className={`${styles.toolButton} ${isActive ? styles.active : ""}`}
+      className={`
+        flex items-center justify-center w-8 h-8 border-none rounded-sm
+        bg-transparent cursor-pointer transition-colors
+        ${isActive ? "bg-accent/30 text-accent" : "text-primary"}
+        ${!disabled ? "hover:bg-white/10 active:bg-white/15" : ""}
+        ${disabled ? "opacity-40 cursor-not-allowed" : ""}
+      `}
       onClick={() => onSelect(tool)}
       disabled={disabled}
       title={config.label}
       aria-label={config.label}
       aria-pressed={isActive}
     >
-      <span className={styles.toolIcon}>{config.icon}</span>
+      {config.icon}
     </button>
   );
 }
@@ -61,26 +89,44 @@ function ColorPicker({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className={styles.colorPicker}>
+    <div className="relative">
       <button
         type="button"
-        className={styles.colorButton}
+        className={`
+          flex items-center justify-center w-8 h-8 border-none rounded-sm
+          bg-transparent cursor-pointer transition-colors
+          ${!disabled ? "hover:bg-white/10" : ""}
+          ${disabled ? "opacity-40 cursor-not-allowed" : ""}
+        `}
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
         title="Select color"
         aria-label="Select color"
         aria-expanded={isOpen}
       >
-        <span className={styles.colorSwatch} style={{ backgroundColor: currentColor }} />
+        <span
+          className="w-5 h-5 rounded-sm border-2 border-white/30"
+          style={{
+            backgroundColor: currentColor,
+            boxShadow: "inset 0 0 0 1px rgba(0, 0, 0, 0.2)",
+          }}
+        />
       </button>
       {isOpen && (
-        <div className={styles.colorDropdown}>
+        <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 grid grid-cols-3 gap-1 p-2 bg-surface-2/98 rounded-md shadow-lg border border-border-default z-[100]">
           {colors.map((color) => (
             <button
               key={color}
               type="button"
-              className={`${styles.colorOption} ${color === currentColor ? styles.selected : ""}`}
-              style={{ backgroundColor: color }}
+              className={`
+                w-7 h-7 border-none rounded-sm cursor-pointer transition-all
+                ${color === currentColor ? "ring-2 ring-accent" : ""}
+                hover:scale-110
+              `}
+              style={{
+                backgroundColor: color,
+                boxShadow: "inset 0 0 0 1px rgba(0, 0, 0, 0.2)",
+              }}
               onClick={() => {
                 onSelect(color);
                 setIsOpen(false);
@@ -112,25 +158,37 @@ function StrokeWidthPicker({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className={styles.strokePicker}>
+    <div className="relative">
       <button
         type="button"
-        className={styles.strokeButton}
+        className={`
+          flex items-center justify-center w-8 h-8 border-none rounded-sm
+          bg-transparent cursor-pointer transition-colors
+          ${!disabled ? "hover:bg-white/10" : ""}
+          ${disabled ? "opacity-40 cursor-not-allowed" : ""}
+        `}
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
         title={`Stroke width: ${currentWidth}px`}
         aria-label="Select stroke width"
         aria-expanded={isOpen}
       >
-        <span className={styles.strokePreview} style={{ height: currentWidth }} />
+        <span
+          className="w-5 bg-primary rounded-[2px]"
+          style={{ height: currentWidth }}
+        />
       </button>
       {isOpen && (
-        <div className={styles.strokeDropdown}>
+        <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 flex flex-col gap-0.5 p-2 bg-surface-2/98 rounded-md shadow-lg border border-border-default z-[100]">
           {widths.map((width) => (
             <button
               key={width}
               type="button"
-              className={`${styles.strokeOption} ${width === currentWidth ? styles.selected : ""}`}
+              className={`
+                flex items-center gap-2 px-2.5 py-1.5 border-none rounded-sm
+                bg-transparent text-primary cursor-pointer transition-colors whitespace-nowrap
+                ${width === currentWidth ? "bg-accent/20 text-accent" : "hover:bg-white/10"}
+              `}
               onClick={() => {
                 onSelect(width);
                 setIsOpen(false);
@@ -138,8 +196,14 @@ function StrokeWidthPicker({
               title={`${width}px`}
               aria-label={`Stroke width ${width}px`}
             >
-              <span className={styles.strokeOptionPreview} style={{ height: width }} />
-              <span className={styles.strokeOptionLabel}>{width}px</span>
+              <span
+                className="w-4 rounded-[1px]"
+                style={{
+                  height: width,
+                  backgroundColor: "currentColor",
+                }}
+              />
+              <span className="text-xs">{width}px</span>
             </button>
           ))}
         </div>
@@ -196,12 +260,17 @@ export function AnnotationToolbar({
 
   return (
     <div
-      className={`${styles.toolbar} ${className ?? ""}`}
+      className={`
+        flex items-center gap-1 px-3 py-2
+        bg-surface-1/95 rounded-md shadow-lg
+        border border-border-default
+        ${className ?? ""}
+      `}
       onKeyDown={handleKeyDown}
       role="toolbar"
       aria-label="Annotation tools"
     >
-      <div className={styles.toolGroup}>
+      <div className="flex items-center gap-0.5">
         {tools.map((t) => (
           <ToolButton
             key={t}
@@ -213,7 +282,7 @@ export function AnnotationToolbar({
         ))}
       </div>
 
-      <div className={styles.divider} />
+      <div className="w-px h-6 bg-white/20 mx-2" />
 
       <ColorPicker
         colors={DEFAULT_COLORS}
@@ -229,40 +298,50 @@ export function AnnotationToolbar({
         disabled={disabled}
       />
 
-      <div className={styles.divider} />
+      <div className="w-px h-6 bg-white/20 mx-2" />
 
-      <div className={styles.toolGroup}>
+      <div className="flex items-center gap-0.5">
         <button
           type="button"
-          className={styles.toolButton}
+          className={`
+            flex items-center justify-center w-8 h-8 border-none rounded-sm
+            bg-transparent text-primary cursor-pointer transition-colors
+            ${!disabled && canUndo ? "hover:bg-white/10" : ""}
+            ${disabled || !canUndo ? "opacity-40 cursor-not-allowed" : ""}
+          `}
           onClick={onUndo}
           disabled={disabled || !canUndo}
           title="Undo (Ctrl+Z)"
           aria-label="Undo"
         >
-          <span className={styles.toolIcon}>↶</span>
+          <Undo2 className="w-4 h-4" />
         </button>
         <button
           type="button"
-          className={styles.toolButton}
+          className={`
+            flex items-center justify-center w-8 h-8 border-none rounded-sm
+            bg-transparent text-primary cursor-pointer transition-colors
+            ${!disabled && canRedo ? "hover:bg-white/10" : ""}
+            ${disabled || !canRedo ? "opacity-40 cursor-not-allowed" : ""}
+          `}
           onClick={onRedo}
           disabled={disabled || !canRedo}
           title="Redo (Ctrl+Y)"
           aria-label="Redo"
         >
-          <span className={styles.toolIcon}>↷</span>
+          <Redo2 className="w-4 h-4" />
         </button>
       </div>
 
       {onDelete && (
         <>
-          <div className={styles.divider} />
+          <div className="w-px h-6 bg-white/20 mx-2" />
           <Button
             variant="danger"
             size="sm"
             onClick={onDelete}
             disabled={disabled}
-            className={styles.deleteButton}
+            className="text-xs px-2.5 py-1"
           >
             Delete
           </Button>

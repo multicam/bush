@@ -7,7 +7,7 @@
 "use client";
 
 import { useCallback } from "react";
-import styles from "./folder-navigation.module.css";
+import { ChevronRight, Home } from "lucide-react";
 
 export interface BreadcrumbItem {
   id: string | null;
@@ -42,60 +42,38 @@ export function Breadcrumbs({
     : items;
 
   return (
-    <nav className={styles.breadcrumbs} aria-label="Breadcrumb navigation">
-      <ol className={styles.breadcrumbList}>
+    <nav className="flex items-center min-h-8" aria-label="Breadcrumb navigation">
+      <ol className="flex items-center list-none m-0 p-0 gap-1">
         {visibleItems.map((item, index) => {
           const isLast = index === visibleItems.length - 1;
           const showEllipsis = shouldTruncate && index === 1;
 
           return (
-            <li key={item.id ?? "root"} className={styles.breadcrumbItem}>
+            <li key={item.id ?? "root"} className="flex items-center gap-1">
               {showEllipsis && (
-                <span className={styles.ellipsis} aria-label="More folders">
+                <span className="px-2 py-1 text-muted text-sm" aria-label="More folders">
                   …
                 </span>
               )}
               {isLast ? (
-                <span className={styles.breadcrumbCurrent} aria-current="page">
+                <span className="px-2 py-1 text-primary text-sm font-medium" aria-current="page">
                   {item.name}
                 </span>
               ) : (
                 <button
-                  className={styles.breadcrumbLink}
+                  className="flex items-center gap-1 px-2 py-1 bg-none border-none rounded-sm text-secondary text-sm cursor-pointer transition-colors hover:bg-surface-2 hover:text-primary focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                   onClick={() => handleClick(item.id)}
                   type="button"
                 >
                   {index === 0 ? (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
+                    <Home className="w-4 h-4" />
                   ) : (
                     item.name
                   )}
                 </button>
               )}
               {!isLast && (
-                <svg
-                  className={styles.separator}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <ChevronRight className="text-muted flex-shrink-0 w-4 h-4" />
               )}
             </li>
           );

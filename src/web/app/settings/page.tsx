@@ -21,7 +21,7 @@ import {
   type CustomFieldAttributes,
   type CustomFieldType,
 } from "@/web/lib/api";
-import styles from "./settings.module.css";
+import { X } from "lucide-react";
 
 type SettingsTab = "profile" | "account" | "team" | "custom-fields" | "notifications" | "security" | "billing";
 
@@ -309,18 +309,18 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className={styles.page}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Settings</h1>
+      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-primary m-0">Settings</h1>
         </div>
 
-        <div className={styles.layout}>
+        <div className="grid grid-cols-[200px_1fr] gap-8 md:grid-cols-1 md:gap-0">
           {/* Sidebar Navigation */}
-          <nav className={styles.sidebar}>
+          <nav className="flex flex-col gap-1 md:flex-row md:overflow-x-auto md:pb-2 md:mb-4 md:gap-2">
             {filteredTabs.map((tab) => (
               <button
                 key={tab.id}
-                className={`${styles.navItem} ${activeTab === tab.id ? styles.active : ""}`}
+                className={`px-4 py-3 text-sm font-medium text-secondary bg-transparent border-none rounded-lg cursor-pointer text-left transition-colors md:whitespace-nowrap hover:text-primary hover:bg-surface-2 ${activeTab === tab.id ? "text-accent bg-[rgba(0,102,255,0.1)]" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
@@ -329,23 +329,25 @@ export default function SettingsPage() {
           </nav>
 
           {/* Content */}
-          <div className={styles.content}>
+          <div className="min-w-0">
             {activeTab === "profile" && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Profile Settings</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Profile Settings</h2>
+                <p className="text-sm text-secondary mb-6">
                   Update your personal information and preferences.
                 </p>
 
-                <div className={styles.form}>
-                  <div className={styles.avatarSection}>
-                    <div className={styles.avatarLarge}>{initials}</div>
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-16 h-16 flex items-center justify-center bg-surface-3 rounded-full text-xl font-semibold text-secondary">
+                      {initials}
+                    </div>
                     <Button variant="secondary" size="sm">
                       Change Avatar
                     </Button>
                   </div>
 
-                  <div className={styles.formRow}>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-1">
                     <Input
                       label="First Name"
                       defaultValue={user?.firstName || ""}
@@ -372,7 +374,7 @@ export default function SettingsPage() {
                     placeholder="Enter display name"
                   />
 
-                  <div className={styles.formActions}>
+                  <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
                     <Button variant="primary">Save Changes</Button>
                   </div>
                 </div>
@@ -380,38 +382,38 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "account" && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Account Settings</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Account Settings</h2>
+                <p className="text-sm text-secondary mb-6">
                   Manage your account details and preferences.
                 </p>
 
                 {currentAccount && (
-                  <div className={styles.accountInfo}>
-                    <div className={styles.accountHeader}>
-                      <h3 className={styles.accountName}>{currentAccount.name}</h3>
+                  <div className="p-4 bg-surface-1 border border-border-default rounded-lg mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <h3 className="text-base font-semibold text-primary m-0">{currentAccount.name}</h3>
                       <Badge variant="default">{currentAccount.role.replace("_", " ")}</Badge>
                     </div>
-                    <div className={styles.accountStats}>
-                      <div className={styles.stat}>
-                        <span className={styles.statLabel}>Plan</span>
-                        <span className={styles.statValue}>Pro</span>
+                    <div className="flex gap-8 sm:flex-col sm:gap-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-secondary uppercase tracking-wide">Plan</span>
+                        <span className="text-sm font-medium text-primary">Pro</span>
                       </div>
-                      <div className={styles.stat}>
-                        <span className={styles.statLabel}>Storage</span>
-                        <span className={styles.statValue}>479 GB / 2 TB</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-secondary uppercase tracking-wide">Storage</span>
+                        <span className="text-sm font-medium text-primary">479 GB / 2 TB</span>
                       </div>
-                      <div className={styles.stat}>
-                        <span className={styles.statLabel}>Members</span>
-                        <span className={styles.statValue}>15 / 25</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-secondary uppercase tracking-wide">Members</span>
+                        <span className="text-sm font-medium text-primary">15 / 25</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className={styles.dangerZone}>
-                  <h3 className={styles.dangerTitle}>Danger Zone</h3>
-                  <p className={styles.dangerDescription}>
+                <div className="mt-8 p-4 bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.2)] rounded-lg">
+                  <h3 className="text-sm font-semibold text-red-500 m-0 mb-2">Danger Zone</h3>
+                  <p className="text-xs text-secondary mb-4">
                     Once you delete your account, there is no going back. Please be certain.
                   </p>
                   <Button variant="danger">Delete Account</Button>
@@ -420,29 +422,31 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "team" && (isOwner || isContentAdmin) && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Team Management</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Team Management</h2>
+                <p className="text-sm text-secondary mb-6">
                   Manage team members and their permissions.
                 </p>
 
                 {/* Invite Form */}
-                <form onSubmit={handleInviteMember} className={styles.inviteForm}>
-                  <div className={styles.inviteRow}>
-                    <Input
-                      label="Email Address"
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="colleague@example.com"
-                      required
-                    />
-                    <div className={styles.inviteSelect}>
-                      <label className={styles.selectLabel}>Role</label>
+                <form onSubmit={handleInviteMember} className="mb-6 p-4 bg-surface-1 border border-border-default rounded-lg">
+                  <div className="flex gap-4 items-end sm:flex-col sm:items-stretch">
+                    <div className="flex-1">
+                      <Input
+                        label="Email Address"
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="colleague@example.com"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium text-primary">Role</label>
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value as AccountRole)}
-                        className={styles.select}
+                        className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="member">Member</option>
                         <option value="guest">Guest</option>
@@ -464,39 +468,39 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                   {inviteError && (
-                    <p className={styles.error}>{inviteError}</p>
+                    <p className="text-red-500 text-sm mt-2">{inviteError}</p>
                   )}
                 </form>
 
                 {/* Members List */}
                 {membersLoading ? (
-                  <div className={styles.loading}>Loading members...</div>
+                  <div className="p-8 text-center text-secondary">Loading members...</div>
                 ) : membersError ? (
-                  <div className={styles.errorContainer}>
-                    <p className={styles.error}>{membersError}</p>
+                  <div className="p-4 text-center">
+                    <p className="text-red-500 text-sm mt-2">{membersError}</p>
                     <Button variant="secondary" onClick={fetchMembers}>
                       Try Again
                     </Button>
                   </div>
                 ) : members.length === 0 ? (
-                  <p className={styles.emptyState}>No team members found.</p>
+                  <p className="p-8 text-center text-secondary">No team members found.</p>
                 ) : (
-                  <div className={styles.memberList}>
+                  <div className="flex flex-col border border-border-default rounded-lg overflow-hidden">
                     {members.map((member) => (
-                      <div key={member.id} className={styles.memberItem}>
-                        <div className={styles.memberInfo}>
-                          <span className={styles.memberName}>
+                      <div key={member.id} className="flex items-center justify-between px-4 py-3.5 border-b border-border-default bg-surface-1 last:border-b-0">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium text-primary">
                             {member.user.first_name && member.user.last_name
                               ? `${member.user.first_name} ${member.user.last_name}`
                               : member.user.email}
                           </span>
-                          <span className={styles.memberEmail}>
+                          <span className="text-xs text-secondary">
                             {member.user.email}
                           </span>
                         </div>
-                        <div className={styles.memberActions}>
+                        <div className="flex items-center gap-2">
                           {roleUpdateLoading === member.id ? (
-                            <span className={styles.updating}>Updating...</span>
+                            <span className="text-xs text-secondary">Updating...</span>
                           ) : member.user.id === user?.id ? (
                             <Badge variant={getRoleBadgeVariant(member.role)}>
                               {formatRole(member.role)} (You)
@@ -506,7 +510,7 @@ export default function SettingsPage() {
                               <select
                                 value={member.role}
                                 onChange={(e) => handleRoleUpdate(member.id, e.target.value as AccountRole)}
-                                className={`${styles.select} ${styles.roleSelect}`}
+                                className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] mr-2 focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                                 disabled={
                                   // Only owner can change owner/content_admin roles
                                   ((member.role === "owner" || member.role === "content_admin") && !isOwner) ||
@@ -551,11 +555,11 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "custom-fields" && (isOwner || isContentAdmin) && (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className={styles.sectionTitle}>Custom Fields</h2>
-                    <p className={styles.sectionDescription}>
+                    <h2 className="text-lg font-semibold text-primary m-0 mb-2">Custom Fields</h2>
+                    <p className="text-sm text-secondary">
                       Create and manage custom metadata fields for your assets.
                     </p>
                   </div>
@@ -565,40 +569,40 @@ export default function SettingsPage() {
                 </div>
 
                 {fieldsLoading ? (
-                  <div className={styles.loading}>Loading fields...</div>
+                  <div className="p-8 text-center text-secondary">Loading fields...</div>
                 ) : fieldsError ? (
-                  <div className={styles.errorContainer}>
-                    <p className={styles.error}>{fieldsError}</p>
+                  <div className="p-4 text-center">
+                    <p className="text-red-500 text-sm mt-2">{fieldsError}</p>
                     <Button variant="secondary" onClick={fetchCustomFields}>
                       Try Again
                     </Button>
                   </div>
                 ) : customFields.length === 0 ? (
-                  <div className={styles.emptyState}>
+                  <div className="p-8 text-center text-secondary">
                     <p>No custom fields defined yet.</p>
-                    <p className={styles.emptyHint}>
+                    <p className="text-sm text-secondary mt-2">
                       Custom fields let you add custom metadata to assets beyond the built-in fields.
                     </p>
                   </div>
                 ) : (
-                  <div className={styles.fieldList}>
+                  <div className="flex flex-col border border-border-default rounded-lg overflow-hidden">
                     {customFields.map((field) => (
-                      <div key={field.slug} className={styles.fieldItem}>
-                        <div className={styles.fieldInfo}>
-                          <span className={styles.fieldName}>{field.name}</span>
-                          <div className={styles.fieldMeta}>
+                      <div key={field.slug} className="flex items-center justify-between p-4 border-b border-border-default bg-surface-1 last:border-b-0">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-primary">{field.name}</span>
+                          <div className="flex items-center gap-2">
                             <Badge variant="default">{field.type.replace("_", " ")}</Badge>
                             {field.description && (
-                              <span className={styles.fieldDescription}>{field.description}</span>
+                              <span className="text-xs text-secondary">{field.description}</span>
                             )}
                           </div>
                           {field.options && field.options.length > 0 && (
-                            <div className={styles.fieldOptions}>
+                            <div className="text-xs text-secondary italic">
                               Options: {field.options.join(", ")}
                             </div>
                           )}
                         </div>
-                        <div className={styles.fieldActions}>
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -627,26 +631,26 @@ export default function SettingsPage() {
 
                 {/* Create/Edit Field Modal */}
                 {showFieldModal && (
-                  <div className={styles.modal}>
-                    <div className={styles.modalContent}>
-                      <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+                    <div className="bg-surface-1 rounded-xl w-full max-w-[500px] max-h-[90vh] overflow-y-auto shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
+                      <div className="flex justify-between items-center px-6 py-4 border-b border-border-default">
+                        <h3 className="text-base font-semibold text-primary m-0">
                           {editingField ? "Edit Field" : "Create Custom Field"}
                         </h3>
                         <button
-                          className={styles.modalClose}
+                          className="bg-none border-none text-secondary cursor-pointer p-0 leading-none hover:text-primary"
                           onClick={() => setShowFieldModal(false)}
                         >
-                          ×
+                          <X className="w-6 h-6" />
                         </button>
                       </div>
                       <form onSubmit={handleSaveField}>
-                        <div className={styles.modalBody}>
+                        <div className="p-6">
                           {fieldFormError && (
-                            <p className={styles.error}>{fieldFormError}</p>
+                            <p className="text-red-500 text-sm mb-4">{fieldFormError}</p>
                           )}
-                          <div className={styles.formGroup}>
-                            <label className={styles.label}>Field Name</label>
+                          <div className="mb-4 last:mb-0">
+                            <label className="block text-sm font-medium text-primary mb-1.5">Field Name</label>
                             <Input
                               value={fieldForm.name}
                               onChange={(e) => setFieldForm({ ...fieldForm, name: e.target.value })}
@@ -654,12 +658,12 @@ export default function SettingsPage() {
                               required
                             />
                           </div>
-                          <div className={styles.formGroup}>
-                            <label className={styles.label}>Field Type</label>
+                          <div className="mb-4 last:mb-0">
+                            <label className="block text-sm font-medium text-primary mb-1.5">Field Type</label>
                             <select
                               value={fieldForm.type}
                               onChange={(e) => setFieldForm({ ...fieldForm, type: e.target.value as CustomFieldType })}
-                              className={styles.select}
+                              className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                               disabled={!!editingField}
                             >
                               <option value="text">Text</option>
@@ -674,52 +678,52 @@ export default function SettingsPage() {
                               <option value="rating">Rating</option>
                             </select>
                             {editingField && (
-                              <span className={styles.helperText}>Field type cannot be changed after creation</span>
+                              <span className="block text-xs text-secondary mt-1">Field type cannot be changed after creation</span>
                             )}
                           </div>
                           {(fieldForm.type === "single_select" || fieldForm.type === "multi_select") && (
-                            <div className={styles.formGroup}>
-                              <label className={styles.label}>Options</label>
+                            <div className="mb-4 last:mb-0">
+                              <label className="block text-sm font-medium text-primary mb-1.5">Options</label>
                               <Input
                                 value={fieldForm.options}
                                 onChange={(e) => setFieldForm({ ...fieldForm, options: e.target.value })}
                                 placeholder="Option 1, Option 2, Option 3"
                               />
-                              <span className={styles.helperText}>Separate options with commas</span>
+                              <span className="block text-xs text-secondary mt-1">Separate options with commas</span>
                             </div>
                           )}
-                          <div className={styles.formGroup}>
-                            <label className={styles.label}>Description (optional)</label>
+                          <div className="mb-4 last:mb-0">
+                            <label className="block text-sm font-medium text-primary mb-1.5">Description (optional)</label>
                             <Input
                               value={fieldForm.description}
                               onChange={(e) => setFieldForm({ ...fieldForm, description: e.target.value })}
                               placeholder="Help text for this field"
                             />
                           </div>
-                          <div className={styles.formGroup}>
-                            <label className={styles.label}>Editable By</label>
+                          <div className="mb-4 last:mb-0">
+                            <label className="block text-sm font-medium text-primary mb-1.5">Editable By</label>
                             <select
                               value={fieldForm.editableBy}
                               onChange={(e) => setFieldForm({ ...fieldForm, editableBy: e.target.value as "admin" | "full_access" })}
-                              className={styles.select}
+                              className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <option value="full_access">Full Access and above</option>
                               <option value="admin">Admin only</option>
                             </select>
                           </div>
-                          <div className={styles.formGroup}>
-                            <label className={styles.checkboxLabel}>
+                          <div className="mb-4 last:mb-0">
+                            <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={fieldForm.isVisibleByDefault}
                                 onChange={(e) => setFieldForm({ ...fieldForm, isVisibleByDefault: e.target.checked })}
-                                className={styles.checkbox}
+                                className="w-4 h-4 cursor-pointer"
                               />
                               Visible by default in projects
                             </label>
                           </div>
                         </div>
-                        <div className={styles.modalFooter}>
+                        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border-default bg-surface-2">
                           <Button
                             type="button"
                             variant="secondary"
@@ -743,79 +747,79 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "notifications" && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Notification Preferences</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Notification Preferences</h2>
+                <p className="text-sm text-secondary mb-6">
                   Choose how and when you want to be notified.
                 </p>
 
-                <div className={styles.notificationOptions}>
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationLabel}>Email Notifications</span>
-                      <span className={styles.notificationDescription}>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-primary">Email Notifications</span>
+                      <span className="text-xs text-secondary">
                         Receive email notifications for important updates
                       </span>
                     </div>
-                    <input type="checkbox" defaultChecked className={styles.toggle} />
+                    <input type="checkbox" defaultChecked className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationLabel}>Comment Mentions</span>
-                      <span className={styles.notificationDescription}>
+                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-primary">Comment Mentions</span>
+                      <span className="text-xs text-secondary">
                         Get notified when someone mentions you in a comment
                       </span>
                     </div>
-                    <input type="checkbox" defaultChecked className={styles.toggle} />
+                    <input type="checkbox" defaultChecked className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationLabel}>Share Activity</span>
-                      <span className={styles.notificationDescription}>
+                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-primary">Share Activity</span>
+                      <span className="text-xs text-secondary">
                         Notifications when someone views or downloads your shares
                       </span>
                     </div>
-                    <input type="checkbox" className={styles.toggle} />
+                    <input type="checkbox" className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationLabel}>Weekly Digest</span>
-                      <span className={styles.notificationDescription}>
+                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-primary">Weekly Digest</span>
+                      <span className="text-xs text-secondary">
                         Receive a weekly summary of activity
                       </span>
                     </div>
-                    <input type="checkbox" defaultChecked className={styles.toggle} />
+                    <input type="checkbox" defaultChecked className="w-10 h-6 cursor-pointer" />
                   </div>
                 </div>
 
-                <div className={styles.formActions}>
+                <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
                   <Button variant="primary">Save Preferences</Button>
                 </div>
               </section>
             )}
 
             {activeTab === "security" && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Security Settings</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Security Settings</h2>
+                <p className="text-sm text-secondary mb-6">
                   Manage your security preferences and active sessions.
                 </p>
 
-                <div className={styles.securitySection}>
-                  <h3 className={styles.subsectionTitle}>Two-Factor Authentication</h3>
-                  <p className={styles.subsectionDescription}>
+                <div className="mb-8 last:mb-0">
+                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">Two-Factor Authentication</h3>
+                  <p className="text-xs text-secondary mb-3">
                     Add an extra layer of security to your account.
                   </p>
                   <Button variant="secondary">Enable 2FA</Button>
                 </div>
 
-                <div className={styles.securitySection}>
-                  <h3 className={styles.subsectionTitle}>Active Sessions</h3>
-                  <div className={styles.sessionList}>
-                    <div className={styles.sessionItem}>
-                      <div className={styles.sessionInfo}>
-                        <span className={styles.sessionDevice}>Current Session</span>
-                        <span className={styles.sessionLocation}>Chrome on macOS</span>
+                <div className="mb-8 last:mb-0">
+                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">Active Sessions</h3>
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between px-4 py-3 bg-surface-1 border border-border-default rounded-lg">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-primary">Current Session</span>
+                        <span className="text-xs text-secondary">Chrome on macOS</span>
                       </div>
                       <Badge variant="success">Active</Badge>
                     </div>
@@ -828,24 +832,24 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "billing" && isOwner && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Billing & Subscription</h2>
-                <p className={styles.sectionDescription}>
+              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Billing & Subscription</h2>
+                <p className="text-sm text-secondary mb-6">
                   Manage your subscription and billing information.
                 </p>
 
-                <div className={styles.planInfo}>
-                  <div className={styles.planHeader}>
-                    <h3 className={styles.planName}>Pro Plan</h3>
+                <div className="p-5 bg-surface-1 border border-border-default rounded-lg mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="text-lg font-semibold text-primary m-0">Pro Plan</h3>
                     <Badge variant="primary">Active</Badge>
                   </div>
-                  <div className={styles.planDetails}>
-                    <p>$29/month • 2 TB storage • 25 team members</p>
-                    <p className={styles.planRenewal}>Renews on March 15, 2024</p>
+                  <div>
+                    <p className="text-sm text-secondary m-0">$29/month - 2 TB storage - 25 team members</p>
+                    <p className="text-xs text-secondary mt-1">Renews on March 15, 2024</p>
                   </div>
                 </div>
 
-                <div className={styles.billingActions}>
+                <div className="flex gap-3">
                   <Button variant="secondary">Upgrade Plan</Button>
                   <Button variant="ghost">Update Payment Method</Button>
                   <Button variant="ghost">View Invoices</Button>

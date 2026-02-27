@@ -8,8 +8,23 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  StepBack,
+  StepForward,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  X,
+  ClosedCaption,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { CaptionOverlay, type TranscriptWord } from "../transcript";
-import styles from "./video-viewer.module.css";
 
 /** Comment marker for timeline */
 export interface CommentMarker {
@@ -705,19 +720,15 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
     if (meta?.frameRate) parts.push(`${meta.frameRate.toFixed(2)} fps`);
     if (meta?.codec) parts.push(meta.codec);
     if (meta?.bitrate) parts.push(formatBitrate(meta.bitrate));
-    return parts.join(" · ");
+    return parts.join(" \u00B7 ");
   }, [meta, resolutionLabel]);
 
   if (error) {
     return (
-      <div className={`${styles.container} ${className || ""}`}>
-        <div className={styles.error}>
-          <svg className={styles.errorIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span className={styles.errorMessage}>{error}</span>
+      <div className={`relative w-full h-full flex flex-col bg-black select-none overflow-hidden ${className || ""}`}>
+        <div className="flex flex-col items-center justify-center h-full gap-3 text-secondary">
+          <AlertCircle className="w-12 h-12 text-red-600" />
+          <span className="text-sm">{error}</span>
         </div>
       </div>
     );
@@ -726,14 +737,14 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   return (
     <div
       ref={containerRef}
-      className={`${styles.container} ${className || ""} ${isFullscreen ? styles.fullscreen : ""}`}
+      className={`relative w-full h-full flex flex-col bg-black select-none overflow-hidden ${isFullscreen ? "fixed inset-0 z-[9999]" : ""} ${className || ""}`}
     >
       {/* Video element */}
       <video
         ref={videoRef}
         src={hlsSrc ? undefined : src}
         poster={poster}
-        className={styles.video}
+        className="w-full h-full object-contain cursor-pointer"
         preload="metadata"
         autoPlay={autoPlay}
         playsInline
@@ -743,26 +754,24 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
       {/* Loading state */}
       {isLoading && (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 text-secondary text-sm z-10">
+          <Loader2 className="w-12 h-12 animate-spin text-accent" />
           <span>Loading video...</span>
         </div>
       )}
 
       {/* Buffering indicator */}
       {isBuffering && !isLoading && (
-        <div className={styles.buffering}>
-          <div className={styles.spinner} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+          <Loader2 className="w-10 h-10 animate-spin text-accent" />
         </div>
       )}
 
       {/* Play/Pause overlay */}
       {!isPlaying && !isLoading && (
-        <div className={styles.playOverlay} onClick={togglePlay}>
-          <div className={styles.playButtonLarge}>
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+        <div className="absolute inset-0 bottom-20 flex items-center justify-center cursor-pointer z-5" onClick={togglePlay}>
+          <div className="w-20 h-20 bg-black/60 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-black/80 hover:scale-110">
+            <Play className="w-10 h-10 text-white ml-1" fill="currentColor" />
           </div>
         </div>
       )}
@@ -778,19 +787,23 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       )}
 
       {/* Controls overlay */}
-      <div className={`${styles.controlsOverlay} ${showControls ? styles.visible : ""}`}>
+      <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 z-10 ${showControls ? "opacity-100" : "opacity-0"}`}>
         {/* Top bar */}
-        <div className={styles.topBar}>
-          {name && <h2 className={styles.fileName}>{name}</h2>}
-          {metaDataDisplay && <span className={styles.fileMeta}>{metaDataDisplay}</span>}
+        <div className={`${isFullscreen ? "px-8 pt-6 pb-2" : "px-6 pt-4 pb-1"} flex flex-col gap-1`}>
+          {name && (
+            <h2 className={`text-white font-semibold m-0 max-w-[600px] overflow-hidden text-ellipsis whitespace-nowrap ${isFullscreen ? "text-lg" : "text-base"}`}>
+              {name}
+            </h2>
+          )}
+          {metaDataDisplay && <span className="text-secondary text-xs">{metaDataDisplay}</span>}
         </div>
 
         {/* Timeline / Seekbar */}
-        <div className={styles.timelineContainer}>
+        <div className={`${isFullscreen ? "px-8 py-2 pb-3" : "px-6 py-2 pb-3"}`}>
           {/* Filmstrip preview */}
           {hoveredTime !== null && filmstripFrame && filmstripUrl && (
             <div
-              className={styles.filmstripPreview}
+              className="absolute bottom-full mb-2 bg-black bg-no-repeat rounded overflow-hidden shadow-lg -translate-x-1/2 z-20"
               style={{
                 left: `${filmstripPreviewLeft}px`,
                 backgroundImage: `url(${filmstripUrl})`,
@@ -799,14 +812,16 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 height: `${filmstrip?.height || 90}px`,
               }}
             >
-              <span className={styles.filmstripTime}>{formatTime(hoveredTime)}</span>
+              <span className="absolute bottom-0 inset-x-0 px-1.5 py-0.5 bg-black/70 text-white text-[10px] text-center">
+                {formatTime(hoveredTime)}
+              </span>
             </div>
           )}
 
           {/* Timeline */}
           <div
             ref={timelineRef}
-            className={styles.timeline}
+            className="relative w-full h-2 bg-surface-3 rounded cursor-pointer overflow-visible hover:h-2.5 transition-all"
             onMouseMove={handleTimelineHover}
             onMouseLeave={handleTimelineLeave}
             onClick={handleTimelineClick}
@@ -814,7 +829,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
             {/* In/Out range indicator */}
             {inPointPercent !== null && outPointPercent !== null && (
               <div
-                className={styles.inOutRange}
+                className="absolute top-0 h-full bg-accent/30 pointer-events-none"
                 style={{
                   left: `${inPointPercent}%`,
                   width: `${outPointPercent - inPointPercent}%`,
@@ -823,12 +838,12 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
             )}
 
             {/* Progress bar */}
-            <div className={styles.timelineProgress} style={{ width: `${progressPercent}%` }} />
+            <div className="absolute top-0 left-0 h-full bg-accent rounded-l pointer-events-none" style={{ width: `${progressPercent}%` }} />
 
             {/* Buffer indicator */}
             {bufferedPercent > 0 && (
               <div
-                className={styles.timelineBuffer}
+                className="absolute top-0 left-0 h-full bg-surface-2 rounded-l pointer-events-none"
                 style={{ width: `${bufferedPercent}%` }}
               />
             )}
@@ -837,8 +852,8 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
             {markerPositions.map((marker) => (
               <div
                 key={marker.id}
-                className={styles.commentMarker}
-                style={{ left: marker.left, backgroundColor: marker.color }}
+                className="absolute top-0 w-0.5 h-full cursor-pointer z-5 transition-colors duration-150 before:content-[''] before:absolute before:top-[-4px] before:left-[-2px] before:w-[7px] before:h-[7px] before:rounded-full"
+                style={{ left: marker.left, backgroundColor: marker.color || "#fbbf24" }}
                 onClick={(e) => handleCommentClick(marker, e)}
                 title={`Comment at ${formatTime(marker.timestamp)}`}
               />
@@ -847,34 +862,37 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
             {/* In point marker */}
             {inPointPercent !== null && (
               <div
-                className={styles.inOutMarker}
+                className="absolute -top-2 -translate-x-1/2 w-4 h-6 bg-accent rounded flex items-center justify-center cursor-pointer z-6"
                 style={{ left: `${inPointPercent}%` }}
                 title="In point (I)"
               >
-                <span>I</span>
+                <span className="text-white text-[10px] font-bold">I</span>
               </div>
             )}
 
             {/* Out point marker */}
             {outPointPercent !== null && (
               <div
-                className={styles.inOutMarker}
+                className="absolute -top-2 -translate-x-1/2 w-4 h-6 bg-accent rounded flex items-center justify-center cursor-pointer z-6"
                 style={{ left: `${outPointPercent}%` }}
                 title="Out point (O)"
               >
-                <span>O</span>
+                <span className="text-white text-[10px] font-bold">O</span>
               </div>
             )}
 
             {/* Playhead */}
-            <div className={styles.playhead} style={{ left: `${progressPercent}%` }} />
+            <div
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-accent rounded-full pointer-events-none shadow-md transition-transform duration-50"
+              style={{ left: `${progressPercent}%` }}
+            />
           </div>
 
           {/* Time display */}
-          <div className={styles.timeDisplay}>
+          <div className="flex justify-between items-center mt-2 text-xs text-white tabular-nums">
             <span>{formatTime(currentTime)}</span>
             {inPoint !== null && outPoint !== null && (
-              <span className={styles.inOutTime}>
+              <span className="text-accent text-[11px]">
                 [{formatTime(inPoint)} - {formatTime(outPoint)}]
               </span>
             )}
@@ -883,102 +901,84 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
         </div>
 
         {/* Control bar */}
-        <div className={styles.controlsBar}>
-          <div className={styles.controlsRow}>
+        <div className={`${isFullscreen ? "px-8 py-3 pb-6" : "px-6 py-2 pb-4"} bg-black/30`}>
+          <div className="flex items-center justify-center gap-3 flex-wrap max-md:gap-2">
             {/* Main playback controls */}
-            <div className={styles.mainControls}>
+            <div className="flex items-center gap-1.5">
               {/* Skip back */}
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                 onClick={() => seekRelative(-10)}
                 title="Skip back 10s"
                 aria-label="Skip back 10 seconds"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
-                  <text x="12" y="15" fontSize="6" textAnchor="middle" fill="currentColor">10</text>
-                </svg>
+                <SkipBack className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Frame back */}
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                 onClick={() => frameStep("backward")}
-                title="Previous frame (←)"
+                title="Previous frame"
                 aria-label="Previous frame"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                </svg>
+                <StepBack className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Play/Pause */}
               <button
-                className={`${styles.controlButton} ${styles.playButton}`}
+                className="flex items-center justify-center w-11 h-11 bg-accent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-blue-600 active:scale-95 max-md:w-10 max-md:h-10"
                 onClick={togglePlay}
                 title={isPlaying ? "Pause (Space)" : "Play (Space)"}
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? (
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                  </svg>
+                  <Pause className="w-6 h-6 max-md:w-5 max-md:h-5" fill="currentColor" />
                 ) : (
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
+                  <Play className="w-6 h-6 max-md:w-5 max-md:h-5" fill="currentColor" />
                 )}
               </button>
 
               {/* Frame forward */}
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                 onClick={() => frameStep("forward")}
-                title="Next frame (→)"
+                title="Next frame"
                 aria-label="Next frame"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                </svg>
+                <StepForward className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Skip forward */}
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                 onClick={() => seekRelative(10)}
                 title="Skip forward 10s"
                 aria-label="Skip forward 10 seconds"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" />
-                  <text x="12" y="15" fontSize="6" textAnchor="middle" fill="currentColor">10</text>
-                </svg>
+                <SkipForward className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-border-default max-md:hidden" />
 
             {/* Volume control */}
-            <div className={styles.volumeControl}>
+            <div className="flex items-center gap-2 min-w-[100px] max-md:min-w-[80px]">
               <button
-                className={styles.controlButton}
+                className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                 onClick={toggleMute}
                 title={isMuted ? "Unmute (M)" : "Mute (M)"}
                 aria-label={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted || volume === 0 ? (
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-                  </svg>
+                  <VolumeX className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 ) : (
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                  </svg>
+                  <Volume2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 )}
               </button>
               <input
                 type="range"
-                className={styles.volumeSlider}
+                className="w-15 h-1 bg-surface-3 rounded appearance-none cursor-pointer max-md:w-12.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
                 min="0"
                 max="1"
                 step="0.01"
@@ -988,12 +988,12 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
               />
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-border-default max-md:hidden" />
 
             {/* Speed control */}
-            <div className={styles.speedControl}>
+            <div className="flex items-center">
               <select
-                className={styles.speedSelect}
+                className="px-3 py-1.5 bg-transparent border border-border-default rounded text-white text-xs cursor-pointer appearance-none min-w-[60px] hover:border-text-secondary focus:outline-none focus:border-accent"
                 value={playbackRate}
                 onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
                 aria-label="Playback speed"
@@ -1006,14 +1006,14 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
               </select>
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-border-default max-md:hidden" />
 
             {/* Resolution control */}
             {resolutions.length > 0 && (
               <>
-                <div className={styles.resolutionControl}>
+                <div className="flex items-center">
                   <select
-                    className={styles.resolutionSelect}
+                    className="px-3 py-1.5 bg-transparent border border-border-default rounded text-white text-xs cursor-pointer appearance-none min-w-[70px] hover:border-text-secondary focus:outline-none focus:border-accent"
                     value={currentResolution}
                     onChange={(e) => setCurrentResolution(e.target.value)}
                     aria-label="Playback resolution"
@@ -1026,77 +1026,69 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                     ))}
                   </select>
                 </div>
-                <div className={styles.divider} />
+                <div className="w-px h-6 bg-border-default max-md:hidden" />
               </>
             )}
 
             {/* In/Out point controls */}
-            <div className={styles.inOutControls}>
+            <div className="flex items-center gap-1">
               <button
-                className={`${styles.controlButton} ${inPoint !== null ? styles.active : ""}`}
+                className={`flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8 ${inPoint !== null ? "bg-accent/30 text-accent" : ""}`}
                 onClick={setInPointAtCurrentTime}
                 title="Set in point (I)"
                 aria-label="Set in point"
               >
-                <span className={styles.inOutLabel}>I</span>
+                <span className="text-xs font-bold">I</span>
               </button>
               <button
-                className={`${styles.controlButton} ${outPoint !== null ? styles.active : ""}`}
+                className={`flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8 ${outPoint !== null ? "bg-accent/30 text-accent" : ""}`}
                 onClick={setOutPointAtCurrentTime}
                 title="Set out point (O)"
                 aria-label="Set out point"
               >
-                <span className={styles.inOutLabel}>O</span>
+                <span className="text-xs font-bold">O</span>
               </button>
               {(inPoint !== null || outPoint !== null) && (
                 <button
-                  className={styles.controlButton}
+                  className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
                   onClick={clearInOutPoints}
                   title="Clear in/out points (Esc)"
                   aria-label="Clear in/out points"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                  </svg>
+                  <X className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 </button>
               )}
             </div>
 
-            <div className={styles.divider} />
+            <div className="w-px h-6 bg-border-default max-md:hidden" />
 
             {/* Caption toggle */}
             {transcriptWords.length > 0 && (
               <>
                 <button
-                  className={`${styles.controlButton} ${captionsEnabled ? styles.active : ""}`}
+                  className={`flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8 ${captionsEnabled ? "bg-accent/30 text-accent" : ""}`}
                   onClick={() => setCaptionsEnabled(!captionsEnabled)}
                   title={captionsEnabled ? "Hide captions (C)" : "Show captions (C)"}
                   aria-label={captionsEnabled ? "Hide captions" : "Show captions"}
                   aria-pressed={captionsEnabled}
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z" />
-                  </svg>
+                  <ClosedCaption className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 </button>
-                <div className={styles.divider} />
+                <div className="w-px h-6 bg-border-default max-md:hidden" />
               </>
             )}
 
             {/* Fullscreen */}
             <button
-              className={styles.controlButton}
+              className="flex items-center justify-center w-9 h-9 bg-transparent border-none rounded-full text-white cursor-pointer transition-all duration-150 hover:bg-white/10 active:scale-95 max-md:w-8 max-md:h-8"
               onClick={toggleFullscreen}
               title={isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? (
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
-                </svg>
+                <Minimize2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               ) : (
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-                </svg>
+                <Maximize2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               )}
             </button>
           </div>
@@ -1104,8 +1096,8 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       </div>
 
       {/* Keyboard shortcut hint */}
-      <div className={styles.shortcutHint}>
-        Space/K: play/pause · J/L: shuttle · ←→: frame · M: mute · C: captions · F: fullscreen · I/O: in/out points
+      <div className="absolute bottom-2 right-4 text-[10px] text-secondary/50 opacity-0 transition-opacity duration-300 hover-parent:opacity-100 max-md:hidden">
+        Space/K: play/pause | J/L: shuttle | Arrow keys: frame | M: mute | C: captions | F: fullscreen | I/O: in/out points
       </div>
     </div>
   );

@@ -7,8 +7,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { X, Play, ImagePlus, Trash2, Loader2 } from "lucide-react";
 import { filesApi } from "../../lib/api";
-import styles from "./thumbnail-control.module.css";
 
 export interface ThumbnailControlProps {
   /** Project ID */
@@ -148,65 +148,71 @@ export function ThumbnailControl({
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h3 className={styles.title}>Set Thumbnail</h3>
+    <div className="bg-surface-2 rounded-md p-4 min-w-[280px]">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="m-0 text-base font-semibold text-primary">Set Thumbnail</h3>
         {onClose && (
-          <button className={styles.closeButton} onClick={onClose} aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-            </svg>
+          <button
+            className="bg-transparent border-none text-secondary cursor-pointer p-1 flex items-center justify-center rounded-sm transition-colors hover:bg-surface-3 hover:text-primary"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
-      {success && <div className={styles.success}>{success}</div>}
+      {error && (
+        <div className="bg-[rgba(239,68,68,0.2)] text-[#ef4444] px-3 py-2 rounded-sm text-sm mb-4">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="bg-[rgba(34,197,94,0.2)] text-[#22c55e] px-3 py-2 rounded-sm text-sm mb-4">
+          {success}
+        </div>
+      )}
 
-      <div className={styles.options}>
+      <div className="flex flex-col gap-3">
         {isVideo && (
-          <div className={styles.option}>
+          <div className="flex flex-col gap-1">
             <button
-              className={styles.actionButton}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-3 border border-border-default rounded-sm text-primary text-sm font-medium cursor-pointer transition-colors hover:bg-surface-4 hover:border-border-hover disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={handleCaptureFrame}
               disabled={isCapturing || isUploading || isRemoving}
             >
               {isCapturing ? (
                 <>
-                  <span className={styles.spinner} />
+                  <Loader2 className="w-[18px] h-[18px] animate-spin" />
                   Capturing...
                 </>
               ) : (
                 <>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-                  </svg>
+                  <Play className="w-[18px] h-[18px]" />
                   Capture Current Frame
                 </>
               )}
             </button>
-            <p className={styles.hint}>
+            <p className="m-0 text-xs text-secondary text-center">
               Capture frame at {formatTime(currentTime)}
             </p>
           </div>
         )}
 
-        <div className={styles.option}>
+        <div className="flex flex-col gap-1">
           <button
-            className={styles.actionButton}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-3 border border-border-default rounded-sm text-primary text-sm font-medium cursor-pointer transition-colors hover:bg-surface-4 hover:border-border-hover disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={() => fileInputRef.current?.click()}
             disabled={isCapturing || isUploading || isRemoving}
           >
             {isUploading ? (
               <>
-                <span className={styles.spinner} />
+                <Loader2 className="w-[18px] h-[18px] animate-spin" />
                 Uploading...
               </>
             ) : (
               <>
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                </svg>
+                <ImagePlus className="w-[18px] h-[18px]" />
                 Upload Image
               </>
             )}
@@ -216,33 +222,31 @@ export function ThumbnailControl({
             type="file"
             accept="image/*"
             onChange={handleFileSelect}
-            className={styles.fileInput}
+            className="hidden"
           />
-          <p className={styles.hint}>JPG, PNG, or WebP (max 10MB)</p>
+          <p className="m-0 text-xs text-secondary text-center">JPG, PNG, or WebP (max 10MB)</p>
         </div>
 
         {hasCustomThumbnail && (
-          <div className={styles.option}>
+          <div className="flex flex-col gap-1">
             <button
-              className={`${styles.actionButton} ${styles.danger}`}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-3 border border-[rgba(239,68,68,0.3)] rounded-sm text-[#ef4444] text-sm font-medium cursor-pointer transition-colors hover:bg-[rgba(239,68,68,0.1)] hover:border-[#ef4444] disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={handleRemoveThumbnail}
               disabled={isCapturing || isUploading || isRemoving}
             >
               {isRemoving ? (
                 <>
-                  <span className={styles.spinner} />
+                  <Loader2 className="w-[18px] h-[18px] animate-spin" />
                   Removing...
                 </>
               ) : (
                 <>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                  </svg>
+                  <Trash2 className="w-[18px] h-[18px]" />
                   Remove Custom Thumbnail
                 </>
               )}
             </button>
-            <p className={styles.hint}>Revert to auto-generated thumbnail</p>
+            <p className="m-0 text-xs text-secondary text-center">Revert to auto-generated thumbnail</p>
           </div>
         )}
       </div>

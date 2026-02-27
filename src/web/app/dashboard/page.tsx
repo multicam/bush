@@ -18,7 +18,7 @@ import {
   type WorkspaceAttributes,
   type ProjectAttributes,
 } from "@/web/lib/api";
-import styles from "./dashboard.module.css";
+import { Loader2, Upload, Share2, Users, FolderPlus } from "lucide-react";
 
 interface Workspace extends WorkspaceAttributes {
   id: string;
@@ -108,10 +108,10 @@ export default function DashboardPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
-            <p>Loading dashboard...</p>
+        <div className="p-8 max-w-[80rem] mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+            <Loader2 className="w-8 h-8 animate-spin mb-4 text-accent" />
+            <p className="m-0">Loading dashboard...</p>
           </div>
         </div>
       </AppLayout>
@@ -122,10 +122,10 @@ export default function DashboardPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className={styles.page}>
-          <div className={styles.error}>
-            <h2>Failed to load dashboard</h2>
-            <p>{errorMessage}</p>
+        <div className="p-8 max-w-[80rem] mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+            <h2 className="text-primary m-0 mb-2">Failed to load dashboard</h2>
+            <p className="text-secondary m-0 mb-6">{errorMessage}</p>
             <Button
               variant="primary"
               onClick={() => {
@@ -144,54 +144,62 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className={styles.page}>
-        <div className={styles.header}>
+      <div className="p-8 max-w-[80rem] mx-auto">
+        <div className="flex items-start justify-between mb-8 flex-col gap-4 sm:flex-row sm:gap-0">
           <div>
-            <h1 className={styles.title}>Dashboard</h1>
-            <p className={styles.subtitle}>
+            <h1 className="text-3xl font-bold text-primary m-0">Dashboard</h1>
+            <p className="mt-1 text-sm text-secondary">
               Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
             </p>
           </div>
-          <div className={styles.actions}>
-            <Button variant="secondary" onClick={() => window.location.href = "/workspaces"}>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Button
+              variant="secondary"
+              className="flex-1 sm:flex-initial"
+              onClick={() => window.location.href = "/workspaces"}
+            >
               View Workspaces
             </Button>
-            <Button variant="primary" onClick={() => window.location.href = "/projects/new"}>
+            <Button
+              variant="primary"
+              className="flex-1 sm:flex-initial"
+              onClick={() => window.location.href = "/projects/new"}
+            >
               New Project
             </Button>
           </div>
         </div>
 
         {/* Stats Overview */}
-        <div className={styles.stats}>
-          <div className={styles.statCard}>
-            <span className={styles.statValue}>{stats.workspacesCount}</span>
-            <span className={styles.statLabel}>Workspaces</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
+            <span className="block text-3xl font-bold text-primary">{stats.workspacesCount}</span>
+            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">Workspaces</span>
           </div>
-          <div className={styles.statCard}>
-            <span className={styles.statValue}>{stats.projectsCount}</span>
-            <span className={styles.statLabel}>Projects</span>
+          <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
+            <span className="block text-3xl font-bold text-primary">{stats.projectsCount}</span>
+            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">Projects</span>
           </div>
         </div>
 
-        <div className={styles.grid}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Recent Projects */}
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Recent Projects</h2>
-              <a href="/projects" className={styles.sectionLink}>View all</a>
+          <section className="bg-surface-2 border border-border-default rounded-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-primary m-0">Recent Projects</h2>
+              <a href="/projects" className="text-xs text-accent no-underline hover:underline">View all</a>
             </div>
             {recentProjects.length > 0 ? (
-              <div className={styles.projectList}>
+              <div className="flex flex-col gap-2">
                 {recentProjects.map((project) => (
                   <a
                     key={project.id}
                     href={`/projects/${project.id}`}
-                    className={styles.projectCard}
+                    className="flex items-center justify-between p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
                   >
-                    <div className={styles.projectInfo}>
-                      <span className={styles.projectName}>{project.name}</span>
-                      <span className={styles.projectMeta}>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-primary">{project.name}</span>
+                      <span className="text-xs text-secondary">
                         {project.workspaceName}
                       </span>
                     </div>
@@ -205,8 +213,8 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className={styles.emptySection}>
-                <p>No projects yet</p>
+              <div className="flex flex-col items-center justify-center p-8 text-center text-secondary">
+                <p className="mb-4">No projects yet</p>
                 <Button
                   variant="primary"
                   size="sm"
@@ -219,26 +227,26 @@ export default function DashboardPage() {
           </section>
 
           {/* Quick Actions */}
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Quick Actions</h2>
+          <section className="bg-surface-2 border border-border-default rounded-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-primary m-0">Quick Actions</h2>
             </div>
-            <div className={styles.actionList}>
-              <a href="/files/upload" className={styles.actionItem}>
-                <span className={styles.actionIcon}>+</span>
-                <span className={styles.actionLabel}>Upload Files</span>
+            <div className="flex flex-col gap-2">
+              <a href="/files/upload" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
+                <Upload className="w-4 h-4 text-secondary" />
+                <span className="text-sm text-primary">Upload Files</span>
               </a>
-              <a href="/shares/new" className={styles.actionItem}>
-                <span className={styles.actionIcon}>#</span>
-                <span className={styles.actionLabel}>Create Share</span>
+              <a href="/shares/new" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
+                <Share2 className="w-4 h-4 text-secondary" />
+                <span className="text-sm text-primary">Create Share</span>
               </a>
-              <a href="/settings/team" className={styles.actionItem}>
-                <span className={styles.actionIcon}>*</span>
-                <span className={styles.actionLabel}>Invite Team</span>
+              <a href="/settings/team" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
+                <Users className="w-4 h-4 text-secondary" />
+                <span className="text-sm text-primary">Invite Team</span>
               </a>
-              <a href="/workspaces/new" className={styles.actionItem}>
-                <span className={styles.actionIcon}>+</span>
-                <span className={styles.actionLabel}>New Workspace</span>
+              <a href="/workspaces/new" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
+                <FolderPlus className="w-4 h-4 text-secondary" />
+                <span className="text-sm text-primary">New Workspace</span>
               </a>
             </div>
           </section>
@@ -246,9 +254,9 @@ export default function DashboardPage() {
 
         {/* Getting Started */}
         {stats.workspacesCount === 0 && (
-          <section className={styles.gettingStarted}>
-            <h2 className={styles.sectionTitle}>Getting Started</h2>
-            <p className={styles.gettingStartedText}>
+          <section className="bg-surface-2 border border-border-default rounded-md p-8 text-center">
+            <h2 className="text-base font-semibold text-primary m-0">Getting Started</h2>
+            <p className="text-secondary mb-6">
               Welcome to Bush! To get started, create your first workspace to organize your projects and files.
             </p>
             <Button

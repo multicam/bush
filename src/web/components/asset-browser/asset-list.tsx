@@ -10,10 +10,10 @@
 
 import { useCallback, useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import type { AssetListProps, AssetFile, AssetFolder } from "./types";
-import styles from "./asset-list.module.css";
 
 type SortField = "name" | "fileSizeBytes" | "createdAt" | "updatedAt" | "status";
 
@@ -34,15 +34,20 @@ interface SortHeaderProps {
 }
 
 function SortHeader({ field, label, currentField, direction, onSort }: SortHeaderProps) {
+  const isActive = currentField === field;
   return (
     <button
-      className={`${styles.sortHeader} ${currentField === field ? styles.active : ""}`}
+      className={`
+        flex items-center gap-1 bg-none border-0 p-0
+        font-inherit text-inherit cursor-pointer transition-colors
+        hover:text-primary ${isActive ? "text-accent" : "text-secondary"}
+      `.trim()}
       onClick={() => onSort(field)}
       aria-label={`Sort by ${label}`}
     >
       {label}
-      {currentField === field && (
-        <span className={styles.sortIndicator}>
+      {isActive && (
+        <span className="text-[0.625rem]">
           {direction === "asc" ? "↑" : "↓"}
         </span>
       )}
@@ -189,10 +194,10 @@ export function AssetList({
   // Empty state
   if (allItems.length === 0) {
     return (
-      <div className={styles.empty}>
-        <div className={styles.emptyIcon}>📂</div>
-        <p className={styles.emptyText}>No files or folders</p>
-        <p className={styles.emptyHint}>Upload files or create folders to get started</p>
+      <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+        <div className="text-4xl mb-4 opacity-50">📂</div>
+        <p className="text-base font-medium text-secondary m-0 mb-2">No files or folders</p>
+        <p className="text-sm text-muted m-0">Upload files or create folders to get started</p>
       </div>
     );
   }
@@ -205,7 +210,7 @@ export function AssetList({
       return (
         <div
           key={folder.id}
-          className={styles.row}
+          className="flex items-center py-3 px-4 border-b border-border-default cursor-pointer transition-colors hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] md:py-2 md:px-3"
           onClick={() => handleFolderClick(folder)}
           role="button"
           tabIndex={0}
@@ -215,18 +220,18 @@ export function AssetList({
             }
           }}
         >
-          <div className={styles.checkboxCell}>
+          <div className="flex items-center w-10 shrink-0">
             {/* Folders aren't selectable */}
           </div>
-          <div className={styles.nameCell}>
-            <div className={styles.nameContent}>
-              <span className={styles.folderIcon}>📁</span>
-              <span className={styles.name}>{folder.name}</span>
+          <div className="flex-1 min-w-[200px]">
+            <div className="flex items-center gap-3 md:gap-2">
+              <span className="text-xl shrink-0">📁</span>
+              <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">{folder.name}</span>
             </div>
           </div>
-          <div className={styles.sizeCell}>—</div>
-          <div className={styles.statusCell}>—</div>
-          <div className={styles.dateCell}>{formatRelativeTime(folder.createdAt)}</div>
+          <div className="w-[100px] shrink-0 text-right hidden md:block">—</div>
+          <div className="w-[120px] shrink-0 flex justify-center hidden md:block">—</div>
+          <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">{formatRelativeTime(folder.createdAt)}</div>
         </div>
       );
     }
@@ -239,7 +244,7 @@ export function AssetList({
     return (
       <div
         key={file.id}
-        className={`${styles.row} ${isSelected ? styles.selected : ""}`}
+        className={`flex items-center py-3 px-4 border-b border-border-default cursor-pointer transition-colors hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px] md:py-2 md:px-3 ${isSelected ? "bg-blue-500/5" : ""}`}
         onClick={() => handleFileClick(file)}
         role="button"
         tabIndex={0}
@@ -249,30 +254,30 @@ export function AssetList({
           }
         }}
       >
-        <div className={styles.checkboxCell} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center w-10 shrink-0" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
             onChange={(e) => handleSelect(file.id, e.target.checked)}
-            className={styles.checkbox}
+            className="w-4 h-4 cursor-pointer accent"
             aria-label={`Select ${file.name}`}
           />
         </div>
-        <div className={styles.nameCell}>
-          <div className={styles.nameContent}>
-            <span className={styles.fileIcon} data-category={category}>
+        <div className="flex-1 min-w-[200px]">
+          <div className="flex items-center gap-3 md:gap-2">
+            <span className="text-xl shrink-0" data-category={category}>
               {getFileIcon(file.mimeType)}
             </span>
-            <span className={styles.name}>{file.name}</span>
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">{file.name}</span>
           </div>
         </div>
-        <div className={styles.sizeCell}>{formatFileSize(file.fileSizeBytes)}</div>
-        <div className={styles.statusCell}>
+        <div className="w-[100px] shrink-0 text-right hidden md:block">{formatFileSize(file.fileSizeBytes)}</div>
+        <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
           <Badge variant={getStatusBadgeVariant(file.status)} size="sm">
             {file.status === "processing_failed" ? "failed" : file.status}
           </Badge>
         </div>
-        <div className={styles.dateCell}>{formatRelativeTime(file.createdAt)}</div>
+        <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">{formatRelativeTime(file.createdAt)}</div>
       </div>
     );
   };
@@ -280,34 +285,34 @@ export function AssetList({
   // Non-virtualized rendering for small lists
   if (!useVirtualization) {
     return (
-      <div className={styles.container}>
+      <div className="w-full overflow-x-auto">
         {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.checkboxCell}>
+        <div className="flex items-center py-3 px-4 bg-surface-3 border-b border-border-default text-xs font-semibold text-secondary uppercase tracking-wide md:py-2 md:px-3">
+          <div className="flex items-center w-10 shrink-0">
             <input
               type="checkbox"
               checked={selectedIds.length === files.length && files.length > 0}
               onChange={handleSelectAll}
-              className={styles.checkbox}
+              className="w-4 h-4 cursor-pointer accent"
               aria-label="Select all files"
             />
           </div>
-          <div className={styles.nameCell}>
+          <div className="flex-1 min-w-[200px]">
             <SortHeader field="name" label="Name" currentField={sortField} direction={sortDirection} onSort={handleSort} />
           </div>
-          <div className={styles.sizeCell}>
+          <div className="w-[100px] shrink-0 text-right hidden md:block">
             <SortHeader field="fileSizeBytes" label="Size" currentField={sortField} direction={sortDirection} onSort={handleSort} />
           </div>
-          <div className={styles.statusCell}>
+          <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
             <SortHeader field="status" label="Status" currentField={sortField} direction={sortDirection} onSort={handleSort} />
           </div>
-          <div className={styles.dateCell}>
+          <div className="w-[100px] shrink-0 text-right">
             <SortHeader field="createdAt" label="Created" currentField={sortField} direction={sortDirection} onSort={handleSort} />
           </div>
         </div>
 
         {/* Rows */}
-        <div className={styles.body}>
+        <div className="flex flex-col">
           {allItems.map((item, index) => renderRow(item, index))}
         </div>
       </div>
@@ -318,30 +323,30 @@ export function AssetList({
   return (
     <div
       ref={containerRef}
-      className={styles.virtualizedContainer}
+      className="w-full flex flex-col"
       style={{ height: "100%", overflow: "auto" }}
     >
       {/* Sticky Header */}
-      <div className={styles.header}>
-        <div className={styles.checkboxCell}>
+      <div className="sticky top-0 z-10 flex items-center py-3 px-4 bg-surface-3 border-b border-border-default text-xs font-semibold text-secondary uppercase tracking-wide md:py-2 md:px-3">
+        <div className="flex items-center w-10 shrink-0">
           <input
             type="checkbox"
             checked={selectedIds.length === files.length && files.length > 0}
             onChange={handleSelectAll}
-            className={styles.checkbox}
+            className="w-4 h-4 cursor-pointer accent"
             aria-label="Select all files"
           />
         </div>
-        <div className={styles.nameCell}>
+        <div className="flex-1 min-w-[200px]">
           <SortHeader field="name" label="Name" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
-        <div className={styles.sizeCell}>
+        <div className="w-[100px] shrink-0 text-right hidden md:block">
           <SortHeader field="fileSizeBytes" label="Size" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
-        <div className={styles.statusCell}>
+        <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
           <SortHeader field="status" label="Status" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
-        <div className={styles.dateCell}>
+        <div className="w-[100px] shrink-0 text-right">
           <SortHeader field="createdAt" label="Created" currentField={sortField} direction={sortDirection} onSort={handleSort} />
         </div>
       </div>
@@ -368,11 +373,11 @@ export function AssetList({
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className={styles.loadingTrigger}
+                className="flex items-center justify-center p-4"
               >
                 {isLoadingMore && (
-                  <div className={styles.loadingMore}>
-                    <div className={styles.spinner} />
+                  <div className="flex items-center gap-2 text-secondary text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Loading more...</span>
                   </div>
                 )}

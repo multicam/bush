@@ -13,7 +13,7 @@ import {
   type ShareActivityType,
 } from "@/web/lib/api";
 import type { ShareActivityEntry } from "./types";
-import styles from "./shares.module.css";
+import { Eye, MessageSquare, Download, FileText, Loader2 } from "lucide-react";
 
 interface ShareActivityFeedProps {
   shareId: string;
@@ -23,16 +23,17 @@ interface ShareActivityFeedProps {
 /**
  * Get icon for activity type
  */
-function getActivityIcon(type: ShareActivityType): string {
+function getActivityIcon(type: ShareActivityType): React.ReactNode {
+  const iconClass = "w-4 h-4";
   switch (type) {
     case "view":
-      return "👁️";
+      return <Eye className={iconClass} />;
     case "comment":
-      return "💬";
+      return <MessageSquare className={iconClass} />;
     case "download":
-      return "⬇️";
+      return <Download className={iconClass} />;
     default:
-      return "📄";
+      return <FileText className={iconClass} />;
   }
 }
 
@@ -112,9 +113,9 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
 
   if (loading) {
     return (
-      <div className={styles.activityFeed}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-center justify-center p-16">
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
         </div>
       </div>
     );
@@ -122,8 +123,8 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
 
   if (error) {
     return (
-      <div className={styles.activityFeed}>
-        <div className={styles.activityEmpty}>
+      <div className="flex flex-col gap-2">
+        <div className="p-6 text-center text-secondary">
           <p>Failed to load activity: {error}</p>
         </div>
       </div>
@@ -132,8 +133,8 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
 
   if (activities.length === 0) {
     return (
-      <div className={styles.activityFeed}>
-        <div className={styles.activityEmpty}>
+      <div className="flex flex-col gap-2">
+        <div className="p-6 text-center text-secondary">
           <p>No activity yet. Share this link to start tracking views!</p>
         </div>
       </div>
@@ -141,17 +142,17 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
   }
 
   return (
-    <div className={styles.activityFeed}>
+    <div className="flex flex-col gap-2">
       {activities.map((activity) => (
-        <div key={activity.id} className={styles.activityItem}>
-          <div className={styles.activityIcon}>
+        <div key={activity.id} className="flex gap-3 p-3 bg-surface-2 rounded-md">
+          <div className="w-8 h-8 flex items-center justify-center text-base bg-surface-1 rounded-full">
             {getActivityIcon(activity.type)}
           </div>
-          <div className={styles.activityContent}>
-            <span className={styles.activityText}>
+          <div className="flex-1 flex flex-col gap-0.5">
+            <span className="text-[13px] text-primary">
               {getActivityDescription(activity)}
             </span>
-            <span className={styles.activityTime}>
+            <span className="text-[11px] text-secondary/80">
               {formatRelativeTime(activity.createdAt)}
             </span>
           </div>

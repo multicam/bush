@@ -16,10 +16,10 @@ import { getFileCategory, formatFileSize } from "@/shared/file-types";
 import { filesApi, extractAttributes, getErrorMessage } from "@/web/lib/api";
 import { useLinkedPlayback } from "@/web/hooks/use-linked-playback";
 import { useLinkedZoom } from "@/web/hooks/use-linked-zoom";
+import { Loader2, Link, ArrowLeftRight, X } from "lucide-react";
 import type { AssetFile } from "@/web/components/asset-browser";
 import type { VersionStackCompareProps } from "./types";
 import type { FileAttributes } from "@/web/lib/api";
-import styles from "./version-stack.module.css";
 
 interface FileWithUrl extends AssetFile {
   downloadUrl?: string;
@@ -142,8 +142,8 @@ export function VersionStackCompare({
   // Loading state
   if (isLoading) {
     return (
-      <div className={styles.compareLoading}>
-        <div className={styles.spinner} />
+      <div className="flex flex-col items-center justify-center gap-4 h-full p-8">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
         <p>Loading comparison...</p>
       </div>
     );
@@ -152,8 +152,8 @@ export function VersionStackCompare({
   // Error state
   if (error) {
     return (
-      <div className={styles.compareError}>
-        <p>{error}</p>
+      <div className="flex flex-col items-center justify-center gap-4 h-full p-8">
+        <p className="text-red-500">{error}</p>
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
@@ -165,7 +165,7 @@ export function VersionStackCompare({
   const renderViewer = (file: FileWithUrl | null, side: "left" | "right") => {
     if (!file) {
       return (
-        <div className={styles.comparePlaceholder}>
+        <div className="flex items-center justify-center text-secondary">
           <p>No file selected</p>
         </div>
       );
@@ -180,7 +180,7 @@ export function VersionStackCompare({
           ref={side === "left" ? linkedZoom.primaryRef : linkedZoom.secondaryRef}
           src={src}
           alt={file.name}
-          className={styles.compareViewer}
+          className="max-w-full max-h-full"
         />
       );
     }
@@ -190,19 +190,19 @@ export function VersionStackCompare({
         <VideoViewer
           ref={side === "left" ? linkedPlayback.primaryRef : linkedPlayback.secondaryRef}
           src={src}
-          className={styles.compareViewer}
+          className="max-w-full max-h-full"
         />
       );
     }
 
     // Fallback for other types
     return (
-      <div className={styles.compareFallback}>
-        <p>{file.name}</p>
-        <p className={styles.compareMeta}>
+      <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-secondary">
+        <p className="text-primary">{file.name}</p>
+        <p className="text-sm">
           {formatFileSize(file.fileSizeBytes)} &middot; {file.mimeType}
         </p>
-        <p className={styles.compareNote}>Preview not available for this file type</p>
+        <p className="text-xs opacity-75">Preview not available for this file type</p>
       </div>
     );
   };
@@ -211,11 +211,11 @@ export function VersionStackCompare({
   const rightFile = files[1];
 
   return (
-    <div className={styles.compareContainer}>
+    <div className="flex flex-col h-full bg-surface-1">
       {/* Header */}
-      <div className={styles.compareHeader}>
-        <h3>Compare Versions</h3>
-        <div className={styles.compareActions}>
+      <div className="flex items-center justify-between p-4 border-b border-border-default">
+        <h3 className="m-0 text-lg font-semibold text-primary">Compare Versions</h3>
+        <div className="flex items-center gap-2">
           {/* Sync toggle - only show for same-type comparisons */}
           {(canSyncPlayback || canSyncZoom) && (
             <Button
@@ -224,13 +224,16 @@ export function VersionStackCompare({
               onClick={handleToggleSync}
               title={isSyncActive ? "Unsync controls (Y)" : "Sync controls (Y)"}
             >
-              {isSyncActive ? "🔗 Synced" : "Sync"}
+              {isSyncActive ? <Link className="w-4 h-4 mr-1" /> : null}
+              {isSyncActive ? "Synced" : "Sync"}
             </Button>
           )}
           <Button variant="secondary" size="sm" onClick={onSwap}>
+            <ArrowLeftRight className="w-4 h-4 mr-1" />
             Swap (S)
           </Button>
           <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4 mr-1" />
             Close (Esc)
           </Button>
         </div>
@@ -238,8 +241,8 @@ export function VersionStackCompare({
 
       {/* Sync indicator bar */}
       {isSyncActive && (
-        <div className={styles.syncIndicator}>
-          <span className={styles.syncIcon}>🔗</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border-b border-border-default text-sm text-accent">
+          <Link className="w-4 h-4" />
           <span>
             {canSyncPlayback
               ? "Linked playback: Play, pause, and seek are synchronized"
@@ -249,20 +252,22 @@ export function VersionStackCompare({
       )}
 
       {/* Comparison panels */}
-      <div className={styles.comparePanels}>
+      <div className="flex-1 flex gap-0 min-h-0">
         {/* Left panel */}
-        <div className={styles.comparePanel}>
-          <div className={styles.comparePanelHeader}>
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-2 px-4 py-3 bg-surface-2 border-b border-border-default">
             <Badge variant="default">Version A</Badge>
             {leftFile && (
-              <span className={styles.compareFileName} title={leftFile.name}>
+              <span className="flex-1 text-sm truncate" title={leftFile.name}>
                 {leftFile.name}
               </span>
             )}
           </div>
-          <div className={styles.comparePanelContent}>{renderViewer(leftFile, "left")}</div>
+          <div className="flex-1 flex items-center justify-center bg-gray-900 min-h-0">
+            {renderViewer(leftFile, "left")}
+          </div>
           {leftFile && (
-            <div className={styles.comparePanelFooter}>
+            <div className="flex justify-between px-4 py-2 text-xs text-secondary bg-surface-2 border-t border-border-default">
               <span>{formatFileSize(leftFile.fileSizeBytes)}</span>
               <span>{new Date(leftFile.createdAt).toLocaleDateString()}</span>
             </div>
@@ -270,23 +275,25 @@ export function VersionStackCompare({
         </div>
 
         {/* Divider */}
-        <div className={styles.compareDivider}>
-          <div className={styles.compareDividerLine} />
+        <div className="w-0.5 bg-border-default relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-surface-1 border-2 border-border-default rounded-full" />
         </div>
 
         {/* Right panel */}
-        <div className={styles.comparePanel}>
-          <div className={styles.comparePanelHeader}>
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-2 px-4 py-3 bg-surface-2 border-b border-border-default">
             <Badge variant="default">Version B</Badge>
             {rightFile && (
-              <span className={styles.compareFileName} title={rightFile.name}>
+              <span className="flex-1 text-sm truncate" title={rightFile.name}>
                 {rightFile.name}
               </span>
             )}
           </div>
-          <div className={styles.comparePanelContent}>{renderViewer(rightFile, "right")}</div>
+          <div className="flex-1 flex items-center justify-center bg-gray-900 min-h-0">
+            {renderViewer(rightFile, "right")}
+          </div>
           {rightFile && (
-            <div className={styles.comparePanelFooter}>
+            <div className="flex justify-between px-4 py-2 text-xs text-secondary bg-surface-2 border-t border-border-default">
               <span>{formatFileSize(rightFile.fileSizeBytes)}</span>
               <span>{new Date(rightFile.createdAt).toLocaleDateString()}</span>
             </div>
@@ -295,7 +302,7 @@ export function VersionStackCompare({
       </div>
 
       {/* Keyboard shortcuts hint */}
-      <div className={styles.compareHint}>
+      <div className="px-4 py-2 bg-surface-2 border-t border-border-default text-xs text-secondary text-center">
         S: swap versions
         {(canSyncPlayback || canSyncZoom) && " · Y: toggle sync"} · Esc: close
       </div>

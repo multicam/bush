@@ -2,13 +2,13 @@
  * Bush Platform - Global Search Component
  *
  * Global search bar with Cmd+K shortcut for searching across all accessible files.
- * Reference: specs/00-product-reference.md Section 12
+ * Reference: specs/00_product-reference.md Section 12
  */
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Search, X, Loader2 } from "lucide-react";
 import { searchApi, SearchResultAttributes, SearchSuggestionAttributes, JsonApiResource } from "../../lib/api";
-import styles from "./global-search.module.css";
 
 /** File type icons */
 const FILE_TYPE_ICONS: Record<string, string> = {
@@ -247,70 +247,68 @@ export function GlobalSearch({
   }, []);
 
   return (
-    <div ref={containerRef} className={`${styles.container} ${className || ""}`}>
+    <div ref={containerRef} className={`relative ${className || ""}`}>
       {/* Search trigger button */}
       <button
-        className={styles.trigger}
+        className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-border-default rounded-md text-secondary cursor-pointer transition-colors hover:bg-surface-2 hover:border-border-default focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
         onClick={openSearch}
         aria-label="Open search"
       >
-        <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-        <span className={styles.triggerText}>{placeholder}</span>
-        <kbd className={styles.shortcut}>⌘K</kbd>
+        <Search className="w-[18px] h-[18px] text-secondary" />
+        <span className="flex-1 text-left text-sm hidden sm:block">{placeholder}</span>
+        <kbd className="px-1.5 py-0.5 bg-surface-2 border border-border-default rounded-sm text-[11px] font-mono text-secondary hidden sm:block">
+          ⌘K
+        </kbd>
       </button>
 
       {/* Search modal */}
       {isOpen && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[100px] bg-black/50 animate-in fade-in duration-150 sm:items-start sm:pt-[100px] max-sm:pt-0 max-sm:items-stretch">
+          <div className="w-full max-w-[560px] bg-surface-1 rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-top-5 duration-200 max-sm:max-w-none max-sm:rounded-none max-sm:min-h-screen">
             {/* Search input */}
-            <div className={styles.inputWrapper}>
-              <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
+            <div className="flex items-center gap-3 p-4 border-b border-border-default">
+              <Search className="w-5 h-5 text-secondary flex-shrink-0" />
               <input
                 ref={inputRef}
                 type="text"
-                className={styles.input}
+                className="flex-1 border-none outline-none text-base text-primary bg-transparent placeholder:text-secondary"
                 placeholder="Search files..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              {isLoading && <div className={styles.spinner} />}
+              {isLoading && <Loader2 className="w-5 h-5 text-secondary animate-spin" />}
               {query.length >= 2 && (
                 <button
-                  className={styles.clearButton}
+                  className="flex items-center justify-center w-6 h-6 bg-surface-2 border-none rounded-sm cursor-pointer text-secondary transition-colors hover:bg-surface-3 hover:text-primary"
                   onClick={() => setQuery("")}
                   aria-label="Clear search"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
             {/* Results */}
             {showSuggestions && (suggestions.length > 0 || results.length > 0) && (
-              <div className={styles.results}>
+              <div className="max-h-[400px] overflow-y-auto">
                 {/* Suggestions */}
                 {suggestions.length > 0 && (
-                  <div className={styles.section}>
-                    <div className={styles.sectionTitle}>Suggestions</div>
+                  <div className="py-2 border-b border-border-default last:border-b-0">
+                    <div className="px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-secondary">
+                      Suggestions
+                    </div>
                     {suggestions.map((suggestion, index) => (
                       <button
                         key={`suggestion-${index}`}
-                        className={`${styles.suggestionItem} ${selectedIndex === index ? styles.selected : ""}`}
+                        className={`flex items-center gap-3 w-full px-4 py-2.5 border-none bg-transparent text-left cursor-pointer transition-colors hover:bg-surface-2 ${
+                          selectedIndex === index ? "bg-surface-2" : ""
+                        }`}
                         onClick={() => handleSuggestionClick(suggestion)}
                         onMouseEnter={() => setSelectedIndex(index)}
                       >
-                        <span className={styles.suggestionType}>{FILE_TYPE_ICONS[suggestion.type] || "📄"}</span>
-                        <span className={styles.suggestionName}>{suggestion.name}</span>
+                        <span className="text-base">{FILE_TYPE_ICONS[suggestion.type] || "📄"}</span>
+                        <span className="text-sm text-primary">{suggestion.name}</span>
                       </button>
                     ))}
                   </div>
@@ -318,21 +316,27 @@ export function GlobalSearch({
 
                 {/* Search results */}
                 {results.length > 0 && (
-                  <div className={styles.section}>
-                    <div className={styles.sectionTitle}>Files</div>
+                  <div className="py-2">
+                    <div className="px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-secondary">
+                      Files
+                    </div>
                     {results.map((result, index) => (
                       <button
                         key={result.id}
-                        className={`${styles.resultItem} ${selectedIndex === suggestions.length + index ? styles.selected : ""}`}
+                        className={`flex items-center gap-3 w-full px-4 py-2.5 border-none bg-transparent text-left cursor-pointer transition-colors hover:bg-surface-2 ${
+                          selectedIndex === suggestions.length + index ? "bg-surface-2" : ""
+                        }`}
                         onClick={() => handleResultClick(result)}
                         onMouseEnter={() => setSelectedIndex(suggestions.length + index)}
                       >
-                        <span className={styles.resultIcon}>
+                        <span className="text-xl flex-shrink-0">
                           {getFileIcon(result.attributes.mimeType)}
                         </span>
-                        <div className={styles.resultInfo}>
-                          <span className={styles.resultName}>{result.attributes.name}</span>
-                          <span className={styles.resultMeta}>
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                          <span className="text-sm font-medium text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+                            {result.attributes.name}
+                          </span>
+                          <span className="text-xs text-secondary">
                             {formatFileSize(result.attributes.fileSizeBytes)} · {result.attributes.mimeType}
                           </span>
                         </div>
@@ -345,16 +349,31 @@ export function GlobalSearch({
 
             {/* No results */}
             {showSuggestions && query.length >= 2 && !isLoading && suggestions.length === 0 && results.length === 0 && (
-              <div className={styles.noResults}>
+              <div className="py-8 px-4 text-center text-secondary">
                 <span>No results found for "{query}"</span>
               </div>
             )}
 
             {/* Help text */}
-            <div className={styles.help}>
-              <span><kbd>↑↓</kbd> to navigate</span>
-              <span><kbd>Enter</kbd> to select</span>
-              <span><kbd>Esc</kbd> to close</span>
+            <div className="flex items-center gap-4 px-4 py-3 border-t border-border-default bg-surface-2 text-xs text-secondary">
+              <span>
+                <kbd className="px-1.5 py-0.5 bg-surface-1 border border-border-default rounded text-[11px] font-mono">
+                  ↑↓
+                </kbd>{" "}
+                to navigate
+              </span>
+              <span>
+                <kbd className="px-1.5 py-0.5 bg-surface-1 border border-border-default rounded text-[11px] font-mono">
+                  Enter
+                </kbd>{" "}
+                to select
+              </span>
+              <span>
+                <kbd className="px-1.5 py-0.5 bg-surface-1 border border-border-default rounded text-[11px] font-mono">
+                  Esc
+                </kbd>{" "}
+                to close
+              </span>
             </div>
           </div>
         </div>
