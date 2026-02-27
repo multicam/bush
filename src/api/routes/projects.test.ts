@@ -45,6 +45,19 @@ vi.mock("../../db/schema.js", () => ({
     createdAt: "createdAt",
     updatedAt: "updatedAt",
   },
+  users: {
+    id: "id",
+    email: "email",
+    firstName: "firstName",
+    lastName: "lastName",
+    avatarUrl: "avatarUrl",
+  },
+  accountMemberships: {
+    id: "id",
+    userId: "userId",
+    accountId: "accountId",
+    role: "role",
+  },
 }));
 
 vi.mock("../auth-middleware.js", () => ({
@@ -915,6 +928,525 @@ describe("Project Routes", () => {
       expect(res.status).toBe(204);
       const text = await res.text();
       expect(text).toBe("");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /:id/members - List project members
+  // ---------------------------------------------------------------------------
+  describe("GET /:id/members - list project members", () => {
+    it("should return a collection of project members", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      const mockMembers = [
+        {
+          id: "pp_123",
+          permission: "full_access",
+          createdAt: new Date("2026-01-01T00:00:00Z"),
+          userId: "usr_123",
+          userEmail: "user1@example.com",
+          userFirstName: "User",
+          userLastName: "One",
+          userAvatarUrl: null,
+        },
+      ];
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          innerJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: vi.fn().mockResolvedValue(mockMembers),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members");
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(body).toHaveProperty("data");
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data[0].type).toBe("project_member");
+      expect(body.data[0].attributes.permission).toBe("full_access");
+      expect(body.data[0].attributes.user.email).toBe("user1@example.com");
+    });
+
+    it("should return 500 when project is not found", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue(null);
+
+      const res = await app.request("/prj_nonexistent/members");
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return empty array when project has no members", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          innerJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members");
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as any;
+      expect(body.data).toHaveLength(0);
+    });
+
+    it("should respect pagination limit", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          innerJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      await app.request("/prj_123/members?limit=10");
+
+      expect(parseLimit).toHaveBeenCalledWith("10");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // POST /:id/members - Add member to project
+  // ---------------------------------------------------------------------------
+  describe("POST /:id/members - add member to project", () => {
+    it("should add a member with full_access permission", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      // Mock db.select to handle multiple calls:
+      // 1st call: account membership check - uses .from().where().limit()
+      // 2nd call: fetch new member with user info - uses .from().innerJoin().where().limit()
+      const mockMemberData = {
+        id: "pp_new",
+        permission: "full_access",
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+        userId: "usr_456",
+        userEmail: "newuser@example.com",
+        userFirstName: "New",
+        userLastName: "User",
+        userAvatarUrl: null,
+      };
+
+      let callCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call - account membership check
+          return {
+            from: () => ({
+              where: () => ({
+                limit: vi.fn().mockResolvedValue([{ userId: "usr_456", accountId: "acc_123" }]),
+              }),
+            }),
+          } as never;
+        } else {
+          // Second call - fetch created member with user info
+          return {
+            from: () => ({
+              innerJoin: () => ({
+                where: () => ({
+                  limit: vi.fn().mockResolvedValue([mockMemberData]),
+                }),
+              }),
+            }),
+          } as never;
+        }
+      });
+
+      const res = await app.request("/prj_123/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_456",
+              permission: "full_access",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(permissionService.grantProjectPermission).toHaveBeenCalledWith("prj_123", "usr_456", "full_access");
+    });
+
+    it("should return 500 when caller lacks full_access permission", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(permissionService.getProjectPermission).mockResolvedValue({
+        allowed: true,
+        permission: "view_only",
+        source: "direct",
+      });
+
+      const res = await app.request("/prj_123/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_456",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when user_id is missing", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      const res = await app.request("/prj_123/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when permission is invalid", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      const res = await app.request("/prj_123/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_456",
+              permission: "invalid_permission",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when user is not an account member", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]), // No membership found
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_456",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when project is not found", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue(null);
+
+      const res = await app.request("/prj_nonexistent/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              user_id: "usr_456",
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // PUT /:id/members/:user_id - Update member permission
+  // ---------------------------------------------------------------------------
+  describe("PUT /:id/members/:user_id - update member permission", () => {
+    it("should update member permission successfully", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn()
+              .mockResolvedValueOnce([{ id: "pp_456", projectId: "prj_123", userId: "usr_456" }]) // existing permission
+              .mockResolvedValueOnce([{
+                id: "pp_456",
+                permission: "edit",
+                createdAt: new Date("2026-01-01T00:00:00Z"),
+                userId: "usr_456",
+                userEmail: "user@example.com",
+                userFirstName: "Test",
+                userLastName: "User",
+                userAvatarUrl: null,
+              }]), // updated member
+          }),
+          innerJoin: () => ({
+            where: () => ({
+              limit: vi.fn().mockResolvedValue([{
+                id: "pp_456",
+                permission: "edit",
+                createdAt: new Date("2026-01-01T00:00:00Z"),
+                userId: "usr_456",
+                userEmail: "user@example.com",
+                userFirstName: "Test",
+                userLastName: "User",
+                userAvatarUrl: null,
+              }]),
+            }),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members/usr_456", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(permissionService.grantProjectPermission).toHaveBeenCalledWith("prj_123", "usr_456", "edit");
+    });
+
+    it("should return 500 when caller lacks full_access permission", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(permissionService.getProjectPermission).mockResolvedValue({
+        allowed: true,
+        permission: "view_only",
+        source: "direct",
+      });
+
+      const res = await app.request("/prj_123/members/usr_456", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when member not found", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]), // No existing permission
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members/usr_nonexistent", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "edit",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when permission is invalid", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      const res = await app.request("/prj_123/members/usr_456", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              permission: "invalid",
+            },
+          },
+        }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // DELETE /:id/members/:user_id - Remove member from project
+  // ---------------------------------------------------------------------------
+  describe("DELETE /:id/members/:user_id - remove member from project", () => {
+    it("should remove member successfully", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([{ id: "pp_456", projectId: "prj_123", userId: "usr_456" }]),
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members/usr_456", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(204);
+      expect(permissionService.revokeProjectPermission).toHaveBeenCalledWith("prj_123", "usr_456");
+    });
+
+    it("should return 500 when caller lacks full_access permission", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(permissionService.getProjectPermission).mockResolvedValue({
+        allowed: true,
+        permission: "view_only",
+        source: "direct",
+      });
+
+      const res = await app.request("/prj_123/members/usr_456", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when trying to remove self", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      // usr_123 is the current user from mockSession
+      const res = await app.request("/prj_123/members/usr_123", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when member not found", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue({
+        project: mockProject,
+        workspace: { id: "ws_123" },
+      } as never);
+
+      vi.mocked(db.select).mockReturnValue({
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([]), // No existing permission
+          }),
+        }),
+      } as never);
+
+      const res = await app.request("/prj_123/members/usr_nonexistent", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("should return 500 when project is not found", async () => {
+      vi.mocked(verifyProjectAccess).mockResolvedValue(null);
+
+      const res = await app.request("/prj_nonexistent/members/usr_456", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(500);
     });
   });
 });

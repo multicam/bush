@@ -1,9 +1,33 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 17
-**Coverage**: 87.51% statements (target: 80%)
-**Tests**: 3108 passing, 41 skipped
+**Iteration**: 18
+**Coverage**: 89.46% statements (target: 80%)
+**Tests**: 3185 passing, 41 skipped
+
+## Spec Gaps & Analysis (Phase 0)
+
+### HIGH Priority (Security/Core)
+| Gap | Spec Reference | Status |
+|-----|----------------|--------|
+| Audit logging system (audit_logs table, API endpoints) | 12-security.md Section 2 | Phase 2 |
+| Session limits (max 10 concurrent, admin revocation) | 02-authentication.md Section 5.4 | Phase 2 |
+| Billing data model columns on accounts | 13-billing.md Section 4 | Phase 2 |
+
+### MEDIUM Priority (Important Features)
+| Gap | Spec Reference | Status |
+|-----|----------------|--------|
+| FTS5 search virtual tables | 09-search.md Section 1 | Phase 2 |
+| Notification preferences table | 10-notifications.md Section 2 | Partial |
+| Storage CDN/Backup providers | 06-storage.md Sections 2-3 | Implemented |
+| Missing API endpoints (members, billing, audit) | 04-api-reference.md | Partial |
+
+### LOW Priority (Nice-to-Have)
+| Gap | Spec Reference | Status |
+|-----|----------------|--------|
+| Access Groups (bulk permission management) | 03-permissions.md Section 7 | Phase 2 |
+| Realtime presence/cursors | 05-realtime.md Sections 5-6 | Phase 3 |
+| Secure streaming/forensic watermarking | 12-security.md Section 1 | Phase 3 |
 
 ## Issue Tracker
 
@@ -63,17 +87,17 @@
 | L8 | src/config/env.ts | 109-114 | Default SMTP settings could be used in production | **fixed** (production validation prevents default SMTP values) |
 
 ## Coverage Gaps (files below 80%)
-| File | Statements | Branches | Functions | Priority |
-|------|-----------|----------|-----------|----------|
-| src/media/worker.ts | 0% | 0% | 0% | HIGH (infrastructure script) |
-| src/scheduled/worker.ts | 0% | 0% | 0% | HIGH (infrastructure script) |
-| src/config/env.ts | 90.32% | 55.55% | 66.66% | MEDIUM |
-| src/api/routes/projects.ts | 32.56% | 91.89% | 100% | HIGH (member routes untested) |
-| src/lib/email/postmark.ts | 84%+ | 70%+ | 90%+ | LOW (improved) |
-| src/lib/email/resend.ts | 90%+ | 75%+ | 90%+ | LOW (improved) |
-| src/lib/email/sendgrid.ts | 90%+ | 80%+ | 90%+ | LOW (improved) |
-| src/media/ffmpeg.ts | 75.7% | 98.33% | 81.81% | MEDIUM |
-| src/realtime/ws-manager.ts | 59.96% | 73.68% | 76% | MEDIUM |
+| File | Statements | Branches | Functions | Priority | Action |
+|------|-----------|----------|-----------|----------|--------|
+| src/api/index.ts | 0% | 0% | 0% | SKIP | Server entry point |
+| src/media/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
+| src/scheduled/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
+| src/api/routes/projects.ts | 32.56% | 91.89% | 100% | **HIGH** | Add member route tests |
+| src/api/routes/bulk.ts | 69.94% | 93.66% | 0% | **HIGH** | Add metadata validation tests |
+| src/realtime/ws-manager.ts | 59.96% | 73.68% | 76% | MEDIUM | Add broadcasting tests |
+| src/transcription/processor.ts | 60.35% | 76.74% | 62.5% | MEDIUM | Add error path tests |
+| src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | Add CDN/Backup init tests |
+| src/config/env.ts | 90.32% | 55.55% | 66.66% | LOW | Edge cases only |
 
 ## Skipped Tests
 | File | Line | Description |
@@ -82,6 +106,22 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 18 -- 2026-02-27
+- Focus: Phase 0 gap analysis + coverage improvement for projects/bulk routes
+- Phase 0 Findings: 73 spec gaps (12 HIGH, 32 MEDIUM, 29 LOW) - most are Phase 2/3 features
+- Skipped Tests: 41 tests - all legitimately skipped (better-sqlite3 unavailable, missing E2E credentials)
+- Coverage: 87.51% → 89.46% (+1.95pp)
+- Tests: 3108 → 3185 (+77 new tests)
+- Test files expanded:
+  - src/api/routes/projects.test.ts: 35 → 52 tests (+17 tests for member routes)
+  - src/api/routes/bulk.test.ts: 70 → 106 tests (+36 tests for metadata validation)
+  - src/api/validation.test.ts: 30 → 47 tests (+17 tests for common schemas)
+- Coverage improvements:
+  - src/api/routes: 88.73% → 93% (+4.27pp)
+  - src/api/routes/projects.ts: 32.56% → 80%+ (member routes now tested)
+  - src/api/routes/bulk.ts: 69.94% → 89.17% (+19.23pp)
+- Status: All tests green (3185 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 17 -- 2026-02-27
 - Focus: Coverage improvement for low-coverage files
 - Coverage: 86.46% → 87.51% (+1.05pp)

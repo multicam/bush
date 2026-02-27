@@ -24,6 +24,7 @@ vi.mock("../auth-middleware.js", () => ({
 
 vi.mock("../access-control.js", () => ({
   verifyProjectAccess: vi.fn(),
+  verifyAccountMembership: vi.fn(),
 }));
 
 vi.mock("../../db/schema.js", () => ({
@@ -42,6 +43,12 @@ vi.mock("../../db/schema.js", () => ({
     expiresAt: "expiresAt",
     createdAt: "createdAt",
     updatedAt: "updatedAt",
+    customMetadata: "customMetadata",
+    rating: "rating",
+    assetStatus: "assetStatus",
+    keywords: "keywords",
+    notes: "notes",
+    assigneeId: "assigneeId",
   },
   folders: {
     id: "id",
@@ -56,6 +63,13 @@ vi.mock("../../db/schema.js", () => ({
     storageUsedBytes: "storageUsedBytes",
     storageQuotaBytes: "storageQuotaBytes",
     updatedAt: "updatedAt",
+  },
+  customFields: {
+    id: "id",
+    accountId: "accountId",
+    name: "name",
+    type: "type",
+    options: "options",
   },
 }));
 
@@ -92,7 +106,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import app from "./bulk.js";
 import { db } from "../../db/index.js";
 import { requireAuth } from "../auth-middleware.js";
-import { verifyProjectAccess } from "../access-control.js";
+import { verifyProjectAccess, verifyAccountMembership } from "../access-control.js";
 import { storage, storageKeys } from "../../storage/index.js";
 import { generateId } from "../router.js";
 
@@ -1529,5 +1543,1115 @@ describe("POST /folders/delete", () => {
     const body = (await res.json()) as any;
     expect(body.data.succeeded).toContain("folder_001");
     expect(body.data.failed[0].id).toBe("folder_missing");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POST /files/metadata - Update metadata on multiple files
+// ---------------------------------------------------------------------------
+describe("POST /files/metadata", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAuth).mockReturnValue(SESSION);
+    vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "proj_001" } as never);
+    vi.mocked(verifyAccountMembership).mockResolvedValue(true);
+  });
+
+  it("returns 200 with succeeded list when updating rating", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toContain("file_001");
+    expect(body.data.failed).toHaveLength(0);
+  });
+
+  it("returns 200 with succeeded list when updating status", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { status: "approved" },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toContain("file_001");
+  });
+
+  it("returns 200 with succeeded list when updating keywords", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { keywords: ["nature", "sunset"] },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toContain("file_001");
+  });
+
+  it("returns 200 with succeeded list when updating notes", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { notes: "Updated notes" },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toContain("file_001");
+  });
+
+  it("returns 200 with succeeded list when updating assignee_id", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { assignee_id: "usr_123" },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(verifyAccountMembership).toHaveBeenCalledWith("usr_123", "acc_xyz");
+  });
+
+  it("returns 500 when file_ids is missing", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when file_ids is empty array", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: [],
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when more than 100 file_ids are provided", async () => {
+    const fileIds = Array.from({ length: 101 }, (_, i) => `file_${i}`);
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: fileIds,
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when metadata is missing", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when rating is out of range (less than 1)", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { rating: 0 },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when rating is out of range (greater than 5)", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { rating: 6 },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when keywords is not an array of strings", async () => {
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { keywords: [1, 2, 3] },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 500 when assignee is not a member of the account", async () => {
+    vi.mocked(verifyAccountMembership).mockResolvedValue(false);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { assignee_id: "usr_nonmember" },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("adds file to failed list when file is not found", async () => {
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_nonexistent"],
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toHaveLength(0);
+    expect(body.data.failed[0].id).toBe("file_nonexistent");
+    expect(body.data.failed[0].error).toBe("File not found");
+  });
+
+  it("adds file to failed list when project access is denied", async () => {
+    vi.mocked(verifyProjectAccess).mockResolvedValueOnce(null);
+    vi.mocked(db.select).mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: vi.fn().mockResolvedValue([FILE_ROW]),
+        }),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: { rating: 5 },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.failed[0].id).toBe("file_001");
+    expect(body.data.failed[0].error).toBe("Access denied");
+  });
+
+  it("returns 500 when custom field does not exist", async () => {
+    // First call: custom fields query
+    // Second call: file lookup
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        // Custom fields query - return empty
+        return {
+          from: () => ({
+            where: () => [], // Return array directly (no limit)
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_nonexistent: "value",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("returns 200 merging custom metadata with existing values", async () => {
+    const fileWithMetadata = {
+      ...FILE_ROW,
+      customMetadata: { cf_existing: "old_value" },
+    };
+
+    // First call: custom fields query
+    // Second call: file lookup
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        // Custom fields query
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_text", type: "text", options: null }],
+          }),
+        } as never;
+      }
+      // File lookup
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([fileWithMetadata]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_text: "new_value",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data.succeeded).toContain("file_001");
+  });
+
+  it("clears custom field when value is null", async () => {
+    const fileWithMetadata = {
+      ...FILE_ROW,
+      customMetadata: { cf_text: "existing_value" },
+    };
+
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_text", type: "text", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([fileWithMetadata]),
+          }),
+        }),
+      } as never;
+    });
+
+    const setMock = vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    vi.mocked(db.update).mockReturnValue({ set: setMock } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_text: null,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    // Verify customMetadata was updated without the cleared field
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customMetadata: {},
+      })
+    );
+  });
+
+  it("validates number field rejects non-number", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_number", type: "number", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_number: "not a number",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates date field accepts ISO 8601 string", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_date", type: "date", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_date: "2024-01-15T10:00:00Z",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates date field rejects invalid date string", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_date", type: "date", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_date: "not-a-date",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates single_select against options", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_select", type: "single_select", options: ["option1", "option2"] }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_select: "option1",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates single_select rejects value not in options", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_select", type: "single_select", options: ["option1", "option2"] }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_select: "invalid_option",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates multi_select array against options", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_multi", type: "multi_select", options: ["a", "b", "c"] }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_multi: ["a", "b"],
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates multi_select rejects value not in options", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_multi", type: "multi_select", options: ["a", "b", "c"] }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_multi: ["a", "invalid"],
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates multi_select rejects non-string array", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_multi", type: "multi_select", options: ["a", "b"] }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_multi: [1, 2, 3],
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates checkbox is boolean", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_checkbox", type: "checkbox", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_checkbox: true,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates checkbox rejects non-boolean", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_checkbox", type: "checkbox", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_checkbox: "yes",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates user field accepts string", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_user", type: "user", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_user: "usr_123",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates user field rejects non-string", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_user", type: "user", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_user: 123,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates rating field accepts integer 1-5", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_rating", type: "rating", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_rating: 4,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates rating field rejects non-integer", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_rating", type: "rating", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_rating: 3.5,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates rating field rejects out of range", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_rating", type: "rating", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_rating: 6,
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
+  });
+
+  it("validates url field accepts valid URL", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_url", type: "url", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    } as never);
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_url: "https://example.com",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("validates url field rejects invalid URL", async () => {
+    let selectCallCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) {
+        return {
+          from: () => ({
+            where: () => [{ id: "cf_url", type: "url", options: null }],
+          }),
+        } as never;
+      }
+      return {
+        from: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([FILE_ROW]),
+          }),
+        }),
+      } as never;
+    });
+
+    const res = await app.request("/files/metadata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file_ids: ["file_001"],
+        metadata: {
+          custom: {
+            cf_url: "not-a-url",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(500);
   });
 });

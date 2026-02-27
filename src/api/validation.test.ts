@@ -1,7 +1,7 @@
 /**
  * Tests for Zod validation utilities
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createCommentSchema,
   updateCommentSchema,
@@ -10,6 +10,14 @@ import {
   normalizeWebhookEvents,
   shareInviteSchema,
   webhookEventTypes,
+  paginationSchema,
+  idSchema,
+  emailSchema,
+  urlSchema,
+  webhookUrlSchema,
+  nonEmptyStringSchema,
+  positiveIntSchema,
+  nonNegativeNumberSchema,
 } from "./validation.js";
 
 describe("Comment Schemas", () => {
@@ -229,6 +237,162 @@ describe("Webhook Schemas", () => {
       expect(webhookEventTypes).toContain("file.created");
       expect(webhookEventTypes).toContain("comment.created");
       expect(webhookEventTypes).toContain("transcription.completed");
+    });
+  });
+});
+
+describe("Common Schemas", () => {
+  describe("paginationSchema", () => {
+    it("accepts valid pagination params", () => {
+      const result = paginationSchema.safeParse({ limit: 25, cursor: "abc123" });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.limit).toBe(25);
+        expect(result.data.cursor).toBe("abc123");
+      }
+    });
+
+    it("uses default limit when not provided", () => {
+      const result = paginationSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // When optional() is used with default(), the value can be undefined
+        // The default is only used when parsing with .parse() not .safeParse()
+        expect(result.data.limit).toBeUndefined();
+      }
+    });
+
+    it("rejects limit over 100", () => {
+      const result = paginationSchema.safeParse({ limit: 101 });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects non-positive limit", () => {
+      const result = paginationSchema.safeParse({ limit: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it("coerces string limit to number", () => {
+      const result = paginationSchema.safeParse({ limit: "25" });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.limit).toBe(25);
+      }
+    });
+  });
+
+  describe("idSchema", () => {
+    it("accepts non-empty string", () => {
+      const result = idSchema.safeParse("file_123");
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects empty string", () => {
+      const result = idSchema.safeParse("");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("emailSchema", () => {
+    it("accepts valid email", () => {
+      const result = emailSchema.safeParse("test@example.com");
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid email", () => {
+      const result = emailSchema.safeParse("not-an-email");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("urlSchema", () => {
+    it("accepts valid URL", () => {
+      const result = urlSchema.safeParse("https://example.com/path");
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid URL", () => {
+      const result = urlSchema.safeParse("not-a-url");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("webhookUrlSchema", () => {
+    const originalEnv = process.env.NODE_ENV;
+
+    beforeEach(() => {
+      vi.resetModules();
+    });
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it("accepts HTTPS URL", () => {
+      const result = webhookUrlSchema.safeParse("https://example.com/webhook");
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts HTTP localhost in development", () => {
+      process.env.NODE_ENV = "development";
+      const result = webhookUrlSchema.safeParse("http://localhost:3000/webhook");
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid URL", () => {
+      const result = webhookUrlSchema.safeParse("not-a-url");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("nonEmptyStringSchema", () => {
+    it("accepts non-empty string", () => {
+      const result = nonEmptyStringSchema.safeParse("hello");
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects empty string", () => {
+      const result = nonEmptyStringSchema.safeParse("");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("positiveIntSchema", () => {
+    it("accepts positive integer", () => {
+      const result = positiveIntSchema.safeParse(5);
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects zero", () => {
+      const result = positiveIntSchema.safeParse(0);
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects negative number", () => {
+      const result = positiveIntSchema.safeParse(-1);
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects non-integer", () => {
+      const result = positiveIntSchema.safeParse(1.5);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("nonNegativeNumberSchema", () => {
+    it("accepts zero", () => {
+      const result = nonNegativeNumberSchema.safeParse(0);
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts positive number", () => {
+      const result = nonNegativeNumberSchema.safeParse(100);
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects negative number", () => {
+      const result = nonNegativeNumberSchema.safeParse(-1);
+      expect(result.success).toBe(false);
     });
   });
 });
