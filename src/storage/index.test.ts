@@ -465,15 +465,7 @@ describe("buildStorageKey and parseStorageKey", () => {
   });
 });
 
-// Import CDN and backup provider functions
-import {
-  getCDNProvider,
-  disposeCDNProvider,
-  getBackupProvider,
-  disposeBackupProvider,
-} from "./index.js";
-
-// Mock CDN providers
+// Mock CDN providers - must be before any imports that use them
 vi.mock("./cdn-provider.js", () => ({
   BunnyCDNProvider: vi.fn().mockImplementation(() => ({ provider: "bunny" })),
   CloudFrontCDNProvider: vi.fn().mockImplementation(() => ({ provider: "cloudfront" })),
@@ -486,6 +478,14 @@ vi.mock("./backup-provider.js", () => ({
   S3BackupProvider: vi.fn().mockImplementation(() => ({ provider: "s3-backup" })),
   NoBackupProvider: vi.fn().mockImplementation(() => ({ provider: "no-backup" })),
 }));
+
+// Import CDN and backup provider functions (after mocks)
+import {
+  getCDNProvider,
+  disposeCDNProvider,
+  getBackupProvider,
+  disposeBackupProvider,
+} from "./index.js";
 
 describe("getCDNProvider", () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
@@ -568,5 +568,82 @@ describe("disposeBackupProvider", () => {
     getBackupProvider();
     await disposeBackupProvider();
     expect(consoleLogSpy).toHaveBeenCalledWith("[Storage] Backup provider disposed");
+  });
+
+  it("should not log when backup provider is not initialized", async () => {
+    // Don't call getBackupProvider first
+    await disposeBackupProvider();
+    expect(consoleLogSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("disposeStorageProvider logging", () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  it("should log message when disposing storage provider", async () => {
+    getStorageProvider();
+    await disposeStorageProvider();
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Storage] Provider disposed");
+  });
+
+  it("should not log when storage provider is not initialized", async () => {
+    // Reset by disposing first (may already be disposed)
+    await disposeStorageProvider();
+    // Clear any previous calls
+    vi.clearAllMocks();
+    // Dispose again - should not log since nothing to dispose
+    await disposeStorageProvider();
+    expect(consoleLogSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("CDN provider type selection", () => {
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(async () => {
+    await disposeCDNProvider();
+    vi.clearAllMocks();
+    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(async () => {
+    await disposeCDNProvider();
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("should return a CDN provider when CDN_PROVIDER is 'none'", () => {
+    // Config mock has CDN_PROVIDER undefined, which defaults to 'none'
+    const provider = getCDNProvider();
+    expect(provider).toBeDefined();
+    // The mock returns an object with provider: "none"
+  });
+});
+
+describe("disposeCDNProvider edge cases", () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  it("should not log when CDN provider is not initialized", async () => {
+    // Reset any prior state
+    await disposeCDNProvider();
+    vi.clearAllMocks();
+    // Dispose again - should not log since nothing to dispose
+    await disposeCDNProvider();
+    expect(consoleLogSpy).not.toHaveBeenCalled();
   });
 });

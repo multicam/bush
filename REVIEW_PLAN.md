@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 22
-**Coverage**: 90.37% statements (target: 80%)
-**Tests**: 3204 passing, 41 skipped
+**Iteration**: 23
+**Coverage**: 90.41% statements (target: 80%)
+**Tests**: 3212 passing, 41 skipped
 
 ## Spec Gaps & Analysis (Phase 0)
 
@@ -92,9 +92,11 @@
 | src/api/index.ts | 0% | 0% | 0% | SKIP | Server entry point |
 | src/media/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
 | src/scheduled/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
-| src/realtime/ws-manager.ts | 76.9% | 78.99% | 88% | LOW | Add share channel tests |
+| src/scheduled/run-purge.ts | 58.82% | 50% | 100% | LOW | Top-level script (side effects at import) |
+| src/realtime/ws-manager.ts | 78.39% | 80.16% | 88% | LOW | Share channel, Redis presence edge cases |
+| src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | CDN/Backup config validation edge cases |
+| src/storage/cdn-provider.ts | 77.35% | 76.13% | 89.65% | LOW | AWS signing edge cases |
 | src/transcription/processor.ts | 88.46% | 79.48% | 100% | LOW | Edge cases only (Deepgram fallback, cleanup warnings) |
-| src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | Add CDN/Backup init tests |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | LOW | Edge cases only |
 
 ## Skipped Tests
@@ -104,6 +106,28 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 23 -- 2026-02-27
+- Focus: Phase 0 gap analysis + coverage improvement for ws-manager.ts and storage/index.ts
+- Phase 0 Analysis:
+  - Specs: All 21 spec files actively maintained (modified 2026-02-27)
+  - No TODO/FIXME in non-test source files
+  - Placeholders: Webhook delivery, RAW/Adobe thumbnails, AssemblyAI - all documented MVP limitations
+  - Stale references: None found - all spec references and imports are valid
+- Coverage: 90.37% → 90.41% (+0.04pp)
+- Tests: 3204 → 3212 (+8 new tests)
+- Test files expanded:
+  - src/realtime/ws-manager.test.ts: 50 → 53 tests (+3 tests for share channel permissions)
+  - src/storage/index.test.ts: 41 → 46 tests (+5 tests for disposal logging and CDN type selection)
+- Coverage improvements:
+  - src/realtime/ws-manager.ts: 76.9% → 78.39% (+1.49pp)
+  - src/realtime overall: 83.9% → 84.1% (+0.2pp)
+- New test cases:
+  - Share channel permission checking (granted when account access, rejected when no access, rejected when share not found)
+  - Storage provider disposal logging
+  - CDN provider disposal logging (edge case: not initialized)
+  - Backup provider disposal logging
+- Status: All tests green (3212 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 22 -- 2026-02-27
 - Focus: Coverage improvement for transcription/processor.ts
 - Coverage: 89.89% → 90.37% (+0.48pp)

@@ -780,6 +780,88 @@ describe("WebSocket Manager", () => {
       expect(message.type).toBe("subscription.rejected");
       expect(message.reason).toBe("insufficient_permissions");
     });
+
+    it("grants access to share channel when user has account access", async () => {
+      const { verifyAccountAccess } = await import("../api/access-control.js");
+      const { db } = await import("../db/index.js");
+
+      // Mock share lookup
+      vi.mocked(db.select).mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{
+              id: "share_1",
+              accountId: "account_1",
+            }]),
+          }),
+        }),
+      } as any);
+
+      // Mock account access check
+      vi.mocked(verifyAccountAccess).mockResolvedValue(true);
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "share", resourceId: "share_1" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.confirmed");
+    });
+
+    it("rejects share channel when user lacks account access", async () => {
+      const { verifyAccountAccess } = await import("../api/access-control.js");
+      const { db } = await import("../db/index.js");
+
+      // Mock share lookup
+      vi.mocked(db.select).mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{
+              id: "share_1",
+              accountId: "account_other",
+            }]),
+          }),
+        }),
+      } as any);
+
+      // Mock account access check - returns false
+      vi.mocked(verifyAccountAccess).mockResolvedValue(false);
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "share", resourceId: "share_1" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.rejected");
+      expect(message.reason).toBe("insufficient_permissions");
+    });
+
+    it("rejects share channel when share not found", async () => {
+      const { db } = await import("../db/index.js");
+
+      // Mock share lookup - returns empty
+      vi.mocked(db.select).mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      } as any);
+
+      await wsManager.handleMessage(
+        mockWs,
+        JSON.stringify({ action: "subscribe", channel: "share", resourceId: "share_nonexistent" })
+      );
+
+      const lastCall = mockWs.send.mock.calls[mockWs.send.mock.calls.length - 1];
+      const message = JSON.parse(lastCall[0]);
+      expect(message.type).toBe("subscription.rejected");
+      expect(message.reason).toBe("insufficient_permissions");
+    });
   });
 
   describe("broadcasting", () => {
