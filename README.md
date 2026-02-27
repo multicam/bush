@@ -2,6 +2,12 @@
 
 Cloud-based creative collaboration platform for video, design, and marketing teams. Upload creative files, manage projects, collect feedback, and share work from a unified workspace.
 
+## Ralph Sync
+
+```bash
+rclone copy ~/Code/ralph-loop-pack/.ralph/ ./.ralph
+```
+
 ## Tech Stack
 
 - **API:** Hono + Node.js 22 (TypeScript)
