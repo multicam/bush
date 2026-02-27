@@ -1,9 +1,9 @@
 # Code Review Plan
 
 **Last updated**: 2026-02-27
-**Iteration**: 21
-**Coverage**: 89.89% statements (target: 80%)
-**Tests**: 3198 passing, 41 skipped
+**Iteration**: 22
+**Coverage**: 90.37% statements (target: 80%)
+**Tests**: 3204 passing, 41 skipped
 
 ## Spec Gaps & Analysis (Phase 0)
 
@@ -93,7 +93,7 @@
 | src/media/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
 | src/scheduled/worker.ts | 0% | 0% | 0% | SKIP | Infrastructure script |
 | src/realtime/ws-manager.ts | 76.9% | 78.99% | 88% | LOW | Add share channel tests |
-| src/transcription/processor.ts | 60.35% | 76.74% | 62.5% | MEDIUM | Add error path tests |
+| src/transcription/processor.ts | 88.46% | 79.48% | 100% | LOW | Edge cases only (Deepgram fallback, cleanup warnings) |
 | src/storage/index.ts | 78.05% | 79.24% | 100% | LOW | Add CDN/Backup init tests |
 | src/config/env.ts | 90.32% | 55.55% | 66.66% | LOW | Edge cases only |
 
@@ -104,6 +104,21 @@
 | src/web/__tests__/dashboard.spec.ts | 13 | Skipped - requires credentials not in CI |
 
 ## Iteration Log
+### Iteration 22 -- 2026-02-27
+- Focus: Coverage improvement for transcription/processor.ts
+- Coverage: 89.89% → 90.37% (+0.48pp)
+- Tests: 3198 → 3204 (+6 new tests)
+- Test file expanded:
+  - src/transcription/transcription-processor.test.ts: 19 → 26 tests (+7 tests for FFmpeg validation, FasterWhisper path, existing transcript update)
+- Coverage improvements:
+  - src/transcription/processor.ts: 60.35% → 88.46% (+28.11pp)
+  - src/transcription overall: 76.15% → 93.06% (+16.91pp)
+- New test cases:
+  - FFmpeg path validation errors (empty path, relative path, shell metacharacters, binary not in allowlist)
+  - FasterWhisper provider path (audio extraction)
+  - Existing transcript update (re-processing)
+- Status: All tests green (3204 passing), typecheck passes, coverage above 80% target
+
 ### Iteration 21 -- 2026-02-27
 - Focus: Coverage improvement for ws-manager.ts error paths
 - Coverage: 89.83% → 89.89% (+0.06pp)

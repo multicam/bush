@@ -622,4 +622,377 @@ describe("Transcription Processor", () => {
       );
     });
   });
+
+  describe("FFmpeg path validation", () => {
+    it("rejects empty FFmpeg path", async () => {
+      vi.resetModules();
+
+      // Mock storage to fail presigned URL (forces audio extraction path)
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
+          getPresignedUrl: vi.fn().mockRejectedValue(new Error("Presigned URL failed")),
+        })),
+      }));
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "deepgram",
+        },
+      }));
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      mockSubmit.mockResolvedValue("provider-123");
+      mockGetResult.mockResolvedValue({
+        success: true,
+        words: [],
+        fullText: "",
+      });
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_ffmpeg",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 60,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      const resultPromise = promise.catch((e) => e);
+      await vi.runAllTimersAsync();
+
+      const error = await resultPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toContain("FFmpeg path cannot be empty");
+    });
+
+    it("rejects relative FFmpeg path", async () => {
+      vi.resetModules();
+
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
+          getPresignedUrl: vi.fn().mockRejectedValue(new Error("Presigned URL failed")),
+        })),
+      }));
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "bin/ffmpeg",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "deepgram",
+        },
+      }));
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      mockSubmit.mockResolvedValue("provider-123");
+      mockGetResult.mockResolvedValue({
+        success: true,
+        words: [],
+        fullText: "",
+      });
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_ffmpeg_rel",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 60,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      const resultPromise = promise.catch((e) => e);
+      await vi.runAllTimersAsync();
+
+      const error = await resultPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toContain("must be absolute");
+    });
+
+    it("rejects FFmpeg path with shell metacharacters", async () => {
+      vi.resetModules();
+
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
+          getPresignedUrl: vi.fn().mockRejectedValue(new Error("Presigned URL failed")),
+        })),
+      }));
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "/usr/bin/ffmpeg;rm -rf /",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "deepgram",
+        },
+      }));
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      mockSubmit.mockResolvedValue("provider-123");
+      mockGetResult.mockResolvedValue({
+        success: true,
+        words: [],
+        fullText: "",
+      });
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_ffmpeg_shell",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 60,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      const resultPromise = promise.catch((e) => e);
+      await vi.runAllTimersAsync();
+
+      const error = await resultPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toContain("potentially dangerous characters");
+    });
+
+    it("rejects FFmpeg binary not in allowlist", async () => {
+      vi.resetModules();
+
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
+          getPresignedUrl: vi.fn().mockRejectedValue(new Error("Presigned URL failed")),
+        })),
+      }));
+
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "/usr/bin/arbitrary-binary",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "deepgram",
+        },
+      }));
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      mockSubmit.mockResolvedValue("provider-123");
+      mockGetResult.mockResolvedValue({
+        success: true,
+        words: [],
+        fullText: "",
+      });
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_ffmpeg_binary",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 60,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      const resultPromise = promise.catch((e) => e);
+      await vi.runAllTimersAsync();
+
+      const error = await resultPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toContain("binary name must be one of");
+    });
+  });
+
+  describe("FasterWhisper provider path", () => {
+    it("extracts audio locally for FasterWhisper provider", async () => {
+      vi.resetModules();
+
+      // Mock config to use FasterWhisper provider with absolute FFmpeg path
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "/usr/bin/ffmpeg",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "faster-whisper",
+        },
+      }));
+
+      // Mock fs to make FFmpeg path validation pass
+      vi.doMock("fs", () => ({
+        ...require("fs"),
+        existsSync: vi.fn(() => true),
+        statSync: vi.fn(() => ({ isFile: () => true })),
+        realpathSync: vi.fn((p: string) => p),
+      }));
+
+      // Setup mocks for FasterWhisper (no presigned URL, audio extraction required)
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test audio data")),
+          getPresignedUrl: vi.fn().mockResolvedValue({ url: "https://example.com/audio.mp3" }),
+        })),
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                limit: vi.fn(() => Promise.resolve([])),
+              })),
+            })),
+          })),
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+          insert: vi.fn(() => ({
+            values: vi.fn().mockResolvedValue(undefined),
+          })),
+          delete: vi.fn(() => ({
+            where: vi.fn().mockResolvedValue(undefined),
+          })),
+        },
+        sqlite: {
+          prepare: vi.fn(() => ({
+            run: vi.fn(),
+          })),
+        },
+      }));
+
+      const successResult: TranscriptionResult = {
+        success: true,
+        providerTranscriptId: "fw-provider-123",
+        language: "en",
+        durationSeconds: 60,
+        words: [{ word: "Test", startMs: 0, endMs: 500 }],
+        fullText: "Test",
+      };
+
+      mockSubmit.mockResolvedValue("fw-provider-123");
+      mockGetResult.mockResolvedValue(successResult);
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_fw",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 60,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result.transcriptId).toMatch(/^tr_/);
+      expect(result.wordCount).toBe(1);
+    });
+  });
+
+  describe("processTranscriptionJob with existing transcript", () => {
+    it("updates existing transcript instead of creating new one", async () => {
+      // Reset modules to clear cached config from previous tests
+      vi.resetModules();
+
+      // Restore proper config mock
+      vi.doMock("../config/index.js", () => ({
+        config: {
+          FFMPEG_PATH: "ffmpeg",
+          MEDIA_TEMP_DIR: "/tmp",
+          TRANSCRIPTION_PROVIDER: "deepgram",
+        },
+      }));
+
+      // Mock storage to return valid presigned URL (no extraction needed)
+      vi.doMock("../storage/index.js", () => ({
+        getStorageProvider: vi.fn(() => ({
+          getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
+          getPresignedUrl: vi.fn().mockResolvedValue({ url: "https://example.com/audio.mp3" }),
+        })),
+      }));
+
+      // Mock that an existing transcript exists
+      const mockSelect = vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(() => Promise.resolve([{
+              id: "tr_existing_123",
+              fileId: "file_123",
+              status: "completed",
+            }])),
+          })),
+        })),
+      }));
+
+      vi.doMock("../db/index.js", () => ({
+        db: {
+          select: mockSelect,
+          update: vi.fn(() => ({
+            set: vi.fn(() => ({
+              where: vi.fn().mockResolvedValue(undefined),
+            })),
+          })),
+          insert: vi.fn(() => ({
+            values: vi.fn().mockResolvedValue(undefined),
+          })),
+          delete: vi.fn(() => ({
+            where: vi.fn().mockResolvedValue(undefined),
+          })),
+        },
+        sqlite: {
+          prepare: vi.fn(() => ({
+            run: vi.fn(),
+          })),
+        },
+      }));
+
+      const successResult: TranscriptionResult = {
+        success: true,
+        providerTranscriptId: "provider-reprocess",
+        language: "en",
+        durationSeconds: 90,
+        words: [{ word: "Updated", startMs: 0, endMs: 500, speaker: 1 }],
+        fullText: "Updated",
+      };
+
+      mockSubmit.mockResolvedValue("provider-reprocess");
+      mockGetResult.mockResolvedValue(successResult);
+
+      const { processTranscriptionJob } = await import("./processor.js");
+
+      const promise = processTranscriptionJob({
+        data: {
+          type: "transcription",
+          fileId: "file_123",
+          storageKey: "path/to/audio.mp3",
+          durationSeconds: 90,
+          accountId: "account_123",
+          projectId: "project_123",
+          mimeType: "audio/mp3",
+        },
+      });
+
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result.transcriptId).toBe("tr_existing_123");
+      expect(result.wordCount).toBe(1);
+    });
+  });
 });
