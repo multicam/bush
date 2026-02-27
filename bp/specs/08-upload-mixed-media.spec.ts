@@ -1,7 +1,9 @@
 import { test, expect } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(__dirname, "..", "fixtures", "media");
 
 test.describe("UC-08: Upload Mixed Media", () => {

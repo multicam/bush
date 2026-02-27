@@ -29,7 +29,7 @@
     "bp:fixtures": "bash bp/fixtures/generate-fixtures.sh",
     "bp:test": "DEMO_MODE=true npx playwright test --config bp/playwright.config.ts",
     "bp:test:headed": "DEMO_MODE=true npx playwright test --config bp/playwright.config.ts --headed",
-    "bp:report": "npx playwright show-report bp/results"
+    "bp:report": "npx playwright show-report bp/results/html-report"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",

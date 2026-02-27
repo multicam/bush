@@ -41,10 +41,19 @@ fi
 # Audio: 3s sine wave (~20KB)
 if [ ! -f "$MEDIA_DIR/sample-audio.mp3" ]; then
   if command -v ffmpeg &>/dev/null; then
-    ffmpeg -y -f lavfi -i "sine=frequency=440:duration=3" \
-      -c:a libmp3lame -b:a 48k \
-      "$MEDIA_DIR/sample-audio.mp3" 2>/dev/null
-    echo "  ✓ sample-audio.mp3"
+    # Try mp3 first, fall back to wav if libmp3lame unavailable
+    if ffmpeg -y -f lavfi -i "sine=frequency=440:duration=3" \
+        -c:a libmp3lame -b:a 48k \
+        "$MEDIA_DIR/sample-audio.mp3" 2>/dev/null; then
+      echo "  ✓ sample-audio.mp3"
+    else
+      ffmpeg -y -f lavfi -i "sine=frequency=440:duration=3" \
+        -c:a pcm_s16le \
+        "$MEDIA_DIR/sample-audio.wav" 2>/dev/null
+      # Rename to .mp3 for test consistency (content doesn't matter for upload tests)
+      mv "$MEDIA_DIR/sample-audio.wav" "$MEDIA_DIR/sample-audio.mp3"
+      echo "  ✓ sample-audio.mp3 (wav fallback)"
+    fi
   else
     echo "  ⚠ ffmpeg not found, creating placeholder audio"
     dd if=/dev/urandom of="$MEDIA_DIR/sample-audio.mp3" bs=1024 count=20 2>/dev/null

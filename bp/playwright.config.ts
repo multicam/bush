@@ -11,7 +11,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: [["html", { outputFolder: "./results" }], ["list"]],
+  reporter: [["html", { outputFolder: "./results/html-report" }], ["list"]],
 
   use: {
     baseURL: "http://localhost:3000",

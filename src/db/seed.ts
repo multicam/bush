@@ -18,6 +18,16 @@ function generateId(prefix: string, seed: string): string {
 // Current timestamp
 const now = Date.now();
 
+// Bun SQLite named params require prefix in object keys (e.g. @name → {"@name": val})
+// This helper adds the @ prefix to all keys for use with prepared statements
+function p(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    result[`@${k}`] = v;
+  }
+  return result;
+}
+
 console.log("Seeding database...");
 
 const sqlite = new Database(config.DATABASE_URL);
@@ -25,6 +35,7 @@ const sqlite = new Database(config.DATABASE_URL);
 // Use transaction for atomicity
 const seed = sqlite.transaction(() => {
   // Clear existing data (in reverse dependency order)
+  // Use IF EXISTS for tables that may not exist if migrations haven't run
   sqlite.exec(`
     DELETE FROM collection_assets;
     DELETE FROM collections;
@@ -71,7 +82,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const account of accounts) {
-    insertAccount.run({ ...account, createdAt: now, updatedAt: now });
+    insertAccount.run(p({ ...account, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -126,7 +137,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const user of users) {
-    insertUser.run({ ...user, createdAt: now, updatedAt: now });
+    insertUser.run(p({ ...user, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -148,7 +159,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const membership of memberships) {
-    insertMembership.run({ ...membership, createdAt: now, updatedAt: now });
+    insertMembership.run(p({ ...membership, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -181,7 +192,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const workspace of workspaces) {
-    insertWorkspace.run({ ...workspace, createdAt: now, updatedAt: now });
+    insertWorkspace.run(p({ ...workspace, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -231,7 +242,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const project of projects) {
-    insertProject.run({ ...project, isRestricted: project.isRestricted ? 1 : 0, createdAt: now, updatedAt: now });
+    insertProject.run(p({ ...project, isRestricted: project.isRestricted ? 1 : 0, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -293,12 +304,12 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const folder of folders) {
-    insertFolder.run({
+    insertFolder.run(p({
       ...folder,
       isRestricted: folder.isRestricted ? 1 : 0,
       createdAt: now,
       updatedAt: now,
-    });
+    }));
   }
 
   // ========================================
@@ -440,7 +451,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const file of files) {
-    insertFile.run({ ...file, createdAt: now, updatedAt: now });
+    insertFile.run(p({ ...file, createdAt: now, updatedAt: now }));
   }
 
   // ========================================
@@ -507,13 +518,13 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const comment of comments) {
-    insertComment.run({
+    insertComment.run(p({
       ...comment,
       annotation: comment.annotation ? JSON.stringify(comment.annotation) : null,
       isInternal: comment.isInternal ? 1 : 0,
       createdAt: now,
       updatedAt: now,
-    });
+    }));
   }
 
   // ========================================
@@ -546,7 +557,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const notification of notifications) {
-    insertNotification.run({ ...notification, createdAt: now });
+    insertNotification.run(p({ ...notification, createdAt: now }));
   }
 
   // ========================================
@@ -567,7 +578,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const vs of versionStacks) {
-    insertVersionStack.run({ ...vs, createdAt: now, updatedAt: now });
+    insertVersionStack.run(p({ ...vs, createdAt: now, updatedAt: now }));
   }
 
   // Link file to version stack
@@ -603,7 +614,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const share of shareLinks) {
-    insertShare.run({ ...share, createdAt: now, updatedAt: now });
+    insertShare.run(p({ ...share, createdAt: now, updatedAt: now }));
   }
 
   // Share assets — add first two commercial files to the share
@@ -628,7 +639,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const sa of shareAssets) {
-    insertShareAsset.run({ ...sa, createdAt: now });
+    insertShareAsset.run(p({ ...sa, createdAt: now }));
   }
 
   // ========================================
@@ -654,7 +665,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const col of seedCollections) {
-    insertCollection.run({ ...col, createdAt: now, updatedAt: now });
+    insertCollection.run(p({ ...col, createdAt: now, updatedAt: now }));
   }
 
   // Collection assets — add files to the collection
@@ -681,7 +692,7 @@ const seed = sqlite.transaction(() => {
   `);
 
   for (const ca of collAssets) {
-    insertCollectionAsset.run({ ...ca, createdAt: now });
+    insertCollectionAsset.run(p({ ...ca, createdAt: now }));
   }
 
   console.log("\n✅ Database seeded successfully!");

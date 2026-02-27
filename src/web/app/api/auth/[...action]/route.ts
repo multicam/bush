@@ -58,9 +58,7 @@ const DEMO_ACCOUNT_ID = "acc_7877e0d885c4b988e2437c67";
  */
 async function getSession(_request: NextRequest) {
   if (DEMO_MODE) {
-    const authService = await getAuthService();
-    const accounts = await authService.getUserAccounts(DEMO_USER_ID);
-    const currentAccount = accounts[0];
+    // Fully hardcoded — no DB/auth imports needed (avoids bun:sqlite in Next.js)
     return NextResponse.json({
       isAuthenticated: true,
       isLoading: false,
@@ -72,22 +70,8 @@ async function getSession(_request: NextRequest) {
         displayName: "Alice Chen",
         avatarUrl: null,
       },
-      currentAccount: currentAccount
-        ? {
-            id: currentAccount.accountId,
-            name: currentAccount.accountName,
-            slug: currentAccount.accountSlug,
-            role: currentAccount.role,
-          }
-        : { id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" },
-      accounts: accounts.length > 0
-        ? accounts.map((a) => ({
-            id: a.accountId,
-            name: a.accountName,
-            slug: a.accountSlug,
-            role: a.role,
-          }))
-        : [{ id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" }],
+      currentAccount: { id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" },
+      accounts: [{ id: DEMO_ACCOUNT_ID, name: "Alpha Studios", slug: "alpha-studios", role: "owner" }],
     });
   }
 

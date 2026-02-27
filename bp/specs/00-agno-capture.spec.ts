@@ -1,6 +1,8 @@
 import { test } from "@playwright/test";
 import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AGNO_SCREENSHOT_DIR = path.join(__dirname, "..", "screenshots", "agno");
 
 /**

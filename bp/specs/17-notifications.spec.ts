@@ -3,14 +3,14 @@ import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-17: Notifications", () => {
   test("notification bell is visible in sidebar", async ({ authedPage: page }) => {
-    const bell = page.getByLabel("Notifications");
+    const bell = page.getByLabel("Notifications").first();
     await expect(bell).toBeVisible();
 
     await captureScreenshot(page, "17-notification-bell");
   });
 
   test("clicking bell navigates to notifications", async ({ authedPage: page }) => {
-    const bell = page.getByLabel("Notifications");
+    const bell = page.getByLabel("Notifications").first();
     await bell.click();
     await page.waitForTimeout(500);
 
