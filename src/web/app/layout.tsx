@@ -9,6 +9,8 @@ import { AuthProvider, WorkspaceProvider } from "@/web/context";
 import { ThemeProvider } from "@/web/context/theme-context";
 import { ErrorBoundary } from "@/web/components/error-boundary";
 
+const DEMO_MODE = process.env.DEMO_MODE === "true";
+
 export const metadata: Metadata = {
   title: "Bush - Creative Collaboration Platform",
   description: "Cloud-based creative collaboration for video, design, and marketing teams",
@@ -69,13 +71,21 @@ export default function RootLayout({
       <body>
         <ErrorBoundary>
           <ThemeProvider>
-            <AuthKitProvider>
+            {DEMO_MODE ? (
               <AuthProvider>
                 <WorkspaceProvider>
                   {children}
                 </WorkspaceProvider>
               </AuthProvider>
-            </AuthKitProvider>
+            ) : (
+              <AuthKitProvider>
+                <AuthProvider>
+                  <WorkspaceProvider>
+                    {children}
+                  </WorkspaceProvider>
+                </AuthProvider>
+              </AuthKitProvider>
+            )}
           </ThemeProvider>
         </ErrorBoundary>
       </body>

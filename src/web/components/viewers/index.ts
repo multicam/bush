@@ -12,7 +12,7 @@ export type { VideoViewerProps, CommentMarker as VideoCommentMarker, FilmstripDa
 export { AudioViewer } from "./audio-viewer.js";
 export type { AudioViewerProps, CommentMarker as AudioCommentMarker, WaveformData } from "./audio-viewer.js";
 
-export { PdfViewer } from "./pdf-viewer.js";
+export { default as PdfViewer } from "./pdf-viewer-lazy.js";
 export type { PdfViewerProps, CommentMarker as PdfCommentMarker } from "./pdf-viewer.js";
 
 // Re-export annotation components for convenience
