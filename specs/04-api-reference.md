@@ -493,13 +493,32 @@ Content-Type: application/json
 | `GET` | `/v4/shares/:id/activity` | Get share view/download activity | Edit & Share+ |
 | `POST` | `/v4/shares/:id/invite` | Send share invitation email | Edit & Share+ |
 
+**Public access (no auth required):**
+
+| Method | Path | Description | Permission |
+|--------|------|-------------|------------|
+| `GET` | `/v4/shares/slug/:slug` | Access share by slug | None (public) |
+
+**Passphrase-protected shares** — Send passphrase in request body (`{ "passphrase": "..." }`). Query param supported but deprecated (logged in URLs).
+
+**Brute-force lockout:** After repeated failed passphrase attempts from the same IP:
+
+| Failed Attempts | Response |
+|-----------------|----------|
+| < 5 | `400 Incorrect passphrase` |
+| 5+ | `429 Too Many Requests` with `Retry-After: 600` (10 min lockout) |
+| 10+ | `429` with `Retry-After: 1800` (30 min) |
+| 20+ | `429` with `Retry-After: 7200` (2 hr) |
+
+Successful authentication resets the attempt counter.
+
 **Share attributes:**
 - `layout` — `grid`, `reel`, or `viewer`
 - `allow_comments` — Boolean
 - `allow_downloads` — Boolean
 - `show_all_versions` — Boolean
 - `show_transcriptions` — Boolean
-- `passphrase` — Optional passphrase protection
+- `passphrase` — Optional passphrase protection (bcrypt cost 12)
 - `expires_at` — Optional expiration timestamp
 - `branding` — Object with `icon`, `header`, `background`, `description`, `theme`, `accent_color`
 

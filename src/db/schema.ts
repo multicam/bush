@@ -4,7 +4,7 @@
  * SQLite schema with Drizzle ORM.
  * Core models: Account, User, Workspace, Project, Folder, File, etc.
  */
-import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
  * Accounts - Top-level billing and organizational entity
@@ -278,8 +278,8 @@ export const comments = sqliteTable("comments", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   parentId: text("parent_id"),
   text: text("text").notNull(),
-  timestamp: integer("timestamp"),
-  duration: integer("duration"),
+  timestamp: real("timestamp"),
+  duration: real("duration"),
   page: integer("page"),
   annotation: text("annotation", { mode: "json" }),
   isInternal: integer("is_internal", { mode: "boolean" }).notNull().default(false),
@@ -355,7 +355,7 @@ export const shareActivity = sqliteTable("share_activity", {
   id: text("id").primaryKey(),
   shareId: text("share_id").notNull().references(() => shares.id, { onDelete: "cascade" }),
   fileId: text("file_id").references(() => files.id, { onDelete: "cascade" }),
-  type: text("type", { enum: ["view", "comment", "download"] }).notNull(),
+  type: text("type", { enum: ["view", "comment", "download", "auth_failed"] }).notNull(),
   viewerEmail: text("viewer_email"),
   viewerIp: text("viewer_ip"),
   userAgent: text("user_agent"),
@@ -364,6 +364,22 @@ export const shareActivity = sqliteTable("share_activity", {
   shareIdx: index("share_activity_share_id_idx").on(table.shareId),
   typeIdx: index("share_activity_type_idx").on(table.type),
   createdIdx: index("share_activity_created_at_idx").on(table.createdAt),
+}));
+
+/**
+ * Share Auth Attempts - Brute-force protection for passphrase-protected shares
+ */
+export const shareAuthAttempts = sqliteTable("share_auth_attempts", {
+  id: text("id").primaryKey(),
+  shareId: text("share_id").notNull().references(() => shares.id, { onDelete: "cascade" }),
+  ipAddress: text("ip_address").notNull(),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  lastAttemptAt: integer("last_attempt_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  lockedUntil: integer("locked_until", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  shareIpIdx: uniqueIndex("share_auth_attempts_share_ip_idx").on(table.shareId, table.ipAddress),
+  lockedUntilIdx: index("share_auth_attempts_locked_until_idx").on(table.lockedUntil),
 }));
 
 /**

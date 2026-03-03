@@ -147,7 +147,15 @@ Self-hosted limitations on CPU: large-v3 model requires 10–15 GB RAM and is im
 - Speaker names included: VTT `<v>` tags, SRT `[]` prefix.
 - API endpoint: `GET /v4/files/:id/captions?format=vtt|srt`
 
-#### 3.6 Transcript Search [Phase 1]
+#### 3.6 HLS Caption Tracks [Phase 1]
+
+- After transcription completes, `processWebVTT` generates a `.vtt` file stored at `{account}/{project}/{asset}/captions/en.vtt`.
+- The HLS master playlist (`master.m3u8`) includes the caption as a subtitle track via `#EXT-X-MEDIA:TYPE=SUBTITLES`.
+- hls.js exposes subtitle tracks via `hls.subtitleTracks`, wired to the player's caption toggle button.
+- If transcription completes after HLS generation, only the master playlist is regenerated (not segments).
+- Implementation: `src/media/processors/webvtt.ts`
+
+#### 3.7 Transcript Search [Phase 1]
 
 - Full transcript text indexed in SQLite FTS5.
 - Search results link to the file with timestamp.
@@ -312,6 +320,7 @@ faster-whisper and AssemblyAI support 100+ languages.
 | `src/transcription/providers/faster-whisper.ts` | Self-hosted faster-whisper implementation |
 | `src/transcription/processor.ts` | BullMQ job processor |
 | `src/transcription/export.ts` | VTT and SRT generation from word data |
+| `src/media/processors/webvtt.ts` | WebVTT generation for HLS caption tracks |
 | `src/api/routes/transcripts.ts` | API route handlers |
 | `src/api/routes/webhooks.ts` | Provider webhook callback endpoint |
 | `src/web/components/transcript/` | Transcript panel, caption viewer, search results |

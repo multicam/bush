@@ -19,7 +19,8 @@ export type DerivativeType =
   | "thumbnail"
   | "filmstrip"
   | "waveform"
-  | "hls";
+  | "hls"
+  | "captions";
 
 /**
  * Storage key components

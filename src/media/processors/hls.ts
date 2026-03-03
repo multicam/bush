@@ -177,7 +177,23 @@ export async function processHLS(
 
     // Generate and upload master playlist
     if (results.length > 0) {
-      const masterPlaylist = generateMasterPlaylist(masterPlaylistEntries);
+      // Check if a WebVTT caption file exists for this asset
+      const captionKey = storageKeys.caption(
+        { accountId, projectId, assetId },
+        "en"
+      );
+      let captionUri: string | undefined;
+      // Quick existence check — if the caption file exists, include it in the manifest
+      const captionObj = await storage.headObject(captionKey);
+      if (captionObj) {
+        // Caption URI is relative to the master playlist location
+        captionUri = "../captions/en.vtt";
+      }
+
+      const masterPlaylist = generateMasterPlaylist(masterPlaylistEntries, {
+        captionUri,
+        captionLanguage: "en",
+      });
       const masterPlaylistKey = storageKeys.hlsMaster({
         accountId,
         projectId,
@@ -280,16 +296,39 @@ async function generateHLSVariant(
 }
 
 /**
- * Generate master playlist content
+ * Generate master playlist content.
+ * When captionUri is provided, adds a subtitle track reference and
+ * appends SUBTITLES="subs" to each variant's EXT-X-STREAM-INF.
  */
-function generateMasterPlaylist(variantEntries: string[]): string {
+function generateMasterPlaylist(
+  variantEntries: string[],
+  options?: { captionUri?: string; captionLanguage?: string }
+): string {
   const lines = [
     "#EXTM3U",
     "#EXT-X-VERSION:3",
     "#EXT-X-INDEPENDENT-SEGMENTS",
     "",
-    ...variantEntries.map((entry) => entry + "\n"),
   ];
+
+  // Add subtitle track if caption URI is provided
+  if (options?.captionUri) {
+    const lang = options.captionLanguage || "en";
+    lines.push(
+      `#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="${lang === "en" ? "English" : lang}",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="${lang}",URI="${options.captionUri}"`
+    );
+    lines.push("");
+  }
+
+  // Add variant entries — append SUBTITLES group if captions exist
+  for (const entry of variantEntries) {
+    if (options?.captionUri) {
+      // Insert SUBTITLES="subs" into the EXT-X-STREAM-INF line
+      lines.push(entry.replace("\n", `,SUBTITLES="subs"\n`) + "\n");
+    } else {
+      lines.push(entry + "\n");
+    }
+  }
 
   return lines.join("\n");
 }

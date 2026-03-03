@@ -298,6 +298,12 @@ export const storageKeys = {
       type: "hls",
       filename: `${resolution}/segment_${String(segment).padStart(4, "0")}.ts`,
     }),
+
+  /**
+   * Build key for caption/subtitle file (WebVTT)
+   */
+  caption: (parts: BaseKeyParts, language = "en"): string =>
+    buildStorageKey({ ...parts, type: "captions", filename: `${language}.vtt` }),
 };
 
 /**

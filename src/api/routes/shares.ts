@@ -6,7 +6,7 @@
  */
 import { Hono, type Context } from "hono";
 import { db } from "../../db/index.js";
-import { shares, shareAssets, shareActivity, files, users } from "../../db/schema.js";
+import { shares, shareAssets, shareActivity, shareAuthAttempts, files, users } from "../../db/schema.js";
 import { eq, and, desc, lt, sql, isNull } from "drizzle-orm";
 import { authMiddleware, requireAuth } from "../auth-middleware.js";
 import {
@@ -38,6 +38,98 @@ async function hashPassphrase(passphrase: string): Promise<string> {
 
 async function verifyPassphrase(passphrase: string, hash: string): Promise<boolean> {
   return await Bun.password.verify(passphrase, hash);
+}
+
+/**
+ * Brute-force lockout thresholds for passphrase-protected shares.
+ * Progressive lockout: more failures = longer lockout.
+ */
+const LOCKOUT_THRESHOLDS = [
+  { attempts: 5, lockoutMinutes: 10 },
+  { attempts: 10, lockoutMinutes: 30 },
+  { attempts: 20, lockoutMinutes: 120 },
+] as const;
+
+/** Get lockout duration in minutes based on attempt count */
+function getLockoutMinutes(attemptCount: number): number | null {
+  // Walk thresholds from highest to lowest
+  for (let i = LOCKOUT_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (attemptCount >= LOCKOUT_THRESHOLDS[i].attempts) {
+      return LOCKOUT_THRESHOLDS[i].lockoutMinutes;
+    }
+  }
+  return null;
+}
+
+/** Check if a share is locked for a given IP. Returns seconds until unlock, or null if not locked. */
+async function checkShareLockout(shareId: string, ipAddress: string): Promise<number | null> {
+  const [record] = await db
+    .select()
+    .from(shareAuthAttempts)
+    .where(and(eq(shareAuthAttempts.shareId, shareId), eq(shareAuthAttempts.ipAddress, ipAddress)))
+    .limit(1);
+
+  if (!record || !record.lockedUntil) return null;
+
+  const now = new Date();
+  if (record.lockedUntil > now) {
+    return Math.ceil((record.lockedUntil.getTime() - now.getTime()) / 1000);
+  }
+
+  return null;
+}
+
+/** Record a failed passphrase attempt and apply lockout if threshold reached */
+async function recordFailedAttempt(shareId: string, ipAddress: string): Promise<number | null> {
+  const now = new Date();
+
+  // Upsert attempt record
+  const [existing] = await db
+    .select()
+    .from(shareAuthAttempts)
+    .where(and(eq(shareAuthAttempts.shareId, shareId), eq(shareAuthAttempts.ipAddress, ipAddress)))
+    .limit(1);
+
+  let newCount: number;
+
+  if (existing) {
+    newCount = existing.attemptCount + 1;
+    const lockoutMinutes = getLockoutMinutes(newCount);
+    const lockedUntil = lockoutMinutes ? new Date(now.getTime() + lockoutMinutes * 60 * 1000) : null;
+
+    await db
+      .update(shareAuthAttempts)
+      .set({
+        attemptCount: newCount,
+        lastAttemptAt: now,
+        lockedUntil,
+      })
+      .where(eq(shareAuthAttempts.id, existing.id));
+
+    return lockoutMinutes ? lockoutMinutes * 60 : null;
+  } else {
+    newCount = 1;
+    const id = generateId("sha");
+
+    await db.insert(shareAuthAttempts).values({
+      id,
+      shareId,
+      ipAddress,
+      attemptCount: newCount,
+      lastAttemptAt: now,
+      lockedUntil: null,
+      createdAt: now,
+    });
+
+    return null;
+  }
+}
+
+/** Reset attempt counter on successful authentication */
+async function resetAuthAttempts(shareId: string, ipAddress: string): Promise<void> {
+  await db
+    .delete(shareAuthAttempts)
+    .where(and(eq(shareAuthAttempts.shareId, shareId), eq(shareAuthAttempts.ipAddress, ipAddress)));
 }
 
 const app = new Hono();
@@ -895,8 +987,21 @@ export async function getShareBySlug(c: Context) {
 
   // Check passphrase protection
   const requiresPassphrase = !!share.passphrase;
+  const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+    || c.req.header("x-real-ip")
+    || "unknown";
 
   if (requiresPassphrase) {
+    // Check brute-force lockout before doing anything
+    const lockoutSeconds = await checkShareLockout(share.id, clientIp);
+    if (lockoutSeconds) {
+      c.header("Retry-After", String(lockoutSeconds));
+      return c.json(
+        { errors: [{ status: "429", title: "Too many failed attempts", detail: "This share is temporarily locked. Try again later." }] },
+        429
+      );
+    }
+
     // Verify passphrase if provided
     if (!providedPassphrase) {
       // Return minimal info indicating passphrase is required
@@ -914,11 +1019,37 @@ export async function getShareBySlug(c: Context) {
     }
 
     // Verify passphrase using bcrypt (constant-time by design)
-    // We already checked that share.passphrase is truthy above
     const passphraseMatch = await verifyPassphrase(providedPassphrase, share.passphrase || "");
     if (!passphraseMatch) {
+      // Record failed attempt and check if lockout should apply
+      const lockoutDuration = await recordFailedAttempt(share.id, clientIp);
+
+      // Log failed attempt in share activity (fire-and-forget)
+      db.insert(shareActivity).values({
+        id: generateId("sa"),
+        shareId: share.id,
+        fileId: null,
+        type: "auth_failed",
+        viewerIp: clientIp,
+        userAgent: c.req.header("user-agent") || null,
+        createdAt: new Date(),
+      }).catch((err) => {
+        console.warn("[Shares] Failed to log auth_failed activity:", err);
+      });
+
+      if (lockoutDuration) {
+        c.header("Retry-After", String(lockoutDuration));
+        return c.json(
+          { errors: [{ status: "429", title: "Too many failed attempts", detail: "This share is temporarily locked. Try again later." }] },
+          429
+        );
+      }
+
       throw new ValidationError("Incorrect passphrase", { pointer: "/data/attributes/passphrase" });
     }
+
+    // Success — reset attempt counter
+    await resetAuthAttempts(share.id, clientIp);
   }
 
   // Get assets with file info

@@ -303,38 +303,69 @@ After proxy MP4s are written to storage, segment each into HLS.
 
 - Segment duration: 6 seconds.
 - Generate per-resolution playlist and a master playlist referencing all variants.
+- Client-side playback via **hls.js** (Chrome, Firefox) with native HLS fallback (Safari).
 
 ```bash
-# Per-resolution segmentation
-ffmpeg -i proxy_720p.mp4 \
-  -c copy -f hls \
-  -hls_time 6 -hls_list_size 0 \
-  -hls_segment_filename "720p/segment_%03d.ts" \
+# Per-resolution segmentation (actual implementation transcodes from source)
+ffmpeg -i source.mov \
+  -c:v libx264 -profile:v high -b:v 2500k -maxrate 3000k -bufsize 5000k \
+  -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:black" \
+  -c:a aac -b:a 128k -ac 2 -pix_fmt yuv420p \
+  -f hls -hls_time 6 -hls_list_size 0 -hls_playlist_type vod \
+  -hls_segment_filename "720p/segment_%04d.ts" \
   720p/playlist.m3u8
 ```
 
-Master playlist assembled programmatically:
+Master playlist assembled programmatically. When a WebVTT caption file exists, the master playlist includes a subtitle track:
 
 ```m3u8
 #EXTM3U
-#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="English",DEFAULT=NO,AUTOSELECT=YES,LANGUAGE="en",URI="../captions/en.vtt"
+
+#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360,SUBTITLES="subs"
 360p/playlist.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=1500000,RESOLUTION=960x540
+#EXT-X-STREAM-INF:BANDWIDTH=1500000,RESOLUTION=960x540,SUBTITLES="subs"
 540p/playlist.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=2500000,RESOLUTION=1280x720
+#EXT-X-STREAM-INF:BANDWIDTH=2500000,RESOLUTION=1280x720,SUBTITLES="subs"
 720p/playlist.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080
+#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080,SUBTITLES="subs"
 1080p/playlist.m3u8
 ```
+
+#### Client-Side Playback
+
+The video viewer uses **hls.js** for adaptive bitrate streaming on non-Safari browsers:
+
+- Dynamic import (code-split, ~60KB gzipped) — only loaded when `hlsSrc` is provided
+- Safari: native HLS via `video.src = hlsSrc`
+- Chrome/Firefox: `Hls.isSupported()` → attach to `<video>` element
+- Fallback: proxy MP4 if HLS is unavailable
+- Resolution switcher wired to `hls.currentLevel` for manual quality selection
+- ABR enabled by default (`startLevel: -1`)
+- Fatal error recovery: network errors retry, media errors recover, unrecoverable falls back to MP4
+
+#### Caption Tracks in HLS
+
+When a transcription is completed for a video file, a WebVTT caption file is generated and stored:
+
+1. `processWebVTT` reads transcript words from DB, groups into segments, exports as VTT
+2. Stored at `{account_id}/{project_id}/{asset_id}/captions/{language}.vtt`
+3. HLS master playlist checks for caption file existence via `headObject`
+4. If present, adds `#EXT-X-MEDIA:TYPE=SUBTITLES` to manifest
+5. hls.js exposes subtitle tracks via `hls.subtitleTracks` — wired to caption toggle
 
 #### Storage Keys
 
 ```
 {account_id}/{project_id}/{asset_id}/hls/master.m3u8
 {account_id}/{project_id}/{asset_id}/hls/360p/playlist.m3u8
-{account_id}/{project_id}/{asset_id}/hls/360p/segment_001.ts
+{account_id}/{project_id}/{asset_id}/hls/360p/segment_0001.ts
 {account_id}/{project_id}/{asset_id}/hls/720p/playlist.m3u8
-{account_id}/{project_id}/{asset_id}/hls/720p/segment_001.ts
+{account_id}/{project_id}/{asset_id}/hls/720p/segment_0001.ts
+{account_id}/{project_id}/{asset_id}/captions/en.vtt
 ```
 
 #### Performance Target

@@ -431,7 +431,7 @@ Account
 
 | Feature | Description | Phase |
 |---------|-------------|-------|
-| Frame-accurate timestamp | Sub-frame precision | MVP |
+| Frame-accurate timestamp | Sub-frame precision (float seconds via SQLite REAL column) | MVP |
 | Text body | Plain text | MVP |
 | Emoji reactions | React to comments | MVP |
 | @ mentions | Triggers notification to mentioned user | MVP |
@@ -492,7 +492,7 @@ Account
 | Frame-by-frame back | Left Arrow | MVP |
 | JKL shuttle | J = reverse (2x/4x/8x), K = pause, L = forward (2x/4x/8x) | MVP |
 | Scrub | Drag timeline | MVP |
-| Playback speed | 0.25x – 1.75x | MVP |
+| Playback speed | 0.25x – 2x, persisted in localStorage | MVP |
 | Loop playback | Toggle | MVP |
 | Volume control | Slider | MVP |
 | Mute | M key | MVP |
@@ -503,9 +503,11 @@ Account
 
 ### Playback Resolution
 
+Adaptive bitrate streaming via HLS. Client uses **hls.js** (Chrome, Firefox) with native fallback (Safari). Proxy MP4 fallback if HLS unavailable.
+
 | Resolution | Plan Required | Phase |
 |------------|---------------|-------|
-| Auto (adaptive) | All | MVP |
+| Auto (adaptive via hls.js ABR) | All | MVP |
 | 360p | All | MVP |
 | 540p | All | MVP |
 | 720p | All | MVP |
@@ -610,7 +612,7 @@ Account
 | Setting | Description | Phase |
 |---------|-------------|-------|
 | Visibility toggle | Enable / disable share link | MVP |
-| Passphrase protection | bcrypt-hashed server-side verification | MVP |
+| Passphrase protection | bcrypt (cost 12) with brute-force lockout (5→10min, 10→30min, 20+→2hr) | MVP |
 | Expiration date / time | Auto-disable at configured date | MVP |
 | Allow comments | Reviewer commenting on/off | MVP |
 | Allow downloads | Download permission on/off | MVP |
@@ -649,6 +651,7 @@ Account
 | Asset viewed | Yes | MVP |
 | Comment created | Yes | MVP |
 | Asset downloaded | Yes | MVP |
+| Auth failed (wrong passphrase) | Yes | MVP |
 
 ### Share Notifications (to reviewer)
 

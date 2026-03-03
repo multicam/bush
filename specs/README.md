@@ -9,7 +9,7 @@ Bush is a professional media review and collaboration platform for video, audio,
 | Metric | Count |
 |--------|-------|
 | API Endpoints | 136 across 18 route modules |
-| Database Tables | 26 with proper indexes |
+| Database Tables | 27 with proper indexes |
 | Tests | 81 test files |
 | Frontend Components | 52 TSX components |
 | Web Pages | 16 Next.js pages |
@@ -75,7 +75,8 @@ Source of truth for technology choices. Documentation stating otherwise should b
 | Search | SQLite FTS5 | Upgrade path to dedicated engine when needed |
 | Object Storage | S3-compatible interface | MinIO for dev, Cloudflare R2 for prod (free egress) |
 | CDN | CDN-agnostic interface | Bunny CDN current; CloudFront/Fastly for future |
-| Media Processing | FFmpeg + ImageMagick | Transcoding, thumbnails, filmstrips, waveforms |
+| Media Processing | FFmpeg + ImageMagick | Transcoding, thumbnails, filmstrips, waveforms, HLS |
+| Video Streaming | hls.js | Adaptive bitrate HLS playback (Chrome/Firefox); native HLS (Safari) |
 | Message Queue | BullMQ + Redis | Async jobs: transcoding, transcription, notifications |
 | Transcription | Provider interface | Deepgram Nova-2 (prod), faster-whisper (dev/fallback) |
 | Email | Provider interface | Hollow stub; Resend/SES/Postmark/SendGrid via `EMAIL_PROVIDER` |

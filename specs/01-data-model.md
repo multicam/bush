@@ -237,8 +237,8 @@ Account
 | `user_id` | text FK → users | Cascade delete |
 | `parent_id` | text | Self-referential for threaded replies (no FK constraint) |
 | `text` | text NOT NULL | Comment body |
-| `timestamp` | integer | Milliseconds into media (video/audio) |
-| `duration` | integer | Duration of selection in milliseconds |
+| `timestamp` | real | Seconds into media as float (e.g., 34.567). Sub-frame precision. |
+| `duration` | real | Duration of selection in seconds as float |
 | `page` | integer | Page number (PDF/image) |
 | `annotation` | JSON | Drawing annotation data (shape, coordinates, color) |
 | `is_internal` | boolean | If true, hidden from external reviewers |
@@ -394,13 +394,31 @@ Account
 | `id` | text PK | |
 | `share_id` | text FK → shares | Cascade delete |
 | `file_id` | text FK → files | Cascade delete. NULL for share-level events. |
-| `type` | enum | `view`, `comment`, `download` |
+| `type` | enum | `view`, `comment`, `download`, `auth_failed` |
 | `viewer_email` | text | Email if Identified Reviewer; NULL if anonymous |
 | `viewer_ip` | text | |
 | `user_agent` | text | |
 | `created_at` | timestamp | |
 
 **Indexes:** `share_id`, `type`, `created_at`.
+
+---
+
+#### `share_auth_attempts` — Brute-force protection for passphrase-protected shares
+
+**Phase: MVP**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | text PK | |
+| `share_id` | text FK → shares | Cascade delete |
+| `ip_address` | text NOT NULL | Client IP (from X-Forwarded-For or X-Real-IP) |
+| `attempt_count` | integer | Number of consecutive failed attempts |
+| `last_attempt_at` | timestamp | |
+| `locked_until` | timestamp | NULL if not locked. Set based on threshold (5→10min, 10→30min, 20+→2hr) |
+| `created_at` | timestamp | |
+
+**Indexes:** unique `(share_id, ip_address)`, `locked_until`.
 
 ---
 
@@ -643,7 +661,7 @@ The table below describes what is deleted when a top-level entity is removed. "C
 | **File** | comments; transcripts → transcript_words; captions; share_assets; collection_assets |
 | **Version Stack** | comments targeting version_stack_id; files retain their row (version_stack_id becomes orphaned — application must clear) |
 | **User** | account_memberships; workspace_permissions; project_permissions; folder_permissions; comments; notifications; collections; collection_assets (added_by); files.assignee_id SET NULL; transcripts.edited_by_user_id SET NULL; shares.created_by_user_id CASCADE; captions.created_by_user_id SET NULL |
-| **Share** | share_assets; share_activity |
+| **Share** | share_assets; share_activity; share_auth_attempts |
 | **Webhook** | webhook_deliveries |
 | **Transcript** | transcript_words |
 | **Custom Field** | custom_field_visibility; `files.custom_metadata` values orphaned (JSON, no FK — application cleanup required) |
@@ -740,6 +758,7 @@ Array<{
 | shares | MVP |
 | share_assets | MVP |
 | share_activity | MVP |
+| share_auth_attempts | MVP |
 | collections | MVP |
 | collection_assets | MVP |
 | notifications | MVP |

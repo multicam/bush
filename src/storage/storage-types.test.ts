@@ -148,8 +148,9 @@ describe("storage types", () => {
         "filmstrip",
         "waveform",
         "hls",
+        "captions",
       ];
-      expect(types).toHaveLength(6);
+      expect(types).toHaveLength(7);
     });
 
     it("PresignedUrlOperation allows valid operations", () => {

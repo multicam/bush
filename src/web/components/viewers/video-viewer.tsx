@@ -112,6 +112,18 @@ function formatBitrate(bitrate?: number): string {
 /** Playback speed options */
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
+/** localStorage key for persisted playback speed */
+const SPEED_STORAGE_KEY = "bush:playback-speed";
+
+/** Read persisted speed from localStorage (SSR-safe) */
+function getPersistedSpeed(): number {
+  if (typeof window === "undefined") return 1;
+  const stored = localStorage.getItem(SPEED_STORAGE_KEY);
+  if (!stored) return 1;
+  const parsed = parseFloat(stored);
+  return PLAYBACK_SPEEDS.includes(parsed) ? parsed : 1;
+}
+
 /** JKL shuttle speeds */
 const SHUTTLE_SPEEDS = [1, 2, 4, 8];
 
@@ -173,7 +185,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   const [videoDuration, setVideoDuration] = useState(propDuration || 0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(getPersistedSpeed);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,11 +203,31 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   // Current resolution
   const [currentResolution, setCurrentResolution] = useState<string>("auto");
 
+  // Handle resolution change — wire to hls.js when available
+  const handleResolutionChange = useCallback((value: string) => {
+    setCurrentResolution(value);
+    if (hlsRef.current) {
+      if (value === "auto") {
+        hlsRef.current.currentLevel = -1; // ABR auto
+      } else {
+        const level = hlsLevels.find((l) => l.label === value);
+        if (level) {
+          hlsRef.current.currentLevel = level.index;
+        }
+      }
+    }
+  }, [hlsLevels]);
+
   // Caption visibility
   const [captionsEnabled, setCaptionsEnabled] = useState(showCaptions);
 
   // Shuttle direction (no speed state needed - derived from interval)
   const [shuttleDirection, setShuttleDirection] = useState<"forward" | "backward" | null>(null);
+
+  // HLS.js instance ref
+  const hlsRef = useRef<import("hls.js").default | null>(null);
+  // HLS quality levels for resolution switcher
+  const [hlsLevels, setHlsLevels] = useState<Array<{ label: string; width: number; height: number; index: number }>>([]);
 
   const duration = videoDuration || propDuration || 0;
 
@@ -215,6 +247,82 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
     return () => observer.disconnect();
   }, []);
+
+  // HLS.js setup — adaptive streaming for non-Safari browsers
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !hlsSrc) return;
+
+    // Safari supports HLS natively — use direct src
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = hlsSrc;
+      return;
+    }
+
+    // Dynamic import hls.js for code-splitting (~60KB gzipped)
+    let cancelled = false;
+    import("hls.js").then(({ default: Hls }) => {
+      if (cancelled || !Hls.isSupported()) {
+        // Fallback: use proxy MP4 src (already set on <video> element when hlsSrc is absent)
+        if (!Hls.isSupported() && src) {
+          video.src = src;
+        }
+        return;
+      }
+
+      const hls = new Hls({
+        // Start with a reasonable quality, let ABR take over
+        startLevel: -1, // auto
+        // Cap the buffer to avoid excessive memory usage
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+      });
+
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+        // Expose quality levels for resolution switcher
+        const levels = data.levels.map((level, index) => ({
+          label: `${level.height}p`,
+          width: level.width,
+          height: level.height,
+          index,
+        }));
+        setHlsLevels(levels);
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          console.error("[hls] Fatal error:", data.type, data.details);
+          // On fatal error, try to recover or fall back to proxy MP4
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
+            // Unrecoverable — fall back to proxy MP4
+            hls.destroy();
+            hlsRef.current = null;
+            if (src) {
+              video.src = src;
+            }
+          }
+        }
+      });
+
+      hls.loadSource(hlsSrc);
+      hls.attachMedia(video);
+    });
+
+    return () => {
+      cancelled = true;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      setHlsLevels([]);
+    };
+  }, [hlsSrc, src]);
 
   // Hide controls after inactivity
   useEffect(() => {
@@ -291,6 +399,10 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       setIsLoading(false);
       setIsBuffering(false);
       setError(null);
+      // Apply persisted playback speed when video is ready
+      if (video.playbackRate !== playbackRate) {
+        video.playbackRate = playbackRate;
+      }
     };
 
     const handleWaiting = () => setIsBuffering(true);
@@ -331,7 +443,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       video.removeEventListener("volumechange", handleVolumeChange);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [propDuration, onTimeUpdate, inPoint, outPoint, duration]);
+  }, [propDuration, onTimeUpdate, inPoint, outPoint, duration, playbackRate]);
 
   // Playback controls
   const togglePlay = useCallback(() => {
@@ -408,6 +520,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       video.playbackRate = speed;
     }
     setPlaybackRate(speed);
+    localStorage.setItem(SPEED_STORAGE_KEY, String(speed));
   }, []);
 
   // Expose imperative methods for linked playback (ComparisonViewer)
@@ -1009,18 +1122,18 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
             <div className="w-px h-6 bg-border-default max-md:hidden" />
 
-            {/* Resolution control */}
-            {resolutions.length > 0 && (
+            {/* Resolution control — prefer HLS levels when available, fall back to prop resolutions */}
+            {(hlsLevels.length > 0 || resolutions.length > 0) && (
               <>
                 <div className="flex items-center">
                   <select
                     className="px-3 py-1.5 bg-transparent border border-border-default rounded text-white text-xs cursor-pointer appearance-none min-w-[70px] hover:border-text-secondary focus:outline-none focus:border-accent"
                     value={currentResolution}
-                    onChange={(e) => setCurrentResolution(e.target.value)}
+                    onChange={(e) => handleResolutionChange(e.target.value)}
                     aria-label="Playback resolution"
                   >
                     <option value="auto">Auto</option>
-                    {resolutions.map((res) => (
+                    {(hlsLevels.length > 0 ? hlsLevels : resolutions).map((res) => (
                       <option key={res.label} value={res.label}>
                         {res.label}
                       </option>

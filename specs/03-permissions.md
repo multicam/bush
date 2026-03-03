@@ -423,7 +423,13 @@ Three tiers of reviewer identity, in increasing trust order:
 #### 6.3 Share Access Flow
 
 1. Visitor requests `GET /s/{slug}`
-2. If share has `passphrase`, require passphrase entry (rate-limited at 30 req/min per IP)
+2. If share has `passphrase`:
+   a. Check `share_auth_attempts` for brute-force lockout (per share + IP)
+   b. If locked, return **429 Too Many Requests** with `Retry-After` header
+   c. Require passphrase entry (rate-limited at 30 req/min per IP as global safety net)
+   d. On failure: increment attempt counter, log `auth_failed` to `share_activity`
+   e. Lockout thresholds: **5 failures → 10 min**, **10 → 30 min**, **20+ → 2 hours**
+   f. On success: reset attempt counter
 3. If share has `expires_at < now()`, return 410 Gone
 4. Check reviewer tier (authenticated user vs. identified session vs. anonymous)
 5. Serve only the files listed in `share_assets`

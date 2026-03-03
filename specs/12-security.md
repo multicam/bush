@@ -66,14 +66,34 @@ Implementation notes:
 - Playback requires a valid session cookie in addition to the signed URL
 - Geo-restriction: Future
 
-#### 1.3 Download Protection — Phase 2
+#### 1.3 Share Passphrase Brute-Force Protection — MVP
+
+Passphrase-protected shares use bcrypt (cost 12) with constant-time verification. In addition to the global 30 req/min per-IP rate limit, a per-share-per-IP lockout system prevents password enumeration:
+
+**Lockout thresholds:**
+
+| Failed Attempts | Lockout Duration |
+|-----------------|-----------------|
+| 5 | 10 minutes |
+| 10 | 30 minutes |
+| 20+ | 2 hours |
+
+**Implementation:**
+- `share_auth_attempts` table tracks (shareId, ipAddress) with attempt count and `locked_until` timestamp
+- On failed passphrase: increment counter, check threshold, apply lockout if reached
+- On lockout: return HTTP 429 with `Retry-After` header (seconds until unlock)
+- On success: delete the attempt record (reset counter)
+- Failed attempts logged to `share_activity` with `type = "auth_failed"`, including IP and user agent
+- IP extracted from `X-Forwarded-For` (first hop) or `X-Real-IP` header
+
+#### 1.4 Download Protection — Phase 2
 
 - Downloads are permission-gated: requires Edit & Share or Full Access permission level (see `03-permissions.md`)
 - Share links can explicitly disable downloads regardless of user permission
 - Download URLs are signed and single-use: expire after first use or 15 minutes, whichever comes first
 - All downloads written to the audit log: user identity, asset ID, format, timestamp, IP
 
-#### 1.4 DRM — Not in Scope
+#### 1.5 DRM — Not in Scope
 
 DRM was evaluated and dropped from the Bush roadmap. Forensic watermarking, signed streaming URLs, and download gating provide sufficient content protection for target use cases.
 
