@@ -203,6 +203,17 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   // Current resolution
   const [currentResolution, setCurrentResolution] = useState<string>("auto");
 
+  // Caption visibility
+  const [captionsEnabled, setCaptionsEnabled] = useState(showCaptions);
+
+  // Shuttle direction (no speed state needed - derived from interval)
+  const [shuttleDirection, setShuttleDirection] = useState<"forward" | "backward" | null>(null);
+
+  // HLS.js instance ref
+  const hlsRef = useRef<import("hls.js").default | null>(null);
+  // HLS quality levels for resolution switcher
+  const [hlsLevels, setHlsLevels] = useState<Array<{ label: string; width: number; height: number; index: number }>>([]);
+
   // Handle resolution change — wire to hls.js when available
   const handleResolutionChange = useCallback((value: string) => {
     setCurrentResolution(value);
@@ -217,17 +228,6 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       }
     }
   }, [hlsLevels]);
-
-  // Caption visibility
-  const [captionsEnabled, setCaptionsEnabled] = useState(showCaptions);
-
-  // Shuttle direction (no speed state needed - derived from interval)
-  const [shuttleDirection, setShuttleDirection] = useState<"forward" | "backward" | null>(null);
-
-  // HLS.js instance ref
-  const hlsRef = useRef<import("hls.js").default | null>(null);
-  // HLS quality levels for resolution switcher
-  const [hlsLevels, setHlsLevels] = useState<Array<{ label: string; width: number; height: number; index: number }>>([]);
 
   const duration = videoDuration || propDuration || 0;
 

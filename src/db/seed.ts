@@ -30,13 +30,35 @@ function p(obj: Record<string, unknown>): Record<string, string | number | null 
 
 console.log("Seeding database...");
 
+// Pre-compute bcrypt hash for password-protected share (async, before transaction)
+const protectedPassphraseHash = await Bun.password.hash("test123", {
+  algorithm: "bcrypt",
+  cost: 12,
+});
+
 const sqlite = new Database(config.DATABASE_URL);
+
+// Ensure share_auth_attempts table exists (may not exist if migrations haven't run)
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS share_auth_attempts (
+    id TEXT PRIMARY KEY NOT NULL,
+    share_id TEXT NOT NULL REFERENCES shares(id) ON DELETE CASCADE,
+    ip_address TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at INTEGER NOT NULL,
+    locked_until INTEGER,
+    created_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS share_auth_attempts_share_ip_idx ON share_auth_attempts(share_id, ip_address);
+  CREATE INDEX IF NOT EXISTS share_auth_attempts_locked_until_idx ON share_auth_attempts(locked_until);
+`);
 
 // Use transaction for atomicity
 const seed = sqlite.transaction(() => {
   // Clear existing data (in reverse dependency order)
   // Use IF EXISTS for tables that may not exist if migrations haven't run
   sqlite.exec(`
+    DELETE FROM share_auth_attempts;
     DELETE FROM collection_assets;
     DELETE FROM collections;
     DELETE FROM share_assets;
@@ -606,6 +628,23 @@ const seed = sqlite.transaction(() => {
       featuredField: null,
       branding: null,
     },
+    {
+      id: generateId("shr", "share-protected-review"),
+      accountId: accounts[0].id,
+      projectId: projects[0].id,
+      createdByUserId: users[0].id,
+      name: "Protected Review",
+      slug: "protected-review-2024",
+      passphrase: protectedPassphraseHash, // bcrypt hash of "test123"
+      expiresAt: null,
+      layout: "grid",
+      allowComments: 1,
+      allowDownloads: 1,
+      showAllVersions: 0,
+      showTranscription: 0,
+      featuredField: null,
+      branding: null,
+    },
   ];
 
   const insertShare = sqlite.prepare(`
@@ -630,6 +669,12 @@ const seed = sqlite.transaction(() => {
       shareId: shareLinks[0].id,
       fileId: files[1].id,
       sortOrder: 1,
+    },
+    {
+      id: generateId("sa", "share-asset-03"),
+      shareId: shareLinks[1].id,
+      fileId: files[0].id,
+      sortOrder: 0,
     },
   ];
 
