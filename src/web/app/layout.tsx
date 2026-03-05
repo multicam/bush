@@ -35,7 +35,7 @@ const jetbrainsMono = JetBrains_Mono({
  *
  * This inline script runs before React hydration to:
  * 1. Read the stored theme preference from localStorage
- * 2. Apply the data-theme attribute immediately to prevent flash
+ * 2. Toggle the .dark class immediately to prevent flash
  *
  * Without this, users would see a flash of dark theme before
  * light theme applies (or vice versa) during page load.
@@ -45,9 +45,12 @@ const antiFoucScript = `
   try {
     var stored = localStorage.getItem('bush_theme');
     if (stored === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
+      // Light mode: remove dark class
+      document.documentElement.classList.remove('dark');
+    } else {
+      // Dark mode (default): ensure dark class is present
+      document.documentElement.classList.add('dark');
     }
-    // Dark is default, so no attribute needed for dark theme
   } catch (e) {
     // localStorage access may be blocked in private browsing mode
     // or by browser settings - this is non-critical and expected
@@ -58,13 +61,9 @@ const antiFoucScript = `
 })();
 `;
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: antiFoucScript }} />
       </head>
@@ -73,16 +72,12 @@ export default function RootLayout({
           <ThemeProvider>
             {DEMO_MODE ? (
               <AuthProvider>
-                <WorkspaceProvider>
-                  {children}
-                </WorkspaceProvider>
+                <WorkspaceProvider>{children}</WorkspaceProvider>
               </AuthProvider>
             ) : (
               <AuthKitProvider>
                 <AuthProvider>
-                  <WorkspaceProvider>
-                    {children}
-                  </WorkspaceProvider>
+                  <WorkspaceProvider>{children}</WorkspaceProvider>
                 </AuthProvider>
               </AuthKitProvider>
             )}

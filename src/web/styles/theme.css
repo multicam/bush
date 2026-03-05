@@ -13,6 +13,8 @@
 /* Import Tailwind CSS v4 */
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Import our design tokens */
 @import "./tokens.css";
 
@@ -242,7 +244,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -310,18 +313,42 @@
 }
 
 /* Stagger delay utilities for grid items */
-.stagger-1 { animation-delay: 30ms; }
-.stagger-2 { animation-delay: 60ms; }
-.stagger-3 { animation-delay: 90ms; }
-.stagger-4 { animation-delay: 120ms; }
-.stagger-5 { animation-delay: 150ms; }
-.stagger-6 { animation-delay: 180ms; }
-.stagger-7 { animation-delay: 210ms; }
-.stagger-8 { animation-delay: 240ms; }
-.stagger-9 { animation-delay: 270ms; }
-.stagger-10 { animation-delay: 300ms; }
-.stagger-11 { animation-delay: 330ms; }
-.stagger-12 { animation-delay: 360ms; }
+.stagger-1 {
+  animation-delay: 30ms;
+}
+.stagger-2 {
+  animation-delay: 60ms;
+}
+.stagger-3 {
+  animation-delay: 90ms;
+}
+.stagger-4 {
+  animation-delay: 120ms;
+}
+.stagger-5 {
+  animation-delay: 150ms;
+}
+.stagger-6 {
+  animation-delay: 180ms;
+}
+.stagger-7 {
+  animation-delay: 210ms;
+}
+.stagger-8 {
+  animation-delay: 240ms;
+}
+.stagger-9 {
+  animation-delay: 270ms;
+}
+.stagger-10 {
+  animation-delay: 300ms;
+}
+.stagger-11 {
+  animation-delay: 330ms;
+}
+.stagger-12 {
+  animation-delay: 360ms;
+}
 
 /* ----------------------------------------
    CORNER BRACKET HOVER EFFECT
@@ -335,7 +362,7 @@
 .corner-brackets::after,
 .corner-brackets .corner-tl,
 .corner-brackets .corner-br {
-  content: '';
+  content: "";
   position: absolute;
   width: 12px;
   height: 12px;
@@ -426,7 +453,9 @@
     transform: scale(1);
   }
   50% {
-    box-shadow: var(--shadow-accent), 0 0 16px var(--accent-glow);
+    box-shadow:
+      var(--shadow-accent),
+      0 0 16px var(--accent-glow);
     transform: scale(1.01);
   }
   100% {

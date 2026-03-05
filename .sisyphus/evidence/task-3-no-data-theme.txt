@@ -1,0 +1,34 @@
+TASK 3 EVIDENCE: Dark mode — data-theme → .dark class migration
+==============================================================
+Date: 2026-03-06
+
+VERIFICATION: grep -rn "data-theme" src/web/styles/ src/web/context/ src/web/app/layout.tsx
+-------------------------------------------------------------------------------
+RESULT: Zero matches in target files (theme.css, theme-context.tsx, layout.tsx)
+
+Remaining data-theme in tokens.css (intentionally excluded — Task 4 scope):
+  src/web/styles/tokens.css:8:  * Light theme overrides are applied via [data-theme="light"] selector.
+  src/web/styles/tokens.css:195: [data-theme="light"] {
+
+CHANGES APPLIED
+---------------
+1. src/web/styles/theme.css
+   - Added: @custom-variant dark (&:where(.dark, .dark *));
+   - Position: AFTER @import "tailwindcss";, BEFORE @import "./tokens.css";
+   - Purpose: Tailwind v4 directive making dark: classes respond to .dark class
+
+2. src/web/context/theme-context.tsx
+   - applyTheme: replaced setAttribute('data-theme') with classList.add/remove('dark')
+   - Dark → root.classList.add('dark')
+   - Light → root.classList.remove('dark')
+
+3. src/web/app/layout.tsx
+   - antiFoucScript: replaced setAttribute('data-theme', 'light') with classList logic
+     - light: classList.remove('dark')
+     - default/dark: classList.add('dark')
+   - <html> tag: added 'dark' class as SSR default
+     className={`dark ${inter.variable} ${jetbrainsMono.variable}`}
+   - Updated stale JSDoc comment (data-theme → .dark class)
+
+OUTCOME: Catalyst UI Kit dark: prefixed classes will now work correctly.
+         dark: variants respond to .dark class on <html> element.

@@ -8,14 +8,7 @@
  */
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
 export type Theme = "dark" | "light";
 
@@ -62,11 +55,10 @@ export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
   // Apply theme to document
   const applyTheme = useCallback((newTheme: Theme) => {
     const root = document.documentElement;
-
-    if (newTheme === "light") {
-      root.setAttribute("data-theme", "light");
+    if (newTheme === "dark") {
+      root.classList.add("dark");
     } else {
-      root.removeAttribute("data-theme");
+      root.classList.remove("dark");
     }
   }, []);
 
@@ -79,11 +71,14 @@ export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
   }, [applyTheme]);
 
   // Set theme and persist to localStorage
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
-    applyTheme(newTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-  }, [applyTheme]);
+  const setTheme = useCallback(
+    (newTheme: Theme) => {
+      setThemeState(newTheme);
+      applyTheme(newTheme);
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    },
+    [applyTheme]
+  );
 
   // Toggle between dark and light
   const toggleTheme = useCallback(() => {
