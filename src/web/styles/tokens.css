@@ -4,39 +4,39 @@
  * This file defines all CSS custom properties (design tokens) for the Bush design system.
  * These tokens are the single source of truth for colors, typography, spacing, etc.
  *
- * Dark theme is the default (dark-first approach).
- * Light theme overrides are applied via [data-theme="light"] selector.
+ * Light theme is the CSS default (in :root).
+ * Dark theme is applied via the `.dark` class on <html>.
  *
  * Reference: specs/20-design-foundations.md
  */
 
 /* ============================================
-   DARK THEME (Default)
+   LIGHT THEME (Default)
    ============================================ */
 :root {
   /* ----------------------------------------
      COLOR SYSTEM - SURFACES
      ---------------------------------------- */
-  --surface-0: #09090b; /* Deepest background (sidebar rail, inset areas) */
-  --surface-1: #111113; /* Page background */
-  --surface-2: #18181b; /* Cards, panels, elevated surfaces */
-  --surface-3: #27272a; /* Hover states, active backgrounds */
-  --surface-4: #3f3f46; /* Active/pressed states */
+  --surface-0: #ffffff; /* Deepest background (sidebar rail, inset areas) */
+  --surface-1: #fafafa; /* Page background */
+  --surface-2: #f4f4f5; /* Cards, panels, elevated surfaces */
+  --surface-3: #e4e4e7; /* Hover states, active backgrounds */
+  --surface-4: #d4d4d8; /* Active/pressed states */
 
   /* ----------------------------------------
      COLOR SYSTEM - BORDERS
      ---------------------------------------- */
-  --border-default: #27272a;
-  --border-hover: #3f3f46;
-  --border-active: #52525b;
+  --border-default: #e4e4e7;
+  --border-hover: #d4d4d8;
+  --border-active: #a1a1aa;
 
   /* ----------------------------------------
      COLOR SYSTEM - TEXT
      ---------------------------------------- */
-  --text-primary: #fafafa; /* Headings, primary content */
-  --text-secondary: #a1a1aa; /* Descriptions, supporting text */
-  --text-muted: #71717a; /* Placeholders, disabled, timestamps */
-  --text-inverse: #18181b; /* Text on accent backgrounds */
+  --text-primary: #18181b; /* Headings, primary content */
+  --text-secondary: #52525b; /* Descriptions, supporting text */
+  --text-muted: #a1a1aa; /* Placeholders, disabled, timestamps */
+  --text-inverse: #fafafa; /* Text on accent backgrounds */
 
   /* ----------------------------------------
      COLOR SYSTEM - ACCENT (Orange)
@@ -138,11 +138,11 @@
   /* ----------------------------------------
      SHADOWS
      ---------------------------------------- */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
-  --shadow-accent: 0 0 12px var(--accent-glow);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-accent: 0 0 8px var(--accent-glow);
 
   /* ----------------------------------------
      MOTION - DURATIONS
@@ -190,40 +190,33 @@
 }
 
 /* ============================================
-   LIGHT THEME (User-toggled)
+   DARK THEME (Applied via .dark class on <html>)
    ============================================ */
-[data-theme="light"] {
+.dark {
   /* Surfaces */
-  --surface-0: #ffffff;
-  --surface-1: #fafafa;
-  --surface-2: #f4f4f5;
-  --surface-3: #e4e4e7;
-  --surface-4: #d4d4d8;
+  --surface-0: #09090b;
+  --surface-1: #111113;
+  --surface-2: #18181b;
+  --surface-3: #27272a;
+  --surface-4: #3f3f46;
 
   /* Borders */
-  --border-default: #e4e4e7;
-  --border-hover: #d4d4d8;
-  --border-active: #a1a1aa;
+  --border-default: #27272a;
+  --border-hover: #3f3f46;
+  --border-active: #52525b;
 
   /* Text */
-  --text-primary: #18181b;
-  --text-secondary: #52525b;
-  --text-muted: #a1a1aa;
-  --text-inverse: #fafafa;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-inverse: #18181b;
 
-  /* Accent - Same across themes */
-  --accent: #ff4017;
-  --accent-hover: #e63a14;
-  --accent-active: #cc3311;
-  --accent-muted: rgba(255, 64, 23, 0.1);
-  --accent-glow: rgba(255, 64, 23, 0.2);
-
-  /* Shadows - Lighter in light mode */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
-  --shadow-accent: 0 0 8px var(--accent-glow);
+  /* Shadows - Heavier in dark mode */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 0 12px var(--accent-glow);
 }
 
 /* ============================================

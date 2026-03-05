@@ -54,6 +54,13 @@
   --color-accent-glow: var(--accent-glow);
 
   /* ----------------------------------------
+     COLORS - BUSH BRAND (Custom accent)
+     ---------------------------------------- */
+  --color-bush-500: #ff4017;
+  --color-bush-600: #e63a14;
+  --color-bush-700: #cc3311;
+
+  /* ----------------------------------------
      COLORS - STATUS
      ---------------------------------------- */
   --color-success: var(--status-success);

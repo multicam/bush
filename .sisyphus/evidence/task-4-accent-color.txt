@@ -1,0 +1,33 @@
+TASK 4 EVIDENCE — Token system bridge + accent color
+=====================================================
+Date: 2026-03-06
+
+VERIFICATION RESULTS
+--------------------
+1. grep -n "data-theme" src/web/styles/tokens.css → ZERO results (PASS)
+2. grep -n "bush-500" src/web/styles/theme.css → line 59: --color-bush-500: #ff4017 (PASS)
+3. grep -n "bush" src/web/components/ui/button.tsx → lines 158-159 (PASS)
+4. .dark selector added at tokens.css line 195 (PASS)
+5. [data-viewer] block preserved at tokens.css line 227 (PASS)
+6. @media (prefers-reduced-motion) preserved at tokens.css line 246 (PASS)
+7. npx tsc --noEmit → 0 errors (PASS)
+
+CHANGES MADE
+------------
+src/web/styles/tokens.css:
+  - :root now contains LIGHT theme values (surfaces, borders, text)
+  - .dark class now contains DARK theme values + heavier shadows
+  - [data-theme="light"] selector REMOVED
+  - All non-color tokens (typography, spacing, radius, motion, z-index, layout) kept in :root
+  - [data-viewer] block preserved exactly
+  - @media (prefers-reduced-motion) block preserved exactly
+
+src/web/styles/theme.css:
+  - Added COLORS - BUSH BRAND section after COLORS - ACCENT
+  - --color-bush-500: #ff4017
+  - --color-bush-600: #e63a14
+  - --color-bush-700: #cc3311
+
+src/web/components/ui/button.tsx:
+  - Added 'bush' entry to styles.colors after 'rose'
+  - Uses --color-bush-500 / --color-bush-600 from theme.css
