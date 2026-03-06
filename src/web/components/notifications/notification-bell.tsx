@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Bell } from "lucide-react";
+import { BellIcon } from "@/web/lib/icons";
 import { Badge } from "@/web/components/ui";
 import type { NotificationBellProps } from "./types";
 
@@ -28,17 +28,18 @@ export function NotificationBell({
         transition-colors
         ${isOpen ? "bg-surface-3" : ""}
         ${isLoading ? "opacity-50" : ""}
-      `.replace(/\s+/g, " ").trim()}
+      `
+        .replace(/\s+/g, " ")
+        .trim()}
       aria-hidden="true"
     >
-      <Bell
+      <BellIcon
         className="w-5 h-5 text-secondary transition-colors group-hover:text-primary"
         aria-hidden="true"
       />
       {showBadge && (
         <Badge
-          variant="error"
-          size="sm"
+          color="red"
           className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[0.625rem] px-1"
         >
           {displayCount}

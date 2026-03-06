@@ -145,7 +145,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
         )}
         {share.passphrase && (
           <span className="text-sm opacity-70" title="Password protected">
-            <Lock className="w-4 h-4" />
+            <LockClosedIcon className="w-4 h-4" />
           </span>
         )}
         {share.expiresAt && (
@@ -153,7 +153,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
             className="text-sm opacity-70"
             title={`Expires ${new Date(share.expiresAt).toLocaleDateString()}`}
           >
-            <Clock className="w-4 h-4" />
+            <ClockIcon className="w-4 h-4" />
           </span>
         )}
       </div>
@@ -169,14 +169,14 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
           onClick={handleCopyLink}
           title="Copy link"
         >
-          <Copy className="w-3.5 h-3.5" /> Copy Link
+          <ClipboardDocumentIcon className="w-3.5 h-3.5" /> Copy Link
         </button>
         <a
           href={`/shares/${share.id}`}
           className="flex-1 py-2 px-3 text-xs font-medium bg-surface-2 border border-border-default rounded-md text-primary cursor-pointer text-center no-underline transition-colors hover:bg-surface-3 hover:border-accent flex items-center justify-center gap-1.5"
           title="Edit share"
         >
-          <Pencil className="w-3.5 h-3.5" /> Edit
+          <PencilIcon className="w-3.5 h-3.5" /> Edit
         </a>
         <div className="relative">
           <button
@@ -184,7 +184,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
             onClick={() => setShowMenu(!showMenu)}
             title="More options"
           >
-            <MoreVertical className="w-4 h-4" />
+            <EllipsisVerticalIcon className="w-4 h-4" />
           </button>
           {showMenu && (
             <div className="absolute right-0 top-full mt-1 min-w-[140px] bg-surface-1 border border-border-default rounded-md shadow-lg z-[100] overflow-hidden">
@@ -195,7 +195,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
                   onDuplicate?.(share.id);
                 }}
               >
-                <Files className="w-4 h-4" /> Duplicate
+                <DocumentDuplicateIcon className="w-4 h-4" /> Duplicate
               </button>
               <a
                 href={`/s/${share.slug}`}
@@ -204,7 +204,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
                 className="flex items-center gap-2 w-full py-2.5 px-3.5 text-[13px] bg-none border-none text-primary cursor-pointer text-left no-underline transition-colors hover:bg-surface-2"
                 onClick={() => setShowMenu(false)}
               >
-                <ExternalLink className="w-4 h-4" /> Preview
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" /> Preview
               </a>
               <button
                 className="flex items-center gap-2 w-full py-2.5 px-3.5 text-[13px] bg-none border-none text-red-500 cursor-pointer text-left no-underline transition-colors hover:bg-red-500/10"
@@ -213,7 +213,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
                   onDelete?.(share.id);
                 }}
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <TrashIcon className="w-4 h-4" /> Delete
               </button>
             </div>
           )}

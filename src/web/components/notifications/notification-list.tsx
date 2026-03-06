@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Bell, Loader2 } from "lucide-react";
+import { BellIcon, SpinnerIcon } from "@/web/lib/icons";
 import { NotificationItem } from "./notification-item";
 import type { NotificationListProps } from "./types";
 
@@ -20,7 +20,7 @@ export function NotificationList({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-8 gap-2 text-secondary">
-        <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
+        <SpinnerIcon className="w-6 h-6" aria-hidden="true" />
         <span>Loading notifications...</span>
       </div>
     );
@@ -29,11 +29,9 @@ export function NotificationList({
   if (notifications.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 gap-2 text-secondary">
-        <Bell className="text-2xl mb-2" aria-hidden="true" />
+        <BellIcon className="size-6 mb-2" aria-hidden="true" />
         <div className="text-sm font-medium text-primary">No notifications</div>
-        <div className="text-[0.8125rem] text-muted">
-          You&apos;re all caught up!
-        </div>
+        <div className="text-[0.8125rem] text-muted">You&apos;re all caught up!</div>
       </div>
     );
   }

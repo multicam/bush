@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Check, X } from "lucide-react";
+import { CheckIcon, XMarkIcon } from "@/web/lib/icons";
 import { NOTIFICATION_ICONS, formatRelativeTime, type NotificationItemProps } from "./types";
 
 export function NotificationItem({
@@ -37,7 +37,9 @@ export function NotificationItem({
         flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-border-default last:border-b-0
         hover:bg-surface-2
         ${!notification.read ? "bg-[rgba(0,102,255,0.05)] hover:bg-[rgba(0,102,255,0.1)]" : ""}
-      `.replace(/\s+/g, " ").trim()}
+      `
+        .replace(/\s+/g, " ")
+        .trim()}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -55,9 +57,7 @@ export function NotificationItem({
             {notification.body}
           </div>
         )}
-        <div className="text-xs text-muted mt-1">
-          {formatRelativeTime(notification.createdAt)}
-        </div>
+        <div className="text-xs text-muted mt-1">{formatRelativeTime(notification.createdAt)}</div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {!notification.read && (
@@ -67,7 +67,7 @@ export function NotificationItem({
             title="Mark as read"
             aria-label="Mark as read"
           >
-            <Check className="w-3.5 h-3.5" aria-hidden="true" />
+            <CheckIcon className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         )}
         <button
@@ -76,7 +76,7 @@ export function NotificationItem({
           title="Delete"
           aria-label="Delete notification"
         >
-          <X className="w-3.5 h-3.5" aria-hidden="true" />
+          <XMarkIcon className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>

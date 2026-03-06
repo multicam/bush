@@ -8,7 +8,13 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+} from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 
 export type ToastType = "success" | "error" | "warning" | "info";
@@ -100,10 +106,8 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {container && createPortal(
-        <ToastContainer toasts={toasts} removeToast={removeToast} />,
-        container
-      )}
+      {container &&
+        createPortal(<ToastContainer toasts={toasts} removeToast={removeToast} />, container)}
     </ToastContext.Provider>
   );
 }
@@ -204,7 +208,7 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
         )}
         aria-label="Dismiss notification"
       >
-        <X className="size-4" />
+        <XMarkIcon className="size-4" />
       </button>
     </div>
   );

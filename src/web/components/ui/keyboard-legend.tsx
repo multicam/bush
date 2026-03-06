@@ -10,7 +10,7 @@
 
 import React, { useEffect, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
-import { Keyboard, X } from "lucide-react";
+import { Squares2X2Icon, XMarkIcon } from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 
 /** Keyboard shortcut definition */
@@ -292,7 +292,7 @@ export function KeyboardLegend({
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border-default">
           <div className="flex items-center gap-3">
-            <Keyboard className="w-5 h-5 text-muted" />
+            <Squares2X2Icon className="w-5 h-5 text-muted" />
             <h2 className="text-lg font-semibold text-primary m-0">Keyboard Shortcuts</h2>
           </div>
           <button
@@ -308,7 +308,7 @@ export function KeyboardLegend({
             onClick={() => setOpen(false)}
             aria-label="Close keyboard legend"
           >
-            <X className="size-5" />
+            <XMarkIcon className="size-5" />
           </button>
         </header>
 
