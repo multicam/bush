@@ -1,6 +1,6 @@
 # Design System: Components & Patterns
 
-**Status**: Spec complete, implementation pending
+**Status**: Updated — Catalyst UI Kit migration complete
 **Audience**: Future you. This is a reference doc, not a tutorial.
 
 ---
@@ -8,6 +8,14 @@
 ## Overview
 
 This spec covers all interactive components, UI patterns, keyboard shortcuts, and page-level treatments in the Bush design system. Every component here is built on the token foundations defined in `20-design-foundations.md` — colors, spacing, radius, shadows, motion durations, and easings are referenced by name, not by raw value. Read the foundations spec first.
+
+**Component library**: [Catalyst UI Kit](https://catalyst.tailwindui.com/) (Tailwind Labs) — 27 TypeScript components in `src/web/components/ui/`, backed by Headless UI and styled with Tailwind v4. Plus 5 Bush custom components kept from the pre-Catalyst codebase (Toast, Tooltip, Skeleton, KeyboardLegend, Spinner).
+
+**Import all components from the barrel**:
+
+```tsx
+import { Button, Dialog, DialogTitle, Field, Input, Badge, Sidebar } from "@/web/components/ui";
+```
 
 ---
 
@@ -17,82 +25,178 @@ This spec covers all interactive components, UI patterns, keyboard shortcuts, an
 
 #### Button
 
-| Variant | Background | Text | Border | Usage |
-|---------|-----------|------|--------|-------|
-| `primary` | `--accent` | `--text-inverse` | none | Main CTAs |
-| `secondary` | `transparent` | `--text-primary` | `--border-default` | Secondary actions |
-| `ghost` | `transparent` | `--text-secondary` | none | Tertiary, toolbar actions |
-| `danger` | `transparent` | `--status-error` | `--status-error` | Destructive (but remember: undo > confirm) |
+Catalyst `Button` component. No `variant` or `size` prop — use `color`, `outline`, or `plain`.
 
-| Size | Height | Padding (h) | Font | Radius |
-|------|--------|-------------|------|--------|
-| `sm` | 32px | 12px | `body-sm` (13px) | `--radius-sm` |
-| `md` | 36px | 16px | `body` (14px) | `--radius-sm` |
-| `lg` | 40px | 20px | `body` (14px) | `--radius-sm` |
+| Prop      | Values                                                      | Usage                                                     |
+| --------- | ----------------------------------------------------------- | --------------------------------------------------------- |
+| `color`   | `"bush"`, `"red"`, `"zinc"`, `"dark/zinc"`, `"white"`, etc. | Solid colored button                                      |
+| `outline` | `true`                                                      | Outlined button (no `color` prop)                         |
+| `plain`   | `true`                                                      | No border/background — tertiary, toolbar actions          |
+| `loading` | `true`                                                      | Prepends `SpinnerIcon`, disables button, sets `aria-busy` |
+| `href`    | `string`                                                    | Renders as `<Link>` instead of `<button>`                 |
 
-States: hover (background shift), active (darker), disabled (`opacity: 0.5`, no pointer), loading (spinner replaces label, width maintained).
+**Primary action**: `color="bush"` — uses `--color-bush-500: #ff4017`  
+**Destructive**: `color="red"` — use sparingly (prefer undo pattern)  
+**No size prop** — responsive sizing built-in: slightly smaller on `sm:` breakpoint.
 
-Primary button hover: `--accent-hover`. Shadow: `--shadow-accent` on focus.
+States: hover (white overlay), active (darker), disabled (`opacity-50`, no pointer), loading (spinner + `aria-busy`).
+
+Focus: `outline-2 outline-offset-2 outline-blue-500` (Headless UI managed).
+
+```tsx
+import { Button } from '@/web/components/ui'
+
+<Button color="bush">Upload files</Button>
+<Button outline>Cancel</Button>
+<Button plain>Settings</Button>
+<Button color="red">Delete project</Button>
+<Button color="bush" loading>Saving…</Button>
+<Button color="bush" href="/dashboard">Go to dashboard</Button>
+```
 
 ---
 
-#### Input
+#### Input / Field
 
-Single-line text input.
+Catalyst `Input` + `Field` / `Label` / `ErrorMessage` / `Description` pattern (from `fieldset.tsx`). Always wrap `Input` in a `Field` for accessible label association.
 
-| Property | Value |
-|----------|-------|
-| Background | `--surface-2` |
-| Border | `--border-default`, `--border-active` on focus |
-| Text | `--text-primary` |
-| Placeholder | `--text-muted` |
-| Radius | `--radius-sm` |
-| Focus | `--shadow-accent` ring |
-| Heights | Same as button sizes (32/36/40px) |
+```tsx
+import { Field, Label, Input, ErrorMessage, Description } from '@/web/components/ui'
 
-Support: start icon, end icon, error state (border `--status-error`), helper text below.
+<Field>
+  <Label>Email</Label>
+  <Input type="email" name="email" />
+</Field>
+
+<Field>
+  <Label>Password</Label>
+  <Description>Min 8 characters</Description>
+  <Input type="password" name="password" />
+  <ErrorMessage>Password is required</ErrorMessage>
+</Field>
+```
+
+With leading icon (using `InputGroup`):
+
+```tsx
+import { InputGroup, Input } from "@/web/components/ui";
+import { MagnifyingGlassIcon } from "@/web/lib/icons";
+
+<InputGroup>
+  <MagnifyingGlassIcon data-slot="icon" />
+  <Input type="search" placeholder="Search…" />
+</InputGroup>;
+```
+
+`Input` supports all standard HTML input types: `text`, `email`, `password`, `search`, `number`, `tel`, `url`, plus date types.
+
+States: `data-hover` (darker border), `data-invalid` (red border), `data-disabled` (dimmed + locked). Pass `data-invalid` to show error styling; pair with `ErrorMessage` for accessible error text.
 
 ---
 
 #### Select
 
-Native `<select>` with custom styling. Matches input dimensions and styling. Custom chevron icon (`ChevronDown`, `--text-muted`).
+Catalyst `Select` component — wraps native `<select>` with custom styling. Matches `Input` dimensions and styling. Always wrap in `Field` + `Label` like `Input`. Custom chevron icon (`ChevronDownIcon`, `--text-muted`).
+
+```tsx
+import { Field, Label, Select } from "@/web/components/ui";
+
+<Field>
+  <Label>Status</Label>
+  <Select name="status">
+    <option value="active">Active</option>
+    <option value="archived">Archived</option>
+  </Select>
+</Field>;
+```
 
 ---
 
-#### Modal
+#### Dialog
 
-- **Backdrop**: `--surface-0` at `60%` opacity, `backdrop-filter: blur(4px)`
-- **Dialog**: `--surface-2` background, `--radius-lg`, `--shadow-lg`
-- **Sizes**: `sm` (400px), `md` (520px), `lg` (680px), `xl` (860px), `full` (90vw × 90vh)
-- **Animation**: Backdrop fades in. Dialog `scale(0.98)→1` + `opacity 0→1`, `--duration-enter`.
-- **Close**: `X` button top-right + `Escape` key. Focus trapped inside.
+Catalyst `Dialog` component backed by Headless UI. Handles click-outside, `Escape` key, and focus trapping automatically — no manual wiring needed.
+
+**Sizes** (Tailwind `max-w-*`): `xs`, `sm`, `md`, `lg` (default), `xl`, `2xl`, `3xl`, `4xl`, `5xl`
+
+**Anatomy**:
+
+```tsx
+import {
+  Dialog,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogActions,
+  Button,
+} from "@/web/components/ui";
+
+<Dialog open={isOpen} onClose={setIsOpen}>
+  <DialogTitle>Delete project</DialogTitle>
+  <DialogDescription>This action cannot be undone.</DialogDescription>
+  <DialogBody>{/* content */}</DialogBody>
+  <DialogActions>
+    <Button plain onClick={() => setIsOpen(false)}>
+      Cancel
+    </Button>
+    <Button color="red">Delete</Button>
+  </DialogActions>
+</Dialog>;
+```
+
+- **Backdrop**: `zinc-950/25` (light) / `zinc-950/50` (dark), transitions on open/close
+- **Panel**: `bg-white` / `dark:bg-zinc-900`, `rounded-2xl`, `shadow-lg`, `ring-1`
+- **Mobile**: slides up from bottom. **Desktop**: scale + fade transition
+- **Accessibility**: `role="dialog"`, focus trap, `aria-labelledby` via `DialogTitle`
 
 ---
 
-#### Toast (Sonner-style)
+#### Toast (Custom — kept from pre-Catalyst codebase)
 
-- **Position**: Top-center, stacked vertically
+Custom Sonner-style toast — `import { toast } from '@/web/components/ui'`
+
+- **Position**: Top-center, stacked vertically, `--z-toast`
 - **Background**: `--surface-2`, `--border-default` border
 - **Types**: `success` (green left accent), `error` (red), `warning` (amber), `info` (blue), `neutral` (no accent)
-- **Actions**: Optional action buttons ("Undo", "View file") — right-aligned, ghost style
+- **Actions**: Optional action buttons ("Undo", "View file") — right-aligned, `plain` style
 - **Auto-dismiss**: 5s default, pauses on hover. Errors persist until dismissed.
 - **Animation**: Slide down + fade in. Stack shifts smoothly when new toasts arrive.
 - **Max visible**: 3. Older toasts compress into a count badge.
 
 ---
 
-#### Dropdown / Context Menu
+#### Dropdown
 
-- **Background**: `--surface-2`
-- **Border**: `--border-default`, `--radius-md`
-- **Shadow**: `--shadow-md`
-- **Items**: `body-sm` (13px), `--space-2` vertical padding, `--space-3` horizontal
-- **Hover**: `--surface-3` background
-- **Separator**: 1px `--border-default`, `--space-1` margin
-- **Keyboard**: Arrow keys navigate, Enter selects, Escape closes
-- **Icons**: Optional leading icon per item, 16px, `--text-muted`
-- **Destructive items**: `--status-error` text color
+Catalyst `Dropdown` / `DropdownButton` / `DropdownMenu` / `DropdownItem` backed by Headless UI `Menu`. Keyboard navigation (arrows, Enter, Escape) handled automatically.
+
+```tsx
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownMenu,
+  DropdownItem,
+  DropdownLabel,
+  DropdownSeparator,
+  DropdownSection,
+} from "@/web/components/ui";
+import { EllipsisHorizontalIcon } from "@/web/lib/icons";
+
+<Dropdown>
+  <DropdownButton plain>
+    <EllipsisHorizontalIcon />
+  </DropdownButton>
+  <DropdownMenu anchor="bottom end">
+    <DropdownItem href="/settings">Settings</DropdownItem>
+    <DropdownSeparator />
+    <DropdownItem onClick={handleDelete}>Delete</DropdownItem>
+  </DropdownMenu>
+</Dropdown>;
+```
+
+- **Background**: `bg-white/75 backdrop-blur-xl` / `dark:bg-zinc-800/75`
+- **Shadow**: `shadow-lg ring-1 ring-zinc-950/10`
+- **`anchor` prop**: `"bottom"`, `"bottom start"`, `"bottom end"`, `"top"`, etc.
+- **Destructive items**: Add `className="text-red-600 dark:text-red-500"` to `DropdownItem`
+- **Leading icons**: Place inside `DropdownItem` with `data-slot="icon"`
 
 ---
 
@@ -110,23 +214,37 @@ Native `<select>` with custom styling. Matches input dimensions and styling. Cus
 
 #### Badge
 
-| Variant | Background | Text |
-|---------|-----------|------|
-| `default` | `--surface-3` | `--text-secondary` |
-| `accent` | `--accent-muted` | `--accent` |
-| `success` | `rgba(34,197,94,0.15)` | `--status-success` |
-| `warning` | `rgba(245,158,11,0.15)` | `--status-warning` |
-| `error` | `rgba(239,68,68,0.15)` | `--status-error` |
+Catalyst `Badge` with `color` prop (Tailwind color name). No `variant` prop. Optionally interactive via `BadgeButton`.
 
-Size: `caption` (12px), `--radius-full`, horizontal padding `--space-2`, height 22px.
+| Scenario                       | Color prop         |
+| ------------------------------ | ------------------ |
+| Neutral / default              | `"zinc"` (default) |
+| Success / ready / approved     | `"green"`          |
+| Warning / pending / processing | `"amber"`          |
+| Error / failed                 | `"red"`            |
+| Info / active                  | `"blue"`           |
+| Bush accent highlight          | `"orange"`         |
+
+```tsx
+import { Badge, BadgeButton } from '@/web/components/ui'
+
+<Badge color="green">Approved</Badge>
+<Badge color="amber">Processing</Badge>
+<Badge color="red">Failed</Badge>
+<BadgeButton color="zinc" href="/status">Draft</BadgeButton>
+```
+
+Size: `text-sm/5 sm:text-xs/5`, `rounded-md`, `px-1.5 py-0.5`.
 
 ---
 
 #### Avatar
 
+Catalyst `Avatar` component.
+
 - **Shape**: Rounded square (`--radius-md`)
-- **Sizes**: `sm` (28px), `md` (36px), `lg` (44px), `xl` (56px)
-- **Fallback**: Geometric pattern + initials (Figma-style), color derived from user ID hash
+- **Sizes**: `sm` (28px), `md` (36px), `lg` (44px), `xl` (56px) — set via `className="size-8"` etc.
+- **Fallback**: Initials or geometric pattern — provide `initials` prop or `src` for image
 - **Presence dot**: 8px circle, bottom-right, border `2px --surface-1` (to cut out from background)
   - Online: `--status-success`
   - Away: `--status-warning`
@@ -134,10 +252,76 @@ Size: `caption` (12px), `--radius-full`, horizontal padding `--space-2`, height 
 
 ---
 
+#### Sidebar
+
+Catalyst sidebar components from `sidebar.tsx`. Used as the app's primary navigation shell.
+
+**Components**: `Sidebar`, `SidebarHeader`, `SidebarBody`, `SidebarFooter`, `SidebarSection`, `SidebarItem`, `SidebarLabel`, `SidebarHeading`, `SidebarDivider`, `SidebarSpacer`
+
+**Layout shell**: `SidebarLayout` from `sidebar-layout.tsx` — positions sidebar alongside main content.
+
+```tsx
+import {
+  SidebarLayout,
+  Sidebar,
+  SidebarHeader,
+  SidebarBody,
+  SidebarFooter,
+  SidebarSection,
+  SidebarItem,
+  SidebarLabel,
+  SidebarHeading,
+} from "@/web/components/ui";
+import { HomeIcon, BriefcaseIcon } from "@/web/lib/icons";
+
+<SidebarLayout
+  sidebar={
+    <Sidebar>
+      <SidebarHeader>{/* Logo, workspace switcher */}</SidebarHeader>
+      <SidebarBody>
+        <SidebarSection>
+          <SidebarHeading>Navigation</SidebarHeading>
+          <SidebarItem href="/dashboard" current={pathname === "/dashboard"}>
+            <HomeIcon />
+            <SidebarLabel>Dashboard</SidebarLabel>
+          </SidebarItem>
+          <SidebarItem href="/projects" current={pathname.startsWith("/projects")}>
+            <BriefcaseIcon />
+            <SidebarLabel>Projects</SidebarLabel>
+          </SidebarItem>
+        </SidebarSection>
+      </SidebarBody>
+      <SidebarFooter>{/* User avatar, theme toggle */}</SidebarFooter>
+    </Sidebar>
+  }
+>
+  {children}
+</SidebarLayout>;
+```
+
+- `current` prop on `SidebarItem` highlights the active route
+- `SidebarItem` renders as `<Link>` when `href` is provided, `<button>` otherwise
+- Icons inside `SidebarItem` use `20/solid` Heroicons (via `@/web/lib/icons`)
+
+---
+
 #### Spinner
 
-Lucide `Loader2` icon with CSS `rotate` animation, `1s linear infinite`.
-Sizes match icon sizes: 16px, 20px, 24px. Color: `currentColor`.
+Two paths depending on context:
+
+1. **`SpinnerIcon`** from `@/web/lib/icons` — custom inline SVG with `animate-spin`. For standalone use or inside Catalyst's `data-slot="icon"` pattern.
+2. **`Spinner`** from `@/web/components/ui` — thin wrapper for use outside button context.
+
+```tsx
+import { SpinnerIcon } from '@/web/lib/icons'
+
+<SpinnerIcon className="size-4" />   {/* 16px */}
+<SpinnerIcon className="size-5" />   {/* 20px */}
+<SpinnerIcon className="size-6" />   {/* 24px */}
+<SpinnerIcon data-slot="icon" />     {/* Catalyst icon slot */}
+```
+
+Color: `currentColor`. The `Button` component uses `SpinnerIcon` internally when `loading={true}`.
 
 ---
 
@@ -148,7 +332,7 @@ Sizes match icon sizes: 16px, 20px, 24px. Color: `currentColor`.
 - **Hover**: `--surface-2` background
 - **Selection**: Checkbox column appears on hover (first column). Selected rows get `--accent-muted` background.
 - **Actions**: Via context menu (right-click or kebab icon on hover)
-- **Sort**: Click column header. Arrow indicator (`ChevronUp`/`ChevronDown`), `--text-muted`
+- **Sort**: Click column header. Arrow indicator (`ChevronUpIcon` / `ChevronDownIcon` from `@/web/lib/icons`), `--text-muted`
 - **Density**: Dense mode by default (tables are inherently data-heavy)
 
 ---
@@ -183,55 +367,55 @@ Sizes match icon sizes: 16px, 20px, 24px. Color: `currentColor`.
 
 #### Global
 
-| Key | Action |
-|-----|--------|
-| `Cmd/Ctrl + K` | Command palette |
-| `?` | Keyboard legend |
-| `Cmd/Ctrl + /` | Toggle sidebar |
+| Key                    | Action               |
+| ---------------------- | -------------------- |
+| `Cmd/Ctrl + K`         | Command palette      |
+| `?`                    | Keyboard legend      |
+| `Cmd/Ctrl + /`         | Toggle sidebar       |
 | `Cmd/Ctrl + Shift + U` | Toggle upload drawer |
 
 #### Navigation
 
-| Key | Action |
-|-----|--------|
-| `G then D` | Go to Dashboard |
-| `G then P` | Go to Projects |
-| `G then S` | Go to Shares |
+| Key        | Action              |
+| ---------- | ------------------- |
+| `G then D` | Go to Dashboard     |
+| `G then P` | Go to Projects      |
+| `G then S` | Go to Shares        |
 | `G then N` | Go to Notifications |
 
 #### Asset Grid
 
-| Key | Action |
-|-----|--------|
-| `J` / `K` | Next / previous item |
-| `Enter` | Open selected item |
-| `Space` | Quick preview |
-| `Cmd/Ctrl + A` | Select all |
-| `Delete` / `Backspace` | Delete selected (with undo toast) |
-| `N` | New folder |
-| `U` | Upload files |
-| `1` / `2` / `3` | Density: compact / default / expanded |
+| Key                    | Action                                |
+| ---------------------- | ------------------------------------- |
+| `J` / `K`              | Next / previous item                  |
+| `Enter`                | Open selected item                    |
+| `Space`                | Quick preview                         |
+| `Cmd/Ctrl + A`         | Select all                            |
+| `Delete` / `Backspace` | Delete selected (with undo toast)     |
+| `N`                    | New folder                            |
+| `U`                    | Upload files                          |
+| `1` / `2` / `3`        | Density: compact / default / expanded |
 
 #### Viewer
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play / pause |
-| `←` / `→` | Seek -5s / +5s |
+| Key               | Action                   |
+| ----------------- | ------------------------ |
+| `Space`           | Play / pause             |
+| `←` / `→`         | Seek -5s / +5s           |
 | `Shift + ←` / `→` | Seek -1 frame / +1 frame |
-| `↑` / `↓` | Volume up / down |
-| `M` | Mute / unmute |
-| `F` | Fullscreen |
-| `C` | Toggle comment panel |
-| `Escape` | Close viewer |
-| `[` / `]` | Previous / next file |
+| `↑` / `↓`         | Volume up / down         |
+| `M`               | Mute / unmute            |
+| `F`               | Fullscreen               |
+| `C`               | Toggle comment panel     |
+| `Escape`          | Close viewer             |
+| `[` / `]`         | Previous / next file     |
 
 #### Comments
 
-| Key | Action |
-|-----|--------|
-| `Cmd/Ctrl + Enter` | Submit comment |
-| `Escape` | Cancel reply / discard draft |
+| Key                | Action                       |
+| ------------------ | ---------------------------- |
+| `Cmd/Ctrl + Enter` | Submit comment               |
+| `Escape`           | Cancel reply / discard draft |
 
 ---
 
@@ -241,9 +425,9 @@ Sizes match icon sizes: 16px, 20px, 24px. Color: `currentColor`.
 
 Minimal. Three elements only:
 
-1. **Icon**: Relevant Lucide icon, 48px, `--text-muted`
+1. **Icon**: Relevant Heroicons 24/outline icon, 48px (`size-12`), `text-text-muted`. Import from `@/web/lib/icons`.
 2. **Text**: One sentence, `body` size, `--text-secondary`. Conversational. ("No files here yet.")
-3. **Action**: Single `primary` or `secondary` button. ("Upload files")
+3. **Action**: Single `color="bush"` or `outline` button. ("Upload files")
 
 No illustrations. No multi-paragraph explanations.
 
@@ -265,11 +449,11 @@ No illustrations. No multi-paragraph explanations.
 
 Conversational, not clinical.
 
-| Context | Message style | Example |
-|---------|--------------|---------|
-| Inline field error | Red text below input, `caption` size | "That email's already taken" |
-| Toast error | `error` toast, persists until dismissed | "Upload failed. Retry?" (with Retry action) |
-| Full-page error | Empty state pattern with error icon | "Something broke. Try refreshing." |
+| Context            | Message style                           | Example                                     |
+| ------------------ | --------------------------------------- | ------------------------------------------- |
+| Inline field error | Red text below input, `caption` size    | "That email's already taken"                |
+| Toast error        | `error` toast, persists until dismissed | "Upload failed. Retry?" (with Retry action) |
+| Full-page error    | Empty state pattern with error icon     | "Something broke. Try refreshing."          |
 
 ---
 
@@ -278,6 +462,7 @@ Conversational, not clinical.
 **No confirmation modals.** Use optimistic action + undo toast.
 
 Flow:
+
 1. User clicks delete
 2. Item immediately removed from UI (fade-out animation)
 3. Toast appears: "Deleted [item name]. Undo?" — 8s timeout
@@ -290,7 +475,7 @@ Exception: Irreversible actions with high blast radius (delete workspace, remove
 
 #### Drag and Drop
 
-- **Drag handle**: `GripVertical` icon, hidden by default, fades in on hover (`--text-muted`)
+- **Drag handle**: `GripIcon` from `@/web/lib/icons` (custom 2×3 dot SVG), hidden by default, fades in on hover (`--text-muted`). Apply `.drag-handle` CSS class.
 - **Drag preview**: Semi-transparent clone of the item, slight rotation (2deg), `--shadow-lg`
 - **Drop target**: `--accent-muted` background + dashed `--accent` border on valid targets
 - **Invalid target**: No visual change (don't show red — just don't show green)
@@ -315,14 +500,14 @@ Share pages (`/s/[slug]`) are Bush's public face. They follow a **different** vi
 
 #### Differences from App
 
-| Property | App | Share Page |
-|----------|-----|-----------|
-| Default theme | Dark | Light |
-| Typography | Functional (14px body) | Editorial (`display` headings, 16px body) |
-| Spacing | Airy/dense contextual | Generous throughout |
-| Branding | Bush nav | Bush logo + sharer's logo |
-| Viewer | Dark always | Dark always (consistent) |
-| Target | Desktop | Responsive (desktop + tablet + phone) |
+| Property      | App                    | Share Page                                |
+| ------------- | ---------------------- | ----------------------------------------- |
+| Default theme | Dark                   | Light                                     |
+| Typography    | Functional (14px body) | Editorial (`display` headings, 16px body) |
+| Spacing       | Airy/dense contextual  | Generous throughout                       |
+| Branding      | Bush nav               | Bush logo + sharer's logo                 |
+| Viewer        | Dark always            | Dark always (consistent)                  |
+| Target        | Desktop                | Responsive (desktop + tablet + phone)     |
 
 #### Layout
 
@@ -345,15 +530,16 @@ Share pages (`/s/[slug]`) are Bush's public face. They follow a **different** vi
 
 #### Responsive Breakpoints (share pages only)
 
-| Breakpoint | Width | Adjustments |
-|------------|-------|-------------|
-| Desktop | ≥1024px | Full layout, side-by-side where applicable |
-| Tablet | 768–1023px | Single column, reduced spacing |
-| Mobile | <768px | Stacked layout, full-width assets, collapsible comments |
+| Breakpoint | Width      | Adjustments                                             |
+| ---------- | ---------- | ------------------------------------------------------- |
+| Desktop    | ≥1024px    | Full layout, side-by-side where applicable              |
+| Tablet     | 768–1023px | Single column, reduced spacing                          |
+| Mobile     | <768px     | Stacked layout, full-width assets, collapsible comments |
 
 #### Password Protection
 
 If share requires a password, show a centered card with:
+
 - Bush logo
 - Sharer's logo
 - "This share is password protected"
