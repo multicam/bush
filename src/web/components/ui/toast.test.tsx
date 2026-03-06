@@ -1,9 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ToastProvider, useToast } from "./toast";
+import { ToastProvider, useToast, type Toast } from "./toast";
 
-function ToastTrigger({ onMount }: { onMount?: (ctx: ReturnType<typeof useToast>) => void }) {
+type ToastCtx = {
+  toasts: Toast[];
+  addToast: (toast: Omit<Toast, "id">) => string;
+  removeToast: (id: string) => void;
+  removeAllToasts: () => void;
+};
+
+function ToastTrigger({ onMount }: { onMount?: (ctx: ToastCtx) => void }) {
   const ctx = useToast();
   if (onMount) onMount(ctx);
   return null;
