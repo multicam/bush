@@ -6,12 +6,8 @@
  */
 "use client";
 
-import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import type {
-  AnnotationCanvasProps,
-  AnnotationShape,
-  Point,
-} from "./types";
+import { useRef, useState, useCallback, useEffect } from "react";
+import type { AnnotationCanvasProps, AnnotationShape, Point } from "./types";
 
 /**
  * Normalize point coordinates relative to canvas size
@@ -36,7 +32,12 @@ function denormalizePoint(point: Point, width: number, height: number): Point {
 /**
  * Calculate shape bounds from points (for freehand)
  */
-function getBoundsFromPoints(points: Point[]): { x: number; y: number; width: number; height: number } {
+function getBoundsFromPoints(points: Point[]): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   const minX = Math.min(...xs);
@@ -422,7 +423,8 @@ export function AnnotationCanvas({
     const currentCurrentPoint = currentPointRef.current;
     const currentFreehandPoints = freehandPointsRef.current;
 
-    if (!currentIsDrawing || !currentStartPoint || !currentCurrentPoint || readOnly || !isActive) return;
+    if (!currentIsDrawing || !currentStartPoint || !currentCurrentPoint || readOnly || !isActive)
+      return;
 
     const normalizedStart = normalizePoint(currentStartPoint, width, height);
     const normalizedEnd = normalizePoint(currentCurrentPoint, width, height);
@@ -489,19 +491,16 @@ export function AnnotationCanvas({
   ]);
 
   // Get point from touch event
-  const getTouchPoint = useCallback(
-    (e: React.TouchEvent<HTMLCanvasElement>): Point => {
-      const canvas = canvasRef.current;
-      if (!canvas) return { x: 0, y: 0 };
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top,
-      };
-    },
-    []
-  );
+  const getTouchPoint = useCallback((e: React.TouchEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }, []);
 
   // Handle touch start - start drawing (mobile support)
   const handleTouchStart = useCallback(
@@ -540,7 +539,14 @@ export function AnnotationCanvas({
   const handleTouchMove = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
       // Read from refs to avoid dependency on rapidly changing state
-      if (!isDrawingRef.current || !startPointRef.current || readOnly || !isActive || e.touches.length !== 1) return;
+      if (
+        !isDrawingRef.current ||
+        !startPointRef.current ||
+        readOnly ||
+        !isActive ||
+        e.touches.length !== 1
+      )
+        return;
 
       e.preventDefault();
 
@@ -606,7 +612,14 @@ export function AnnotationCanvas({
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
       // Read from refs to avoid dependency on rapidly changing state
-      if (!isDrawingRef.current || !startPointRef.current || !currentPointRef.current || readOnly || !isActive) return;
+      if (
+        !isDrawingRef.current ||
+        !startPointRef.current ||
+        !currentPointRef.current ||
+        readOnly ||
+        !isActive
+      )
+        return;
 
       e.preventDefault();
       handleMouseUp();

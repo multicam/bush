@@ -323,3 +323,17 @@ Rewrote `src/web/components/ui/index.ts` to export all 27 Catalyst components + 
 **Input Field composition:** Catalyst Input has NO `label`, `error`, `helperText` props — these are in the old custom API. Use `<Field><Label/><Input/><ErrorMessage/></Field>` composition from `fieldset.tsx`. ErrorMessage has class `text-red-600` (queryable in JSDOM).
 
 **SpinnerIcon loading test:** Query `container.querySelector("svg.animate-spin")` — SpinnerIcon is `aria-hidden="true"` so `getByRole` won't find it. The class `animate-spin` is the reliable selector.
+
+## [2026-03-06] Task: 17 — Design Specs
+
+**Spec update approach:** When updating spec files after a migration, read the actual source files (components, tokens, icons) to get accurate API docs — don't guess from memory. The Catalyst APIs differ from what was spec'd originally in key ways: no `variant` prop on Button/Badge, no `size` prop on Button, no standalone `<Modal>` (it's `<Dialog>` with sub-components).
+
+**Dark mode in tokens.css:** The final implementation uses `:root` for LIGHT (not dark) as CSS default, with `.dark` class overriding to dark values. This is the opposite of what spec 20 originally said (which had `:root` as dark). The spec incorrectly described dark values in `:root` — actual `tokens.css` has light values in `:root`.
+
+**`@custom-variant dark` placement:** Declared in `theme.css` (not `tokens.css`) — `@custom-variant dark (&:where(.dark, .dark *))`. This makes Tailwind's `dark:` prefix respond to class presence, not `prefers-color-scheme`.
+
+**Bush accent in Catalyst:** The `--color-bush-500/600/700` palette lives in `@theme` in `theme.css` as a concrete color scale (not a `var()` reference to a semantic token). This is why `color="bush"` works in Button/Badge.
+
+**Barrel export is complete:** All 27 Catalyst components + 5 custom (Toast, Tooltip, Skeleton, KeyboardLegend, Spinner) export from `src/web/components/ui/index.ts`. Single import path `@/web/components/ui` for everything.
+
+**Icons central export rule:** `@/web/lib/icons` is the single source of truth — re-exports from `@heroicons/react/{16,20,24}/...` plus two custom SVG components (SpinnerIcon, GripIcon). Feature components never import heroicons directly.

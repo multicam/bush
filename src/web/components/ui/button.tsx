@@ -182,7 +182,7 @@ export const Button = forwardRef(function Button(
   { color, outline, plain, className, children, loading, ...props }: ButtonProps,
   ref: React.ForwardedRef<HTMLElement>
 ) {
-  let classes = clsx(
+  const classes = clsx(
     className,
     styles.base,
     outline
@@ -192,7 +192,7 @@ export const Button = forwardRef(function Button(
         : clsx(styles.solid, styles.colors[color ?? "dark/zinc"])
   );
 
-  let content = (
+  const content = (
     <>
       {loading && <SpinnerIcon data-slot="icon" className="size-4" />}
       <TouchTarget>{children}</TouchTarget>
@@ -200,7 +200,7 @@ export const Button = forwardRef(function Button(
   );
 
   if ("href" in props && typeof props.href === "string") {
-    let linkProps = props as ButtonAsLinkProps;
+    const linkProps = props as ButtonAsLinkProps;
 
     return (
       <Link
@@ -214,7 +214,7 @@ export const Button = forwardRef(function Button(
     );
   }
 
-  let buttonProps = props as ButtonAsButtonProps;
+  const buttonProps = props as ButtonAsButtonProps;
 
   return (
     <Headless.Button
