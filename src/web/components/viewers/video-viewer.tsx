@@ -7,23 +7,31 @@
  */
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  StepBack,
-  StepForward,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Minimize2,
-  X,
-  ClosedCaption,
-  AlertCircle,
-  Loader2,
-} from "lucide-react";
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  PlayIcon,
+  PauseIcon,
+  BackwardIcon,
+  ForwardIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  ArrowsPointingOutIcon,
+  ArrowsRightLeftIcon,
+  XMarkIcon,
+  ChatBubbleLeftIcon,
+  ExclamationCircleIcon,
+  SpinnerIcon,
+} from "@/web/lib/icons";
 import { CaptionOverlay, type TranscriptWord } from "../transcript";
 
 /** Comment marker for timeline */
@@ -212,22 +220,27 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   // HLS.js instance ref
   const hlsRef = useRef<import("hls.js").default | null>(null);
   // HLS quality levels for resolution switcher
-  const [hlsLevels, setHlsLevels] = useState<Array<{ label: string; width: number; height: number; index: number }>>([]);
+  const [hlsLevels, setHlsLevels] = useState<
+    Array<{ label: string; width: number; height: number; index: number }>
+  >([]);
 
   // Handle resolution change — wire to hls.js when available
-  const handleResolutionChange = useCallback((value: string) => {
-    setCurrentResolution(value);
-    if (hlsRef.current) {
-      if (value === "auto") {
-        hlsRef.current.currentLevel = -1; // ABR auto
-      } else {
-        const level = hlsLevels.find((l) => l.label === value);
-        if (level) {
-          hlsRef.current.currentLevel = level.index;
+  const handleResolutionChange = useCallback(
+    (value: string) => {
+      setCurrentResolution(value);
+      if (hlsRef.current) {
+        if (value === "auto") {
+          hlsRef.current.currentLevel = -1; // ABR auto
+        } else {
+          const level = hlsLevels.find((l) => l.label === value);
+          if (level) {
+            hlsRef.current.currentLevel = level.index;
+          }
         }
       }
-    }
-  }, [hlsLevels]);
+    },
+    [hlsLevels]
+  );
 
   const duration = videoDuration || propDuration || 0;
 
@@ -465,29 +478,38 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
     }
   }, [isPlaying]);
 
-  const seek = useCallback((time: number) => {
-    const video = videoRef.current;
-    if (!video) return;
+  const seek = useCallback(
+    (time: number) => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    video.currentTime = Math.max(0, Math.min(time, duration));
-  }, [duration]);
+      video.currentTime = Math.max(0, Math.min(time, duration));
+    },
+    [duration]
+  );
 
-  const seekRelative = useCallback((delta: number) => {
-    const video = videoRef.current;
-    if (!video) return;
+  const seekRelative = useCallback(
+    (delta: number) => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    video.currentTime = Math.max(0, Math.min(video.currentTime + delta, duration));
-  }, [duration]);
+      video.currentTime = Math.max(0, Math.min(video.currentTime + delta, duration));
+    },
+    [duration]
+  );
 
   // Frame-by-frame seek (assuming 24fps default)
-  const frameStep = useCallback((direction: "forward" | "backward") => {
-    const video = videoRef.current;
-    if (!video) return;
+  const frameStep = useCallback(
+    (direction: "forward" | "backward") => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    const frameDuration = 1 / (meta?.frameRate || 24);
-    const delta = direction === "forward" ? frameDuration : -frameDuration;
-    video.currentTime = Math.max(0, Math.min(video.currentTime + delta, duration));
-  }, [duration, meta?.frameRate]);
+      const frameDuration = 1 / (meta?.frameRate || 24);
+      const delta = direction === "forward" ? frameDuration : -frameDuration;
+      video.currentTime = Math.max(0, Math.min(video.currentTime + delta, duration));
+    },
+    [duration, meta?.frameRate]
+  );
 
   const handleVolumeChange = useCallback((newVolume: number) => {
     const video = videoRef.current;
@@ -616,30 +638,36 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   }, []);
 
   // Timeline hover for filmstrip preview
-  const handleTimelineHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const timeline = timelineRef.current;
-    if (!timeline || !duration) return;
+  const handleTimelineHover = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const timeline = timelineRef.current;
+      if (!timeline || !duration) return;
 
-    const rect = timeline.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const ratio = x / rect.width;
-    const time = ratio * duration;
+      const rect = timeline.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      const time = ratio * duration;
 
-    setHoveredTime(time);
-    setHoverPosition(x);
-  }, [duration]);
+      setHoveredTime(time);
+      setHoverPosition(x);
+    },
+    [duration]
+  );
 
-  const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const timeline = timelineRef.current;
-    if (!timeline || !duration) return;
+  const handleTimelineClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const timeline = timelineRef.current;
+      if (!timeline || !duration) return;
 
-    const rect = timeline.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const ratio = x / rect.width;
-    const time = ratio * duration;
+      const rect = timeline.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      const time = ratio * duration;
 
-    seek(time);
-  }, [duration, seek]);
+      seek(time);
+    },
+    [duration, seek]
+  );
 
   const handleTimelineLeave = useCallback(() => {
     setHoveredTime(null);
@@ -665,11 +693,14 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
   }, [hoverPosition, containerWidth]);
 
   // Comment marker click
-  const handleCommentClick = useCallback((marker: CommentMarker, e: React.MouseEvent) => {
-    e.stopPropagation();
-    seek(marker.timestamp);
-    onCommentClick?.(marker.id);
-  }, [seek, onCommentClick]);
+  const handleCommentClick = useCallback(
+    (marker: CommentMarker, e: React.MouseEvent) => {
+      e.stopPropagation();
+      seek(marker.timestamp);
+      onCommentClick?.(marker.id);
+    },
+    [seek, onCommentClick]
+  );
 
   // Store transcriptWords in a ref to avoid re-binding keyboard events on every change
   const transcriptWordsRef = useRef(transcriptWords);
@@ -839,9 +870,11 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
   if (error) {
     return (
-      <div className={`relative w-full h-full flex flex-col bg-black select-none overflow-hidden ${className || ""}`}>
+      <div
+        className={`relative w-full h-full flex flex-col bg-black select-none overflow-hidden ${className || ""}`}
+      >
         <div className="flex flex-col items-center justify-center h-full gap-3 text-secondary">
-          <AlertCircle className="w-12 h-12 text-red-600" />
+          <ExclamationCircleIcon className="w-12 h-12 text-red-600" />
           <span className="text-sm">{error}</span>
         </div>
       </div>
@@ -869,7 +902,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       {/* Loading state */}
       {isLoading && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 text-secondary text-sm z-10">
-          <Loader2 className="w-12 h-12 animate-spin text-accent" />
+          <SpinnerIcon className="w-12 h-12 text-accent" />
           <span>Loading video...</span>
         </div>
       )}
@@ -877,15 +910,18 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       {/* Buffering indicator */}
       {isBuffering && !isLoading && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-          <Loader2 className="w-10 h-10 animate-spin text-accent" />
+          <SpinnerIcon className="w-10 h-10 text-accent" />
         </div>
       )}
 
       {/* Play/Pause overlay */}
       {!isPlaying && !isLoading && (
-        <div className="absolute inset-0 bottom-20 flex items-center justify-center cursor-pointer z-5" onClick={togglePlay}>
+        <div
+          className="absolute inset-0 bottom-20 flex items-center justify-center cursor-pointer z-5"
+          onClick={togglePlay}
+        >
           <div className="w-20 h-20 bg-black/60 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-black/80 hover:scale-110">
-            <Play className="w-10 h-10 text-white ml-1" fill="currentColor" />
+            <PlayIcon className="w-10 h-10 text-white ml-1" />
           </div>
         </div>
       )}
@@ -901,11 +937,17 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
       )}
 
       {/* Controls overlay */}
-      <div className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 z-10 ${showControls ? "opacity-100" : "opacity-0"}`}>
+      <div
+        className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 z-10 ${showControls ? "opacity-100" : "opacity-0"}`}
+      >
         {/* Top bar */}
-        <div className={`${isFullscreen ? "px-8 pt-6 pb-2" : "px-6 pt-4 pb-1"} flex flex-col gap-1`}>
+        <div
+          className={`${isFullscreen ? "px-8 pt-6 pb-2" : "px-6 pt-4 pb-1"} flex flex-col gap-1`}
+        >
           {name && (
-            <h2 className={`text-white font-semibold m-0 max-w-[600px] overflow-hidden text-ellipsis whitespace-nowrap ${isFullscreen ? "text-lg" : "text-base"}`}>
+            <h2
+              className={`text-white font-semibold m-0 max-w-[600px] overflow-hidden text-ellipsis whitespace-nowrap ${isFullscreen ? "text-lg" : "text-base"}`}
+            >
               {name}
             </h2>
           )}
@@ -952,7 +994,10 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
             )}
 
             {/* Progress bar */}
-            <div className="absolute top-0 left-0 h-full bg-accent rounded-l pointer-events-none" style={{ width: `${progressPercent}%` }} />
+            <div
+              className="absolute top-0 left-0 h-full bg-accent rounded-l pointer-events-none"
+              style={{ width: `${progressPercent}%` }}
+            />
 
             {/* Buffer indicator */}
             {bufferedPercent > 0 && (
@@ -1026,7 +1071,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 title="Skip back 10s"
                 aria-label="Skip back 10 seconds"
               >
-                <SkipBack className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <BackwardIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Frame back */}
@@ -1036,7 +1081,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 title="Previous frame"
                 aria-label="Previous frame"
               >
-                <StepBack className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <ChevronLeftIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Play/Pause */}
@@ -1047,9 +1092,9 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? (
-                  <Pause className="w-6 h-6 max-md:w-5 max-md:h-5" fill="currentColor" />
+                  <PauseIcon className="w-6 h-6 max-md:w-5 max-md:h-5" />
                 ) : (
-                  <Play className="w-6 h-6 max-md:w-5 max-md:h-5" fill="currentColor" />
+                  <PlayIcon className="w-6 h-6 max-md:w-5 max-md:h-5" />
                 )}
               </button>
 
@@ -1060,7 +1105,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 title="Next frame"
                 aria-label="Next frame"
               >
-                <StepForward className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <ChevronRightIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
 
               {/* Skip forward */}
@@ -1070,7 +1115,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 title="Skip forward 10s"
                 aria-label="Skip forward 10 seconds"
               >
-                <SkipForward className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <ForwardIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               </button>
             </div>
 
@@ -1085,9 +1130,9 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                 aria-label={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                  <SpeakerXMarkIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 ) : (
-                  <Volume2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                  <SpeakerWaveIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 )}
               </button>
               <input
@@ -1169,7 +1214,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                   title="Clear in/out points (Esc)"
                   aria-label="Clear in/out points"
                 >
-                  <X className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                  <XMarkIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 </button>
               )}
             </div>
@@ -1186,7 +1231,7 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
                   aria-label={captionsEnabled ? "Hide captions" : "Show captions"}
                   aria-pressed={captionsEnabled}
                 >
-                  <ClosedCaption className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                  <ChatBubbleLeftIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
                 </button>
                 <div className="w-px h-6 bg-border-default max-md:hidden" />
               </>
@@ -1200,9 +1245,9 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? (
-                <Minimize2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <ArrowsRightLeftIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               ) : (
-                <Maximize2 className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
+                <ArrowsPointingOutIcon className="w-5 h-5 max-md:w-4.5 max-md:h-4.5" />
               )}
             </button>
           </div>
@@ -1211,7 +1256,8 @@ export const VideoViewer = forwardRef<VideoViewerHandle, VideoViewerProps>(funct
 
       {/* Keyboard shortcut hint */}
       <div className="absolute bottom-2 right-4 text-[10px] text-secondary/50 opacity-0 transition-opacity duration-300 hover-parent:opacity-100 max-md:hidden">
-        Space/K: play/pause | J/L: shuttle | Arrow keys: frame | M: mute | C: captions | F: fullscreen | I/O: in/out points
+        Space/K: play/pause | J/L: shuttle | Arrow keys: frame | M: mute | C: captions | F:
+        fullscreen | I/O: in/out points
       </div>
     </div>
   );

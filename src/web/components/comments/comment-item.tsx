@@ -10,7 +10,8 @@ import { useState, useCallback, useMemo } from "react";
 import { Avatar } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Dropdown } from "../ui/dropdown";
+import { Dropdown, DropdownButton, DropdownMenu, DropdownItem } from "../ui/dropdown";
+import { ArrowUturnLeftIcon, EllipsisVerticalIcon } from "@/web/lib/icons";
 import type { CommentItemProps, Comment } from "./types";
 import type { CommentAnnotation } from "../../lib/api";
 
@@ -82,38 +83,80 @@ function AnnotationIcon({ type }: { type: CommentAnnotation["type"] }) {
   switch (type) {
     case "rectangle":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <rect x="3" y="3" width="18" height="18" rx="2" />
         </svg>
       );
     case "ellipse":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="10" />
         </svg>
       );
     case "arrow":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <line x1="5" y1="12" x2="19" y2="12" />
           <polyline points="12 5 19 12 12 19" />
         </svg>
       );
     case "line":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <line x1="5" y1="19" x2="19" y2="5" />
         </svg>
       );
     case "freehand":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M3 17c2-2 4-6 6-6s4 4 6 4 4-4 6-4" />
         </svg>
       );
     case "text":
       return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <polyline points="4 7 4 4 20 4 20 7" />
           <line x1="9" y1="20" x2="15" y2="20" />
           <line x1="12" y1="4" x2="12" y2="20" />
@@ -177,13 +220,16 @@ export function CommentItem({
     return options;
   }, [isOwner, isReply]);
 
-  const handleDropdownChange = useCallback((value: string) => {
-    if (value === "edit") {
-      setIsEditing(true);
-    } else if (value === "delete") {
-      onDelete?.(comment.id);
-    }
-  }, [comment.id, onDelete]);
+  const handleDropdownChange = useCallback(
+    (value: string) => {
+      if (value === "edit") {
+        setIsEditing(true);
+      } else if (value === "delete") {
+        onDelete?.(comment.id);
+      }
+    },
+    [comment.id, onDelete]
+  );
 
   const handleTimestampClick = useCallback(() => {
     if (comment.timestamp !== null && onTimestampClick) {
@@ -206,7 +252,14 @@ export function CommentItem({
       {/* Completion indicator */}
       {isCompleted && (
         <div className="comment-item__completed-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
@@ -217,8 +270,8 @@ export function CommentItem({
         <Avatar
           src={comment.user.avatarUrl}
           alt={getUserDisplayName(comment.user)}
-          name={getUserInitials(comment.user)}
-          size={isReply ? "sm" : "md"}
+          initials={getUserInitials(comment.user)}
+          className={isReply ? "size-6" : "size-8"}
         />
       </div>
 
@@ -231,9 +284,7 @@ export function CommentItem({
 
           {/* Badges */}
           <div className="comment-item__badges">
-            {comment.isInternal && (
-              <Badge variant="warning" size="sm">Internal</Badge>
-            )}
+            {comment.isInternal && <Badge color="amber">Internal</Badge>}
             {comment.timestamp !== null && (
               <button
                 className="comment-item__timestamp"
@@ -247,7 +298,9 @@ export function CommentItem({
               </button>
             )}
             {comment.page !== null && (
-              <Badge variant="default" size="sm">Page {comment.page}</Badge>
+              <Badge variant="default" size="sm">
+                Page {comment.page}
+              </Badge>
             )}
             {comment.annotation && (
               <button
@@ -293,7 +346,14 @@ export function CommentItem({
                 variant="ghost"
                 onClick={() => onReply(comment.id)}
                 startIcon={
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <polyline points="9 17 4 12 9 7" />
                     <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
                   </svg>
@@ -315,7 +375,14 @@ export function CommentItem({
               <Dropdown
                 trigger={
                   <Button size="sm" variant="ghost">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <circle cx="12" cy="12" r="1" />
                       <circle cx="12" cy="5" r="1" />
                       <circle cx="12" cy="19" r="1" />
@@ -331,10 +398,7 @@ export function CommentItem({
 
         {/* Reply count / expand toggle */}
         {!isReply && replyCount !== undefined && replyCount > 0 && (
-          <button
-            className="comment-item__replies-toggle"
-            onClick={onToggleReplies}
-          >
+          <button className="comment-item__replies-toggle" onClick={onToggleReplies}>
             <svg
               width="12"
               height="12"

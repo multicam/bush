@@ -8,7 +8,18 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/web/components/layout";
-import { Button, Input, Badge } from "@/web/components/ui";
+import {
+  Button,
+  Input,
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  Field,
+  Label,
+  Description,
+} from "@/web/components/ui";
 import { useAuth, useHasRole } from "@/web/context";
 import { getDisplayName, getUserInitials } from "@/web/lib/auth";
 import {
@@ -21,7 +32,6 @@ import {
   type CustomFieldAttributes,
   type CustomFieldType,
 } from "@/web/lib/api";
-import { X } from "lucide-react";
 
 type SettingsTab = "profile" | "account" | "team" | "custom-fields" | "notifications" | "security" | "billing";
 
@@ -222,7 +232,6 @@ export default function SettingsPage() {
         : undefined;
 
       if (editingField) {
-        // Update existing field
         await customFieldsApi.update(editingField.slug, {
           name: fieldForm.name,
           description: fieldForm.description || undefined,
@@ -238,7 +247,6 @@ export default function SettingsPage() {
           )
         );
       } else {
-        // Create new field
         const response = await customFieldsApi.create(currentAccount.id, {
           name: fieldForm.name,
           type: fieldForm.type,
@@ -276,15 +284,15 @@ export default function SettingsPage() {
     }
   };
 
-  // Get role badge variant
-  const getRoleBadgeVariant = (role: AccountRole): "primary" | "success" | "default" => {
+  // Get role badge color
+  const getRoleBadgeColor = (role: AccountRole): "blue" | "green" | "zinc" => {
     switch (role) {
       case "owner":
-        return "primary";
+        return "blue";
       case "content_admin":
-        return "success";
+        return "green";
       default:
-        return "default";
+        return "zinc";
     }
   };
 
@@ -342,40 +350,46 @@ export default function SettingsPage() {
                     <div className="w-16 h-16 flex items-center justify-center bg-surface-3 rounded-full text-xl font-semibold text-secondary">
                       {initials}
                     </div>
-                    <Button variant="secondary" size="sm">
-                      Change Avatar
-                    </Button>
+                    <Button outline>Change Avatar</Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-1">
-                    <Input
-                      label="First Name"
-                      defaultValue={user?.firstName || ""}
-                      placeholder="Enter first name"
-                    />
-                    <Input
-                      label="Last Name"
-                      defaultValue={user?.lastName || ""}
-                      placeholder="Enter last name"
-                    />
+                    <Field>
+                      <Label>First Name</Label>
+                      <Input
+                        defaultValue={user?.firstName || ""}
+                        placeholder="Enter first name"
+                      />
+                    </Field>
+                    <Field>
+                      <Label>Last Name</Label>
+                      <Input
+                        defaultValue={user?.lastName || ""}
+                        placeholder="Enter last name"
+                      />
+                    </Field>
                   </div>
 
-                  <Input
-                    label="Email"
-                    type="email"
-                    defaultValue={user?.email || ""}
-                    disabled
-                    helperText="Email is managed by your authentication provider"
-                  />
+                  <Field>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      defaultValue={user?.email || ""}
+                      disabled
+                    />
+                    <Description>Email is managed by your authentication provider</Description>
+                  </Field>
 
-                  <Input
-                    label="Display Name"
-                    defaultValue={user?.displayName || ""}
-                    placeholder="Enter display name"
-                  />
+                  <Field>
+                    <Label>Display Name</Label>
+                    <Input
+                      defaultValue={user?.displayName || ""}
+                      placeholder="Enter display name"
+                    />
+                  </Field>
 
                   <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
-                    <Button variant="primary">Save Changes</Button>
+                    <Button color="bush">Save Changes</Button>
                   </div>
                 </div>
               </section>
@@ -392,7 +406,7 @@ export default function SettingsPage() {
                   <div className="p-4 bg-surface-1 border border-border-default rounded-lg mb-6">
                     <div className="flex items-center gap-3 mb-4">
                       <h3 className="text-base font-semibold text-primary m-0">{currentAccount.name}</h3>
-                      <Badge variant="default">{currentAccount.role.replace("_", " ")}</Badge>
+                      <Badge color="zinc">{currentAccount.role.replace("_", " ")}</Badge>
                     </div>
                     <div className="flex gap-8 sm:flex-col sm:gap-4">
                       <div className="flex flex-col gap-0.5">
@@ -416,7 +430,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-secondary mb-4">
                     Once you delete your account, there is no going back. Please be certain.
                   </p>
-                  <Button variant="danger">Delete Account</Button>
+                  <Button color="red">Delete Account</Button>
                 </div>
               </section>
             )}
@@ -432,14 +446,16 @@ export default function SettingsPage() {
                 <form onSubmit={handleInviteMember} className="mb-6 p-4 bg-surface-1 border border-border-default rounded-lg">
                   <div className="flex gap-4 items-end sm:flex-col sm:items-stretch">
                     <div className="flex-1">
-                      <Input
-                        label="Email Address"
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="colleague@example.com"
-                        required
-                      />
+                      <Field>
+                        <Label>Email Address</Label>
+                        <Input
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="colleague@example.com"
+                          required
+                        />
+                      </Field>
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-medium text-primary">Role</label>
@@ -461,7 +477,7 @@ export default function SettingsPage() {
                     </div>
                     <Button
                       type="submit"
-                      variant="primary"
+                      color="bush"
                       disabled={inviteLoading || !inviteEmail.trim()}
                     >
                       {inviteLoading ? "Inviting..." : "Invite"}
@@ -478,7 +494,7 @@ export default function SettingsPage() {
                 ) : membersError ? (
                   <div className="p-4 text-center">
                     <p className="text-red-500 text-sm mt-2">{membersError}</p>
-                    <Button variant="secondary" onClick={fetchMembers}>
+                    <Button outline onClick={fetchMembers}>
                       Try Again
                     </Button>
                   </div>
@@ -502,7 +518,7 @@ export default function SettingsPage() {
                           {roleUpdateLoading === member.id ? (
                             <span className="text-xs text-secondary">Updating...</span>
                           ) : member.user.id === user?.id ? (
-                            <Badge variant={getRoleBadgeVariant(member.role)}>
+                            <Badge color={getRoleBadgeColor(member.role)}>
                               {formatRole(member.role)} (You)
                             </Badge>
                           ) : (
@@ -512,9 +528,7 @@ export default function SettingsPage() {
                                 onChange={(e) => handleRoleUpdate(member.id, e.target.value as AccountRole)}
                                 className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] mr-2 focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                                 disabled={
-                                  // Only owner can change owner/content_admin roles
                                   ((member.role === "owner" || member.role === "content_admin") && !isOwner) ||
-                                  // Content admins can only modify member/guest/reviewer
                                   (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
                                 }
                               >
@@ -529,8 +543,7 @@ export default function SettingsPage() {
                                 )}
                               </select>
                               <Button
-                                variant="ghost"
-                                size="sm"
+                                plain
                                 onClick={() => handleRemoveMember(
                                   member.id,
                                   member.user.first_name && member.user.last_name
@@ -538,7 +551,6 @@ export default function SettingsPage() {
                                     : member.user.email
                                 )}
                                 disabled={
-                                  // Content admins cannot remove owners or content admins
                                   (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
                                 }
                               >
@@ -563,7 +575,7 @@ export default function SettingsPage() {
                       Create and manage custom metadata fields for your assets.
                     </p>
                   </div>
-                  <Button variant="primary" onClick={handleCreateField}>
+                  <Button color="bush" onClick={handleCreateField}>
                     Add Field
                   </Button>
                 </div>
@@ -573,7 +585,7 @@ export default function SettingsPage() {
                 ) : fieldsError ? (
                   <div className="p-4 text-center">
                     <p className="text-red-500 text-sm mt-2">{fieldsError}</p>
-                    <Button variant="secondary" onClick={fetchCustomFields}>
+                    <Button outline onClick={fetchCustomFields}>
                       Try Again
                     </Button>
                   </div>
@@ -591,7 +603,7 @@ export default function SettingsPage() {
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-primary">{field.name}</span>
                           <div className="flex items-center gap-2">
-                            <Badge variant="default">{field.type.replace("_", " ")}</Badge>
+                            <Badge color="zinc">{field.type.replace("_", " ")}</Badge>
                             {field.description && (
                               <span className="text-xs text-secondary">{field.description}</span>
                             )}
@@ -603,17 +615,12 @@ export default function SettingsPage() {
                           )}
                         </div>
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditField(field)}
-                          >
+                          <Button plain onClick={() => handleEditField(field)}>
                             Edit
                           </Button>
                           {isOwner && (
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              plain
                               onClick={() => {
                                 setDeleteFieldId(field.slug);
                                 handleDeleteField(field.slug);
@@ -629,120 +636,110 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {/* Create/Edit Field Modal */}
-                {showFieldModal && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-                    <div className="bg-surface-1 rounded-xl w-full max-w-[500px] max-h-[90vh] overflow-y-auto shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
-                      <div className="flex justify-between items-center px-6 py-4 border-b border-border-default">
-                        <h3 className="text-base font-semibold text-primary m-0">
-                          {editingField ? "Edit Field" : "Create Custom Field"}
-                        </h3>
-                        <button
-                          className="bg-none border-none text-secondary cursor-pointer p-0 leading-none hover:text-primary"
-                          onClick={() => setShowFieldModal(false)}
-                        >
-                          <X className="w-6 h-6" />
-                        </button>
+                {/* Create/Edit Field Dialog */}
+                <Dialog open={showFieldModal} onClose={setShowFieldModal}>
+                  <DialogTitle>
+                    {editingField ? "Edit Field" : "Create Custom Field"}
+                  </DialogTitle>
+                  <form onSubmit={handleSaveField}>
+                    <DialogBody>
+                      {fieldFormError && (
+                        <p className="text-red-500 text-sm mb-4">{fieldFormError}</p>
+                      )}
+                      <div className="flex flex-col gap-4">
+                        <Field>
+                          <Label>Field Name</Label>
+                          <Input
+                            value={fieldForm.name}
+                            onChange={(e) => setFieldForm({ ...fieldForm, name: e.target.value })}
+                            placeholder="e.g., Episode Number"
+                            required
+                          />
+                        </Field>
+                        <div>
+                          <label className="block text-sm font-medium text-primary mb-1.5">Field Type</label>
+                          <select
+                            value={fieldForm.type}
+                            onChange={(e) => setFieldForm({ ...fieldForm, type: e.target.value as CustomFieldType })}
+                            className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={!!editingField}
+                          >
+                            <option value="text">Text</option>
+                            <option value="textarea">Text Area</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <option value="single_select">Single Select</option>
+                            <option value="multi_select">Multi Select</option>
+                            <option value="checkbox">Checkbox</option>
+                            <option value="user">User</option>
+                            <option value="url">URL</option>
+                            <option value="rating">Rating</option>
+                          </select>
+                          {editingField && (
+                            <span className="block text-xs text-secondary mt-1">Field type cannot be changed after creation</span>
+                          )}
+                        </div>
+                        {(fieldForm.type === "single_select" || fieldForm.type === "multi_select") && (
+                          <Field>
+                            <Label>Options</Label>
+                            <Input
+                              value={fieldForm.options}
+                              onChange={(e) => setFieldForm({ ...fieldForm, options: e.target.value })}
+                              placeholder="Option 1, Option 2, Option 3"
+                            />
+                            <Description>Separate options with commas</Description>
+                          </Field>
+                        )}
+                        <Field>
+                          <Label>Description (optional)</Label>
+                          <Input
+                            value={fieldForm.description}
+                            onChange={(e) => setFieldForm({ ...fieldForm, description: e.target.value })}
+                            placeholder="Help text for this field"
+                          />
+                        </Field>
+                        <div>
+                          <label className="block text-sm font-medium text-primary mb-1.5">Editable By</label>
+                          <select
+                            value={fieldForm.editableBy}
+                            onChange={(e) => setFieldForm({ ...fieldForm, editableBy: e.target.value as "admin" | "full_access" })}
+                            className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            <option value="full_access">Full Access and above</option>
+                            <option value="admin">Admin only</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={fieldForm.isVisibleByDefault}
+                              onChange={(e) => setFieldForm({ ...fieldForm, isVisibleByDefault: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                            Visible by default in projects
+                          </label>
+                        </div>
                       </div>
-                      <form onSubmit={handleSaveField}>
-                        <div className="p-6">
-                          {fieldFormError && (
-                            <p className="text-red-500 text-sm mb-4">{fieldFormError}</p>
-                          )}
-                          <div className="mb-4 last:mb-0">
-                            <label className="block text-sm font-medium text-primary mb-1.5">Field Name</label>
-                            <Input
-                              value={fieldForm.name}
-                              onChange={(e) => setFieldForm({ ...fieldForm, name: e.target.value })}
-                              placeholder="e.g., Episode Number"
-                              required
-                            />
-                          </div>
-                          <div className="mb-4 last:mb-0">
-                            <label className="block text-sm font-medium text-primary mb-1.5">Field Type</label>
-                            <select
-                              value={fieldForm.type}
-                              onChange={(e) => setFieldForm({ ...fieldForm, type: e.target.value as CustomFieldType })}
-                              className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
-                              disabled={!!editingField}
-                            >
-                              <option value="text">Text</option>
-                              <option value="textarea">Text Area</option>
-                              <option value="number">Number</option>
-                              <option value="date">Date</option>
-                              <option value="single_select">Single Select</option>
-                              <option value="multi_select">Multi Select</option>
-                              <option value="checkbox">Checkbox</option>
-                              <option value="user">User</option>
-                              <option value="url">URL</option>
-                              <option value="rating">Rating</option>
-                            </select>
-                            {editingField && (
-                              <span className="block text-xs text-secondary mt-1">Field type cannot be changed after creation</span>
-                            )}
-                          </div>
-                          {(fieldForm.type === "single_select" || fieldForm.type === "multi_select") && (
-                            <div className="mb-4 last:mb-0">
-                              <label className="block text-sm font-medium text-primary mb-1.5">Options</label>
-                              <Input
-                                value={fieldForm.options}
-                                onChange={(e) => setFieldForm({ ...fieldForm, options: e.target.value })}
-                                placeholder="Option 1, Option 2, Option 3"
-                              />
-                              <span className="block text-xs text-secondary mt-1">Separate options with commas</span>
-                            </div>
-                          )}
-                          <div className="mb-4 last:mb-0">
-                            <label className="block text-sm font-medium text-primary mb-1.5">Description (optional)</label>
-                            <Input
-                              value={fieldForm.description}
-                              onChange={(e) => setFieldForm({ ...fieldForm, description: e.target.value })}
-                              placeholder="Help text for this field"
-                            />
-                          </div>
-                          <div className="mb-4 last:mb-0">
-                            <label className="block text-sm font-medium text-primary mb-1.5">Editable By</label>
-                            <select
-                              value={fieldForm.editableBy}
-                              onChange={(e) => setFieldForm({ ...fieldForm, editableBy: e.target.value as "admin" | "full_access" })}
-                              className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              <option value="full_access">Full Access and above</option>
-                              <option value="admin">Admin only</option>
-                            </select>
-                          </div>
-                          <div className="mb-4 last:mb-0">
-                            <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={fieldForm.isVisibleByDefault}
-                                onChange={(e) => setFieldForm({ ...fieldForm, isVisibleByDefault: e.target.checked })}
-                                className="w-4 h-4 cursor-pointer"
-                              />
-                              Visible by default in projects
-                            </label>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border-default bg-surface-2">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowFieldModal(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="submit"
-                            variant="primary"
-                            disabled={fieldFormLoading || !fieldForm.name.trim()}
-                          >
-                            {fieldFormLoading ? "Saving..." : (editingField ? "Save Changes" : "Create Field")}
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
+                    </DialogBody>
+                    <DialogActions>
+                      <Button
+                        type="button"
+                        plain
+                        onClick={() => setShowFieldModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        color="bush"
+                        disabled={fieldFormLoading || !fieldForm.name.trim()}
+                      >
+                        {fieldFormLoading ? "Saving..." : (editingField ? "Save Changes" : "Create Field")}
+                      </Button>
+                    </DialogActions>
+                  </form>
+                </Dialog>
               </section>
             )}
 
@@ -793,7 +790,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
-                  <Button variant="primary">Save Preferences</Button>
+                  <Button color="bush">Save Preferences</Button>
                 </div>
               </section>
             )}
@@ -810,7 +807,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-secondary mb-3">
                     Add an extra layer of security to your account.
                   </p>
-                  <Button variant="secondary">Enable 2FA</Button>
+                  <Button outline>Enable 2FA</Button>
                 </div>
 
                 <div className="mb-8 last:mb-0">
@@ -821,10 +818,10 @@ export default function SettingsPage() {
                         <span className="text-sm font-medium text-primary">Current Session</span>
                         <span className="text-xs text-secondary">Chrome on macOS</span>
                       </div>
-                      <Badge variant="success">Active</Badge>
+                      <Badge color="green">Active</Badge>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
+                  <Button plain>
                     Sign out all other sessions
                   </Button>
                 </div>
@@ -841,7 +838,7 @@ export default function SettingsPage() {
                 <div className="p-5 bg-surface-1 border border-border-default rounded-lg mb-6">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-lg font-semibold text-primary m-0">Pro Plan</h3>
-                    <Badge variant="primary">Active</Badge>
+                    <Badge color="blue">Active</Badge>
                   </div>
                   <div>
                     <p className="text-sm text-secondary m-0">$29/month - 2 TB storage - 25 team members</p>
@@ -850,9 +847,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button variant="secondary">Upgrade Plan</Button>
-                  <Button variant="ghost">Update Payment Method</Button>
-                  <Button variant="ghost">View Invoices</Button>
+                  <Button outline>Upgrade Plan</Button>
+                  <Button plain>Update Payment Method</Button>
+                  <Button plain>View Invoices</Button>
                 </div>
               </section>
             )}

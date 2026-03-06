@@ -8,7 +8,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { GripVertical } from "lucide-react";
+import { GripIcon } from "@/web/lib/icons";
 import { Badge } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import type { AssetFile, CardSize } from "./types";
@@ -30,7 +30,16 @@ interface AssetCardProps {
   onDragStart?: (file: AssetFile) => void;
 }
 
-export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, staggerIndex = 0, showDragHandle = false, onDragStart }: AssetCardProps) {
+export function AssetCard({
+  file,
+  cardSize,
+  isSelected,
+  onSelect,
+  onClick,
+  staggerIndex = 0,
+  showDragHandle = false,
+  onDragStart,
+}: AssetCardProps) {
   const dimensions = CARD_SIZE_DIMENSIONS[cardSize];
   const category = getFileCategory(file.mimeType);
 
@@ -61,18 +70,18 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, stagg
     [file.id, onSelect]
   );
 
-  const getStatusBadgeVariant = (): "default" | "success" | "warning" | "error" => {
+  const getStatusBadgeColor = (): "green" | "amber" | "zinc" | "red" => {
     switch (file.status) {
       case "ready":
-        return "success";
+        return "green";
       case "processing":
-        return "warning";
+        return "amber";
       case "uploading":
-        return "default";
+        return "zinc";
       case "processing_failed":
-        return "error";
+        return "red";
       default:
-        return "default";
+        return "zinc";
     }
   };
 
@@ -149,7 +158,7 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, stagg
         {/* Status badge */}
         {file.status !== "ready" && (
           <div className="absolute top-2 right-2">
-            <Badge variant={getStatusBadgeVariant()} size="sm">
+            <Badge color={getStatusBadgeColor()}>
               {file.status === "processing_failed" ? "failed" : file.status}
             </Badge>
           </div>
@@ -162,7 +171,7 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, stagg
             onMouseDown={() => onDragStart?.(file)}
             aria-label="Drag to reorder"
           >
-            <GripVertical size={14} />
+            <GripIcon className="size-3.5" />
           </div>
         )}
       </div>
@@ -175,9 +184,7 @@ export function AssetCard({ file, cardSize, isSelected, onSelect, onClick, stagg
         >
           {file.name}
         </span>
-        <span className="text-xs text-text-muted">
-          {formatFileSize(file.fileSizeBytes)}
-        </span>
+        <span className="text-xs text-text-muted">{formatFileSize(file.fileSizeBytes)}</span>
       </div>
 
       {/* Metadata badges */}

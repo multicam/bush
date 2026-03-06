@@ -8,7 +8,7 @@
 "use client";
 
 import { useCallback, useState, useRef, type DragEvent, type ChangeEvent } from "react";
-import { Upload, XCircle } from "lucide-react";
+import { ArrowUpTrayIcon, XCircleIcon } from "@/web/lib/icons";
 import {
   isSupportedMimeType,
   isSupportedExtension,
@@ -173,9 +173,7 @@ export function Dropzone({
         setIsDragActive(true);
 
         // Check if any items are files (not text/HTML being dragged)
-        const hasFiles = Array.from(e.dataTransfer.items).some(
-          (item) => item.kind === "file"
-        );
+        const hasFiles = Array.from(e.dataTransfer.items).some((item) => item.kind === "file");
 
         // Check for rejected types if accept is specified
         if (accept && hasFiles) {
@@ -194,21 +192,18 @@ export function Dropzone({
   );
 
   // Handle drag leave
-  const handleDragLeave = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      // Decrement and clamp to 0 to prevent negative values from rapid mouse movements
-      dragCountRef.current = Math.max(0, dragCountRef.current - 1);
+    // Decrement and clamp to 0 to prevent negative values from rapid mouse movements
+    dragCountRef.current = Math.max(0, dragCountRef.current - 1);
 
-      if (dragCountRef.current === 0) {
-        setIsDragActive(false);
-        setIsDragReject(false);
-      }
-    },
-    []
-  );
+    if (dragCountRef.current === 0) {
+      setIsDragActive(false);
+      setIsDragReject(false);
+    }
+  }, []);
 
   // Handle drag over
   const handleDragOver = useCallback(
@@ -334,15 +329,15 @@ export function Dropzone({
             "flex items-center justify-center w-16 h-16 mb-4",
             "text-secondary transition-all duration-150",
             // Hover/active state
-            (isDragActive && !isDragReject) && "text-accent -translate-y-0.5",
+            isDragActive && !isDragReject && "text-accent -translate-y-0.5",
             // Reject state
             isDragReject && "text-red-500"
           )}
         >
           {isDragReject ? (
-            <XCircle className="w-12 h-12" strokeWidth={1.5} />
+            <XCircleIcon className="size-12" />
           ) : (
-            <Upload className="w-12 h-12" strokeWidth={1.5} />
+            <ArrowUpTrayIcon className="size-12" />
           )}
         </div>
 

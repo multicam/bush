@@ -10,7 +10,7 @@
 
 import { useCallback, useRef, useMemo, useEffect, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FolderOpen, Loader2 } from "lucide-react";
+import { FolderOpenLargeIcon, SpinnerIcon } from "@/web/lib/icons";
 import { AssetCard } from "./asset-card";
 import { FolderCard } from "./folder-card";
 import type { AssetGridProps, AssetFile, AssetFolder, CardSize } from "./types";
@@ -27,10 +27,7 @@ function getColumnCount(containerWidth: number, cardSize: CardSize): number {
 }
 
 // Group items into rows for virtualized rendering
-function groupItemsIntoRows<T>(
-  items: T[],
-  columnCount: number
-): T[][] {
+function groupItemsIntoRows<T>(items: T[], columnCount: number): T[][] {
   const rows: T[][] = [];
   for (let i = 0; i < items.length; i += columnCount) {
     rows.push(items.slice(i, i + columnCount));
@@ -119,10 +116,7 @@ export function AssetGrid({
   const allItems = useMemo(() => [...folders, ...files], [folders, files]);
 
   // Group items into rows
-  const rows = useMemo(
-    () => groupItemsIntoRows(allItems, columnCount),
-    [allItems, columnCount]
-  );
+  const rows = useMemo(() => groupItemsIntoRows(allItems, columnCount), [allItems, columnCount]);
 
   // Decide whether to use virtualization
   const useVirtualization = allItems.length > VIRTUALIZATION_THRESHOLD;
@@ -154,7 +148,7 @@ export function AssetGrid({
   if (allItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-16 text-center">
-        <FolderOpen size={64} className="text-text-muted mb-4" strokeWidth={1.5} />
+        <FolderOpenLargeIcon className="size-16 text-text-muted mb-4" />
         <p className="text-base font-medium text-text-secondary mb-2">No files or folders</p>
         <p className="text-sm text-text-muted m-0">Upload files or create folders to get started</p>
       </div>
@@ -232,7 +226,7 @@ export function AssetGrid({
               >
                 {isLoadingMore && (
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Loader2 size={16} className="animate-spin" />
+                    <SpinnerIcon className="size-4" />
                     <span>Loading more...</span>
                   </div>
                 )}

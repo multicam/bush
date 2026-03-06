@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { ShareBuilder } from "@/web/components/shares";
 import { useAuth } from "@/web/context";
-import { Loader2 } from "lucide-react";
+import { SpinnerIcon } from "@/web/lib/icons";
 
 export default function NewSharePage() {
   const { isAuthenticated, isLoading: authLoading, login, currentAccount } = useAuth();
@@ -25,7 +25,7 @@ export default function NewSharePage() {
       <AppLayout>
         <div className="min-h-screen p-8">
           <div className="flex flex-col items-center justify-center py-16 text-muted">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading...</p>
           </div>
         </div>
@@ -51,11 +51,7 @@ export default function NewSharePage() {
           </p>
         </div>
 
-        <ShareBuilder
-          accountId={currentAccount.id}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        <ShareBuilder accountId={currentAccount.id} onSave={handleSave} onCancel={handleCancel} />
       </div>
     </AppLayout>
   );

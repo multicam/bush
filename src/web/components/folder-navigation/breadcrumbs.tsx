@@ -7,7 +7,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRightIcon, HomeSmallIcon } from "@/web/lib/icons";
 
 export interface BreadcrumbItem {
   id: string | null;
@@ -23,11 +23,7 @@ export interface BreadcrumbsProps {
   maxItems?: number;
 }
 
-export function Breadcrumbs({
-  items,
-  onNavigate,
-  maxItems = 5,
-}: BreadcrumbsProps) {
+export function Breadcrumbs({ items, onNavigate, maxItems = 5 }: BreadcrumbsProps) {
   const handleClick = useCallback(
     (folderId: string | null) => {
       onNavigate?.(folderId);
@@ -37,9 +33,7 @@ export function Breadcrumbs({
 
   // Determine if we need to truncate
   const shouldTruncate = items.length > maxItems;
-  const visibleItems = shouldTruncate
-    ? [items[0], ...items.slice(-(maxItems - 1))]
-    : items;
+  const visibleItems = shouldTruncate ? [items[0], ...items.slice(-(maxItems - 1))] : items;
 
   return (
     <nav className="flex items-center min-h-8" aria-label="Breadcrumb navigation">
@@ -65,16 +59,10 @@ export function Breadcrumbs({
                   onClick={() => handleClick(item.id)}
                   type="button"
                 >
-                  {index === 0 ? (
-                    <Home className="w-4 h-4" />
-                  ) : (
-                    item.name
-                  )}
+                  {index === 0 ? <HomeSmallIcon className="size-4" /> : item.name}
                 </button>
               )}
-              {!isLast && (
-                <ChevronRight className="text-muted flex-shrink-0 w-4 h-4" />
-              )}
+              {!isLast && <ChevronRightIcon className="text-muted flex-shrink-0 size-4" />}
             </li>
           );
         })}

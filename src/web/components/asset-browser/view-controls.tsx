@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { Grid3X3, List, Square } from "lucide-react";
+import { Squares2X2Icon, ListBulletIcon, SquaresPlusIcon } from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 import type { ViewMode, CardSize } from "./types";
 
@@ -26,7 +26,11 @@ export function ViewControls({
   return (
     <div className="flex items-center gap-3">
       {/* View mode toggle */}
-      <div className="flex items-center bg-surface-3 rounded-sm p-0.5" role="group" aria-label="View mode">
+      <div
+        className="flex items-center bg-surface-3 rounded-sm p-0.5"
+        role="group"
+        aria-label="View mode"
+      >
         <button
           className={cn(
             "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
@@ -39,7 +43,7 @@ export function ViewControls({
           aria-pressed={viewMode === "grid"}
           title="Grid view"
         >
-          <Grid3X3 size={16} />
+          <Squares2X2Icon className="size-4" />
           <span className="text-xs font-medium hidden @sm:inline">Grid</span>
         </button>
         <button
@@ -54,14 +58,18 @@ export function ViewControls({
           aria-pressed={viewMode === "list"}
           title="List view"
         >
-          <List size={16} />
+          <ListBulletIcon className="size-4" />
           <span className="text-xs font-medium hidden @sm:inline">List</span>
         </button>
       </div>
 
       {/* Card size toggle (only in grid mode) */}
       {viewMode === "grid" && (
-        <div className="flex items-center bg-surface-3 rounded-sm p-0.5" role="group" aria-label="Card size">
+        <div
+          className="flex items-center bg-surface-3 rounded-sm p-0.5"
+          role="group"
+          aria-label="Card size"
+        >
           <button
             className={cn(
               "flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-none border-none rounded-[4px] cursor-pointer",
@@ -74,7 +82,7 @@ export function ViewControls({
             aria-pressed={cardSize === "small"}
             title="Small cards"
           >
-            <Square size={12} fill="currentColor" />
+            <SquaresPlusIcon className="size-3" />
             <span className="text-xs font-medium">S</span>
           </button>
           <button
@@ -89,7 +97,7 @@ export function ViewControls({
             aria-pressed={cardSize === "medium"}
             title="Medium cards"
           >
-            <Square size={14} fill="currentColor" />
+            <SquaresPlusIcon className="size-3.5" />
             <span className="text-xs font-medium">M</span>
           </button>
           <button
@@ -104,7 +112,7 @@ export function ViewControls({
             aria-pressed={cardSize === "large"}
             title="Large cards"
           >
-            <Square size={16} fill="currentColor" />
+            <SquaresPlusIcon className="size-4" />
             <span className="text-xs font-medium">L</span>
           </button>
         </div>

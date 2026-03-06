@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Badge, Button } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import { versionStacksApi, extractAttributes, getErrorMessage } from "@/web/lib/api";
-import { Loader2 } from "lucide-react";
+import { SpinnerIcon } from "@/web/lib/icons";
 import type { AssetFile } from "@/web/components/asset-browser";
 import type { VersionStackListProps, VersionStackWithFiles } from "./types";
 
@@ -98,7 +98,7 @@ export function VersionStackList({
   if (isLoading || externalLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 p-8 text-secondary">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <SpinnerIcon className="w-6 h-6 text-accent" />
         <p>Loading versions...</p>
       </div>
     );
@@ -109,7 +109,7 @@ export function VersionStackList({
     return (
       <div className="flex flex-col items-center justify-center gap-3 p-8 text-secondary">
         <p>{error}</p>
-        <Button variant="secondary" size="sm" onClick={loadStack}>
+        <Button outline onClick={loadStack}>
           Retry
         </Button>
       </div>
@@ -135,7 +135,7 @@ export function VersionStackList({
       {/* Header */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-border-default">
         <h3 className="text-base font-semibold m-0 text-primary truncate">{stack.name}</h3>
-        <Badge variant="default" size="sm">
+        <Badge color="zinc">
           {stack.files.length} version{stack.files.length !== 1 ? "s" : ""}
         </Badge>
       </div>
@@ -152,10 +152,7 @@ export function VersionStackList({
               key={file.id}
               className={`
                 flex items-center gap-3 p-2 rounded-sm cursor-pointer transition-colors
-                ${isCurrent
-                  ? "bg-surface-3 border border-green-500"
-                  : "hover:bg-surface-2"
-                }
+                ${isCurrent ? "bg-surface-3 border border-green-500" : "hover:bg-surface-2"}
               `}
               role="option"
               aria-selected={isCurrent}
@@ -172,7 +169,12 @@ export function VersionStackList({
                 `}
               >
                 {file.thumbnailUrl ? (
-                  <img src={file.thumbnailUrl} alt={file.name} loading="lazy" className="w-full h-full object-cover" />
+                  <img
+                    src={file.thumbnailUrl}
+                    alt={file.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span className="text-xl">{getFileIcon(file.mimeType)}</span>
                 )}
@@ -190,19 +192,14 @@ export function VersionStackList({
               </div>
 
               {/* Current badge */}
-              {isCurrent && (
-                <Badge variant="success" size="sm">
-                  Current
-                </Badge>
-              )}
+              {isCurrent && <Badge color="green">Current</Badge>}
 
               {/* Actions */}
               {showActions && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity [.list-none>li:hover_&]:opacity-100">
                   {!isCurrent && (
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      plain
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSetCurrent(file.id);
@@ -213,8 +210,7 @@ export function VersionStackList({
                     </Button>
                   )}
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    plain
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemove(file.id);

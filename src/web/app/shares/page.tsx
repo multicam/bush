@@ -21,7 +21,7 @@ import {
 } from "@/web/lib/api";
 import { ShareCard } from "@/web/components/shares";
 import type { ShareWithRelationships } from "@/web/components/shares/types";
-import { Loader2, Link } from "lucide-react";
+import { SpinnerIcon, LinkIcon } from "@/web/lib/icons";
 
 interface Share extends ShareAttributes {
   id: string;
@@ -62,9 +62,7 @@ export default function SharesPage() {
         setLoadingState("loading");
 
         // Fetch workspaces and projects in parallel
-        const [workspacesResponse] = await Promise.all([
-          workspacesApi.list(),
-        ]);
+        const [workspacesResponse] = await Promise.all([workspacesApi.list()]);
 
         const workspaceItems = extractCollectionAttributes(workspacesResponse) as Workspace[];
         setWorkspaces(workspaceItems);
@@ -148,7 +146,7 @@ export default function SharesPage() {
       <AppLayout>
         <div className="min-h-screen p-8">
           <div className="flex flex-col items-center justify-center py-16 text-muted">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading shares...</p>
           </div>
         </div>
@@ -165,7 +163,7 @@ export default function SharesPage() {
             <h2 className="text-xl font-semibold text-primary mb-2">Failed to load shares</h2>
             <p className="text-secondary mb-4">{errorMessage}</p>
             <Button
-              variant="primary"
+              color="bush"
               onClick={() => {
                 setLoadingState("loading");
                 setErrorMessage("");
@@ -189,7 +187,7 @@ export default function SharesPage() {
               Manage share links for presenting assets to stakeholders
             </p>
           </div>
-          <Button variant="primary" onClick={() => window.location.href = "/shares/new"}>
+          <Button color="bush" onClick={() => (window.location.href = "/shares/new")}>
             Create Share
           </Button>
         </div>
@@ -210,7 +208,9 @@ export default function SharesPage() {
           >
             <option value="all">All Projects</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </div>
@@ -229,7 +229,7 @@ export default function SharesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Link className="w-12 h-12 text-muted mb-4" />
+            <LinkIcon className="w-12 h-12 text-muted mb-4" />
             <h3 className="text-lg font-medium text-primary m-0 mb-2">
               {searchQuery || filterProject ? "No shares found" : "No shares yet"}
             </h3>
@@ -239,7 +239,7 @@ export default function SharesPage() {
                 : "Create your first share to start presenting assets to stakeholders"}
             </p>
             {!searchQuery && !filterProject && (
-              <Button variant="primary" onClick={() => window.location.href = "/shares/new"}>
+              <Button color="bush" onClick={() => (window.location.href = "/shares/new")}>
                 Create Your First Share
               </Button>
             )}

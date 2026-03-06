@@ -17,7 +17,7 @@ import {
 } from "@/web/lib/api";
 import { ShareBuilder, ShareActivityFeed } from "@/web/components/shares";
 import type { Share } from "@/web/components/shares/types";
-import { Loader2, Copy, ExternalLink } from "lucide-react";
+import { SpinnerIcon, ClipboardDocumentIcon, ArrowTopRightOnSquareIcon } from "@/web/lib/icons";
 
 interface ShareDetailProps {
   params: Promise<{ id: string }>;
@@ -46,7 +46,7 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
 
       try {
         setLoadingState("loading");
-        setErrorMessage(null);
+        setErrorMessage("");
 
         const response = await sharesApi.get(shareId);
         const shareData = response.data.attributes;
@@ -90,7 +90,7 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
       <AppLayout>
         <div className="min-h-screen p-8">
           <div className="flex flex-col items-center justify-center py-16 text-muted">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading share...</p>
           </div>
         </div>
@@ -105,10 +105,7 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <h2 className="text-xl font-semibold text-primary mb-2">Failed to load share</h2>
             <p className="text-secondary mb-4">{errorMessage}</p>
-            <Button
-              variant="primary"
-              onClick={() => window.location.href = "/shares"}
-            >
+            <Button color="bush" onClick={() => (window.location.href = "/shares")}>
               Back to Shares
             </Button>
           </div>
@@ -123,10 +120,7 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
         <div className="min-h-screen p-8">
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <h2 className="text-xl font-semibold text-primary mb-2">Share not found</h2>
-            <Button
-              variant="primary"
-              onClick={() => window.location.href = "/shares"}
-            >
+            <Button color="bush" onClick={() => (window.location.href = "/shares")}>
               Back to Shares
             </Button>
           </div>
@@ -146,15 +140,12 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={copyShareLink}>
-              <Copy className="w-4 h-4 mr-2" />
+            <Button outline onClick={copyShareLink}>
+              <ClipboardDocumentIcon data-slot="icon" />
               Copy Link
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => window.open(`/s/${share.slug}`, "_blank")}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
+            <Button outline onClick={() => window.open(`/s/${share.slug}`, "_blank")}>
+              <ArrowTopRightOnSquareIcon data-slot="icon" />
               Preview
             </Button>
           </div>
@@ -216,22 +207,20 @@ export default function ShareDetailPage({ params }: ShareDetailProps) {
                 <p className="text-sm text-primary m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                   {asset.file?.name || `File ${asset.fileId}`}
                 </p>
-                <p className="text-xs text-muted m-1 mt-0">
-                  Order: {asset.sortOrder}
-                </p>
+                <p className="text-xs text-muted m-1 mt-0">Order: {asset.sortOrder}</p>
               </div>
             ))}
             {assets.length === 0 && (
               <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-secondary">No assets in this share. Add files from a project to get started.</p>
+                <p className="text-secondary">
+                  No assets in this share. Add files from a project to get started.
+                </p>
               </div>
             )}
           </div>
         )}
 
-        {activeTab === "activity" && (
-          <ShareActivityFeed shareId={shareId} />
-        )}
+        {activeTab === "activity" && <ShareActivityFeed shareId={shareId} />}
       </div>
     </AppLayout>
   );

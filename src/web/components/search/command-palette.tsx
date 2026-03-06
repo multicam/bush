@@ -11,19 +11,19 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
-  Search,
-  X,
-  Loader2,
-  FileText,
-  FolderOpen,
-  Upload,
-  Plus,
-  Settings,
-  LayoutDashboard,
-  Share2,
-  Bell,
-  Keyboard,
-} from "lucide-react";
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  SpinnerIcon,
+  DocumentTextIcon,
+  FolderOpenIcon,
+  ArrowUpTrayIcon,
+  PlusIcon,
+  Cog6ToothIcon,
+  HomeIcon,
+  ShareIcon,
+  BellIcon,
+  Squares2X2Icon,
+} from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 import { searchApi, SearchResultAttributes, JsonApiResource } from "@/web/lib/api";
 
@@ -70,9 +70,9 @@ function getFileIcon(mimeType: string): React.ReactNode {
     case "image":
       return <span className="text-lg">🖼️</span>;
     case "text":
-      return <FileText className="w-5 h-5 text-muted" />;
+      return <DocumentTextIcon className="w-5 h-5 text-muted" />;
     default:
-      return <FileText className="w-5 h-5 text-muted" />;
+      return <DocumentTextIcon className="w-5 h-5 text-muted" />;
   }
 }
 
@@ -182,87 +182,90 @@ export function CommandPalette({
   );
 
   // Default commands
-  const defaultCommands = useMemo<CommandItem[]>(() => [
-    {
-      id: "go-dashboard",
-      label: "Go to Dashboard",
-      icon: <LayoutDashboard className="w-4 h-4 text-muted" />,
-      shortcut: "G D",
-      category: "Navigation",
-      action: () => {
-        window.location.href = "/dashboard";
+  const defaultCommands = useMemo<CommandItem[]>(
+    () => [
+      {
+        id: "go-dashboard",
+        label: "Go to Dashboard",
+        icon: <HomeIcon className="w-4 h-4 text-muted" />,
+        shortcut: "G D",
+        category: "Navigation",
+        action: () => {
+          window.location.href = "/dashboard";
+        },
       },
-    },
-    {
-      id: "go-projects",
-      label: "Go to Projects",
-      icon: <FolderOpen className="w-4 h-4 text-muted" />,
-      shortcut: "G P",
-      category: "Navigation",
-      action: () => {
-        window.location.href = "/projects";
+      {
+        id: "go-projects",
+        label: "Go to Projects",
+        icon: <FolderOpenIcon className="w-4 h-4 text-muted" />,
+        shortcut: "G P",
+        category: "Navigation",
+        action: () => {
+          window.location.href = "/projects";
+        },
       },
-    },
-    {
-      id: "go-shares",
-      label: "Go to Shares",
-      icon: <Share2 className="w-4 h-4 text-muted" />,
-      shortcut: "G S",
-      category: "Navigation",
-      action: () => {
-        window.location.href = "/shares";
+      {
+        id: "go-shares",
+        label: "Go to Shares",
+        icon: <ShareIcon className="w-4 h-4 text-muted" />,
+        shortcut: "G S",
+        category: "Navigation",
+        action: () => {
+          window.location.href = "/shares";
+        },
       },
-    },
-    {
-      id: "go-notifications",
-      label: "Go to Notifications",
-      icon: <Bell className="w-4 h-4 text-muted" />,
-      shortcut: "G N",
-      category: "Navigation",
-      action: () => {
-        window.location.href = "/notifications";
+      {
+        id: "go-notifications",
+        label: "Go to Notifications",
+        icon: <BellIcon className="w-4 h-4 text-muted" />,
+        shortcut: "G N",
+        category: "Navigation",
+        action: () => {
+          window.location.href = "/notifications";
+        },
       },
-    },
-    {
-      id: "upload-files",
-      label: "Upload Files",
-      icon: <Upload className="w-4 h-4 text-muted" />,
-      shortcut: "U",
-      category: "Actions",
-      action: () => {
-        onActionSelect?.("upload-files");
+      {
+        id: "upload-files",
+        label: "Upload Files",
+        icon: <ArrowUpTrayIcon className="w-4 h-4 text-muted" />,
+        shortcut: "U",
+        category: "Actions",
+        action: () => {
+          onActionSelect?.("upload-files");
+        },
       },
-    },
-    {
-      id: "new-folder",
-      label: "Create New Folder",
-      icon: <Plus className="w-4 h-4 text-muted" />,
-      shortcut: "N",
-      category: "Actions",
-      action: () => {
-        onActionSelect?.("new-folder");
+      {
+        id: "new-folder",
+        label: "Create New Folder",
+        icon: <PlusIcon className="w-4 h-4 text-muted" />,
+        shortcut: "N",
+        category: "Actions",
+        action: () => {
+          onActionSelect?.("new-folder");
+        },
       },
-    },
-    {
-      id: "keyboard-shortcuts",
-      label: "Keyboard Shortcuts",
-      icon: <Keyboard className="w-4 h-4 text-muted" />,
-      shortcut: "?",
-      category: "Help",
-      action: () => {
-        onActionSelect?.("keyboard-shortcuts");
+      {
+        id: "keyboard-shortcuts",
+        label: "Keyboard Shortcuts",
+        icon: <Squares2X2Icon className="w-4 h-4 text-muted" />,
+        shortcut: "?",
+        category: "Help",
+        action: () => {
+          onActionSelect?.("keyboard-shortcuts");
+        },
       },
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: <Settings className="w-4 h-4 text-muted" />,
-      category: "Help",
-      action: () => {
-        window.location.href = "/settings";
+      {
+        id: "settings",
+        label: "Settings",
+        icon: <Cog6ToothIcon className="w-4 h-4 text-muted" />,
+        category: "Help",
+        action: () => {
+          window.location.href = "/settings";
+        },
       },
-    },
-  ], [onActionSelect]);
+    ],
+    [onActionSelect]
+  );
 
   const commands = customCommands || defaultCommands;
 
@@ -483,7 +486,7 @@ export function CommandPalette({
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-border-default">
-          <Search className="w-5 h-5 text-muted flex-shrink-0" />
+          <MagnifyingGlassIcon className="w-5 h-5 text-muted flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -497,7 +500,7 @@ export function CommandPalette({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          {isLoading && <Loader2 className="w-5 h-5 text-muted animate-spin" />}
+          {isLoading && <SpinnerIcon className="w-5 h-5 text-muted" />}
           {query && (
             <button
               className={cn(
@@ -507,7 +510,7 @@ export function CommandPalette({
               onClick={() => setQuery("")}
               aria-label="Clear search"
             >
-              <X className="w-4 h-4" />
+              <XMarkIcon className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -638,9 +641,7 @@ export function CommandPalette({
 
           {/* No results */}
           {query && !isLoading && filteredCommands.length === 0 && searchResults.length === 0 && (
-            <div className="py-8 px-4 text-center text-muted">
-              No results found for "{query}"
-            </div>
+            <div className="py-8 px-4 text-center text-muted">No results found for "{query}"</div>
           )}
         </div>
 

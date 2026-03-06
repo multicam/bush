@@ -10,7 +10,7 @@
 import { useCallback } from "react";
 import { Badge } from "@/web/components/ui";
 import { getFileCategory, getFileIcon } from "@/shared/file-types";
-import { Layers } from "lucide-react";
+import { Square2StackIcon } from "@/web/lib/icons";
 import type { VersionStackCardProps } from "./types";
 
 const CARD_SIZE_DIMENSIONS = {
@@ -68,9 +68,10 @@ export function VersionStackCard({
     <div
       className={`
         relative flex flex-col rounded-md border bg-surface-1 cursor-pointer transition-all overflow-hidden
-        ${isSelected
-          ? "border-accent bg-blue-50"
-          : "border-border-default hover:border-accent hover:shadow-lg"
+        ${
+          isSelected
+            ? "border-accent bg-blue-50"
+            : "border-border-default hover:border-accent hover:shadow-lg"
         }
         focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/30
       `}
@@ -143,14 +144,17 @@ export function VersionStackCard({
 
         {/* Version count badge */}
         <div className="absolute bottom-2 right-2 z-10">
-          <Badge variant="default" size="sm">
+          <Badge color="zinc">
             {versionCount} v{versionCount !== 1 ? "s" : ""}
           </Badge>
         </div>
 
         {/* Stack indicator icon */}
-        <div className="absolute top-2 right-2 z-10 bg-surface-1 rounded-sm p-1 text-secondary" title="Version Stack">
-          <Layers className="w-4 h-4" />
+        <div
+          className="absolute top-2 right-2 z-10 bg-surface-1 rounded-sm p-1 text-secondary"
+          title="Version Stack"
+        >
+          <Square2StackIcon className="w-4 h-4" />
         </div>
       </div>
 

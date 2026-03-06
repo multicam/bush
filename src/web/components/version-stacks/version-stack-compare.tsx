@@ -16,7 +16,7 @@ import { getFileCategory, formatFileSize } from "@/shared/file-types";
 import { filesApi, extractAttributes, getErrorMessage } from "@/web/lib/api";
 import { useLinkedPlayback } from "@/web/hooks/use-linked-playback";
 import { useLinkedZoom } from "@/web/hooks/use-linked-zoom";
-import { Loader2, Link, ArrowLeftRight, X } from "lucide-react";
+import { SpinnerIcon, LinkIcon, ArrowsRightLeftIcon, XMarkIcon } from "@/web/lib/icons";
 import type { AssetFile } from "@/web/components/asset-browser";
 import type { VersionStackCompareProps } from "./types";
 import type { FileAttributes } from "@/web/lib/api";
@@ -43,7 +43,7 @@ export function VersionStackCompare({
   const categories = useMemo(() => {
     return files.map((file) => (file ? getFileCategory(file.mimeType) : null)) as [
       string | null,
-      string | null
+      string | null,
     ];
   }, [files]);
 
@@ -52,7 +52,8 @@ export function VersionStackCompare({
   const canSyncZoom = categories[0] === "image" && categories[1] === "image";
 
   // Determine if sync is currently active
-  const isSyncActive = (canSyncPlayback && linkedPlayback.isSynced) || (canSyncZoom && linkedZoom.isSynced);
+  const isSyncActive =
+    (canSyncPlayback && linkedPlayback.isSynced) || (canSyncZoom && linkedZoom.isSynced);
 
   // Load file data
   useEffect(() => {
@@ -157,7 +158,7 @@ export function VersionStackCompare({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-full p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <SpinnerIcon className="w-6 h-6 text-accent" />
         <p>Loading comparison...</p>
       </div>
     );
@@ -168,7 +169,7 @@ export function VersionStackCompare({
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-full p-8">
         <p className="text-red-500">{error}</p>
-        <Button variant="secondary" onClick={onClose}>
+        <Button outline onClick={onClose}>
           Close
         </Button>
       </div>
@@ -231,23 +232,22 @@ export function VersionStackCompare({
         <h3 className="m-0 text-lg font-semibold text-primary">Compare Versions</h3>
         <div className="flex items-center gap-2">
           {/* Sync toggle - only show for same-type comparisons */}
-          {(canSyncPlayback || canSyncZoom) && (
-            <Button
-              variant={isSyncActive ? "primary" : "secondary"}
-              size="sm"
-              onClick={handleToggleSync}
-              title={isSyncActive ? "Unsync controls (Y)" : "Sync controls (Y)"}
-            >
-              {isSyncActive ? <Link className="w-4 h-4 mr-1" /> : null}
-              {isSyncActive ? "Synced" : "Sync"}
-            </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={onSwap}>
-            <ArrowLeftRight className="w-4 h-4 mr-1" />
+          {(canSyncPlayback || canSyncZoom) &&
+            (isSyncActive ? (
+              <Button color="bush" onClick={handleToggleSync} title="Unsync controls (Y)">
+                <LinkIcon className="w-4 h-4 mr-1" /> Synced
+              </Button>
+            ) : (
+              <Button outline onClick={handleToggleSync} title="Sync controls (Y)">
+                Sync
+              </Button>
+            ))}
+          <Button outline onClick={onSwap}>
+            <ArrowsRightLeftIcon className="w-4 h-4 mr-1" />
             Swap (S)
           </Button>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4 mr-1" />
+          <Button plain onClick={onClose}>
+            <XMarkIcon className="w-4 h-4 mr-1" />
             Close (Esc)
           </Button>
         </div>
@@ -256,7 +256,7 @@ export function VersionStackCompare({
       {/* Sync indicator bar */}
       {isSyncActive && (
         <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border-b border-border-default text-sm text-accent">
-          <Link className="w-4 h-4" />
+          <LinkIcon className="w-4 h-4" />
           <span>
             {canSyncPlayback
               ? "Linked playback: Play, pause, and seek are synchronized"
@@ -270,7 +270,7 @@ export function VersionStackCompare({
         {/* Left panel */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex items-center gap-2 px-4 py-3 bg-surface-2 border-b border-border-default">
-            <Badge variant="default">Version A</Badge>
+            <Badge color="zinc">Version A</Badge>
             {leftFile && (
               <span className="flex-1 text-sm truncate" title={leftFile.name}>
                 {leftFile.name}
@@ -296,7 +296,7 @@ export function VersionStackCompare({
         {/* Right panel */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex items-center gap-2 px-4 py-3 bg-surface-2 border-b border-border-default">
-            <Badge variant="default">Version B</Badge>
+            <Badge color="zinc">Version B</Badge>
             {rightFile && (
               <span className="flex-1 text-sm truncate" title={rightFile.name}>
                 {rightFile.name}

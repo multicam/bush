@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ChevronRight, Folder, Home } from "lucide-react";
+import { ChevronRightIcon, FolderIcon, HomeSmallIcon } from "@/web/lib/icons";
 import { foldersApi, extractCollectionAttributes, getErrorMessage } from "@/web/lib/api";
 import type { FolderAttributes } from "@/web/lib/api";
 
@@ -88,7 +88,7 @@ function FolderNode({
   return (
     <div className="flex flex-col">
       <div
-        className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors select-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${isSelected ? 'bg-accent/10 text-accent' : ''}`}
+        className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors select-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${isSelected ? "bg-accent/10 text-accent" : ""}`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -99,18 +99,18 @@ function FolderNode({
       >
         {hasChildren ? (
           <button
-            className={`flex items-center justify-center w-5 h-5 p-0 bg-none border-none rounded-sm text-muted cursor-pointer transition-transform hover:bg-surface-3 ${isExpanded ? 'rotate-90' : ''}`}
+            className={`flex items-center justify-center w-5 h-5 p-0 bg-none border-none rounded-sm text-muted cursor-pointer transition-transform hover:bg-surface-3 ${isExpanded ? "rotate-90" : ""}`}
             onClick={handleToggle}
             type="button"
             aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
           >
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRightIcon className="size-3" />
           </button>
         ) : (
           <span className="w-5 h-5" />
         )}
         <span className="flex items-center justify-center text-[#f59e0b] flex-shrink-0">
-          <Folder className="w-4 h-4" />
+          <FolderIcon className="size-4" />
         </span>
         <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
           {folder.name}
@@ -145,7 +145,9 @@ export function FolderTree({
   showRoot = true,
 }: FolderTreeProps) {
   const [rootFolders, setRootFolders] = useState<FolderTreeItem[]>([]);
-  const [childrenByParent, setChildrenByParent] = useState<Map<string, FolderTreeItem[]>>(new Map());
+  const [childrenByParent, setChildrenByParent] = useState<Map<string, FolderTreeItem[]>>(
+    new Map()
+  );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -244,10 +246,14 @@ export function FolderTree({
   }
 
   return (
-    <div className="flex flex-col min-h-0 overflow-y-auto text-sm" role="tree" aria-label="Folder navigation">
+    <div
+      className="flex flex-col min-h-0 overflow-y-auto text-sm"
+      role="tree"
+      aria-label="Folder navigation"
+    >
       {showRoot && (
         <div
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${selectedFolderId === null ? 'bg-accent/10 text-accent' : ''}`}
+          className={`flex items-center gap-1 px-2 py-1.5 rounded-sm cursor-pointer transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 ${selectedFolderId === null ? "bg-accent/10 text-accent" : ""}`}
           onClick={handleRootSelect}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -261,7 +267,7 @@ export function FolderTree({
         >
           <span className="w-5 h-5" />
           <span className="flex items-center justify-center text-muted flex-shrink-0">
-            <Home className="w-4 h-4" />
+            <HomeSmallIcon className="size-4" />
           </span>
           <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">All Files</span>
         </div>

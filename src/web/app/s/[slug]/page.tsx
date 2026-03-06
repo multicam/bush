@@ -12,13 +12,13 @@
 
 import { useState, useEffect } from "react";
 import {
-  FileVideo,
-  FileAudio,
-  FileImage,
-  FileText,
-  Folder,
-  Loader2,
-} from "lucide-react";
+  FilmIcon,
+  MusicalNoteIcon,
+  ImagePlusIcon,
+  DocumentTextIcon,
+  FolderIcon,
+  SpinnerIcon,
+} from "@/web/lib/icons";
 import {
   sharesApi,
   getErrorMessage,
@@ -40,7 +40,9 @@ interface Share extends ShareAttributes {
 export default function PublicSharePage({ params }: PublicSharePageProps) {
   const [slug, setSlug] = useState<string | null>(null);
   const [share, setShare] = useState<Share | null>(null);
-  const [loadingState, setLoadingState] = useState<"loading" | "error" | "passphrase" | "loaded">("loading");
+  const [loadingState, setLoadingState] = useState<"loading" | "error" | "passphrase" | "loaded">(
+    "loading"
+  );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [passphrase, setPassphrase] = useState("");
   const [passphraseError, setPassphraseError] = useState<string>("");
@@ -120,11 +122,11 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
    */
   const getFileIcon = (mimeType: string) => {
     const iconClass = "size-12";
-    if (mimeType.startsWith("video/")) return <FileVideo className={iconClass} />;
-    if (mimeType.startsWith("audio/")) return <FileAudio className={iconClass} />;
-    if (mimeType.startsWith("image/")) return <FileImage className={iconClass} />;
-    if (mimeType === "application/pdf") return <FileText className={iconClass} />;
-    return <Folder className={iconClass} />;
+    if (mimeType.startsWith("video/")) return <FilmIcon className={iconClass} />;
+    if (mimeType.startsWith("audio/")) return <MusicalNoteIcon className={iconClass} />;
+    if (mimeType.startsWith("image/")) return <ImagePlusIcon className={iconClass} />;
+    if (mimeType === "application/pdf") return <DocumentTextIcon className={iconClass} />;
+    return <FolderIcon className={iconClass} />;
   };
 
   /**
@@ -142,7 +144,7 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
     return (
       <div className="min-h-screen flex flex-col bg-surface-1">
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
-          <Loader2 className="size-10 animate-spin text-accent" />
+          <SpinnerIcon className="size-10 text-accent" />
           <p className="mt-4 text-secondary">Loading share...</p>
         </div>
       </div>
@@ -187,32 +189,24 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
             }}
           >
             {branding.logo_url && (
-              <img
-                src={branding.logo_url}
-                alt="Logo"
-                className="max-w-[150px] mb-6 mx-auto"
-              />
+              <img src={branding.logo_url} alt="Logo" className="max-w-[150px] mb-6 mx-auto" />
             )}
             <h2 className="text-2xl font-semibold text-primary mb-2">Protected Share</h2>
-            <p className="text-sm text-secondary mb-6">
-              Enter the passphrase to access this share
-            </p>
+            <p className="text-sm text-secondary mb-6">Enter the passphrase to access this share</p>
             <input
               type="password"
               className="w-full px-4 py-3.5 text-base border-2 rounded-lg mb-4 transition-colors focus:outline-none focus:border-accent"
               style={{
                 background: isDark ? "#111" : "#f5f5f5",
                 color: isDark ? "#fff" : "#111",
-                borderColor: passphraseError ? "#ef4444" : (isDark ? "#333" : "#ddd"),
+                borderColor: passphraseError ? "#ef4444" : isDark ? "#333" : "#ddd",
               }}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               placeholder="Enter passphrase"
               autoFocus
             />
-            {passphraseError && (
-              <p className="text-sm text-red-500 mb-4">{passphraseError}</p>
-            )}
+            {passphraseError && <p className="text-sm text-red-500 mb-4">{passphraseError}</p>}
             <button
               type="submit"
               className="w-full py-3.5 text-base font-semibold text-white rounded-lg transition-opacity hover:opacity-90 disabled:opacity-70"
@@ -247,16 +241,10 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
       }}
     >
       {/* Header */}
-      <header
-        className="sticky top-0 z-50 px-6 py-4 flex justify-between items-center backdrop-blur-sm border-b border-border-default"
-      >
+      <header className="sticky top-0 z-50 px-6 py-4 flex justify-between items-center backdrop-blur-sm border-b border-border-default">
         <div className="flex items-center gap-4">
           {branding.logo_url && (
-            <img
-              src={branding.logo_url}
-              alt="Logo"
-              className="max-w-[120px] max-h-10"
-            />
+            <img src={branding.logo_url} alt="Logo" className="max-w-[120px] max-h-10" />
           )}
           {!branding.logo_url && (
             <span
@@ -314,9 +302,7 @@ export default function PublicSharePage({ params }: PublicSharePageProps) {
                 <p className="text-sm font-medium text-primary m-0 mb-1 truncate overflow-hidden whitespace-nowrap">
                   {asset.name || asset.originalName}
                 </p>
-                <p className="text-xs text-secondary m-0">
-                  {formatFileSize(asset.fileSizeBytes)}
-                </p>
+                <p className="text-xs text-secondary m-0">{formatFileSize(asset.fileSizeBytes)}</p>
               </div>
             </div>
           ))}

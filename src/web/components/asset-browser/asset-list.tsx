@@ -10,7 +10,7 @@
 
 import { useCallback, useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Loader2 } from "lucide-react";
+import { SpinnerIcon } from "@/web/lib/icons";
 import { Badge } from "@/web/components/ui";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import type { AssetListProps, AssetFile, AssetFolder } from "./types";
@@ -46,11 +46,7 @@ function SortHeader({ field, label, currentField, direction, onSort }: SortHeade
       aria-label={`Sort by ${label}`}
     >
       {label}
-      {isActive && (
-        <span className="text-[0.625rem]">
-          {direction === "asc" ? "↑" : "↓"}
-        </span>
-      )}
+      {isActive && <span className="text-[0.625rem]">{direction === "asc" ? "↑" : "↓"}</span>}
     </button>
   );
 }
@@ -125,18 +121,18 @@ export function AssetList({
     [onFolderClick]
   );
 
-  const getStatusBadgeVariant = (status: AssetFile["status"]): "default" | "success" | "warning" | "error" => {
+  const getStatusBadgeColor = (status: AssetFile["status"]): "green" | "amber" | "zinc" | "red" => {
     switch (status) {
       case "ready":
-        return "success";
+        return "green";
       case "processing":
-        return "warning";
+        return "amber";
       case "uploading":
-        return "default";
+        return "zinc";
       case "processing_failed":
-        return "error";
+        return "red";
       default:
-        return "default";
+        return "zinc";
     }
   };
 
@@ -220,18 +216,20 @@ export function AssetList({
             }
           }}
         >
-          <div className="flex items-center w-10 shrink-0">
-            {/* Folders aren't selectable */}
-          </div>
+          <div className="flex items-center w-10 shrink-0">{/* Folders aren't selectable */}</div>
           <div className="flex-1 min-w-[200px]">
             <div className="flex items-center gap-3 md:gap-2">
               <span className="text-xl shrink-0">📁</span>
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">{folder.name}</span>
+              <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">
+                {folder.name}
+              </span>
             </div>
           </div>
           <div className="w-[100px] shrink-0 text-right hidden md:block">—</div>
           <div className="w-[120px] shrink-0 flex justify-center hidden md:block">—</div>
-          <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">{formatRelativeTime(folder.createdAt)}</div>
+          <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">
+            {formatRelativeTime(folder.createdAt)}
+          </div>
         </div>
       );
     }
@@ -268,16 +266,22 @@ export function AssetList({
             <span className="text-xl shrink-0" data-category={category}>
               {getFileIcon(file.mimeType)}
             </span>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">{file.name}</span>
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-primary md:text-[0.8125rem]">
+              {file.name}
+            </span>
           </div>
         </div>
-        <div className="w-[100px] shrink-0 text-right hidden md:block">{formatFileSize(file.fileSizeBytes)}</div>
+        <div className="w-[100px] shrink-0 text-right hidden md:block">
+          {formatFileSize(file.fileSizeBytes)}
+        </div>
         <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
-          <Badge variant={getStatusBadgeVariant(file.status)} size="sm">
+          <Badge color={getStatusBadgeColor(file.status)}>
             {file.status === "processing_failed" ? "failed" : file.status}
           </Badge>
         </div>
-        <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">{formatRelativeTime(file.createdAt)}</div>
+        <div className="w-[100px] shrink-0 text-right text-muted text-[0.8125rem]">
+          {formatRelativeTime(file.createdAt)}
+        </div>
       </div>
     );
   };
@@ -298,23 +302,45 @@ export function AssetList({
             />
           </div>
           <div className="flex-1 min-w-[200px]">
-            <SortHeader field="name" label="Name" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+            <SortHeader
+              field="name"
+              label="Name"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
           </div>
           <div className="w-[100px] shrink-0 text-right hidden md:block">
-            <SortHeader field="fileSizeBytes" label="Size" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+            <SortHeader
+              field="fileSizeBytes"
+              label="Size"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
           </div>
           <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
-            <SortHeader field="status" label="Status" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+            <SortHeader
+              field="status"
+              label="Status"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
           </div>
           <div className="w-[100px] shrink-0 text-right">
-            <SortHeader field="createdAt" label="Created" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+            <SortHeader
+              field="createdAt"
+              label="Created"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
           </div>
         </div>
 
         {/* Rows */}
-        <div className="flex flex-col">
-          {allItems.map((item, index) => renderRow(item, index))}
-        </div>
+        <div className="flex flex-col">{allItems.map((item, index) => renderRow(item, index))}</div>
       </div>
     );
   }
@@ -338,16 +364,40 @@ export function AssetList({
           />
         </div>
         <div className="flex-1 min-w-[200px]">
-          <SortHeader field="name" label="Name" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+          <SortHeader
+            field="name"
+            label="Name"
+            currentField={sortField}
+            direction={sortDirection}
+            onSort={handleSort}
+          />
         </div>
         <div className="w-[100px] shrink-0 text-right hidden md:block">
-          <SortHeader field="fileSizeBytes" label="Size" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+          <SortHeader
+            field="fileSizeBytes"
+            label="Size"
+            currentField={sortField}
+            direction={sortDirection}
+            onSort={handleSort}
+          />
         </div>
         <div className="w-[120px] shrink-0 flex justify-center hidden md:flex">
-          <SortHeader field="status" label="Status" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+          <SortHeader
+            field="status"
+            label="Status"
+            currentField={sortField}
+            direction={sortDirection}
+            onSort={handleSort}
+          />
         </div>
         <div className="w-[100px] shrink-0 text-right">
-          <SortHeader field="createdAt" label="Created" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+          <SortHeader
+            field="createdAt"
+            label="Created"
+            currentField={sortField}
+            direction={sortDirection}
+            onSort={handleSort}
+          />
         </div>
       </div>
 
@@ -377,7 +427,7 @@ export function AssetList({
               >
                 {isLoadingMore && (
                   <div className="flex items-center gap-2 text-secondary text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <SpinnerIcon className="size-4" />
                     <span>Loading more...</span>
                   </div>
                 )}

@@ -7,7 +7,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { Folder } from "lucide-react";
+import { FolderIcon } from "@/web/lib/icons";
 import type { AssetFolder, CardSize } from "./types";
 import { CARD_SIZE_DIMENSIONS } from "./types";
 import { cn } from "@/web/lib/utils";
@@ -71,11 +71,7 @@ export function FolderCard({ folder, cardSize, onClick, staggerIndex = 0 }: Fold
         className="flex items-center justify-center bg-amber-500/10"
         style={{ height: dimensions.thumbnailHeight }}
       >
-        <Folder
-          size={48}
-          className="text-amber-500/80 transition-transform duration-100 group-hover:opacity-100 group-hover:scale-105"
-          strokeWidth={1.5}
-        />
+        <FolderIcon className="size-12 text-amber-500/80 transition-transform duration-100 group-hover:opacity-100 group-hover:scale-105" />
       </div>
 
       {/* Info */}

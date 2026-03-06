@@ -8,29 +8,28 @@
 
 import React, { useState, useCallback } from "react";
 import {
-  MousePointer2,
-  Square,
-  Circle,
-  ArrowRight,
-  Minus,
-  Pencil,
-  Undo2,
-  Redo2,
-} from "lucide-react";
+  EyeIcon,
+  RectangleGroupIcon,
+  PaintBrushIcon,
+  ChevronRightIcon,
+  MinusIcon,
+  PencilIcon,
+  ArrowUturnLeftIcon,
+} from "@/web/lib/icons";
 import type { AnnotationToolbarProps, AnnotationTool } from "./types";
 import { DEFAULT_COLORS, STROKE_WIDTHS } from "./types";
 import { Button } from "../ui/button";
 
 /**
- * Tool configuration for UI display with Lucide icons
+ * Tool configuration for UI display with Heroicons
  */
-const TOOL_CONFIG_LUCIDE: Record<AnnotationTool, { label: string; icon: React.ReactNode }> = {
-  select: { label: "Select", icon: <MousePointer2 className="w-4 h-4" /> },
-  rectangle: { label: "Rectangle", icon: <Square className="w-4 h-4" /> },
-  ellipse: { label: "Circle", icon: <Circle className="w-4 h-4" /> },
-  arrow: { label: "Arrow", icon: <ArrowRight className="w-4 h-4" /> },
-  line: { label: "Line", icon: <Minus className="w-4 h-4" /> },
-  freehand: { label: "Draw", icon: <Pencil className="w-4 h-4" /> },
+const TOOL_CONFIG: Record<AnnotationTool, { label: string; icon: React.ReactNode }> = {
+  select: { label: "Select", icon: <EyeIcon className="w-4 h-4" /> },
+  rectangle: { label: "Rectangle", icon: <RectangleGroupIcon className="w-4 h-4" /> },
+  ellipse: { label: "Circle", icon: <PaintBrushIcon className="w-4 h-4" /> },
+  arrow: { label: "Arrow", icon: <ChevronRightIcon className="w-4 h-4" /> },
+  line: { label: "Line", icon: <MinusIcon className="w-4 h-4" /> },
+  freehand: { label: "Draw", icon: <PencilIcon className="w-4 h-4" /> },
   text: { label: "Text", icon: <span className="text-sm font-bold">T</span> },
 };
 
@@ -48,7 +47,7 @@ function ToolButton({
   onSelect: (tool: AnnotationTool) => void;
   disabled?: boolean;
 }) {
-  const config = TOOL_CONFIG_LUCIDE[tool];
+  const config = TOOL_CONFIG[tool];
   const isActive = tool === currentTool;
 
   return (
@@ -173,10 +172,7 @@ function StrokeWidthPicker({
         aria-label="Select stroke width"
         aria-expanded={isOpen}
       >
-        <span
-          className="w-5 bg-primary rounded-[2px]"
-          style={{ height: currentWidth }}
-        />
+        <span className="w-5 bg-primary rounded-[2px]" style={{ height: currentWidth }} />
       </button>
       {isOpen && (
         <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 flex flex-col gap-0.5 p-2 bg-surface-2/98 rounded-md shadow-lg border border-border-default z-[100]">
@@ -314,7 +310,7 @@ export function AnnotationToolbar({
           title="Undo (Ctrl+Z)"
           aria-label="Undo"
         >
-          <Undo2 className="w-4 h-4" />
+          <ArrowUturnLeftIcon className="w-4 h-4" />
         </button>
         <button
           type="button"
@@ -329,7 +325,7 @@ export function AnnotationToolbar({
           title="Redo (Ctrl+Y)"
           aria-label="Redo"
         >
-          <Redo2 className="w-4 h-4" />
+          <ArrowUturnLeftIcon className="w-4 h-4 scale-x-[-1]" />
         </button>
       </div>
 
@@ -337,8 +333,7 @@ export function AnnotationToolbar({
         <>
           <div className="w-px h-6 bg-white/20 mx-2" />
           <Button
-            variant="danger"
-            size="sm"
+            color="red"
             onClick={onDelete}
             disabled={disabled}
             className="text-xs px-2.5 py-1"

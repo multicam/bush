@@ -7,8 +7,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Search, X, Loader2 } from "lucide-react";
-import { searchApi, SearchResultAttributes, SearchSuggestionAttributes, JsonApiResource } from "../../lib/api";
+import { MagnifyingGlassIcon, XMarkIcon, SpinnerIcon } from "@/web/lib/icons";
+import {
+  searchApi,
+  SearchResultAttributes,
+  SearchSuggestionAttributes,
+  JsonApiResource,
+} from "../../lib/api";
 
 /** File type icons */
 const FILE_TYPE_ICONS: Record<string, string> = {
@@ -129,54 +134,57 @@ export function GlobalSearch({
   }, [isOpen, closeSearch]);
 
   // Debounced search with race condition protection
-  const performSearch = useCallback(async (searchQuery: string, searchId: number) => {
-    if (searchQuery.length < 2) {
-      // Only update if this is still the current search
-      if (searchId === currentSearchIdRef.current) {
-        setResults([]);
-        setSuggestions([]);
-        setShowSuggestions(false);
+  const performSearch = useCallback(
+    async (searchQuery: string, searchId: number) => {
+      if (searchQuery.length < 2) {
+        // Only update if this is still the current search
+        if (searchId === currentSearchIdRef.current) {
+          setResults([]);
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+        return;
       }
-      return;
-    }
 
-    // Cancel previous search
-    if (searchAbortControllerRef.current) {
-      searchAbortControllerRef.current.abort();
-    }
-    searchAbortControllerRef.current = new AbortController();
-    const signal = searchAbortControllerRef.current.signal;
+      // Cancel previous search
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
+      searchAbortControllerRef.current = new AbortController();
+      const signal = searchAbortControllerRef.current.signal;
 
-    setIsLoading(true);
-    try {
-      // Fetch both search results and suggestions
-      const [searchResponse, suggestionsResponse] = await Promise.all([
-        searchApi.search({ query: searchQuery, projectId, limit: 20 }),
-        searchApi.suggestions(searchQuery, 5),
-      ]);
+      setIsLoading(true);
+      try {
+        // Fetch both search results and suggestions
+        const [searchResponse, suggestionsResponse] = await Promise.all([
+          searchApi.search({ query: searchQuery, projectId, limit: 20 }),
+          searchApi.suggestions(searchQuery, 5),
+        ]);
 
-      // Only update state if this search is still current and not aborted
-      if (searchId === currentSearchIdRef.current && !signal.aborted) {
-        setResults(searchResponse.data);
-        setSuggestions(suggestionsResponse.data);
-        setShowSuggestions(true);
-        setSelectedIndex(0);
+        // Only update state if this search is still current and not aborted
+        if (searchId === currentSearchIdRef.current && !signal.aborted) {
+          setResults(searchResponse.data);
+          setSuggestions(suggestionsResponse.data);
+          setShowSuggestions(true);
+          setSelectedIndex(0);
+        }
+      } catch (error) {
+        // Ignore abort errors
+        if ((error as Error).name === "AbortError") return;
+        console.error("Search failed:", error);
+        // Only clear results if this is still the current search
+        if (searchId === currentSearchIdRef.current) {
+          setResults([]);
+          setSuggestions([]);
+        }
+      } finally {
+        if (searchId === currentSearchIdRef.current) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      // Ignore abort errors
-      if ((error as Error).name === "AbortError") return;
-      console.error("Search failed:", error);
-      // Only clear results if this is still the current search
-      if (searchId === currentSearchIdRef.current) {
-        setResults([]);
-        setSuggestions([]);
-      }
-    } finally {
-      if (searchId === currentSearchIdRef.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [projectId]);
+    },
+    [projectId]
+  );
 
   // Debounce search input
   useEffect(() => {
@@ -207,38 +215,44 @@ export function GlobalSearch({
   }, []);
 
   // Handle keyboard navigation in results
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const totalItems = results.length + suggestions.length;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const totalItems = results.length + suggestions.length;
 
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % totalItems);
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (selectedIndex < suggestions.length && suggestions[selectedIndex]) {
-          // Select suggestion - fill input with suggestion
-          setQuery(suggestions[selectedIndex].name);
-          setShowSuggestions(false);
-        } else if (results[selectedIndex - suggestions.length]) {
-          // Select result
-          onSelect?.(results[selectedIndex - suggestions.length]);
-          closeSearch();
-        }
-        break;
-    }
-  }, [results, suggestions, selectedIndex, onSelect, closeSearch]);
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev + 1) % totalItems);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (selectedIndex < suggestions.length && suggestions[selectedIndex]) {
+            // Select suggestion - fill input with suggestion
+            setQuery(suggestions[selectedIndex].name);
+            setShowSuggestions(false);
+          } else if (results[selectedIndex - suggestions.length]) {
+            // Select result
+            onSelect?.(results[selectedIndex - suggestions.length]);
+            closeSearch();
+          }
+          break;
+      }
+    },
+    [results, suggestions, selectedIndex, onSelect, closeSearch]
+  );
 
   // Handle result click
-  const handleResultClick = useCallback((result: JsonApiResource<SearchResultAttributes>) => {
-    onSelect?.(result);
-    closeSearch();
-  }, [onSelect, closeSearch]);
+  const handleResultClick = useCallback(
+    (result: JsonApiResource<SearchResultAttributes>) => {
+      onSelect?.(result);
+      closeSearch();
+    },
+    [onSelect, closeSearch]
+  );
 
   // Handle suggestion click
   const handleSuggestionClick = useCallback((suggestion: SearchSuggestionAttributes) => {
@@ -254,7 +268,7 @@ export function GlobalSearch({
         onClick={openSearch}
         aria-label="Open search"
       >
-        <Search className="w-[18px] h-[18px] text-secondary" />
+        <MagnifyingGlassIcon className="w-[18px] h-[18px] text-secondary" />
         <span className="flex-1 text-left text-sm hidden sm:block">{placeholder}</span>
         <kbd className="px-1.5 py-0.5 bg-surface-2 border border-border-default rounded-sm text-[11px] font-mono text-secondary hidden sm:block">
           ⌘K
@@ -267,7 +281,7 @@ export function GlobalSearch({
           <div className="w-full max-w-[560px] bg-surface-1 rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-top-5 duration-200 max-sm:max-w-none max-sm:rounded-none max-sm:min-h-screen">
             {/* Search input */}
             <div className="flex items-center gap-3 p-4 border-b border-border-default">
-              <Search className="w-5 h-5 text-secondary flex-shrink-0" />
+              <MagnifyingGlassIcon className="w-5 h-5 text-secondary flex-shrink-0" />
               <input
                 ref={inputRef}
                 type="text"
@@ -277,14 +291,14 @@ export function GlobalSearch({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              {isLoading && <Loader2 className="w-5 h-5 text-secondary animate-spin" />}
+              {isLoading && <SpinnerIcon className="w-5 h-5 text-secondary" />}
               {query.length >= 2 && (
                 <button
                   className="flex items-center justify-center w-6 h-6 bg-surface-2 border-none rounded-sm cursor-pointer text-secondary transition-colors hover:bg-surface-3 hover:text-primary"
                   onClick={() => setQuery("")}
                   aria-label="Clear search"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <XMarkIcon className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -307,7 +321,9 @@ export function GlobalSearch({
                         onClick={() => handleSuggestionClick(suggestion)}
                         onMouseEnter={() => setSelectedIndex(index)}
                       >
-                        <span className="text-base">{FILE_TYPE_ICONS[suggestion.type] || "📄"}</span>
+                        <span className="text-base">
+                          {FILE_TYPE_ICONS[suggestion.type] || "📄"}
+                        </span>
                         <span className="text-sm text-primary">{suggestion.name}</span>
                       </button>
                     ))}
@@ -337,7 +353,8 @@ export function GlobalSearch({
                             {result.attributes.name}
                           </span>
                           <span className="text-xs text-secondary">
-                            {formatFileSize(result.attributes.fileSizeBytes)} · {result.attributes.mimeType}
+                            {formatFileSize(result.attributes.fileSizeBytes)} ·{" "}
+                            {result.attributes.mimeType}
                           </span>
                         </div>
                       </button>
@@ -348,11 +365,15 @@ export function GlobalSearch({
             )}
 
             {/* No results */}
-            {showSuggestions && query.length >= 2 && !isLoading && suggestions.length === 0 && results.length === 0 && (
-              <div className="py-8 px-4 text-center text-secondary">
-                <span>No results found for "{query}"</span>
-              </div>
-            )}
+            {showSuggestions &&
+              query.length >= 2 &&
+              !isLoading &&
+              suggestions.length === 0 &&
+              results.length === 0 && (
+                <div className="py-8 px-4 text-center text-secondary">
+                  <span>No results found for "{query}"</span>
+                </div>
+              )}
 
             {/* Help text */}
             <div className="flex items-center gap-4 px-4 py-3 border-t border-border-default bg-surface-2 text-xs text-secondary">

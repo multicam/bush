@@ -10,7 +10,13 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { ChevronUp, ChevronDown, X, Upload, GripHorizontal } from "lucide-react";
+import {
+  ChevronUpIcon,
+  ChevronDownIcon,
+  XMarkIcon,
+  ArrowUpTrayIcon,
+  GripIcon,
+} from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 import { Button, Badge } from "@/web/components/ui";
 import { UploadQueue, QueuedFile } from "./upload-queue";
@@ -121,7 +127,8 @@ function useUploadStats(files: QueuedFile[]) {
 function formatSpeed(bytesPerSecond: number): string {
   if (bytesPerSecond < 1024) return `${bytesPerSecond} B/s`;
   if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
-  if (bytesPerSecond < 1024 * 1024 * 1024) return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+  if (bytesPerSecond < 1024 * 1024 * 1024)
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
   return `${(bytesPerSecond / (1024 * 1024 * 1024)).toFixed(1)} GB/s`;
 }
 
@@ -129,7 +136,10 @@ function formatSpeed(bytesPerSecond: number): string {
  * Get a unique generation ID from files array
  */
 function getFilesGeneration(files: QueuedFile[]): string {
-  return files.map((f) => f.id).sort().join(",");
+  return files
+    .map((f) => f.id)
+    .sort()
+    .join(",");
 }
 
 /**
@@ -256,19 +266,19 @@ export function UploadDrawer({
       >
         {/* Drag handle */}
         <div className="flex items-center justify-center w-6 h-6 text-muted">
-          <GripHorizontal className="w-5 h-5" />
+          <GripIcon className="size-5" />
         </div>
 
         {/* Icon and title */}
         <div className="flex items-center gap-2">
-          <Upload className="w-4 h-4 text-muted" />
+          <ArrowUpTrayIcon className="size-4 text-muted" />
           <span className="text-sm font-medium text-primary">
             {isActive ? "Uploading" : "Uploads"}
           </span>
         </div>
 
         {/* Status badge */}
-        <Badge variant={isActive ? "primary" : stats.failed > 0 ? "error" : "success"} size="sm">
+        <Badge color={isActive ? "blue" : stats.failed > 0 ? "red" : "green"}>
           {stats.activeCount > 0
             ? `${stats.activeCount} active`
             : stats.failed > 0
@@ -299,8 +309,7 @@ export function UploadDrawer({
         <div className="flex items-center gap-1">
           {isComplete && onClearCompleted && (
             <Button
-              variant="ghost"
-              size="sm"
+              plain
               onClick={(e) => {
                 e.stopPropagation();
                 onClearCompleted();
@@ -320,7 +329,7 @@ export function UploadDrawer({
             }}
             aria-label="Dismiss upload drawer"
           >
-            <X className="w-4 h-4" />
+            <XMarkIcon className="size-4" />
           </button>
           <button
             className={cn(
@@ -330,9 +339,9 @@ export function UploadDrawer({
             aria-label={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? (
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDownIcon className="size-4" />
             ) : (
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUpIcon className="size-4" />
             )}
           </button>
         </div>

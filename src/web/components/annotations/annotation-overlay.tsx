@@ -7,13 +7,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Pencil, X } from "lucide-react";
+import { PencilIcon, XMarkIcon } from "@/web/lib/icons";
 import { AnnotationCanvas } from "./annotation-canvas";
 import { AnnotationToolbar } from "./annotation-toolbar";
-import type {
-  AnnotationShape,
-  AnnotationTool,
-} from "./types";
+import type { AnnotationShape, AnnotationTool } from "./types";
 import { generateId } from "../../lib/utils";
 
 export interface AnnotationOverlayProps {
@@ -74,21 +71,24 @@ export function AnnotationOverlay({
   const historyPushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Push state to history - declared before useEffect that uses it
-  const pushHistory = useCallback((newAnnotations: AnnotationShape[]) => {
-    setHistory((prev) => {
-      // Remove any future states if we're not at the end
-      const newHistory = prev.slice(0, historyIndex + 1);
-      // Add new state
-      newHistory.push({ annotations: newAnnotations });
-      // Limit history size
-      if (newHistory.length > 50) {
-        newHistory.shift();
+  const pushHistory = useCallback(
+    (newAnnotations: AnnotationShape[]) => {
+      setHistory((prev) => {
+        // Remove any future states if we're not at the end
+        const newHistory = prev.slice(0, historyIndex + 1);
+        // Add new state
+        newHistory.push({ annotations: newAnnotations });
+        // Limit history size
+        if (newHistory.length > 50) {
+          newHistory.shift();
+          return newHistory;
+        }
         return newHistory;
-      }
-      return newHistory;
-    });
-    setHistoryIndex((prev) => Math.min(prev + 1, 49));
-  }, [historyIndex]);
+      });
+      setHistoryIndex((prev) => Math.min(prev + 1, 49));
+    },
+    [historyIndex]
+  );
 
   // Sync with external annotations - debounced and deduplicated
   useEffect(() => {
@@ -99,11 +99,7 @@ export function AnnotationOverlay({
       prevAnnotations.length !== externalAnnotations.length ||
       prevAnnotations.some((prev, i) => {
         const curr = externalAnnotations[i];
-        return (
-          !curr ||
-          prev.id !== curr.id ||
-          JSON.stringify(prev) !== JSON.stringify(curr)
-        );
+        return !curr || prev.id !== curr.id || JSON.stringify(prev) !== JSON.stringify(curr);
       });
 
     // Always update local annotations to stay in sync
@@ -258,7 +254,7 @@ export function AnnotationOverlay({
           title="Enable annotation mode"
           aria-label="Enable annotation mode"
         >
-          <Pencil className="w-5 h-5 opacity-80" />
+          <PencilIcon className="w-5 h-5 opacity-80" />
           <span>Annotate</span>
         </button>
       )}
@@ -277,7 +273,7 @@ export function AnnotationOverlay({
           title="Exit annotation mode"
           aria-label="Exit annotation mode"
         >
-          <X className="w-5 h-5" />
+          <XMarkIcon className="w-5 h-5" />
         </button>
       )}
     </div>

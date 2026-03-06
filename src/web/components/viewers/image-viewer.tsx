@@ -12,9 +12,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
-import { Minus, Plus } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { MinusIcon, PlusIcon, SpinnerIcon } from "@/web/lib/icons";
 
 export interface ImageViewerProps {
   /** Image URL to display */
@@ -112,20 +119,26 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
   const [isZoomInitialized, setIsZoomInitialized] = useState(false);
 
   // Expose imperative methods for linked zoom/pan (ComparisonViewer)
-  const setZoomExternal = useCallback((level: number) => {
-    const clampedLevel = Math.max(minZoom, Math.min(maxZoom, level));
-    setZoomLevel(clampedLevel);
-    onZoomChange?.(clampedLevel);
-  }, [minZoom, maxZoom, onZoomChange]);
+  const setZoomExternal = useCallback(
+    (level: number) => {
+      const clampedLevel = Math.max(minZoom, Math.min(maxZoom, level));
+      setZoomLevel(clampedLevel);
+      onZoomChange?.(clampedLevel);
+    },
+    [minZoom, maxZoom, onZoomChange]
+  );
 
   const setPanExternal = useCallback((x: number, y: number) => {
     setPanOffset({ x, y });
   }, []);
 
   // Mini-map visibility
-  const shouldShowMiniMap = useMemo(() =>
-    showMiniMap === true ||
-    (showMiniMap === "auto" && imageSize.loaded && (imageSize.width > 2000 || imageSize.height > 2000)),
+  const shouldShowMiniMap = useMemo(
+    () =>
+      showMiniMap === true ||
+      (showMiniMap === "auto" &&
+        imageSize.loaded &&
+        (imageSize.width > 2000 || imageSize.height > 2000)),
     [showMiniMap, imageSize]
   );
 
@@ -261,11 +274,14 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
   );
 
   // Pan handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-  }, [panOffset]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    },
+    [panOffset]
+  );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -313,30 +329,33 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
   }, [zoomIn, zoomOut, zoomToFit, zoomTo1to1]);
 
   // Mini-map click handler
-  const handleMiniMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+  const handleMiniMapClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
-    const ratioX = clickX / rect.width;
-    const ratioY = clickY / rect.height;
+      const ratioX = clickX / rect.width;
+      const ratioY = clickY / rect.height;
 
-    if (!containerRef.current || !imageSize.loaded) return;
+      if (!containerRef.current || !imageSize.loaded) return;
 
-    const containerRect = containerRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
 
-    const newX = containerRect.width / 2 - ratioX * imageSize.width * zoomLevel;
-    const newY = containerRect.height / 2 - ratioY * imageSize.height * zoomLevel;
+      const newX = containerRect.width / 2 - ratioX * imageSize.width * zoomLevel;
+      const newY = containerRect.height / 2 - ratioY * imageSize.height * zoomLevel;
 
-    setPanOffset({ x: newX, y: newY });
-  }, [imageSize, zoomLevel]);
+      setPanOffset({ x: newX, y: newY });
+    },
+    [imageSize, zoomLevel]
+  );
 
   const zoomPercent = Math.round(zoomLevel * 100);
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden bg-[#1a1a1a] ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} select-none ${className || ''}`}
+      className={`relative w-full h-full overflow-hidden bg-[#1a1a1a] ${isPanning ? "cursor-grabbing" : "cursor-grab"} select-none ${className || ""}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -345,7 +364,7 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
     >
       {!imageSize.loaded && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 text-muted text-sm">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <SpinnerIcon className="w-8 h-8" />
           <span>Loading image...</span>
         </div>
       )}
@@ -372,9 +391,11 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
             title="Zoom out (-)"
             aria-label="Zoom out"
           >
-            <Minus className="w-4 h-4" />
+            <MinusIcon className="w-4 h-4" />
           </button>
-          <span className="min-w-[48px] text-center text-white text-[13px] font-medium">{zoomPercent}%</span>
+          <span className="min-w-[48px] text-center text-white text-[13px] font-medium">
+            {zoomPercent}%
+          </span>
           <button
             onClick={zoomIn}
             disabled={zoomLevel >= maxZoom}
@@ -382,7 +403,7 @@ export const ImageViewer = forwardRef<ImageViewerHandle, ImageViewerProps>(funct
             title="Zoom in (+)"
             aria-label="Zoom in"
           >
-            <Plus className="w-4 h-4" />
+            <PlusIcon className="w-4 h-4" />
           </button>
         </div>
         <div className="flex gap-1 ml-2 pl-2 border-l border-[#444]">

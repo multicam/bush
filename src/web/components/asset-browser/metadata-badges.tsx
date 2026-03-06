@@ -8,7 +8,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Clock, Maximize2, Star, Tag } from "lucide-react";
+import { ClockIcon, ArrowsPointingOutIcon, StarIcon, TagIcon } from "@/web/lib/icons";
 import { cn } from "@/web/lib/utils";
 import type { AssetFile, CardSize } from "./types";
 
@@ -52,14 +52,15 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
 
   // Build badge list with priority ordering
   const badges = useMemo(() => {
-    const result: Array<{ type: string; label: string; icon?: React.ReactNode; variant?: string }> = [];
+    const result: Array<{ type: string; label: string; icon?: React.ReactNode; variant?: string }> =
+      [];
 
     // 1. Duration (for video/audio)
     if (file.duration !== null && file.duration !== undefined && file.duration > 0) {
       result.push({
         type: "duration",
         label: formatDuration(file.duration),
-        icon: <Clock size={10} />,
+        icon: <ClockIcon className="size-2.5" />,
       });
     }
 
@@ -68,7 +69,7 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "resolution",
         label: formatResolution(file.width, file.height),
-        icon: <Maximize2 size={10} />,
+        icon: <ArrowsPointingOutIcon className="size-2.5" />,
       });
     }
 
@@ -77,7 +78,7 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "rating",
         label: String(file.rating),
-        icon: <Star size={10} fill="currentColor" />,
+        icon: <StarIcon className="size-2.5" />,
         variant: "rating",
       });
     }
@@ -96,7 +97,7 @@ export function MetadataBadges({ file, cardSize, maxBadges }: MetadataBadgesProp
       result.push({
         type: "keyword",
         label: file.keywords[0],
-        icon: <Tag size={10} />,
+        icon: <TagIcon className="size-2.5" />,
         variant: "keyword",
       });
     }

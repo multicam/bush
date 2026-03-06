@@ -25,7 +25,14 @@ import type {
 /** Filter icon */
 function FilterIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
     </svg>
   );
@@ -34,7 +41,14 @@ function FilterIcon() {
 /** Export icon */
 function ExportIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -45,7 +59,14 @@ function ExportIcon() {
 /** Comments icon */
 function CommentsIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
@@ -64,7 +85,10 @@ function groupCommentsIntoThreads(comments: Comment[]): CommentThreadType[] {
 }
 
 /** Filter comments based on filter options */
-function filterComments(threads: CommentThreadType[], filters: CommentFilters): CommentThreadType[] {
+function filterComments(
+  threads: CommentThreadType[],
+  filters: CommentFilters
+): CommentThreadType[] {
   return threads
     .map((thread) => {
       // Filter parent
@@ -138,21 +162,24 @@ function exportComments(threads: CommentThreadType[], format: CommentExportForma
       lines.push("Author,Date,Text,Timestamp,Status");
       threads.forEach((thread) => {
         const user = thread.parent.user;
-        const name = user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.email;
-        const time = thread.parent.timestamp !== null
-          ? formatTimecodeForExport(thread.parent.timestamp)
-          : "";
+        const name =
+          user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email;
+        const time =
+          thread.parent.timestamp !== null ? formatTimecodeForExport(thread.parent.timestamp) : "";
         const status = thread.parent.completedAt ? "Completed" : "Open";
-        lines.push(`"${name}","${thread.parent.createdAt}","${thread.parent.text.replace(/"/g, '""')}","${time}","${status}"`);
+        lines.push(
+          `"${name}","${thread.parent.createdAt}","${thread.parent.text.replace(/"/g, '""')}","${time}","${status}"`
+        );
 
         thread.replies.forEach((reply) => {
           const replyUser = reply.user;
-          const replyName = replyUser.firstName && replyUser.lastName
-            ? `${replyUser.firstName} ${replyUser.lastName}`
-            : replyUser.email;
-          lines.push(`"${replyName}","${reply.createdAt}","${reply.text.replace(/"/g, '""')}","",""`);
+          const replyName =
+            replyUser.firstName && replyUser.lastName
+              ? `${replyUser.firstName} ${replyUser.lastName}`
+              : replyUser.email;
+          lines.push(
+            `"${replyName}","${reply.createdAt}","${reply.text.replace(/"/g, '""')}","",""`
+          );
         });
       });
       break;
@@ -167,7 +194,9 @@ function exportComments(threads: CommentThreadType[], format: CommentExportForma
           const outTime = thread.parent.duration
             ? formatTimecodeForEDL(thread.parent.timestamp + thread.parent.duration)
             : inTime;
-          lines.push(`${String(index + 1).padStart(3, "0")}  AX       V     C        ${inTime} ${outTime} ${inTime} ${outTime}`);
+          lines.push(
+            `${String(index + 1).padStart(3, "0")}  AX       V     C        ${inTime} ${outTime} ${inTime} ${outTime}`
+          );
           lines.push(`* FROM: ${thread.parent.user.email}`);
           lines.push(`* COMMENT: ${thread.parent.text}`);
           lines.push("");
@@ -179,12 +208,12 @@ function exportComments(threads: CommentThreadType[], format: CommentExportForma
     default:
       threads.forEach((thread) => {
         const user = thread.parent.user;
-        const name = user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.email;
-        const time = thread.parent.timestamp !== null
-          ? ` [${formatTimecodeForExport(thread.parent.timestamp)}]`
-          : "";
+        const name =
+          user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email;
+        const time =
+          thread.parent.timestamp !== null
+            ? ` [${formatTimecodeForExport(thread.parent.timestamp)}]`
+            : "";
         const status = thread.parent.completedAt ? " ✓" : "";
 
         lines.push(`${name}${time}${status}`);
@@ -193,12 +222,15 @@ function exportComments(threads: CommentThreadType[], format: CommentExportForma
         lines.push("");
 
         if (thread.replies.length > 0) {
-          lines.push(`  ${thread.replies.length} ${thread.replies.length === 1 ? "reply" : "replies"}`);
+          lines.push(
+            `  ${thread.replies.length} ${thread.replies.length === 1 ? "reply" : "replies"}`
+          );
           thread.replies.forEach((reply) => {
             const replyUser = reply.user;
-            const replyName = replyUser.firstName && replyUser.lastName
-              ? `${replyUser.firstName} ${replyUser.lastName}`
-              : replyUser.email;
+            const replyName =
+              replyUser.firstName && replyUser.lastName
+                ? `${replyUser.firstName} ${replyUser.lastName}`
+                : replyUser.email;
             lines.push(`  → ${replyName}: ${reply.text}`);
           });
           lines.push("");
@@ -296,8 +328,15 @@ export function CommentPanel({
 
       try {
         const response = fileId
-          ? await commentsApi.listByFile(fileId, { include_replies: true, limit: 100, signal: abortControllerRef.current.signal })
-          : await commentsApi.listByVersionStack(versionStackId!, { limit: 100, signal: abortControllerRef.current.signal });
+          ? await commentsApi.listByFile(fileId, {
+              include_replies: true,
+              limit: 100,
+              signal: abortControllerRef.current.signal,
+            })
+          : await commentsApi.listByVersionStack(versionStackId!, {
+              limit: 100,
+              signal: abortControllerRef.current.signal,
+            });
 
         // Check if component is still mounted
         if (!isMountedRef.current) return;
@@ -344,9 +383,10 @@ export function CommentPanel({
     const users = new Map<string, { id: string; name: string }>();
     comments.forEach((comment) => {
       if (!users.has(comment.userId)) {
-        const name = comment.user.firstName && comment.user.lastName
-          ? `${comment.user.firstName} ${comment.user.lastName}`
-          : comment.user.email;
+        const name =
+          comment.user.firstName && comment.user.lastName
+            ? `${comment.user.firstName} ${comment.user.lastName}`
+            : comment.user.email;
         users.set(comment.userId, { id: comment.userId, name });
       }
     });
@@ -430,7 +470,11 @@ export function CommentPanel({
       setComments((prev) =>
         prev.map((c) =>
           c.id === commentId
-            ? { ...c, text: response.data.attributes.text, updatedAt: response.data.attributes.updatedAt }
+            ? {
+                ...c,
+                text: response.data.attributes.text,
+                updatedAt: response.data.attributes.updatedAt,
+              }
             : c
         )
       );
@@ -460,9 +504,7 @@ export function CommentPanel({
 
       setComments((prev) =>
         prev.map((c) =>
-          c.id === commentId
-            ? { ...c, completedAt: response.data.attributes.completedAt }
-            : c
+          c.id === commentId ? { ...c, completedAt: response.data.attributes.completedAt } : c
         )
       );
     } catch (err) {
@@ -488,26 +530,14 @@ export function CommentPanel({
         <h3 className="comment-panel__title">
           <CommentsIcon />
           Comments
-          {stats.total > 0 && (
-            <span className="comment-panel__count">{stats.total}</span>
-          )}
+          {stats.total > 0 && <span className="comment-panel__count">{stats.total}</span>}
         </h3>
 
         <div className="comment-panel__actions">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            title="Filter comments"
-          >
+          <Button plain onClick={() => setShowFilters(!showFilters)} title="Filter comments">
             <FilterIcon />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowExport(!showExport)}
-            title="Export comments"
-          >
+          <Button plain onClick={() => setShowExport(!showExport)} title="Export comments">
             <ExportIcon />
           </Button>
         </div>
@@ -515,12 +545,8 @@ export function CommentPanel({
 
       {/* Stats bar */}
       <div className="comment-panel__stats">
-        <span className="comment-panel__stat">
-          {stats.open} open
-        </span>
-        <span className="comment-panel__stat">
-          {stats.completed} completed
-        </span>
+        <span className="comment-panel__stat">{stats.open} open</span>
+        <span className="comment-panel__stat">{stats.completed} completed</span>
       </div>
 
       {/* Filters */}
@@ -585,10 +611,7 @@ export function CommentPanel({
 
           <div className="comment-panel__filter-group">
             <label>Sort</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as CommentSortBy)}
-            >
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as CommentSortBy)}>
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="timestamp">By timestamp</option>
@@ -601,13 +624,13 @@ export function CommentPanel({
       {showExport && (
         <div className="comment-panel__export">
           <span>Export as:</span>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("text")}>
+          <Button plain onClick={() => handleExport("text")}>
             Text
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("csv")}>
+          <Button plain onClick={() => handleExport("csv")}>
             CSV
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("edl")}>
+          <Button plain onClick={() => handleExport("edl")}>
             EDL
           </Button>
         </div>
@@ -628,7 +651,7 @@ export function CommentPanel({
       {error && (
         <div className="comment-panel__error">
           {error}
-          <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+          <Button plain onClick={() => setError(null)}>
             Dismiss
           </Button>
         </div>
@@ -646,9 +669,7 @@ export function CommentPanel({
         {!isLoading && threads.length === 0 ? (
           <div className="comment-panel__empty">
             <p>No comments yet</p>
-            <p className="comment-panel__empty-hint">
-              Be the first to add feedback
-            </p>
+            <p className="comment-panel__empty-hint">Be the first to add feedback</p>
           </div>
         ) : isLoading ? null : (
           threads.map((thread) => (
