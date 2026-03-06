@@ -18,7 +18,7 @@ import {
   type WorkspaceAttributes,
   type ProjectAttributes,
 } from "@/web/lib/api";
-import { Loader2, Grid3X3, List, ChevronDown } from "lucide-react";
+import { SpinnerIcon, Squares2X2Icon, ListBulletIcon, ChevronDownIcon } from "@/web/lib/icons";
 
 interface Workspace extends WorkspaceAttributes {
   id: string;
@@ -98,14 +98,14 @@ export default function ProjectsPage() {
     return matchesSearch && matchesWorkspace;
   });
 
-  const getStatusBadgeVariant = (project: Project) => {
+  const getStatusBadgeColor = (project: Project) => {
     if (project.archivedAt) {
-      return "default";
+      return "zinc" as const;
     }
     if (project.isRestricted) {
-      return "warning";
+      return "amber" as const;
     }
-    return "success";
+    return "green" as const;
   };
 
   const getStatusLabel = (project: Project) => {
@@ -149,7 +149,7 @@ export default function ProjectsPage() {
       <AppLayout>
         <div className="p-8 max-w-[80rem] mx-auto">
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <Loader2 className="w-8 h-8 animate-spin text-accent mb-4" />
+            <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
             <p>Loading projects...</p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function ProjectsPage() {
             <h2 className="text-primary m-0 mb-2">Failed to load projects</h2>
             <p className="text-secondary m-0 mb-6">{errorMessage}</p>
             <Button
-              variant="primary"
+              color="bush"
               onClick={() => {
                 setLoadingState("loading");
                 setErrorMessage("");
@@ -187,11 +187,9 @@ export default function ProjectsPage() {
         <div className="flex items-start justify-between mb-8 sm:flex-col sm:gap-4">
           <div>
             <h1 className="text-3xl font-bold text-primary m-0">Projects</h1>
-            <p className="mt-1 text-sm text-secondary">
-              Browse and manage your projects
-            </p>
+            <p className="mt-1 text-sm text-secondary">Browse and manage your projects</p>
           </div>
-          <Button variant="primary" onClick={() => window.location.href = "/projects/new"}>
+          <Button color="bush" onClick={() => (window.location.href = "/projects/new")}>
             New Project
           </Button>
         </div>
@@ -209,15 +207,19 @@ export default function ProjectsPage() {
             <div className="relative">
               <select
                 value={filterWorkspace || "all"}
-                onChange={(e) => setFilterWorkspace(e.target.value === "all" ? null : e.target.value)}
+                onChange={(e) =>
+                  setFilterWorkspace(e.target.value === "all" ? null : e.target.value)
+                }
                 className="px-3 py-2 pr-8 text-sm bg-surface-1 border border-border-default rounded-md text-primary cursor-pointer appearance-none focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15"
               >
                 <option value="all">All Workspaces</option>
                 {workspaces.map((w) => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
+              <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -227,14 +229,14 @@ export default function ProjectsPage() {
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
               >
-                <Grid3X3 className="w-4 h-4" />
+                <Squares2X2Icon className="w-4 h-4" />
               </button>
               <button
                 className={`px-3 py-2 text-base bg-surface-1 border-none cursor-pointer transition-colors ${viewMode === "list" ? "bg-surface-2 text-primary" : "text-secondary hover:bg-surface-2"}`}
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
               >
-                <List className="w-4 h-4" />
+                <ListBulletIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -250,9 +252,7 @@ export default function ProjectsPage() {
                 className="flex flex-col p-5 bg-surface-2 border border-border-default rounded-lg no-underline transition-colors hover:border-accent hover:shadow-md"
               >
                 <div className="flex justify-end mb-3">
-                  <Badge variant={getStatusBadgeVariant(project)} size="sm">
-                    {getStatusLabel(project)}
-                  </Badge>
+                  <Badge color={getStatusBadgeColor(project)}>{getStatusLabel(project)}</Badge>
                 </div>
                 <h3 className="text-base font-semibold text-primary m-0 mb-2">{project.name}</h3>
                 <p className="text-sm text-secondary leading-6 mb-3 flex-1">
@@ -284,10 +284,10 @@ export default function ProjectsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-4 ml-8 md:hidden">
-                  <span className="text-xs text-accent whitespace-nowrap">{project.workspaceName}</span>
-                  <Badge variant={getStatusBadgeVariant(project)} size="sm">
-                    {getStatusLabel(project)}
-                  </Badge>
+                  <span className="text-xs text-accent whitespace-nowrap">
+                    {project.workspaceName}
+                  </span>
+                  <Badge color={getStatusBadgeColor(project)}>{getStatusLabel(project)}</Badge>
                   <span className="text-xs text-muted whitespace-nowrap">
                     {formatRelativeTime(project.updatedAt)}
                   </span>
@@ -302,7 +302,7 @@ export default function ProjectsPage() {
             <p className="mb-4">No projects found</p>
             {(searchQuery || filterWorkspace) && (
               <Button
-                variant="secondary"
+                outline
                 onClick={() => {
                   setSearchQuery("");
                   setFilterWorkspace(null);
@@ -312,18 +312,12 @@ export default function ProjectsPage() {
               </Button>
             )}
             {projects.length === 0 && workspaces.length > 0 && (
-              <Button
-                variant="primary"
-                onClick={() => window.location.href = "/projects/new"}
-              >
+              <Button color="bush" onClick={() => (window.location.href = "/projects/new")}>
                 Create your first project
               </Button>
             )}
             {workspaces.length === 0 && (
-              <Button
-                variant="primary"
-                onClick={() => window.location.href = "/workspaces/new"}
-              >
+              <Button color="bush" onClick={() => (window.location.href = "/workspaces/new")}>
                 Create a workspace first
               </Button>
             )}

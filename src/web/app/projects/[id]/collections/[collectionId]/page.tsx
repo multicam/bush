@@ -7,9 +7,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
-import { Button, Input, Badge } from "@/web/components/ui";
+import {
+  Button,
+  Input,
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  Field,
+  Label,
+} from "@/web/components/ui";
+import { SpinnerIcon } from "@/web/lib/icons";
 import { AssetBrowser, type AssetFile } from "@/web/components/asset-browser";
 import { useAuth } from "@/web/context";
 import {
@@ -123,7 +133,14 @@ export default function CollectionDetailPage({
         type: editType,
       });
       setCollection((prev) =>
-        prev ? { ...prev, name: response.data.attributes.name, description: response.data.attributes.description, type: response.data.attributes.type } : null
+        prev
+          ? {
+              ...prev,
+              name: response.data.attributes.name,
+              description: response.data.attributes.description,
+              type: response.data.attributes.type,
+            }
+          : null
       );
       setShowEditModal(false);
     } catch (error) {
@@ -198,7 +215,7 @@ export default function CollectionDetailPage({
       <AppLayout>
         <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-            <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
             <p className="text-secondary">Loading collection...</p>
           </div>
         </div>
@@ -214,7 +231,7 @@ export default function CollectionDetailPage({
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <h2 className="text-lg text-primary m-0 mb-2">Failed to load collection</h2>
             <p className="text-secondary mb-4">{errorMessage}</p>
-            <Button variant="primary" onClick={fetchCollection}>
+            <Button color="bush" onClick={fetchCollection}>
               Try Again
             </Button>
           </div>
@@ -230,7 +247,10 @@ export default function CollectionDetailPage({
         <div className="flex justify-between items-start mb-6 sm:flex-col sm:gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-sm text-secondary mb-2">
-              <a href={`/projects/${projectId}/collections`} className="text-accent hover:underline no-underline">
+              <a
+                href={`/projects/${projectId}/collections`}
+                className="text-accent hover:underline no-underline"
+              >
                 Collections
               </a>
               <span>/</span>
@@ -238,7 +258,7 @@ export default function CollectionDetailPage({
             </div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold text-primary m-0">{collection?.name}</h1>
-              <Badge variant={collection?.type === "team" ? "primary" : "default"}>
+              <Badge color={collection?.type === "team" ? "blue" : "zinc"}>
                 {collection?.type}
               </Badge>
             </div>
@@ -246,114 +266,102 @@ export default function CollectionDetailPage({
               <p className="text-sm text-secondary m-0 mb-2">{collection.description}</p>
             )}
             <div className="flex gap-4 text-xs text-secondary sm:flex-col sm:gap-1">
-              <span>{collection?.assetCount} asset{collection?.assetCount !== 1 ? "s" : ""}</span>
+              <span>
+                {collection?.assetCount} asset{collection?.assetCount !== 1 ? "s" : ""}
+              </span>
               <span>Created by {collection && getCreatorName(collection.creator)}</span>
             </div>
           </div>
           <div className="flex gap-2 ml-4 sm:ml-0">
-            <Button variant="secondary" onClick={() => setShowEditModal(true)}>
+            <Button outline onClick={() => setShowEditModal(true)}>
               Edit
             </Button>
-            <Button variant="ghost" onClick={handleDeleteCollection}>
+            <Button plain onClick={handleDeleteCollection}>
               Delete
             </Button>
           </div>
         </div>
 
         {/* Edit Modal */}
-        {showEditModal && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-100"
-            onClick={() => setShowEditModal(false)}
-          >
-            <div
-              className="bg-surface-2 rounded-lg p-6 w-full max-w-md shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-lg font-semibold text-primary m-0 mb-5">Edit Collection</h2>
-              <form onSubmit={handleUpdateCollection}>
-                <div className="mb-4">
+        <Dialog open={showEditModal} onClose={() => setShowEditModal(false)}>
+          <form onSubmit={handleUpdateCollection}>
+            <DialogTitle>Edit Collection</DialogTitle>
+            <DialogBody>
+              <div className="mb-4">
+                <Field>
+                  <Label>Name</Label>
                   <Input
-                    label="Name"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Collection name"
                     required
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-primary mb-1.5">
-                    Description (optional)
+                </Field>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-primary mb-1.5">
+                  Description (optional)
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded bg-surface-1 text-primary resize-y font-inherit focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Describe this collection"
+                  rows={3}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-primary mb-1.5">Visibility</label>
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
+                    <input
+                      type="radio"
+                      name="collectionType"
+                      value="team"
+                      checked={editType === "team"}
+                      onChange={() => setEditType("team")}
+                      className="mt-0.5"
+                    />
+                    <span className="font-medium text-primary">Team</span>
+                    <span className="block text-xs text-secondary ml-5">
+                      Visible to all project members
+                    </span>
                   </label>
-                  <textarea
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded bg-surface-1 text-primary resize-y font-inherit focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Describe this collection"
-                    rows={3}
-                  />
+                  <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
+                    <input
+                      type="radio"
+                      name="collectionType"
+                      value="private"
+                      checked={editType === "private"}
+                      onChange={() => setEditType("private")}
+                      className="mt-0.5"
+                    />
+                    <span className="font-medium text-primary">Private</span>
+                    <span className="block text-xs text-secondary ml-5">Only visible to you</span>
+                  </label>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-primary mb-1.5">Visibility</label>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
-                      <input
-                        type="radio"
-                        name="collectionType"
-                        value="team"
-                        checked={editType === "team"}
-                        onChange={() => setEditType("team")}
-                        className="mt-0.5"
-                      />
-                      <span className="font-medium text-primary">Team</span>
-                      <span className="block text-xs text-secondary ml-5">Visible to all project members</span>
-                    </label>
-                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
-                      <input
-                        type="radio"
-                        name="collectionType"
-                        value="private"
-                        checked={editType === "private"}
-                        onChange={() => setEditType("private")}
-                        className="mt-0.5"
-                      />
-                      <span className="font-medium text-primary">Private</span>
-                      <span className="block text-xs text-secondary ml-5">Only visible to you</span>
-                    </label>
-                  </div>
-                </div>
-                {editError && (
-                  <p className="text-sm text-red-500 mb-4">{editError}</p>
-                )}
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border-default">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowEditModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={editLoading || !editName.trim()}
-                  >
-                    {editLoading ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+              {editError && <p className="text-sm text-red-600 mt-4">{editError}</p>}
+            </DialogBody>
+            <DialogActions>
+              <Button type="button" outline onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" color="bush" disabled={editLoading || !editName.trim()}>
+                {editLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
 
         {/* Bulk Actions */}
         {selectedAssetIds.length > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 bg-surface-3 border border-border-default rounded mb-4 text-sm text-secondary">
             <span>{selectedAssetIds.length} selected</span>
-            <Button variant="secondary" size="sm" onClick={handleRemoveSelected}>
+            <Button outline onClick={handleRemoveSelected}>
               Remove from Collection
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedAssetIds([])}>
+            <Button plain onClick={() => setSelectedAssetIds([])}>
               Clear Selection
             </Button>
           </div>
@@ -363,9 +371,7 @@ export default function CollectionDetailPage({
         {assets.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[200px] text-center text-secondary bg-surface-2 border border-dashed border-border-default rounded-lg">
             <p className="text-base text-primary mb-2">No assets in this collection.</p>
-            <p className="max-w-96">
-              Add assets to this collection from the project file browser.
-            </p>
+            <p className="max-w-96">Add assets to this collection from the project file browser.</p>
           </div>
         ) : (
           <section className="mt-4">

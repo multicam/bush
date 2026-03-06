@@ -18,7 +18,13 @@ import {
   type WorkspaceAttributes,
   type ProjectAttributes,
 } from "@/web/lib/api";
-import { Loader2, Upload, Share2, Users, FolderPlus } from "lucide-react";
+import {
+  SpinnerIcon,
+  ArrowUpTrayIcon,
+  ShareIcon,
+  UserGroupIcon,
+  FolderPlusIcon,
+} from "@/web/lib/icons";
 
 interface Workspace extends WorkspaceAttributes {
   id: string;
@@ -110,7 +116,7 @@ export default function DashboardPage() {
       <AppLayout>
         <div className="p-8 max-w-[80rem] mx-auto">
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <Loader2 className="w-8 h-8 animate-spin mb-4 text-accent" />
+            <SpinnerIcon className="w-8 h-8 mb-4 text-accent" />
             <p className="m-0">Loading dashboard...</p>
           </div>
         </div>
@@ -127,7 +133,7 @@ export default function DashboardPage() {
             <h2 className="text-primary m-0 mb-2">Failed to load dashboard</h2>
             <p className="text-secondary m-0 mb-6">{errorMessage}</p>
             <Button
-              variant="primary"
+              color="bush"
               onClick={() => {
                 setLoadingState("loading");
                 setErrorMessage("");
@@ -154,16 +160,16 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
             <Button
-              variant="secondary"
+              outline
               className="flex-1 sm:flex-initial"
-              onClick={() => window.location.href = "/workspaces"}
+              onClick={() => (window.location.href = "/workspaces")}
             >
               View Workspaces
             </Button>
             <Button
-              variant="primary"
+              color="bush"
               className="flex-1 sm:flex-initial"
-              onClick={() => window.location.href = "/projects/new"}
+              onClick={() => (window.location.href = "/projects/new")}
             >
               New Project
             </Button>
@@ -174,11 +180,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
             <span className="block text-3xl font-bold text-primary">{stats.workspacesCount}</span>
-            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">Workspaces</span>
+            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">
+              Workspaces
+            </span>
           </div>
           <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
             <span className="block text-3xl font-bold text-primary">{stats.projectsCount}</span>
-            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">Projects</span>
+            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">
+              Projects
+            </span>
           </div>
         </div>
 
@@ -187,7 +197,9 @@ export default function DashboardPage() {
           <section className="bg-surface-2 border border-border-default rounded-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-primary m-0">Recent Projects</h2>
-              <a href="/projects" className="text-xs text-accent no-underline hover:underline">View all</a>
+              <a href="/projects" className="text-xs text-accent no-underline hover:underline">
+                View all
+              </a>
             </div>
             {recentProjects.length > 0 ? (
               <div className="flex flex-col gap-2">
@@ -199,14 +211,9 @@ export default function DashboardPage() {
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium text-primary">{project.name}</span>
-                      <span className="text-xs text-secondary">
-                        {project.workspaceName}
-                      </span>
+                      <span className="text-xs text-secondary">{project.workspaceName}</span>
                     </div>
-                    <Badge
-                      variant={project.isRestricted ? "warning" : "success"}
-                      size="sm"
-                    >
+                    <Badge color={project.isRestricted ? "amber" : "green"}>
                       {project.isRestricted ? "restricted" : "active"}
                     </Badge>
                   </a>
@@ -215,11 +222,7 @@ export default function DashboardPage() {
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center text-secondary">
                 <p className="mb-4">No projects yet</p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => window.location.href = "/projects/new"}
-                >
+                <Button color="bush" onClick={() => (window.location.href = "/projects/new")}>
                   Create your first project
                 </Button>
               </div>
@@ -232,20 +235,32 @@ export default function DashboardPage() {
               <h2 className="text-base font-semibold text-primary m-0">Quick Actions</h2>
             </div>
             <div className="flex flex-col gap-2">
-              <a href="/files/upload" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
-                <Upload className="w-4 h-4 text-secondary" />
+              <a
+                href="/files/upload"
+                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+              >
+                <ArrowUpTrayIcon className="w-4 h-4 text-secondary" />
                 <span className="text-sm text-primary">Upload Files</span>
               </a>
-              <a href="/shares/new" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
-                <Share2 className="w-4 h-4 text-secondary" />
+              <a
+                href="/shares/new"
+                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+              >
+                <ShareIcon className="w-4 h-4 text-secondary" />
                 <span className="text-sm text-primary">Create Share</span>
               </a>
-              <a href="/settings/team" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
-                <Users className="w-4 h-4 text-secondary" />
+              <a
+                href="/settings/team"
+                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+              >
+                <UserGroupIcon className="w-4 h-4 text-secondary" />
                 <span className="text-sm text-primary">Invite Team</span>
               </a>
-              <a href="/workspaces/new" className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2">
-                <FolderPlus className="w-4 h-4 text-secondary" />
+              <a
+                href="/workspaces/new"
+                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+              >
+                <FolderPlusIcon className="w-4 h-4 text-secondary" />
                 <span className="text-sm text-primary">New Workspace</span>
               </a>
             </div>
@@ -257,12 +272,10 @@ export default function DashboardPage() {
           <section className="bg-surface-2 border border-border-default rounded-md p-8 text-center">
             <h2 className="text-base font-semibold text-primary m-0">Getting Started</h2>
             <p className="text-secondary mb-6">
-              Welcome to Bush! To get started, create your first workspace to organize your projects and files.
+              Welcome to Bush! To get started, create your first workspace to organize your projects
+              and files.
             </p>
-            <Button
-              variant="primary"
-              onClick={() => window.location.href = "/workspaces/new"}
-            >
+            <Button color="bush" onClick={() => (window.location.href = "/workspaces/new")}>
               Create your first workspace
             </Button>
           </section>

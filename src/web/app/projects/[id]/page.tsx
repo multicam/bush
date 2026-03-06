@@ -9,9 +9,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
-import { Button } from "@/web/components/ui";
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  Field,
+  Label,
+  ErrorMessage,
+  Input,
+} from "@/web/components/ui";
+import { SpinnerIcon } from "@/web/lib/icons";
 import { Dropzone, UploadQueue, type DroppedFile, type QueuedFile } from "@/web/components/upload";
 import { AssetBrowser, type AssetFile, type AssetFolder } from "@/web/components/asset-browser";
 import { FolderTree, Breadcrumbs, type BreadcrumbItem } from "@/web/components/folder-navigation";
@@ -28,7 +38,11 @@ import {
   type FolderAttributes,
 } from "@/web/lib/api";
 import { getUploadClient, type UploadProgress } from "@/web/lib/upload-client";
-import { FolderUploadManager, hasFolderStructure, getFolderStructureSummary } from "@/web/lib/folder-upload";
+import {
+  FolderUploadManager,
+  hasFolderStructure,
+  getFolderStructureSummary,
+} from "@/web/lib/folder-upload";
 
 interface Project extends ProjectAttributes {
   id: string;
@@ -77,46 +91,34 @@ function CreateFolderModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]" onClick={onClose}>
-      <div className="bg-surface-1 rounded-lg p-6 w-full max-w-[400px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-primary mb-1">Create New Folder</h3>
-        <p className="text-sm text-secondary mb-4">
-          in {parentFolderName}
-        </p>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Folder name"
-            className="w-full px-3.5 py-2.5 text-sm border border-border-default rounded-md bg-surface-1 text-primary outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] disabled:bg-surface-3 disabled:cursor-not-allowed"
-            autoFocus
-            disabled={isCreating}
-          />
-          {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
+    <Dialog open={isOpen} onClose={onClose} size="sm">
+      <form onSubmit={handleSubmit}>
+        <DialogTitle>Create New Folder</DialogTitle>
+        <DialogBody>
+          <p className="text-sm text-secondary mt-1 mb-4">in {parentFolderName}</p>
+          <Field>
+            <Label>Folder name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Folder name"
+              autoFocus
               disabled={isCreating}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!name.trim() || isCreating}
-            >
-              {isCreating ? "Creating..." : "Create"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            />
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </Field>
+        </DialogBody>
+        <DialogActions>
+          <Button type="button" outline onClick={onClose} disabled={isCreating}>
+            Cancel
+          </Button>
+          <Button type="submit" color="bush" disabled={!name.trim() || isCreating}>
+            {isCreating ? "Creating..." : "Create"}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 }
 
@@ -258,9 +260,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           folderId,
           onProgress: (progress) => {
             setUploadQueue((prev) =>
-              prev.map((f) =>
-                f.id === queuedFile.id ? { ...f, progress } : f
-              )
+              prev.map((f) => (f.id === queuedFile.id ? { ...f, progress } : f))
             );
           },
           onComplete: (_result) => {
@@ -272,7 +272,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             setUploadQueue((prev) =>
               prev.map((f) =>
                 f.id === queuedFile.id
-                  ? { ...f, error: error.message, progress: { ...f.progress!, status: "failed" } as UploadProgress }
+                  ? {
+                      ...f,
+                      error: error.message,
+                      progress: { ...f.progress!, status: "failed" } as UploadProgress,
+                    }
                   : f
               )
             );
@@ -424,7 +428,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       if (queuedFile) {
         setUploadQueue((prev) =>
           prev.map((f) =>
-            f.id === fileId ? { ...f, error: undefined, progress: { status: "pending" } as UploadProgress } : f
+            f.id === fileId
+              ? { ...f, error: undefined, progress: { status: "pending" } as UploadProgress }
+              : f
           )
         );
         startUploadRef.current?.(queuedFile);
@@ -434,14 +440,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   );
 
   // Handle pause
-  const handlePause = useCallback(async (fileId: string) => {
-    await uploadClient.pause(fileId);
-    setUploadQueue((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, progress: { ...f.progress, status: "paused" } as UploadProgress } : f
-      )
-    );
-  }, [uploadClient]);
+  const handlePause = useCallback(
+    async (fileId: string) => {
+      await uploadClient.pause(fileId);
+      setUploadQueue((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? { ...f, progress: { ...f.progress, status: "paused" } as UploadProgress }
+            : f
+        )
+      );
+    },
+    [uploadClient]
+  );
 
   // Handle resume
   const handleResume = useCallback(
@@ -451,7 +462,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       setUploadQueue((prev) =>
         prev.map((f) =>
-          f.id === fileId ? { ...f, progress: { ...f.progress, status: "uploading" } as UploadProgress } : f
+          f.id === fileId
+            ? { ...f, progress: { ...f.progress, status: "uploading" } as UploadProgress }
+            : f
         )
       );
 
@@ -462,16 +475,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   );
 
   // Handle cancel
-  const handleCancel = useCallback(async (fileId: string) => {
-    await uploadClient.cancel(fileId);
-    setUploadQueue((prev) => prev.filter((f) => f.id !== fileId));
-  }, [uploadClient]);
+  const handleCancel = useCallback(
+    async (fileId: string) => {
+      await uploadClient.cancel(fileId);
+      setUploadQueue((prev) => prev.filter((f) => f.id !== fileId));
+    },
+    [uploadClient]
+  );
 
   // Handle file click in asset browser
-  const handleFileClick = useCallback((file: AssetFile) => {
-    // Navigate to file viewer page
-    window.location.href = `/projects/${projectId}/files/${file.id}`;
-  }, [projectId]);
+  const handleFileClick = useCallback(
+    (file: AssetFile) => {
+      // Navigate to file viewer page
+      window.location.href = `/projects/${projectId}/files/${file.id}`;
+    },
+    [projectId]
+  );
 
   // Handle folder click in asset browser
   const handleFolderClick = useCallback((folder: AssetFolder) => {
@@ -489,14 +508,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   }, []);
 
   // Handle create folder
-  const handleCreateFolder = useCallback(async (name: string) => {
-    if (currentFolderId) {
-      await foldersApi.createSubfolder(currentFolderId, { name });
-    } else {
-      await foldersApi.create(projectId, { name });
-    }
-    refreshFiles();
-  }, [projectId, currentFolderId, refreshFiles]);
+  const handleCreateFolder = useCallback(
+    async (name: string) => {
+      if (currentFolderId) {
+        await foldersApi.createSubfolder(currentFolderId, { name });
+      } else {
+        await foldersApi.create(projectId, { name });
+      }
+      refreshFiles();
+    },
+    [projectId, currentFolderId, refreshFiles]
+  );
 
   // Loading state
   if (!projectId || authLoading || loadingState === "loading") {
@@ -504,7 +526,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       <AppLayout>
         <div className="p-8 max-w-full mx-auto">
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading project...</p>
           </div>
         </div>
@@ -521,7 +543,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <h2 className="text-primary mb-2">Failed to load project</h2>
             <p className="text-secondary mb-6">{errorMessage}</p>
             <Button
-              variant="primary"
+              color="bush"
               onClick={() => {
                 setLoadingState("loading");
                 setErrorMessage("");
@@ -550,16 +572,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="flex items-center gap-3 max-sm:w-full max-sm:justify-end">
             <Button
-              variant="secondary"
+              outline
               onClick={() => setShowSidebar(!showSidebar)}
               className="flex items-center gap-2"
             >
               {showSidebar ? "Hide Folders" : "Show Folders"}
             </Button>
-            <Button variant="secondary" onClick={() => window.location.href = "/projects"}>
+            <Button outline onClick={() => (window.location.href = "/projects")}>
               Back to Projects
             </Button>
-            <Button variant="primary" onClick={() => setShowDropzone(true)}>
+            <Button color="bush" onClick={() => setShowDropzone(true)}>
               Upload Files
             </Button>
           </div>
@@ -567,10 +589,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Breadcrumbs */}
         <div className="mb-6 py-2">
-          <Breadcrumbs
-            items={breadcrumbItems}
-            onNavigate={handleBreadcrumbNavigate}
-          />
+          <Breadcrumbs items={breadcrumbItems} onNavigate={handleBreadcrumbNavigate} />
         </div>
 
         {/* Upload Dropzone (shown when uploading) */}
@@ -582,11 +601,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               maxFiles={200}
               allowFolders={true}
             />
-            <Button
-              variant="ghost"
-              onClick={() => setShowDropzone(false)}
-              className="mt-4"
-            >
+            <Button plain onClick={() => setShowDropzone(false)} className="mt-4">
               Cancel
             </Button>
           </div>
@@ -615,13 +630,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <aside className="w-[280px] flex-shrink-0 bg-surface-2 border border-border-default rounded-lg overflow-hidden flex flex-col max-sm:w-full max-sm:max-h-[200px]">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
                 <h3 className="text-sm font-semibold text-primary m-0">Folders</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCreateFolderModal(true)}
-                  title="Create folder"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <Button plain onClick={() => setShowCreateFolderModal(true)} title="Create folder">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                     <line x1="12" y1="11" x2="12" y2="17" />
                     <line x1="9" y1="14" x2="15" y2="14" />
@@ -644,15 +661,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 {folders.length + files.length} items
                 {folders.length > 0 && (
                   <span className="text-secondary/70">
-                    {" "}({folders.length} folders, {files.length} files)
+                    {" "}
+                    ({folders.length} folders, {files.length} files)
                   </span>
                 )}
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowCreateFolderModal(true)}
-              >
+              <Button outline onClick={() => setShowCreateFolderModal(true)}>
                 New Folder
               </Button>
             </div>

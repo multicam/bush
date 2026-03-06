@@ -7,9 +7,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/web/components/layout";
-import { Button, Input, Badge } from "@/web/components/ui";
+import {
+  Button,
+  Input,
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  Field,
+  Label,
+} from "@/web/components/ui";
+import { SpinnerIcon } from "@/web/lib/icons";
 import { useAuth } from "@/web/context";
 import {
   collectionsApi,
@@ -92,7 +102,11 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
         description: newCollectionDescription.trim() || undefined,
         type: newCollectionType,
       });
-      const newCollection = extractCollectionList({ data: [response.data], links: {}, meta: { total_count: 1, page_size: 1, has_more: false } })[0];
+      const newCollection = extractCollectionList({
+        data: [response.data],
+        links: {},
+        meta: { total_count: 1, page_size: 1, has_more: false },
+      })[0];
       setCollections((prev) => [newCollection as Collection, ...prev]);
       setShowCreateModal(false);
       setNewCollectionName("");
@@ -135,7 +149,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
       <AppLayout>
         <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-            <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
             <p className="text-secondary">Loading collections...</p>
           </div>
         </div>
@@ -151,7 +165,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <h2 className="text-lg text-primary m-0 mb-2">Failed to load collections</h2>
             <p className="text-secondary mb-4">{errorMessage}</p>
-            <Button variant="primary" onClick={fetchCollections}>
+            <Button color="bush" onClick={fetchCollections}>
               Try Again
             </Button>
           </div>
@@ -171,96 +185,86 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
               Organize assets into saved collections for easy access
             </p>
           </div>
-          <Button variant="primary" onClick={() => setShowCreateModal(true)} className="sm:w-full">
+          <Button color="bush" onClick={() => setShowCreateModal(true)} className="sm:w-full">
             New Collection
           </Button>
         </div>
 
         {/* Create Modal */}
-        {showCreateModal && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-100"
-            onClick={() => setShowCreateModal(false)}
-          >
-            <div
-              className="bg-surface-2 rounded-lg p-6 w-full max-w-md shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-lg font-semibold text-primary m-0 mb-5">Create New Collection</h2>
-              <form onSubmit={handleCreateCollection}>
-                <div className="mb-4">
+        <Dialog open={showCreateModal} onClose={() => setShowCreateModal(false)}>
+          <form onSubmit={handleCreateCollection}>
+            <DialogTitle>Create New Collection</DialogTitle>
+            <DialogBody>
+              <div className="mb-4">
+                <Field>
+                  <Label>Name</Label>
                   <Input
-                    label="Name"
                     value={newCollectionName}
                     onChange={(e) => setNewCollectionName(e.target.value)}
                     placeholder="Collection name"
                     required
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-primary mb-1.5">
-                    Description (optional)
+                </Field>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-primary mb-1.5">
+                  Description (optional)
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded bg-surface-1 text-primary resize-y font-inherit focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
+                  value={newCollectionDescription}
+                  onChange={(e) => setNewCollectionDescription(e.target.value)}
+                  placeholder="Describe this collection"
+                  rows={3}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-primary mb-1.5">Visibility</label>
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
+                    <input
+                      type="radio"
+                      name="collectionType"
+                      value="team"
+                      checked={newCollectionType === "team"}
+                      onChange={() => setNewCollectionType("team")}
+                      className="mt-0.5"
+                    />
+                    <span className="font-medium text-primary">Team</span>
+                    <span className="block text-xs text-secondary ml-5">
+                      Visible to all project members
+                    </span>
                   </label>
-                  <textarea
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded bg-surface-1 text-primary resize-y font-inherit focus:outline-none focus:border-accent focus:ring-3 focus:ring-accent/10"
-                    value={newCollectionDescription}
-                    onChange={(e) => setNewCollectionDescription(e.target.value)}
-                    placeholder="Describe this collection"
-                    rows={3}
-                  />
+                  <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
+                    <input
+                      type="radio"
+                      name="collectionType"
+                      value="private"
+                      checked={newCollectionType === "private"}
+                      onChange={() => setNewCollectionType("private")}
+                      className="mt-0.5"
+                    />
+                    <span className="font-medium text-primary">Private</span>
+                    <span className="block text-xs text-secondary ml-5">Only visible to you</span>
+                  </label>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-primary mb-1.5">Visibility</label>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
-                      <input
-                        type="radio"
-                        name="collectionType"
-                        value="team"
-                        checked={newCollectionType === "team"}
-                        onChange={() => setNewCollectionType("team")}
-                        className="mt-0.5"
-                      />
-                      <span className="font-medium text-primary">Team</span>
-                      <span className="block text-xs text-secondary ml-5">Visible to all project members</span>
-                    </label>
-                    <label className="flex items-start gap-2 cursor-pointer p-3 bg-surface-1 border border-border-default rounded hover:border-accent transition-colors">
-                      <input
-                        type="radio"
-                        name="collectionType"
-                        value="private"
-                        checked={newCollectionType === "private"}
-                        onChange={() => setNewCollectionType("private")}
-                        className="mt-0.5"
-                      />
-                      <span className="font-medium text-primary">Private</span>
-                      <span className="block text-xs text-secondary ml-5">Only visible to you</span>
-                    </label>
-                  </div>
-                </div>
-                {createError && (
-                  <p className="text-sm text-red-500 mb-4">{createError}</p>
-                )}
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border-default">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowCreateModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={createLoading || !newCollectionName.trim()}
-                  >
-                    {createLoading ? "Creating..." : "Create Collection"}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+              {createError && <p className="text-sm text-red-600 mt-4">{createError}</p>}
+            </DialogBody>
+            <DialogActions>
+              <Button type="button" outline onClick={() => setShowCreateModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                color="bush"
+                disabled={createLoading || !newCollectionName.trim()}
+              >
+                {createLoading ? "Creating..." : "Create Collection"}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
 
         {/* Collections Grid */}
         {collections.length === 0 ? (
@@ -269,7 +273,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
             <p className="max-w-96 mb-6">
               Create your first collection to organize and save assets for quick access.
             </p>
-            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            <Button color="bush" onClick={() => setShowCreateModal(true)}>
               Create Collection
             </Button>
           </div>
@@ -284,7 +288,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
                   <h3 className="text-base font-semibold text-primary m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                     {collection.name}
                   </h3>
-                  <Badge variant={collection.type === "team" ? "primary" : "default"}>
+                  <Badge color={collection.type === "team" ? "blue" : "zinc"}>
                     {collection.type}
                   </Badge>
                 </div>
@@ -303,8 +307,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="secondary"
-                    size="sm"
+                    outline
                     onClick={() => {
                       window.location.href = `/projects/${projectId}/collections/${collection.id}`;
                     }}
@@ -312,8 +315,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
                     View
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    plain
                     onClick={() => handleDeleteCollection(collection.id, collection.name)}
                   >
                     Delete
