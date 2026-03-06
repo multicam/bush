@@ -263,3 +263,33 @@ Rewrote `src/web/components/ui/index.ts` to export all 27 Catalyst components + 
 - `Trash2` → `TrashIcon`, `MoreVertical` → `EllipsisVerticalIcon`
 
 ### Typecheck: 0 errors. Commit: `54fd4c5`
+
+## [2026-03-06] Task: 14 — Delete old component files and clean up CSS
+
+**Deleted 7 .old.tsx files:**
+
+- avatar.old.tsx, badge.old.tsx, button.old.tsx, dropdown.old.tsx, input.old.tsx, modal.old.tsx, select.old.tsx
+
+**Verification results:**
+
+- ✓ No imports reference `.old` files (grep -rn "\.old" src/web/ returned zero matches)
+- ✓ No `[data-theme]` CSS selectors remain (grep -rn "data-theme" src/web/styles/ returned zero matches)
+- ✓ Custom CSS utilities preserved in `src/web/styles/theme.css`:
+  - shimmer animation + .animate-shimmer class
+  - stagger-1 through stagger-12 classes
+  - corner-brackets with pseudo-elements and hover states
+  - drag-handle with active and hover states
+- ✓ `bun run typecheck` passes with zero errors
+- ✓ Commit: `58ce825` "refactor(ui): remove old component files and clean up CSS"
+
+**Key insight:** All 7 `.old.tsx` files were safe to delete — no feature code referenced them. The migration from old components to Catalyst was complete before this task.
+
+## [2026-03-06] Task: Wave 3 cleanup — remaining lucide imports
+
+- Most of the 13 files were already migrated by previous sessions (79954d2, e887b9c, d418d8c commits) before this task ran
+- Only `share-activity-feed.tsx` and `share-card.tsx` needed real changes in this session
+- `share-card.tsx` required Badge API update: `variant="success|warning|error|default"` → `color="green|amber|red|zinc"` (Catalyst Badge uses `color` not `variant`, no `size` prop)
+- When Badge API was wrong, LSP caught it immediately — good signal to update API alongside icon migration
+- Several files listed in the task had already been migrated — always re-read files before editing, don't trust task spec for current state
+- `SpinnerIcon` from `@/web/lib/icons` already has `animate-spin` baked in — never add it again in JSX
+- The edit tool can produce unexpected results when `oldString` is multi-line and similar patterns exist nearby — prefer targeted single-concept edits over large block replacements
