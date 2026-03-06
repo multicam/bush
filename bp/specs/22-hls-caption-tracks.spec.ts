@@ -1,8 +1,7 @@
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
-const VIDEO_FILE_URL =
-  "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
+const VIDEO_FILE_URL = "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
 
 test.describe("UC-22: HLS Caption Tracks", () => {
   test("caption toggle button renders when transcript data exists", async ({
@@ -30,12 +29,10 @@ test.describe("UC-22: HLS Caption Tracks", () => {
     }
 
     // Verify the viewer page itself rendered correctly
-    await expect(page.getByText("shot_001_main.mp4")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /shot_001_main\.mp4/i }).first()).toBeVisible();
   });
 
-  test("caption toggle has correct ARIA attributes", async ({
-    authedPage: page,
-  }) => {
+  test("caption toggle has correct ARIA attributes", async ({ authedPage: page }) => {
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
@@ -60,9 +57,7 @@ test.describe("UC-22: HLS Caption Tracks", () => {
     }
   });
 
-  test("keyboard shortcut hint shows C for captions", async ({
-    authedPage: page,
-  }) => {
+  test("keyboard shortcut hint shows C for captions", async ({ authedPage: page }) => {
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);

@@ -7,13 +7,10 @@ import {
   measureLocatorTypography,
 } from "../helpers/design-bench";
 
-const VIDEO_FILE_URL =
-  "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
+const VIDEO_FILE_URL = "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
 
 test.describe("Design Bench: Video Controls", () => {
-  test("speed selector height matches button scale", async ({
-    authedPage: page,
-  }) => {
+  test("speed selector height matches button scale", async ({ authedPage: page }) => {
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
@@ -30,9 +27,7 @@ test.describe("Design Bench: Video Controls", () => {
           TOKENS.height.buttonLg,
         ];
         const closestHeight = validHeights.reduce((prev, curr) =>
-          Math.abs(curr - box.height) < Math.abs(prev - box.height)
-            ? curr
-            : prev
+          Math.abs(curr - box.height) < Math.abs(prev - box.height) ? curr : prev
         );
         // Within 4px of a valid button height
         expect(Math.abs(box.height - closestHeight)).toBeLessThanOrEqual(4);
@@ -41,9 +36,7 @@ test.describe("Design Bench: Video Controls", () => {
     }
   });
 
-  test("resolution and speed selectors have consistent styling", async ({
-    authedPage: page,
-  }) => {
+  test("resolution and speed selectors have consistent styling", async ({ authedPage: page }) => {
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
@@ -60,9 +53,7 @@ test.describe("Design Bench: Video Controls", () => {
 
       if (speedBox && resBox) {
         // Heights should match within 2px
-        expect(Math.abs(speedBox.height - resBox.height)).toBeLessThanOrEqual(
-          2
-        );
+        expect(Math.abs(speedBox.height - resBox.height)).toBeLessThanOrEqual(2);
       }
 
       // Typography should match
@@ -77,18 +68,15 @@ test.describe("Design Bench: Video Controls", () => {
     }
   });
 
-  test("video controls area has balanced spacing", async ({
-    authedPage: page,
-  }) => {
+  test("video controls area has balanced spacing", async ({ authedPage: page }) => {
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
 
-    // The controls container wraps play/pause, speed, resolution, etc.
-    // It uses flex with gap for consistent spacing
-    const controlsArea = page.locator('[class*="controls"]').first();
+    const speedSelect = page.getByLabel("Playback speed");
+    const controlsArea = speedSelect.locator("xpath=ancestor::div[contains(@class,'flex')][1]");
 
-    if (await controlsArea.isVisible().catch(() => false)) {
+    if (await speedSelect.isVisible().catch(() => false)) {
       const box = await measureLocator(controlsArea);
       if (box) {
         // Horizontal padding should be balanced

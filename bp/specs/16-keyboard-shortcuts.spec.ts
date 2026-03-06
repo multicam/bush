@@ -2,50 +2,65 @@ import { test, expect } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-16: Keyboard Shortcuts", () => {
-  test("Ctrl+K opens command palette", async ({ authedPage: page }) => {
+  test("Ctrl+K remains stable and interacts when search overlay exists", async ({
+    authedPage: page,
+  }) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      runtimeErrors.push(error.message);
+    });
+
     await page.keyboard.press("Control+k");
     await page.waitForTimeout(500);
 
-    const palette = page.locator("[role='dialog']:has(input[type='text']), [class*='command'], [class*='palette']").first();
+    const palette = page.getByRole("dialog", { name: /command palette/i });
+    const paletteVisible = await palette.isVisible().catch(() => false);
 
-    if (await palette.isVisible()) {
+    if (paletteVisible) {
       await captureScreenshot(page, "16-command-palette-open");
 
-      // Type a search
-      const input = palette.locator("input").first();
+      const input = palette.getByPlaceholder(/Search files and commands/i);
       await input.fill("project");
       await page.waitForTimeout(300);
       await captureScreenshot(page, "16-command-palette-search");
 
-      // Close with Escape
       await page.keyboard.press("Escape");
       await page.waitForTimeout(300);
       await expect(palette).not.toBeVisible();
     } else {
-      await captureScreenshot(page, "16-no-command-palette");
+      await captureScreenshot(page, "16-no-command-palette-mounted");
+      await expect(page.getByRole("link", { name: /Dashboard/i }).first()).toBeVisible();
     }
+
+    expect(runtimeErrors).toEqual([]);
   });
 
-  test("? key opens keyboard shortcut legend", async ({ authedPage: page }) => {
+  test("? key interaction remains stable", async ({ authedPage: page }) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      runtimeErrors.push(error.message);
+    });
+
     await page.keyboard.press("Shift+/"); // ? on US keyboard
     await page.waitForTimeout(500);
 
-    const legend = page.locator(
-      "[role='dialog']:has-text('shortcut'), [role='dialog']:has-text('keyboard'), " +
-      "[class*='keyboard'], [class*='shortcut']"
-    ).first();
-
-    if (await legend.isVisible()) {
+    const legend = page.getByRole("dialog", { name: /keyboard shortcuts/i });
+    if (await legend.isVisible().catch(() => false)) {
+      await expect(legend).toBeVisible();
       await captureScreenshot(page, "16-keyboard-legend");
+      await page.keyboard.press("Escape");
+      await expect(legend).not.toBeVisible();
     } else {
-      await captureScreenshot(page, "16-no-keyboard-legend");
+      await captureScreenshot(page, "16-keyboard-legend-not-mounted");
+      await expect(page.getByRole("link", { name: /Projects/i }).first()).toBeVisible();
     }
+
+    expect(runtimeErrors).toEqual([]);
   });
 
   test("theme toggle via sidebar", async ({ authedPage: page }) => {
     const themeBtn = page.getByLabel(/Switch to (light|dark) theme/i);
     if (await themeBtn.isVisible()) {
-      const initialLabel = await themeBtn.getAttribute("aria-label");
       await themeBtn.click();
       await page.waitForTimeout(300);
       await captureScreenshot(page, "16-theme-toggled");
@@ -57,16 +72,25 @@ test.describe("UC-16: Keyboard Shortcuts", () => {
   });
 
   test("Escape closes open dialogs", async ({ authedPage: page }) => {
-    // Open command palette
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      runtimeErrors.push(error.message);
+    });
+
     await page.keyboard.press("Control+k");
     await page.waitForTimeout(300);
 
-    const dialog = page.locator("[role='dialog']").first();
-    if (await dialog.isVisible()) {
+    const dialog = page.getByRole("dialog", { name: /command palette|keyboard shortcuts/i });
+    if (await dialog.isVisible().catch(() => false)) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(300);
       await expect(dialog).not.toBeVisible();
       await captureScreenshot(page, "16-escape-closes-dialog");
+    } else {
+      await captureScreenshot(page, "16-escape-no-dialog-open");
+      await expect(page.getByRole("link", { name: /Dashboard/i }).first()).toBeVisible();
     }
+
+    expect(runtimeErrors).toEqual([]);
   });
 });

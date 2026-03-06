@@ -14,7 +14,8 @@ export const test = base.extend<{ authedPage: Page }>({
     // Navigate to dashboard — DEMO_MODE middleware lets us through
     await page.goto("/dashboard");
     // Wait for the page to be interactive
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(250);
     // Hide Next.js dev overlay — it intercepts pointer events on elements near edges
     await page.evaluate(() => {
       const portal = document.querySelector("nextjs-portal");

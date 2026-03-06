@@ -1,4 +1,4 @@
-import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
+import { test, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
 test.describe("UC-15: Version Stacking", () => {
@@ -18,8 +18,10 @@ test.describe("UC-15: Version Stacking", () => {
       await page.waitForTimeout(500);
     }
 
-    // Look for version indicators on file cards/rows
-    const versionIndicator = page.locator("[class*='version'], [title*='version' i]").first();
+    const versionIndicator = page
+      .getByText(/Version Stack|versions?/i)
+      .or(page.getByRole("button", { name: /Create Version Stack|Add to Stack/i }))
+      .first();
     if (await versionIndicator.isVisible()) {
       await captureScreenshot(page, "15-version-indicator-visible");
     } else {
@@ -51,9 +53,8 @@ test.describe("UC-15: Version Stacking", () => {
       // Hide Next.js dev overlay after file viewer navigation
       await dismissDevOverlay(page);
 
-      // Look for version selector or version info in the viewer
-      const versionUI = page.locator("[class*='version']")
-        .or(page.getByRole("button", { name: /version/i }))
+      const versionUI = page
+        .getByRole("button", { name: /version|stack/i })
         .or(page.getByText(/version/i))
         .first();
 

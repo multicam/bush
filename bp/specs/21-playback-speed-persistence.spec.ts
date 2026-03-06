@@ -1,8 +1,7 @@
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
 
-const VIDEO_FILE_URL =
-  "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
+const VIDEO_FILE_URL = "/projects/prj_c9ff357d51f4aaf172a856ac/files/file_f981537117555cf2916824b7";
 
 test.describe("UC-21: Playback Speed Persistence", () => {
   test("speed selector is present with 8 speed options when video loads", async ({
@@ -29,45 +28,35 @@ test.describe("UC-21: Playback Speed Persistence", () => {
     } else {
       // In DEMO_MODE, video fails to load so controls aren't rendered.
       // Verify the page rendered without crash.
-      await expect(page.getByText("shot_001_main.mp4")).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /shot_001_main\.mp4/i }).first()
+      ).toBeVisible();
       await captureScreenshot(page, "21-no-video-controls");
     }
   });
 
-  test("localStorage key is used for speed persistence", async ({
-    authedPage: page,
-  }) => {
+  test("localStorage key is used for speed persistence", async ({ authedPage: page }) => {
     // Verify the localStorage mechanism works regardless of video loading
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
 
     // Set speed in localStorage
-    await page.evaluate(() =>
-      localStorage.setItem("bush:playback-speed", "1.5")
-    );
+    await page.evaluate(() => localStorage.setItem("bush:playback-speed", "1.5"));
 
     // Verify it persists
-    const stored = await page.evaluate(() =>
-      localStorage.getItem("bush:playback-speed")
-    );
+    const stored = await page.evaluate(() => localStorage.getItem("bush:playback-speed"));
     expect(stored).toBe("1.5");
 
     // Clean up
-    await page.evaluate(() =>
-      localStorage.removeItem("bush:playback-speed")
-    );
+    await page.evaluate(() => localStorage.removeItem("bush:playback-speed"));
 
     await captureScreenshot(page, "21-localstorage-mechanism");
   });
 
-  test("persisted speed survives navigation", async ({
-    authedPage: page,
-  }) => {
+  test("persisted speed survives navigation", async ({ authedPage: page }) => {
     // Set speed before navigating to video viewer
-    await page.evaluate(() =>
-      localStorage.setItem("bush:playback-speed", "2")
-    );
+    await page.evaluate(() => localStorage.setItem("bush:playback-speed", "2"));
 
     // Navigate away and back
     await page.goto("/dashboard");
@@ -78,9 +67,7 @@ test.describe("UC-21: Playback Speed Persistence", () => {
     await dismissDevOverlay(page);
 
     // Verify localStorage still has the value
-    const stored = await page.evaluate(() =>
-      localStorage.getItem("bush:playback-speed")
-    );
+    const stored = await page.evaluate(() => localStorage.getItem("bush:playback-speed"));
     expect(stored).toBe("2");
 
     // If speed selector is visible, verify it shows 2x
@@ -93,13 +80,9 @@ test.describe("UC-21: Playback Speed Persistence", () => {
     await captureScreenshot(page, "21-speed-survives-navigation");
   });
 
-  test("invalid speed falls back to default", async ({
-    authedPage: page,
-  }) => {
+  test("invalid speed falls back to default", async ({ authedPage: page }) => {
     // Set invalid speed
-    await page.evaluate(() =>
-      localStorage.setItem("bush:playback-speed", "999")
-    );
+    await page.evaluate(() => localStorage.setItem("bush:playback-speed", "999"));
 
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
@@ -113,29 +96,21 @@ test.describe("UC-21: Playback Speed Persistence", () => {
     }
 
     // Clean up
-    await page.evaluate(() =>
-      localStorage.removeItem("bush:playback-speed")
-    );
+    await page.evaluate(() => localStorage.removeItem("bush:playback-speed"));
 
     await captureScreenshot(page, "21-invalid-speed-fallback");
   });
 
-  test("speed persistence uses correct storage key", async ({
-    authedPage: page,
-  }) => {
+  test("speed persistence uses correct storage key", async ({ authedPage: page }) => {
     // Verify the exact key name matches the implementation
     await page.goto(VIDEO_FILE_URL);
     await page.waitForLoadState("networkidle");
     await dismissDevOverlay(page);
 
     // The key should be "bush:playback-speed" per implementation
-    await page.evaluate(() =>
-      localStorage.setItem("bush:playback-speed", "0.75")
-    );
+    await page.evaluate(() => localStorage.setItem("bush:playback-speed", "0.75"));
 
-    const value = await page.evaluate(() =>
-      localStorage.getItem("bush:playback-speed")
-    );
+    const value = await page.evaluate(() => localStorage.getItem("bush:playback-speed"));
     expect(value).toBe("0.75");
 
     // Verify no other speed keys exist
@@ -152,9 +127,7 @@ test.describe("UC-21: Playback Speed Persistence", () => {
     expect(allKeys).toContain("bush:playback-speed");
 
     // Clean up
-    await page.evaluate(() =>
-      localStorage.removeItem("bush:playback-speed")
-    );
+    await page.evaluate(() => localStorage.removeItem("bush:playback-speed"));
 
     await captureScreenshot(page, "21-correct-storage-key");
   });

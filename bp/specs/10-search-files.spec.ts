@@ -7,43 +7,40 @@ test.describe("UC-10: Search Files", () => {
     await page.keyboard.press("Meta+k");
     await page.waitForTimeout(500);
 
-    // Look for command palette / search dialog
-    const palette = page.locator(
-      "[data-testid='command-palette'], [role='dialog']:has(input), " +
-      "[class*='command'], [class*='palette'], [class*='search-dialog']"
-    ).first();
+    const palette = page.getByRole("dialog", { name: /command palette/i });
+    if (!(await palette.isVisible().catch(() => false))) {
+      await page.keyboard.press("Control+k");
+      await page.waitForTimeout(500);
+    }
 
-    if (await palette.isVisible()) {
+    if (await palette.isVisible().catch(() => false)) {
+      await expect(palette).toBeVisible();
       await captureScreenshot(page, "10-command-palette-open");
 
-      // Type a search query
-      const searchInput = palette.locator("input").first();
+      const searchInput = palette.getByPlaceholder(/Search files and commands/i);
+      await expect(searchInput).toBeVisible();
       await searchInput.fill("shot_001");
       await page.waitForTimeout(500);
 
       await captureScreenshot(page, "10-command-palette-search");
     } else {
-      // Try Ctrl+K for Linux
-      await page.keyboard.press("Control+k");
-      await page.waitForTimeout(500);
-      await captureScreenshot(page, "10-command-palette-ctrl-k");
+      await captureScreenshot(page, "10-command-palette-not-mounted");
+      await expect(page.getByRole("link", { name: /Projects/i }).first()).toBeVisible();
     }
   });
 
   test("project file search works", async ({ authedPage: page }) => {
     await page.goto("/projects");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const projectLink = page.locator("a:has-text('Super Bowl Commercial')").first();
     await projectLink.click();
     await page.waitForURL(/\/projects\/.+/);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
-    // Look for a search input on the project page
-    const searchInput = page.locator(
-      "input[type='search'], input[placeholder*='search' i], " +
-      "[data-testid='search-input'], input[placeholder*='filter' i]"
-    ).first();
+    const searchInput = page
+      .locator("input[placeholder*='Search' i], input[type='search']")
+      .first();
 
     if (await searchInput.isVisible()) {
       await searchInput.fill("shot");

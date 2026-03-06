@@ -1,125 +1,78 @@
-/**
- * Design Benchmark: Sidebar (Icon Rail)
- *
- * Measures the sidebar component against design tokens and agno.com reference.
- * Focus: spacing, balance, proportions, navigation rhythm.
- *
- * Reference: agno.com uses an icon rail sidebar with glass morphism.
- * Bush uses: 64px collapsed → 240px expanded, bg-surface-0.
- */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
 import { captureScreenshot } from "../helpers/screenshot";
-import {
-  measureBox,
-  measureTypography,
-  measureChildGaps,
-  isOnSpacingScale,
-  checkHBalance,
-  TOKENS,
-} from "../helpers/design-bench";
+import { measureLocator, isOnSpacingScale, checkHBalance, TOKENS } from "../helpers/design-bench";
 
-test.describe("Design Bench: Sidebar", () => {
-  test("sidebar collapsed width matches token (64px)", async ({ authedPage: page }) => {
-    const sidebar = await measureBox(page, "aside");
-    expect(sidebar).not.toBeNull();
-    expect(sidebar!.width).toBeCloseTo(TOKENS.sidebar.collapsed, 0);
+test.describe("Design Bench: Sidebar (Catalyst)", () => {
+  test("desktop sidebar width matches Catalyst rail token", async ({ authedPage: page }) => {
+    const sidebar = page.locator("div.fixed.inset-y-0.left-0.w-64").first();
+    await expect(sidebar).toBeVisible();
 
-    await captureScreenshot(page, "30-sidebar-collapsed");
-  });
-
-  test("sidebar logo area height and balance", async ({ authedPage: page }) => {
-    // Wait for sidebar to fully render
-    await page.waitForSelector("aside > div:first-child", { timeout: 5000 });
-    // Logo container: h-16 = 64px, px-4 = 16px
-    const logo = await measureBox(page, "aside > div:first-child");
-    expect(logo).not.toBeNull();
-    expect(logo!.height).toBeCloseTo(64, 0); // h-16
-
-    // Horizontal padding should be balanced
-    const hBalance = checkHBalance(logo!.paddingLeft, logo!.paddingRight);
-    expect(hBalance.balanced).toBe(true);
-    expect(isOnSpacingScale(logo!.paddingLeft)).toBe(true);
-
-    await captureScreenshot(page, "30-sidebar-logo");
-  });
-
-  test("nav items have consistent spacing rhythm", async ({ authedPage: page }) => {
-    // Measure gaps between nav items inside <nav>
-    const gaps = await measureChildGaps(page, "aside nav");
-
-    expect(gaps.length).toBeGreaterThan(0);
-
-    // All gaps should be consistent (same value within 2px tolerance)
-    const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-    for (const gap of gaps) {
-      expect(Math.abs(gap - avgGap)).toBeLessThanOrEqual(2);
+    const box = await measureLocator(sidebar);
+    expect(box).not.toBeNull();
+    if (!box) {
+      throw new Error("Unable to measure desktop sidebar");
     }
+    expect(box.width).toBeCloseTo(TOKENS.sidebar.width, 2);
+
+    await captureScreenshot(page, "30-sidebar-desktop");
   });
 
-  test("nav item padding is on spacing scale and balanced", async ({ authedPage: page }) => {
-    // Nav items are <a> inside <nav> — px-4 py-3 = 16px 12px
-    const navItem = await measureBox(page, "aside nav a");
-    expect(navItem).not.toBeNull();
+  test("primary navigation items are visible and ordered", async ({ authedPage: page }) => {
+    const nav = page.locator("nav").first();
+    await expect(nav).toBeVisible();
 
-    // Horizontal padding should be balanced
-    const hBalance = checkHBalance(navItem!.paddingLeft, navItem!.paddingRight);
-    expect(hBalance.balanced).toBe(true);
-
-    // All padding values should be on the spacing scale
-    expect(isOnSpacingScale(navItem!.paddingLeft)).toBe(true);
-    expect(isOnSpacingScale(navItem!.paddingRight)).toBe(true);
-    expect(isOnSpacingScale(navItem!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(navItem!.paddingBottom)).toBe(true);
+    await expect(page.getByRole("link", { name: "Dashboard" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Workspaces" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Projects" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Files" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Collections" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Shares" }).first()).toBeVisible();
   });
 
-  test("nav item typography matches body-sm token", async ({ authedPage: page }) => {
-    // Expand sidebar by hovering
-    await page.hover("aside");
-    await page.waitForTimeout(400); // Wait for transition
+  test("sidebar item spacing uses scale-aligned balanced padding", async ({ authedPage: page }) => {
+    const firstNavItem = page.locator("nav a").first();
+    await expect(firstNavItem).toBeVisible();
 
-    const navText = await measureTypography(page, "aside nav a span:last-child");
-    // nav text is text-sm = 14px (tailwind) but labeled body-sm
-    // The span only shows when expanded
-    if (navText) {
-      expect(navText.fontSize).toBeCloseTo(14, 0);
-      expect(navText.fontWeight).toBe(TOKENS.fontWeight.medium);
+    const itemBox = await measureLocator(firstNavItem);
+    expect(itemBox).not.toBeNull();
+    if (!itemBox) {
+      throw new Error("Unable to measure first sidebar nav item");
     }
 
-    await captureScreenshot(page, "30-sidebar-expanded");
+    const hBalance = checkHBalance(itemBox.paddingLeft, itemBox.paddingRight);
+    expect(hBalance.balanced).toBe(true);
+    expect(isOnSpacingScale(itemBox.paddingTop)).toBe(true);
+    expect(isOnSpacingScale(itemBox.paddingBottom)).toBe(true);
   });
 
-  test("footer section spacing mirrors nav section", async ({ authedPage: page }) => {
-    // Footer section: border-t border-border-default py-2
-    // Should have consistent vertical padding with nav section
-    const nav = await measureBox(page, "aside nav");
-    const footer = await measureBox(page, "aside > div:last-child");
-
-    expect(nav).not.toBeNull();
-    expect(footer).not.toBeNull();
-
-    // Both should have padding on the spacing scale
-    expect(isOnSpacingScale(nav!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(footer!.paddingTop)).toBe(true);
-
-    // Footer py should be on scale
-    expect(isOnSpacingScale(footer!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(footer!.paddingBottom)).toBe(true);
-  });
-
-  test("sidebar vs content area proportion", async ({ authedPage: page }) => {
-    const sidebar = await measureBox(page, "aside");
-    const main = await measureBox(page, "main");
+  test("sidebar-content proportion reflects fixed desktop rail", async ({ authedPage: page }) => {
+    const sidebar = await measureLocator(page.locator("div.fixed.inset-y-0.left-0.w-64").first());
+    const main = await measureLocator(page.locator("main").first());
 
     expect(sidebar).not.toBeNull();
     expect(main).not.toBeNull();
+    if (!sidebar || !main) {
+      throw new Error("Unable to measure sidebar/main layout proportion");
+    }
 
-    // Sidebar should be much narrower than content (collapsed ratio ~4.6%)
-    const ratio = sidebar!.width / (sidebar!.width + main!.width);
-    expect(ratio).toBeLessThan(0.1); // Sidebar < 10% of total width
-    expect(ratio).toBeGreaterThan(0.02); // But not invisible
+    const ratio = sidebar.width / (sidebar.width + main.width);
+    expect(ratio).toBeGreaterThan(0.1);
+    expect(ratio).toBeLessThan(0.3);
+  });
 
-    // Both should exist and have positive dimensions
-    expect(sidebar!.width).toBeGreaterThan(50);
-    expect(main!.width).toBeGreaterThan(1000);
+  test("mobile layout uses drawer navigation", async ({ authedPage: page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/dashboard");
+    await page.waitForLoadState("domcontentloaded");
+    await dismissDevOverlay(page);
+
+    const openNavButton = page.getByRole("button", { name: "Open navigation" });
+    await expect(openNavButton).toBeVisible();
+
+    await openNavButton.click();
+    await expect(page.getByRole("button", { name: "Close navigation" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dashboard" }).first()).toBeVisible();
+
+    await captureScreenshot(page, "30-sidebar-mobile-drawer");
   });
 });

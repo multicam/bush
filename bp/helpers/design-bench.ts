@@ -47,7 +47,7 @@ export const TOKENS = {
 
   radius: { xs: 4, sm: 6, md: 8, lg: 12, full: 9999 },
 
-  sidebar: { collapsed: 64, expanded: 240 },
+  sidebar: { width: 256, mobileMax: 320 },
 
   height: {
     buttonSm: 32,
@@ -176,7 +176,10 @@ export async function measureLocator(locator: Locator): Promise<BoxModel | null>
 }
 
 /** Measure typography of the first element matching a CSS selector */
-export async function measureTypography(page: Page, selector: string): Promise<TypographyMetrics | null> {
+export async function measureTypography(
+  page: Page,
+  selector: string
+): Promise<TypographyMetrics | null> {
   return page.evaluate((sel) => {
     const el = document.querySelector(sel);
     if (!el) return null;
@@ -194,7 +197,9 @@ export async function measureTypography(page: Page, selector: string): Promise<T
 }
 
 /** Measure typography from a Playwright locator */
-export async function measureLocatorTypography(locator: Locator): Promise<TypographyMetrics | null> {
+export async function measureLocatorTypography(
+  locator: Locator
+): Promise<TypographyMetrics | null> {
   return locator.evaluate((el) => {
     const cs = getComputedStyle(el);
     const fontSize = parseFloat(cs.fontSize);
@@ -210,7 +215,11 @@ export async function measureLocatorTypography(locator: Locator): Promise<Typogr
 }
 
 /** Measure a single CSS property value */
-export async function measureProp(page: Page, selector: string, property: string): Promise<string | null> {
+export async function measureProp(
+  page: Page,
+  selector: string,
+  property: string
+): Promise<string | null> {
   return page.evaluate(
     ([sel, prop]) => {
       const el = document.querySelector(sel);
@@ -271,8 +280,6 @@ export async function countVisibleChildren(page: Page, selector: string): Promis
   return page.evaluate((sel) => {
     const parent = document.querySelector(sel);
     if (!parent) return 0;
-    return Array.from(parent.children).filter(
-      (c) => getComputedStyle(c).display !== "none"
-    ).length;
+    return Array.from(parent.children).filter((c) => getComputedStyle(c).display !== "none").length;
   }, selector);
 }
