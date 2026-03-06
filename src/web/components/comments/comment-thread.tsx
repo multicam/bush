@@ -104,12 +104,7 @@ export function CommentThread({
           {/* Load more replies */}
           {thread.hasMoreReplies && (
             <div className="comment-thread__load-more">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLoadMoreReplies}
-                loading={isLoadingReplies}
-              >
+              <Button plain onClick={handleLoadMoreReplies} loading={isLoadingReplies}>
                 Load more replies
               </Button>
             </div>

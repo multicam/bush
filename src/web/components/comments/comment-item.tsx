@@ -297,11 +297,7 @@ export function CommentItem({
                 )}
               </button>
             )}
-            {comment.page !== null && (
-              <Badge variant="default" size="sm">
-                Page {comment.page}
-              </Badge>
-            )}
+            {comment.page !== null && <Badge color="zinc">Page {comment.page}</Badge>}
             {comment.annotation && (
               <button
                 className="comment-item__annotation-badge"
@@ -325,10 +321,10 @@ export function CommentItem({
               rows={3}
             />
             <div className="comment-item__edit-actions">
-              <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+              <Button plain onClick={handleCancelEdit}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleEdit} disabled={!editText.trim()}>
+              <Button onClick={handleEdit} disabled={!editText.trim()}>
                 Save
               </Button>
             </div>
@@ -341,57 +337,33 @@ export function CommentItem({
         {showActions && !isEditing && (
           <div className="comment-item__actions">
             {!isReply && onReply && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onReply(comment.id)}
-                startIcon={
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polyline points="9 17 4 12 9 7" />
-                    <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-                  </svg>
-                }
-              >
+              <Button plain onClick={() => onReply(comment.id)}>
+                <ArrowUturnLeftIcon data-slot="icon" />
                 Reply
               </Button>
             )}
             {onComplete && !isReply && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onComplete(comment.id, !isCompleted)}
-              >
+              <Button plain onClick={() => onComplete(comment.id, !isCompleted)}>
                 {isCompleted ? "Reopen" : "Complete"}
               </Button>
             )}
             {dropdownOptions.length > 0 && (
-              <Dropdown
-                trigger={
-                  <Button size="sm" variant="ghost">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+              <Dropdown>
+                <DropdownButton plain>
+                  <EllipsisVerticalIcon data-slot="icon" />
+                </DropdownButton>
+                <DropdownMenu>
+                  {dropdownOptions.map((option) => (
+                    <DropdownItem
+                      key={option.value}
+                      disabled={option.disabled}
+                      onClick={() => handleDropdownChange(option.value)}
                     >
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="12" cy="5" r="1" />
-                      <circle cx="12" cy="19" r="1" />
-                    </svg>
-                  </Button>
-                }
-                options={dropdownOptions}
-                onChange={handleDropdownChange}
-              />
+                      {option.label}
+                    </DropdownItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
             )}
           </div>
         )}
