@@ -12,7 +12,7 @@ test.describe("UC-09: Browse Files (Grid/List)", () => {
     await page.waitForLoadState("networkidle");
 
     // Should see folder names from seed
-    await expect(page.getByText("Footage").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Footage").first()).toBeVisible();
 
     await captureScreenshot(page, "09-browse-files-default");
   });
@@ -68,9 +68,9 @@ test.describe("UC-09: Browse Files (Grid/List)", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on the Footage folder
-    const folderItem = page.getByText("Footage").first();
+    const folderItem = page.locator("main").getByText("Footage").first();
     if (await folderItem.isVisible()) {
-      await folderItem.click();
+      await folderItem.click({ force: true });
       await page.waitForTimeout(500);
 
       // Should see files inside the folder

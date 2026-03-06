@@ -4,7 +4,7 @@
  * Measures the file browser layout within a project detail page.
  * Focus: asset grid gaps, folder tree spacing, card proportions, view controls balance.
  *
- * Reference: agno.com uses thumbnail-heavy grid with hover overlays.
+ * Reference: Tailwind UI Catalyst demo uses thumbnail-heavy grid with hover overlays.
  * Bush uses: asset-card grid with metadata badges, folder-tree sidebar.
  */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
@@ -158,9 +158,9 @@ test.describe("Design Bench: Asset Browser", () => {
 
   test("breadcrumb spacing", async ({ authedPage: page }) => {
     // Navigate into a folder to see breadcrumbs
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
 
       // Breadcrumb nav

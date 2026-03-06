@@ -12,13 +12,13 @@ test.describe("UC-11: Video Viewer + Controls", () => {
     await page.waitForLoadState("networkidle");
 
     // Navigate into Footage folder
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);
@@ -39,19 +39,21 @@ test.describe("UC-11: Video Viewer + Controls", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);
 
       // Back button
-      const backBtn = page.getByRole("button", { name: "Back" }).or(page.getByRole("link", { name: "Back" }));
+      const backBtn = page
+        .getByRole("button", { name: "Back" })
+        .or(page.getByRole("link", { name: "Back" }));
       if (await backBtn.first().isVisible()) {
         await expect(backBtn.first()).toBeVisible();
       }
@@ -85,13 +87,13 @@ test.describe("UC-11: Video Viewer + Controls", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);
@@ -114,10 +116,10 @@ test.describe("UC-11: Video Viewer + Controls", () => {
     await dismissDevOverlay(page);
 
     // File name should be visible in the header
-    await expect(page.getByText("shot_001_main.mp4")).toBeVisible();
+    await expect(page.getByText("shot_001_main.mp4").first()).toBeVisible();
 
     // Back button should be present
-    await expect(page.getByRole("button", { name: /Back/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
 
     // Show/Hide Comments toggle should be present
     await expect(page.getByRole("button", { name: /Comments/i }).first()).toBeVisible();
@@ -125,8 +127,10 @@ test.describe("UC-11: Video Viewer + Controls", () => {
     // The viewer area should contain a video element, a loading/error state, or a processing state
     // (In demo mode without real storage, the video URL may fail to load)
     const video = page.locator("video");
-    const viewerMsg = page.getByText(/Uploading|Processing|Preview not available|Failed to load/i).first();
-    const viewerRendered = await video.count() > 0 || await viewerMsg.isVisible();
+    const viewerMsg = page
+      .getByText(/Uploading|Processing|Preview not available|Failed to load/i)
+      .first();
+    const viewerRendered = (await video.count()) > 0 || (await viewerMsg.isVisible());
     expect(viewerRendered).toBeTruthy();
 
     await captureScreenshot(page, "11-video-viewer-ready-file");

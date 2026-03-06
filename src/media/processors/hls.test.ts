@@ -10,11 +10,18 @@ vi.mock("../../storage/index.js", () => ({
   storage: {
     getObject: vi.fn(),
     putObject: vi.fn(),
+    headObject: vi.fn().mockResolvedValue(null),
   },
   storageKeys: {
     hlsMaster: vi.fn((_keys: object) => "hls/test/master.m3u8"),
-    hlsVariant: vi.fn((_keys: object, resolution: string) => `hls/test/${resolution}/playlist.m3u8`),
-    hlsSegment: vi.fn((_keys: object, resolution: string, num: number) => `hls/test/${resolution}/segment_${String(num).padStart(4, "0")}.ts`),
+    hlsVariant: vi.fn(
+      (_keys: object, resolution: string) => `hls/test/${resolution}/playlist.m3u8`
+    ),
+    hlsSegment: vi.fn(
+      (_keys: object, resolution: string, num: number) =>
+        `hls/test/${resolution}/segment_${String(num).padStart(4, "0")}.ts`
+    ),
+    caption: vi.fn((_keys: object, language = "en") => `captions/${language}.vtt`),
   },
 }));
 
@@ -202,7 +209,13 @@ describe("hls processor", () => {
     it("filters out resolutions larger than source (4K excluded for 1080p)", async () => {
       const hdJobData = {
         ...baseJobData,
-        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
+        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as (
+          | "360p"
+          | "540p"
+          | "720p"
+          | "1080p"
+          | "4k"
+        )[],
         sourceHeight: 1080,
       };
 
@@ -217,7 +230,13 @@ describe("hls processor", () => {
     it("includes 4K resolution for 4K source", async () => {
       const fourKJobData = {
         ...baseJobData,
-        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as ("360p" | "540p" | "720p" | "1080p" | "4k")[],
+        resolutions: ["360p", "540p", "720p", "1080p", "4k"] as (
+          | "360p"
+          | "540p"
+          | "720p"
+          | "1080p"
+          | "4k"
+        )[],
         sourceWidth: 3840,
         sourceHeight: 2160,
       };

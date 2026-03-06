@@ -4,9 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { TranscriptionResult } from "./types.js";
 
-// Use fake timers for polling tests
-vi.useFakeTimers();
-
 // Create mock functions that will be reassigned in tests
 const mockSubmit = vi.fn();
 const mockGetResult = vi.fn();
@@ -128,6 +125,22 @@ vi.mock("crypto", () => ({
   randomUUID: vi.fn(() => "12345678-1234-1234-1234-123456789012"),
 }));
 
+vi.mock("../api/routes/index.js", () => ({
+  emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("ioredis", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+    ping: vi.fn().mockResolvedValue("PONG"),
+    quit: vi.fn().mockResolvedValue(undefined),
+    subscribe: vi.fn().mockResolvedValue(undefined),
+    publish: vi.fn().mockResolvedValue(0),
+  })),
+}));
+
 describe("Transcription Processor", () => {
   const originalEnv = process.env;
 
@@ -144,7 +157,11 @@ describe("Transcription Processor", () => {
     mockGetResult.mockResolvedValue(null);
     mockIsAvailable.mockReturnValue(true);
 
-    process.env = { ...originalEnv, TRANSCRIPTION_PROVIDER: "deepgram", DEEPGRAM_API_KEY: "test-key" };
+    process.env = {
+      ...originalEnv,
+      TRANSCRIPTION_PROVIDER: "deepgram",
+      DEEPGRAM_API_KEY: "test-key",
+    };
   });
 
   afterEach(() => {
@@ -262,7 +279,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -273,11 +290,6 @@ describe("Transcription Processor", () => {
           mimeType: "audio/mp3",
         },
       });
-
-      // Advance timers to allow polling to complete
-      await vi.runAllTimersAsync();
-
-      const result = await promise;
 
       expect(result.transcriptId).toMatch(/^tr_/);
       expect(result.wordCount).toBe(2);
@@ -298,7 +310,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -308,45 +320,41 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      // Set up rejection handler before running timers
-      const resultPromise = promise.catch((e) => e);
-
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe("Audio quality too poor");
     });
 
     it("handles transcription timeout waiting for result", async () => {
       mockSubmit.mockResolvedValue("provider-timeout");
-      // Always return null (still processing) - simulates timeout
       mockGetResult.mockResolvedValue(null);
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
-        data: {
-          type: "transcription",
-          fileId: "file_123",
-          storageKey: "path/to/audio.mp3",
-          durationSeconds: 60,
-          accountId: "account_123",
-          projectId: "project_123",
-          mimeType: "audio/mp3",
-        },
+      vi.stubGlobal("setTimeout", (fn: () => void) => {
+        queueMicrotask(fn);
+        return 0;
       });
 
-      const resultPromise = promise.catch((e) => e);
+      try {
+        const error = await processTranscriptionJob({
+          data: {
+            type: "transcription",
+            fileId: "file_123",
+            storageKey: "path/to/audio.mp3",
+            durationSeconds: 60,
+            accountId: "account_123",
+            projectId: "project_123",
+            mimeType: "audio/mp3",
+          },
+        }).catch((e) => e);
 
-      // Advance timers to exhaust polling attempts (60 attempts * 5 seconds)
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
-      expect(error).toBeInstanceOf(Error);
-      expect(error.message).toBe("Transcription timed out waiting for result");
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe("Transcription timed out waiting for result");
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
 
     it("handles transcription failure with generic error", async () => {
@@ -362,7 +370,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -372,13 +380,8 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe("Transcription failed");
     });
@@ -388,7 +391,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -398,13 +401,8 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe("API rate limit exceeded");
     });
@@ -431,7 +429,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -442,10 +440,6 @@ describe("Transcription Processor", () => {
           mimeType: "audio/mp3",
         },
       });
-
-      await vi.runAllTimersAsync();
-
-      const result = await promise;
 
       // Should be truncated to 100,000
       expect(result.wordCount).toBe(100_000);
@@ -466,7 +460,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -477,10 +471,6 @@ describe("Transcription Processor", () => {
           mimeType: "audio/mp3",
         },
       });
-
-      await vi.runAllTimersAsync();
-
-      const result = await promise;
 
       expect(result.wordCount).toBe(0);
       expect(result.language).toBe("en");
@@ -508,7 +498,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_456",
@@ -521,10 +511,6 @@ describe("Transcription Processor", () => {
           speakerIdentification: true,
         },
       });
-
-      await vi.runAllTimersAsync();
-
-      const result = await promise;
 
       expect(result.language).toBe("fr");
       expect(result.wordCount).toBe(4);
@@ -555,6 +541,9 @@ describe("Transcription Processor", () => {
 
       // Reimport to get fresh mocks
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
       const { enqueueTranscriptionJob } = await import("./processor.js");
 
       await enqueueTranscriptionJob({
@@ -600,6 +589,9 @@ describe("Transcription Processor", () => {
       }));
 
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
       const { enqueueTranscriptionJob } = await import("./processor.js");
 
       await enqueueTranscriptionJob({
@@ -626,8 +618,10 @@ describe("Transcription Processor", () => {
   describe("FFmpeg path validation", () => {
     it("rejects empty FFmpeg path", async () => {
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
-      // Mock storage to fail presigned URL (forces audio extraction path)
       vi.doMock("../storage/index.js", () => ({
         getStorageProvider: vi.fn(() => ({
           getObject: vi.fn().mockResolvedValue(Buffer.from("test")),
@@ -652,7 +646,7 @@ describe("Transcription Processor", () => {
         fullText: "",
       });
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_ffmpeg",
@@ -662,18 +656,17 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toContain("FFmpeg path cannot be empty");
     });
 
     it("rejects relative FFmpeg path", async () => {
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
       vi.doMock("../storage/index.js", () => ({
         getStorageProvider: vi.fn(() => ({
@@ -699,7 +692,7 @@ describe("Transcription Processor", () => {
         fullText: "",
       });
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_ffmpeg_rel",
@@ -709,18 +702,17 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toContain("must be absolute");
     });
 
     it("rejects FFmpeg path with shell metacharacters", async () => {
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
       vi.doMock("../storage/index.js", () => ({
         getStorageProvider: vi.fn(() => ({
@@ -746,7 +738,7 @@ describe("Transcription Processor", () => {
         fullText: "",
       });
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_ffmpeg_shell",
@@ -756,18 +748,17 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toContain("potentially dangerous characters");
     });
 
     it("rejects FFmpeg binary not in allowlist", async () => {
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
       vi.doMock("../storage/index.js", () => ({
         getStorageProvider: vi.fn(() => ({
@@ -793,7 +784,7 @@ describe("Transcription Processor", () => {
         fullText: "",
       });
 
-      const promise = processTranscriptionJob({
+      const error = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_ffmpeg_binary",
@@ -803,12 +794,8 @@ describe("Transcription Processor", () => {
           projectId: "project_123",
           mimeType: "audio/mp3",
         },
-      });
+      }).catch((e) => e);
 
-      const resultPromise = promise.catch((e) => e);
-      await vi.runAllTimersAsync();
-
-      const error = await resultPromise;
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toContain("binary name must be one of");
     });
@@ -817,6 +804,9 @@ describe("Transcription Processor", () => {
   describe("FasterWhisper provider path", () => {
     it("extracts audio locally for FasterWhisper provider", async () => {
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
       // Mock config to use FasterWhisper provider with absolute FFmpeg path
       vi.doMock("../config/index.js", () => ({
@@ -885,7 +875,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_fw",
@@ -897,9 +887,6 @@ describe("Transcription Processor", () => {
         },
       });
 
-      await vi.runAllTimersAsync();
-      const result = await promise;
-
       expect(result.transcriptId).toMatch(/^tr_/);
       expect(result.wordCount).toBe(1);
     });
@@ -909,6 +896,9 @@ describe("Transcription Processor", () => {
     it("updates existing transcript instead of creating new one", async () => {
       // Reset modules to clear cached config from previous tests
       vi.resetModules();
+      vi.doMock("../api/routes/index.js", () => ({
+        emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+      }));
 
       // Restore proper config mock
       vi.doMock("../config/index.js", () => ({
@@ -931,11 +921,15 @@ describe("Transcription Processor", () => {
       const mockSelect = vi.fn(() => ({
         from: vi.fn(() => ({
           where: vi.fn(() => ({
-            limit: vi.fn(() => Promise.resolve([{
-              id: "tr_existing_123",
-              fileId: "file_123",
-              status: "completed",
-            }])),
+            limit: vi.fn(() =>
+              Promise.resolve([
+                {
+                  id: "tr_existing_123",
+                  fileId: "file_123",
+                  status: "completed",
+                },
+              ])
+            ),
           })),
         })),
       }));
@@ -976,7 +970,7 @@ describe("Transcription Processor", () => {
 
       const { processTranscriptionJob } = await import("./processor.js");
 
-      const promise = processTranscriptionJob({
+      const result = await processTranscriptionJob({
         data: {
           type: "transcription",
           fileId: "file_123",
@@ -987,9 +981,6 @@ describe("Transcription Processor", () => {
           mimeType: "audio/mp3",
         },
       });
-
-      await vi.runAllTimersAsync();
-      const result = await promise;
 
       expect(result.transcriptId).toBe("tr_existing_123");
       expect(result.wordCount).toBe(1);

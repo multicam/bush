@@ -4,7 +4,7 @@
  * Measures notification page layout, list item spacing, and component balance.
  * Focus: list rhythm, item padding, filter controls, mark-all-read button alignment.
  *
- * Reference: agno.com notification patterns (bell + dropdown + full page).
+ * Reference: Tailwind UI Catalyst demo notification patterns (bell + dropdown + full page).
  * Bush uses: bell in sidebar, dropdown panel, /notifications page with filters.
  */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
@@ -13,7 +13,6 @@ import {
   measureBox,
   measureLocator,
   measureLocatorTypography,
-  measureChildGaps,
   isOnSpacingScale,
   checkHBalance,
   TOKENS,

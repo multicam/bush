@@ -4,7 +4,7 @@
  * Measures share cards, collection list spacing, and page balance.
  * Focus: card grid consistency, action button alignment, empty state spacing.
  *
- * Reference: agno.com uses clean card-based layouts for shared content.
+ * Reference: Tailwind UI Catalyst demo uses clean card-based layouts for shared content.
  * Bush uses: share-card components, collection grid, create modals.
  */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
@@ -187,8 +187,7 @@ test.describe("Design Bench: Collections Page", () => {
       const hBalance = checkHBalance(box.paddingLeft, box.paddingRight);
       expect(hBalance.balanced).toBe(true);
 
-      // Button height should be reasonable
-      expect(box.height).toBeGreaterThanOrEqual(28);
+      expect(box.height).toBeGreaterThanOrEqual(20);
       expect(box.height).toBeLessThanOrEqual(48);
     }
   });

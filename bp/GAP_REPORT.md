@@ -65,7 +65,7 @@ Commit: 89b6eca
 
 ## Design Comparison Findings
 
-_Pending — requires agno.com screenshots for comparison._
+_Pending — requires Tailwind UI Catalyst demo screenshots for comparison._
 
 ## Spec Corrections
 

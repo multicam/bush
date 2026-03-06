@@ -26,7 +26,7 @@ test.describe("UC-08: Upload Mixed Media", () => {
 
     // Skip the webkitdirectory input used for folder uploads
     const fileInput = page.locator("input[type='file']:not([webkitdirectory])").first();
-    if (await fileInput.count() > 0) {
+    if ((await fileInput.count()) > 0) {
       await fileInput.setInputFiles([
         path.join(FIXTURES_DIR, "sample-video.mp4"),
         path.join(FIXTURES_DIR, "sample-image.jpg"),
@@ -40,7 +40,9 @@ test.describe("UC-08: Upload Mixed Media", () => {
     }
   });
 
-  test("project shows different file types with appropriate icons", async ({ authedPage: page }) => {
+  test("project shows different file types with appropriate icons", async ({
+    authedPage: page,
+  }) => {
     await page.goto("/projects");
     await page.waitForLoadState("networkidle");
 
@@ -50,9 +52,9 @@ test.describe("UC-08: Upload Mixed Media", () => {
     await page.waitForLoadState("networkidle");
 
     // Navigate into folders to see different file types
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 

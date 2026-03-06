@@ -12,13 +12,13 @@ test.describe("UC-12: Time-Stamped Comments", () => {
     await page.waitForLoadState("networkidle");
 
     // Navigate into Footage folder and click on a video file
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);
@@ -57,13 +57,13 @@ test.describe("UC-12: Time-Stamped Comments", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);
@@ -95,13 +95,13 @@ test.describe("UC-12: Time-Stamped Comments", () => {
     await page.waitForURL(/\/projects\/.+/);
     await page.waitForLoadState("networkidle");
 
-    const footageFolder = page.getByText("Footage").first();
+    const footageFolder = page.locator("main").getByText("Footage").first();
     if (await footageFolder.isVisible()) {
-      await footageFolder.click();
+      await footageFolder.click({ force: true });
       await page.waitForTimeout(500);
     }
 
-    const videoFile = page.getByText("shot_001_main.mp4").first();
+    const videoFile = page.locator("main").getByText("shot_001_main.mp4").first();
     if (await videoFile.isVisible()) {
       await videoFile.click();
       await page.waitForTimeout(1000);

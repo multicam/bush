@@ -4,7 +4,7 @@
  * Measures dashboard layout, card spacing, section balance against design tokens.
  * Focus: page padding, card grid gaps, section rhythm, content balance.
  *
- * Reference: agno.com uses generous whitespace, 8px-based spacing, subtle card shadows.
+ * Reference: Tailwind UI Catalyst demo uses generous whitespace, 8px-based spacing, subtle card shadows.
  * Bush uses: p-8 (32px page padding), gap-4/gap-8, rounded-md cards with border.
  */
 import { test, expect } from "../helpers/demo-auth";
@@ -203,7 +203,7 @@ test.describe("Design Bench: Dashboard", () => {
     }
   });
 
-  test("full page layout screenshot for agno comparison", async ({ authedPage: page }) => {
+  test("full page layout screenshot for catalyst comparison", async ({ authedPage: page }) => {
     await captureScreenshot(page, "31-dashboard-full", { fullPage: true });
   });
 });

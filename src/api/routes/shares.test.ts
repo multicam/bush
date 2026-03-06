@@ -13,7 +13,9 @@ vi.mock("../../db/index.js", () => ({
     select: vi.fn(),
     insert: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn(),
+    delete: vi.fn(() => ({
+      where: vi.fn().mockResolvedValue(undefined),
+    })),
   },
 }));
 
@@ -62,6 +64,14 @@ vi.mock("../../db/schema.js", () => ({
     type: "type",
     createdAt: "createdAt",
   },
+  shareAuthAttempts: {
+    id: "id",
+    shareId: "shareId",
+    ipAddress: "ipAddress",
+    attemptCount: "attemptCount",
+    lastAttemptAt: "lastAttemptAt",
+    lockedUntil: "lockedUntil",
+  },
   files: {
     id: "id",
     projectId: "projectId",
@@ -88,14 +98,19 @@ vi.mock("../router.js", () => ({
   parseLimit: vi.fn().mockReturnValue(50),
   errorHandler: (error: Error, c: { json: (body: unknown, status: number) => Response }) => {
     const status = (error as { status?: number }).status || 500;
-    return c.json({
-      errors: [{
-        title: error.name,
-        detail: error.message,
-        status,
-        code: (error as { code?: string }).code || 'error',
-      }],
-    }, status as 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503);
+    return c.json(
+      {
+        errors: [
+          {
+            title: error.name,
+            detail: error.message,
+            status,
+            code: (error as { code?: string }).code || "error",
+          },
+        ],
+      },
+      status as 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503
+    );
   },
 }));
 
@@ -250,9 +265,7 @@ function mockSelectJoinSingle(shareRow: unknown, userRow: unknown) {
     from: () => ({
       innerJoin: () => ({
         where: () => ({
-          limit: vi.fn().mockResolvedValue(
-            shareRow ? [{ share: shareRow, user: userRow }] : []
-          ),
+          limit: vi.fn().mockResolvedValue(shareRow ? [{ share: shareRow, user: userRow }] : []),
         }),
       }),
     }),
@@ -349,6 +362,17 @@ function mockSelectSlugCheck(existing: unknown) {
   } as never);
 }
 
+/** Mock lockout check (shareAuthAttempts): .from().where().limit() returning no lockout */
+function mockSelectNoLockout() {
+  vi.mocked(db.select).mockReturnValueOnce({
+    from: () => ({
+      where: () => ({
+        limit: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+  } as never);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -362,6 +386,8 @@ describe("Shares Routes", () => {
     vi.mocked(generateId).mockReturnValue("share_test123");
     vi.mocked(verifyAccountAccess).mockResolvedValue(true as never);
     vi.mocked(verifyProjectAccess).mockResolvedValue({ id: "prj_001" } as never);
+
+    vi.mocked(db.delete).mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) } as never);
 
     // Re-establish webhook and notification mocks
     vi.mocked(emitWebhookEvent).mockResolvedValue(undefined);
@@ -1215,13 +1241,9 @@ describe("Shares Routes", () => {
       mockSelectShareSingle(SHARE_ROW);
       mockSelectAssetJoinList([{ shareAsset: SHARE_ASSET_ROW, file: FILE_ROW }]);
 
-      const cursor = Buffer.from(
-        JSON.stringify({ sortOrder: 5 })
-      ).toString("base64url");
+      const cursor = Buffer.from(JSON.stringify({ sortOrder: 5 })).toString("base64url");
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_001/assets?cursor=${cursor}`
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets?cursor=${cursor}`);
 
       expect(res.status).toBe(200);
     });
@@ -1371,10 +1393,9 @@ describe("Shares Routes", () => {
         where: vi.fn().mockResolvedValue(undefined),
       } as never);
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_001/assets/sasset_001`,
-        { method: "DELETE" }
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets/sasset_001`, {
+        method: "DELETE",
+      });
 
       expect(res.status).toBe(204);
     });
@@ -1399,10 +1420,9 @@ describe("Shares Routes", () => {
       const testApp = makeTestApp();
       mockSelectShareSingle(null);
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_missing/assets/sasset_001`,
-        { method: "DELETE" }
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_missing/assets/sasset_001`, {
+        method: "DELETE",
+      });
 
       expect(res.status).toBe(404);
     });
@@ -1412,10 +1432,9 @@ describe("Shares Routes", () => {
       vi.mocked(verifyAccountAccess).mockResolvedValue(false as never);
       mockSelectShareSingle(SHARE_ROW);
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_001/assets/sasset_001`,
-        { method: "DELETE" }
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/assets/sasset_001`, {
+        method: "DELETE",
+      });
 
       expect(res.status).toBe(404);
     });
@@ -1602,9 +1621,7 @@ describe("Shares Routes", () => {
       mockSelectShareSingle(SHARE_ROW);
       mockSelectActivityList([SHARE_ACTIVITY_ROW]);
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_001/activity?type=view`
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity?type=view`);
 
       expect(res.status).toBe(200);
     });
@@ -1619,9 +1636,7 @@ describe("Shares Routes", () => {
         JSON.stringify({ createdAt: "2024-01-10T00:00:00.000Z" })
       ).toString("base64url");
 
-      const res = await testApp.request(
-        `${ACCOUNT_SHARES}/share_001/activity?cursor=${cursor}`
-      );
+      const res = await testApp.request(`${ACCOUNT_SHARES}/share_001/activity?cursor=${cursor}`);
 
       expect(res.status).toBe(200);
     });
@@ -1667,6 +1682,7 @@ describe("Shares Routes", () => {
     it("returns minimal info with passphrase_required when passphrase protected and no passphrase given", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
+      mockSelectNoLockout();
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
 
@@ -1679,6 +1695,7 @@ describe("Shares Routes", () => {
     it("does not expose passphrase hash in minimal passphrase-required response", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
+      mockSelectNoLockout();
 
       const res = await slugApp.request("/shares/slug/abc123xyz0");
       const body = (await res.json()) as any;
@@ -1709,14 +1726,22 @@ describe("Shares Routes", () => {
     it("returns 422 when passphrase is incorrect (ValidationError thrown)", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
+      mockSelectNoLockout();
 
       // verifyPassphrase returns false
       vi.mocked(Bun.password.verify).mockResolvedValue(false);
 
+      // recordFailedAttempt: select existing attempt record (none found → insert path)
+      mockSelectNoLockout();
+      vi.mocked(db.insert).mockReturnValueOnce({
+        values: vi.fn().mockResolvedValue(undefined),
+      } as never);
+      vi.mocked(db.insert).mockReturnValueOnce({
+        values: vi.fn().mockResolvedValue(undefined),
+      } as never);
+
       // Use query param since GET requests cannot have a body
-      const res = await slugApp.request(
-        "/shares/slug/abc123xyz0?passphrase=wrongpassword"
-      );
+      const res = await slugApp.request("/shares/slug/abc123xyz0?passphrase=wrongpassword");
 
       expect(res.status).toBe(422);
     });
@@ -1724,16 +1749,13 @@ describe("Shares Routes", () => {
     it("returns full share data when correct passphrase provided via query param", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
-
-      // Assets query
-      mockSelectAssetJoinNoLimit([]);
+      mockSelectNoLockout();
 
       vi.mocked(Bun.password.verify).mockResolvedValue(true);
 
-      // Use query param since GET requests cannot have a body
-      const res = await slugApp.request(
-        "/shares/slug/abc123xyz0?passphrase=correctpassword"
-      );
+      mockSelectAssetJoinNoLimit([]);
+
+      const res = await slugApp.request("/shares/slug/abc123xyz0?passphrase=correctpassword");
 
       expect(res.status).toBe(200);
       const body = (await res.json()) as any;
@@ -1744,15 +1766,13 @@ describe("Shares Routes", () => {
     it("accepts passphrase via query param (deprecated fallback)", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "hashed_value" };
       mockSelectShareSingle(protectedShare);
-
-      // Assets query
-      mockSelectAssetJoinNoLimit([]);
+      mockSelectNoLockout();
 
       vi.mocked(Bun.password.verify).mockResolvedValue(true);
 
-      const res = await slugApp.request(
-        "/shares/slug/abc123xyz0?passphrase=correctpassword"
-      );
+      mockSelectAssetJoinNoLimit([]);
+
+      const res = await slugApp.request("/shares/slug/abc123xyz0?passphrase=correctpassword");
 
       expect(res.status).toBe(200);
     });
@@ -1793,12 +1813,12 @@ describe("Shares Routes", () => {
     it("calls Bun.password.verify with provided passphrase and stored hash", async () => {
       const protectedShare = { ...SHARE_ROW, passphrase: "stored_hash" };
       mockSelectShareSingle(protectedShare);
-
-      mockSelectAssetJoinNoLimit([]);
+      mockSelectNoLockout();
 
       vi.mocked(Bun.password.verify).mockResolvedValue(true);
 
-      // Use query param since GET requests cannot have a body
+      mockSelectAssetJoinNoLimit([]);
+
       await slugApp.request("/shares/slug/abc123xyz0?passphrase=mypassword");
 
       expect(Bun.password.verify).toHaveBeenCalledWith("mypassword", "stored_hash");
@@ -1831,17 +1851,21 @@ describe("listProjectShares", () => {
   it("returns shares for a project", async () => {
     const testApp = makeProjectSharesApp();
 
+    vi.mocked(requireAuth).mockReturnValue(SESSION as never);
+    vi.mocked(parseLimit).mockReturnValue(50);
     vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
 
-    mockSelectJoinList([{
-      share: SHARE_ROW,
-      user: USER_ROW,
-    }]);
+    mockSelectJoinList([
+      {
+        share: SHARE_ROW,
+        user: USER_ROW,
+      },
+    ]);
 
     const res = await testApp.request("/projects/prj_001/shares");
 
     expect(res.status).toBe(200);
-    const json = await res.json() as { data: unknown[] };
+    const json = (await res.json()) as { data: unknown[] };
     expect(json.data).toHaveLength(1);
   });
 
@@ -1860,10 +1884,12 @@ describe("listProjectShares", () => {
 
     vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
 
-    mockSelectJoinList([{
-      share: SHARE_ROW,
-      user: USER_ROW,
-    }]);
+    mockSelectJoinList([
+      {
+        share: SHARE_ROW,
+        user: USER_ROW,
+      },
+    ]);
 
     await testApp.request("/projects/prj_001/shares");
 
@@ -1876,15 +1902,19 @@ describe("listProjectShares", () => {
 
     vi.mocked(verifyProjectAccess).mockResolvedValue({} as never);
 
-    mockSelectJoinList([{
-      share: SHARE_ROW,
-      user: USER_ROW,
-    }]);
+    mockSelectJoinList([
+      {
+        share: SHARE_ROW,
+        user: USER_ROW,
+      },
+    ]);
 
-    const res = await testApp.request("/projects/prj_001/shares?cursor=eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTAxVDAwOjAwOjAwLjAwMFoifQ==");
+    const res = await testApp.request(
+      "/projects/prj_001/shares?cursor=eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTAxVDAwOjAwOjAwLjAwMFoifQ=="
+    );
 
     expect(res.status).toBe(200);
-    const json = await res.json() as { data: unknown };
+    const json = (await res.json()) as { data: unknown };
     expect(json.data).toBeDefined();
   });
 });

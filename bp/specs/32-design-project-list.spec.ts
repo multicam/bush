@@ -4,7 +4,7 @@
  * Measures project list page layout, card spacing, and grid balance.
  * Focus: grid gaps, card proportions, search bar spacing, view toggle balance.
  *
- * Reference: agno.com uses rounded cards with subtle shadows, generous padding.
+ * Reference: Tailwind UI Catalyst demo uses rounded cards with subtle shadows, generous padding.
  * Bush uses: border-based cards, grid/list toggle, workspace filter.
  */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
@@ -174,7 +174,7 @@ test.describe("Design Bench: Project List", () => {
     }
   });
 
-  test("full page screenshot for agno comparison", async ({ authedPage: page }) => {
+  test("full page screenshot for catalyst comparison", async ({ authedPage: page }) => {
     await captureScreenshot(page, "32-projects-full", { fullPage: true });
   });
 });

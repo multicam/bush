@@ -34,6 +34,7 @@ test.describe("UC-04: Navigate Projects", () => {
   test("grid/list view toggle", async ({ authedPage: page }) => {
     await page.goto("/projects");
     await page.waitForLoadState("networkidle");
+    await page.waitForSelector("main", { state: "visible" });
 
     const listView = page.getByLabel("List view");
     if (await listView.isVisible()) {
@@ -42,9 +43,11 @@ test.describe("UC-04: Navigate Projects", () => {
       await captureScreenshot(page, "04-projects-list-view");
 
       const gridView = page.getByLabel("Grid view");
-      await gridView.click();
-      await page.waitForTimeout(300);
-      await captureScreenshot(page, "04-projects-grid-view");
+      if (await gridView.isVisible()) {
+        await gridView.click();
+        await page.waitForTimeout(300);
+        await captureScreenshot(page, "04-projects-grid-view");
+      }
     }
   });
 

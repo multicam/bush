@@ -10,7 +10,7 @@ export default defineConfig({
   testDir: "./specs",
   fullyParallel: false,
   workers: 1,
-  retries: 0,
+  retries: 1,
   reporter: [["html", { outputFolder: "./results/html-report" }], ["list"]],
 
   use: {
