@@ -8,23 +8,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MessageSquare, MessageSquareOff, Download, Loader2 } from "lucide-react";
+import { ArrowLeftIcon, ChatBubbleLeftIcon, ArrowDownTrayIcon, SpinnerIcon } from "@/web/lib/icons";
 import { AppLayout } from "@/web/components/layout";
 import { Button } from "@/web/components/ui";
-import {
-  VideoViewer,
-  AudioViewer,
-  ImageViewer,
-  PdfViewer,
-} from "@/web/components/viewers";
+import { VideoViewer, AudioViewer, ImageViewer, PdfViewer } from "@/web/components/viewers";
 import { CommentPanel } from "@/web/components/comments";
 import { useAuth } from "@/web/context";
-import {
-  filesApi,
-  extractAttributes,
-  getErrorMessage,
-  type FileAttributes,
-} from "@/web/lib/api";
+import { filesApi, extractAttributes, getErrorMessage, type FileAttributes } from "@/web/lib/api";
 
 interface FileItem extends FileAttributes {
   id: string;
@@ -62,9 +52,7 @@ function formatFileSize(bytes: number): string {
  * Spinner component using Lucide icon
  */
 function Spinner() {
-  return (
-    <Loader2 className="w-10 h-10 text-accent animate-spin" />
-  );
+  return <SpinnerIcon className="w-10 h-10 text-accent" />;
 }
 
 export default function FileDetailPage() {
@@ -95,7 +83,9 @@ export default function FileDetailPage() {
 
         // Get download URL for viewers
         try {
-          const downloadResponse = await filesApi.download(projectId, fileId, { signal: abortController.signal });
+          const downloadResponse = await filesApi.download(projectId, fileId, {
+            signal: abortController.signal,
+          });
           setDownloadUrl(downloadResponse.meta.download_url);
         } catch (error) {
           // Don't update state if aborted
@@ -155,10 +145,10 @@ export default function FileDetailPage() {
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-screen gap-4">
           <h1 className="text-2xl font-semibold text-primary mb-2">File Not Found</h1>
-          <p className="text-secondary mb-4">{errorMessage || "The requested file could not be loaded."}</p>
-          <Button onClick={() => router.push(`/projects/${projectId}`)}>
-            Back to Project
-          </Button>
+          <p className="text-secondary mb-4">
+            {errorMessage || "The requested file could not be loaded."}
+          </p>
+          <Button onClick={() => router.push(`/projects/${projectId}`)}>Back to Project</Button>
         </div>
       </AppLayout>
     );
@@ -170,11 +160,8 @@ export default function FileDetailPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 bg-surface-1 border-b border-border-default shrink-0">
           <div className="flex items-center gap-4 max-md:flex-col max-md:items-start max-md:gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => router.push(`/projects/${projectId}`)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <Button outline onClick={() => router.push(`/projects/${projectId}`)}>
+              <ArrowLeftIcon className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div className="flex flex-col gap-1">
@@ -188,30 +175,18 @@ export default function FileDetailPage() {
                   {file.status === "ready"
                     ? "Ready"
                     : file.status === "processing"
-                    ? "Processing..."
-                    : file.status === "uploading"
-                    ? "Uploading..."
-                    : "Error"}
+                      ? "Processing..."
+                      : file.status === "uploading"
+                        ? "Uploading..."
+                        : "Error"}
                 </span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setShowComments(!showComments)}
-            >
-              {showComments ? (
-                <>
-                  <MessageSquareOff className="w-4 h-4 mr-2" />
-                  Hide Comments
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Show Comments
-                </>
-              )}
+            <Button outline onClick={() => setShowComments(!showComments)}>
+              <ChatBubbleLeftIcon className="w-4 h-4 mr-2" />
+              {showComments ? "Hide Comments" : "Show Comments"}
             </Button>
             {file.status === "ready" && (
               <Button
@@ -224,7 +199,7 @@ export default function FileDetailPage() {
                   }
                 }}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
                 Download
               </Button>
             )}
@@ -242,8 +217,8 @@ export default function FileDetailPage() {
                   {file.status === "uploading"
                     ? "Uploading file..."
                     : file.status === "processing"
-                    ? "Processing file..."
-                    : "Processing failed"}
+                      ? "Processing file..."
+                      : "Processing failed"}
                 </p>
               </div>
             )}
@@ -257,30 +232,23 @@ export default function FileDetailPage() {
             )}
 
             {file.status === "ready" && viewerType === "audio" && downloadUrl && (
-              <AudioViewer
-                src={downloadUrl}
-                name={file.name}
-              />
+              <AudioViewer src={downloadUrl} name={file.name} />
             )}
 
             {file.status === "ready" && viewerType === "image" && downloadUrl && (
-              <ImageViewer
-                src={downloadUrl}
-                alt={file.name}
-              />
+              <ImageViewer src={downloadUrl} alt={file.name} />
             )}
 
             {file.status === "ready" && viewerType === "pdf" && downloadUrl && (
-              <PdfViewer
-                src={downloadUrl}
-                name={file.name}
-              />
+              <PdfViewer src={downloadUrl} name={file.name} />
             )}
 
             {file.status === "ready" && viewerType === "other" && (
               <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
                 <h2 className="m-0 text-xl font-semibold text-primary">Preview not available</h2>
-                <p className="m-0 text-secondary">This file type ({file.mimeType}) cannot be previewed.</p>
+                <p className="m-0 text-secondary">
+                  This file type ({file.mimeType}) cannot be previewed.
+                </p>
                 <Button
                   onClick={async () => {
                     try {
@@ -291,7 +259,7 @@ export default function FileDetailPage() {
                     }
                   }}
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
                   Download File
                 </Button>
               </div>
@@ -301,9 +269,7 @@ export default function FileDetailPage() {
           {/* Comments panel */}
           {showComments && (
             <div className="w-[360px] border-l border-border-default bg-surface-1 overflow-hidden shrink-0 max-md:absolute max-md:right-0 max-md:top-[60px] max-md:bottom-0 max-md:z-[100] max-md:shadow-[-2px_0_8px_rgba(0,0,0,0.1)]">
-              <CommentPanel
-                fileId={fileId}
-              />
+              <CommentPanel fileId={fileId} />
             </div>
           )}
         </div>
