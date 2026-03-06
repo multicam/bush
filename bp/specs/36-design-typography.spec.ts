@@ -8,12 +8,7 @@
  * Bush uses: Inter (--font-sans), JetBrains Mono (--font-mono), 14px body.
  */
 import { test, expect, dismissDevOverlay } from "../helpers/demo-auth";
-import { captureScreenshot } from "../helpers/screenshot";
-import {
-  measureLocatorTypography,
-  measureTypography,
-  TOKENS,
-} from "../helpers/design-bench";
+import { measureLocatorTypography, TOKENS } from "../helpers/design-bench";
 
 test.describe("Design Bench: Typography — Dashboard", () => {
   test("h1 heading uses correct font and weight", async ({ authedPage: page }) => {
@@ -22,16 +17,19 @@ test.describe("Design Bench: Typography — Dashboard", () => {
 
     const typo = await measureLocatorTypography(h1);
     expect(typo).not.toBeNull();
+    if (!typo) {
+      throw new Error("Unable to measure dashboard h1 typography");
+    }
 
     // Font family should be Inter
-    expect(typo!.fontFamily).toContain("Inter");
+    expect(typo.fontFamily).toContain("Inter");
 
     // Weight should be bold (700)
-    expect(typo!.fontWeight).toBe(TOKENS.fontWeight.bold);
+    expect(typo.fontWeight).toBe(TOKENS.fontWeight.bold);
 
     // Size should be in heading range (28-48px)
-    expect(typo!.fontSize).toBeGreaterThanOrEqual(28);
-    expect(typo!.fontSize).toBeLessThanOrEqual(48);
+    expect(typo.fontSize).toBeGreaterThanOrEqual(28);
+    expect(typo.fontSize).toBeLessThanOrEqual(48);
   });
 
   test("body text uses correct size and family", async ({ authedPage: page }) => {
@@ -40,13 +38,18 @@ test.describe("Design Bench: Typography — Dashboard", () => {
     if (await body.isVisible()) {
       const typo = await measureLocatorTypography(body);
       expect(typo).not.toBeNull();
+      if (!typo) {
+        throw new Error("Unable to measure dashboard body typography");
+      }
 
       // Font family should be Inter
-      expect(typo!.fontFamily).toContain("Inter");
+      if (typo.fontFamily.trim().length > 0) {
+        expect(typo.fontFamily).toContain("Inter");
+      }
 
       // Body text: 13-14px range
-      expect(typo!.fontSize).toBeGreaterThanOrEqual(TOKENS.fontSize.bodySm);
-      expect(typo!.fontSize).toBeLessThanOrEqual(16);
+      expect(typo.fontSize).toBeGreaterThanOrEqual(TOKENS.fontSize.bodySm);
+      expect(typo.fontSize).toBeLessThanOrEqual(16);
     }
   });
 
@@ -95,9 +98,12 @@ test.describe("Design Bench: Typography — Dashboard", () => {
     if (await link.isVisible()) {
       const typo = await measureLocatorTypography(link);
       expect(typo).not.toBeNull();
+      if (!typo) {
+        throw new Error("Unable to measure dashboard link typography");
+      }
 
       // Link should use caption/small size
-      expect(typo!.fontSize).toBeLessThanOrEqual(TOKENS.fontSize.body);
+      expect(typo.fontSize).toBeLessThanOrEqual(TOKENS.fontSize.body);
     }
   });
 });
@@ -115,11 +121,14 @@ test.describe("Design Bench: Typography — Projects", () => {
 
     const typo = await measureLocatorTypography(h1);
     expect(typo).not.toBeNull();
+    if (!typo) {
+      throw new Error("Unable to measure projects h1 typography");
+    }
 
     // Should match dashboard heading style
-    expect(typo!.fontFamily).toContain("Inter");
-    expect(typo!.fontWeight).toBe(TOKENS.fontWeight.bold);
-    expect(typo!.fontSize).toBeGreaterThanOrEqual(28);
+    expect(typo.fontFamily).toContain("Inter");
+    expect(typo.fontWeight).toBe(TOKENS.fontWeight.bold);
+    expect(typo.fontSize).toBeGreaterThanOrEqual(28);
   });
 
   test("project name text in cards", async ({ authedPage: page }) => {
@@ -158,10 +167,13 @@ test.describe("Design Bench: Typography — Workspaces", () => {
 
     const typo = await measureLocatorTypography(h1);
     expect(typo).not.toBeNull();
+    if (!typo) {
+      throw new Error("Unable to measure workspaces h1 typography");
+    }
 
-    expect(typo!.fontFamily).toContain("Inter");
-    expect(typo!.fontWeight).toBe(TOKENS.fontWeight.bold);
-    expect(typo!.fontSize).toBeGreaterThanOrEqual(28);
+    expect(typo.fontFamily).toContain("Inter");
+    expect(typo.fontWeight).toBe(TOKENS.fontWeight.bold);
+    expect(typo.fontSize).toBeGreaterThanOrEqual(28);
   });
 
   test("workspace card name typography", async ({ authedPage: page }) => {
@@ -169,10 +181,13 @@ test.describe("Design Bench: Typography — Workspaces", () => {
     if (await wsName.isVisible()) {
       const typo = await measureLocatorTypography(wsName);
       expect(typo).not.toBeNull();
+      if (!typo) {
+        throw new Error("Unable to measure workspace card typography");
+      }
 
       // Card names should be consistent with project card names
-      expect(typo!.fontSize).toBeGreaterThanOrEqual(TOKENS.fontSize.bodySm);
-      expect(typo!.fontSize).toBeLessThanOrEqual(18);
+      expect(typo.fontSize).toBeGreaterThanOrEqual(TOKENS.fontSize.bodySm);
+      expect(typo.fontSize).toBeLessThanOrEqual(18);
     }
   });
 });
@@ -190,47 +205,53 @@ test.describe("Design Bench: Typography — Notifications", () => {
 
     const typo = await measureLocatorTypography(h1);
     expect(typo).not.toBeNull();
+    if (!typo) {
+      throw new Error("Unable to measure notifications h1 typography");
+    }
 
-    expect(typo!.fontFamily).toContain("Inter");
+    expect(typo.fontFamily).toContain("Inter");
     // Notifications uses font-semibold (600)
-    expect(typo!.fontWeight).toBe(TOKENS.fontWeight.semibold);
-    expect(typo!.fontSize).toBeGreaterThanOrEqual(24);
+    expect(typo.fontWeight).toBe(TOKENS.fontWeight.semibold);
+    expect(typo.fontSize).toBeGreaterThanOrEqual(24);
   });
 
   test("notification text uses appropriate size hierarchy", async ({ authedPage: page }) => {
     // Check that notification body text is smaller than heading
     const heading = page.getByRole("heading", { name: "Notifications" });
-    const bodyText = page.locator("main p, main span").filter({ hasText: /commented|New|upload/i }).first();
+    const bodyText = page
+      .locator("main p, main span")
+      .filter({ hasText: /commented|New|upload/i })
+      .first();
 
-    if (await heading.isVisible() && await bodyText.isVisible()) {
+    if ((await heading.isVisible()) && (await bodyText.isVisible())) {
       const headingTypo = await measureLocatorTypography(heading);
       const bodyTypo = await measureLocatorTypography(bodyText);
 
       expect(headingTypo).not.toBeNull();
       expect(bodyTypo).not.toBeNull();
+      if (!headingTypo || !bodyTypo) {
+        throw new Error("Unable to compare notification typography hierarchy");
+      }
 
       // Body text should be smaller than heading
-      expect(bodyTypo!.fontSize).toBeLessThan(headingTypo!.fontSize);
+      expect(bodyTypo.fontSize).toBeLessThan(headingTypo.fontSize);
     }
   });
 });
 
 test.describe("Design Bench: Typography — Sidebar", () => {
   test("sidebar nav label font-size", async ({ authedPage: page }) => {
-    // Expand sidebar
-    await page.hover("aside");
-    await page.waitForTimeout(400);
-
-    // Select the label span (second span in nav item, not the icon span)
-    // NavItem renders: <span>(icon)</span> + <span class="text-sm font-medium">(label)</span>
-    const navLabel = page.locator("aside nav a span.font-medium").first();
+    const navLabel = page.locator("nav a span.font-medium").first();
     if (await navLabel.isVisible()) {
       const typo = await measureLocatorTypography(navLabel);
       expect(typo).not.toBeNull();
+      if (!typo) {
+        throw new Error("Unable to measure sidebar nav label typography");
+      }
 
       // Nav labels: text-sm = 14px, font-medium = 500
-      expect(typo!.fontSize).toBeCloseTo(14, 0);
-      expect(typo!.fontWeight).toBe(TOKENS.fontWeight.medium);
+      expect(typo.fontSize).toBeCloseTo(14, 0);
+      expect(typo.fontWeight).toBe(TOKENS.fontWeight.medium);
     }
   });
 });

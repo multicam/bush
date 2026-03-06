@@ -12,30 +12,35 @@ import { captureScreenshot } from "../helpers/screenshot";
 import {
   measureBox,
   measureLocator,
-  measureTypography,
   measureLocatorTypography,
-  measureChildGaps,
-  measureRadius,
   isOnSpacingScale,
   checkHBalance,
   checkVBalance,
   TOKENS,
 } from "../helpers/design-bench";
 
+function requireValue<T>(value: T | null, message: string): T {
+  expect(value).not.toBeNull();
+  if (value === null) {
+    throw new Error(message);
+  }
+  return value;
+}
+
 test.describe("Design Bench: Dashboard", () => {
   test("page container padding is consistent and on-scale", async ({ authedPage: page }) => {
     // Dashboard wraps in div.p-8 max-w-[80rem] mx-auto
     const container = await measureBox(page, "main > div");
-    expect(container).not.toBeNull();
+    const measuredContainer = requireValue(container, "Unable to measure dashboard container");
 
     // All padding values should be on the 4px spacing scale
-    expect(isOnSpacingScale(container!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(container!.paddingLeft)).toBe(true);
-    expect(isOnSpacingScale(container!.paddingBottom)).toBe(true);
-    expect(isOnSpacingScale(container!.paddingRight)).toBe(true);
+    expect(isOnSpacingScale(measuredContainer.paddingTop)).toBe(true);
+    expect(isOnSpacingScale(measuredContainer.paddingLeft)).toBe(true);
+    expect(isOnSpacingScale(measuredContainer.paddingBottom)).toBe(true);
+    expect(isOnSpacingScale(measuredContainer.paddingRight)).toBe(true);
 
     // Horizontal balance (left and right padding should match)
-    const hBalance = checkHBalance(container!.paddingLeft, container!.paddingRight);
+    const hBalance = checkHBalance(measuredContainer.paddingLeft, measuredContainer.paddingRight);
     expect(hBalance.balanced).toBe(true);
 
     await captureScreenshot(page, "31-dashboard-container");
@@ -47,12 +52,12 @@ test.describe("Design Bench: Dashboard", () => {
     await expect(header).toBeVisible();
 
     const typo = await measureLocatorTypography(header);
-    expect(typo).not.toBeNull();
+    const measuredTypography = requireValue(typo, "Unable to measure dashboard header typography");
 
     // h1 is text-3xl = ~30px (tailwind) — should be near h1 token (32px)
-    expect(typo!.fontSize).toBeGreaterThanOrEqual(28);
-    expect(typo!.fontSize).toBeLessThanOrEqual(32);
-    expect(typo!.fontWeight).toBe(TOKENS.fontWeight.bold);
+    expect(measuredTypography.fontSize).toBeGreaterThanOrEqual(28);
+    expect(measuredTypography.fontSize).toBeLessThanOrEqual(32);
+    expect(measuredTypography.fontWeight).toBe(TOKENS.fontWeight.bold);
 
     await captureScreenshot(page, "31-dashboard-header");
   });
@@ -64,25 +69,27 @@ test.describe("Design Bench: Dashboard", () => {
     await expect(statsGrid).toBeVisible();
 
     const box = await measureLocator(statsGrid);
-    expect(box).not.toBeNull();
+    const measuredGrid = requireValue(box, "Unable to measure dashboard stats grid");
 
     // gap-4 = 16px
-    expect(box!.gap).toBeCloseTo(16, 0);
-    expect(isOnSpacingScale(box!.gap)).toBe(true);
+    expect(measuredGrid.gap).toBeCloseTo(16, 0);
+    expect(isOnSpacingScale(measuredGrid.gap)).toBe(true);
   });
 
   test("stat card internal padding and balance", async ({ authedPage: page }) => {
     // Stat cards: p-5 = 20px, text-center
-    const statCard = await measureBox(page, "main .grid > div");
-    expect(statCard).not.toBeNull();
+    const statsGrid = page.locator("main .grid").first();
+    await expect(statsGrid).toBeVisible();
+    const statCard = await measureLocator(statsGrid.locator(":scope > div").first());
+    const measuredStatCard = requireValue(statCard, "Unable to find dashboard stat card");
 
     // Padding should be on spacing scale
-    expect(isOnSpacingScale(statCard!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(statCard!.paddingLeft)).toBe(true);
+    expect(isOnSpacingScale(measuredStatCard.paddingTop)).toBe(true);
+    expect(isOnSpacingScale(measuredStatCard.paddingLeft)).toBe(true);
 
     // All four sides should be equal (uniform padding)
-    const hBalance = checkHBalance(statCard!.paddingLeft, statCard!.paddingRight);
-    const vBalance = checkVBalance(statCard!.paddingTop, statCard!.paddingBottom);
+    const hBalance = checkHBalance(measuredStatCard.paddingLeft, measuredStatCard.paddingRight);
+    const vBalance = checkVBalance(measuredStatCard.paddingTop, measuredStatCard.paddingBottom);
     expect(hBalance.balanced).toBe(true);
     expect(vBalance.balanced).toBe(true);
 
@@ -91,9 +98,14 @@ test.describe("Design Bench: Dashboard", () => {
 
   test("stat card border-radius matches token", async ({ authedPage: page }) => {
     // rounded-md = 8px
-    const radius = await measureRadius(page, "main .grid > div");
-    expect(radius).not.toBeNull();
-    expect(radius).toBeCloseTo(TOKENS.radius.md, 1);
+    const statsGrid = page.locator("main .grid").first();
+    await expect(statsGrid).toBeVisible();
+    const radius = await statsGrid
+      .locator(":scope > div")
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).borderRadius));
+    const measuredRadius = requireValue(radius, "Unable to measure dashboard stat card radius");
+    expect(measuredRadius).toBeCloseTo(TOKENS.radius.md, 1);
   });
 
   test("section cards padding and rhythm", async ({ authedPage: page }) => {
@@ -106,16 +118,16 @@ test.describe("Design Bench: Dashboard", () => {
       const section = sections.nth(i);
       if (await section.isVisible()) {
         const box = await measureLocator(section);
-        expect(box).not.toBeNull();
+        const measuredSection = requireValue(box, "Unable to measure dashboard section");
 
         // Padding should be on spacing scale
-        expect(isOnSpacingScale(box!.paddingTop)).toBe(true);
+        expect(isOnSpacingScale(measuredSection.paddingTop)).toBe(true);
 
         // Balanced horizontal padding
-        const hBalance = checkHBalance(box!.paddingLeft, box!.paddingRight);
+        const hBalance = checkHBalance(measuredSection.paddingLeft, measuredSection.paddingRight);
         expect(hBalance.balanced).toBe(true);
 
-        paddings.push(box!.paddingTop);
+        paddings.push(measuredSection.paddingTop);
       }
     }
 
@@ -134,11 +146,14 @@ test.describe("Design Bench: Dashboard", () => {
     const sectionGrid = page.locator("main > div > .grid").nth(1);
     if (await sectionGrid.isVisible()) {
       const box = await measureLocator(sectionGrid);
-      expect(box).not.toBeNull();
+      const measuredSectionGrid = requireValue(
+        box,
+        "Unable to measure dashboard two-column section grid"
+      );
 
       // gap-8 = 32px
-      expect(box!.gap).toBeCloseTo(32, 0);
-      expect(isOnSpacingScale(box!.gap)).toBe(true);
+      expect(measuredSectionGrid.gap).toBeCloseTo(32, 0);
+      expect(isOnSpacingScale(measuredSectionGrid.gap)).toBe(true);
     }
   });
 
@@ -147,11 +162,11 @@ test.describe("Design Bench: Dashboard", () => {
     const projectList = page.locator("main section .flex.flex-col").first();
     if (await projectList.isVisible()) {
       const box = await measureLocator(projectList);
-      expect(box).not.toBeNull();
+      const measuredProjectList = requireValue(box, "Unable to measure recent projects list");
 
       // gap-2 = 8px
-      expect(box!.gap).toBeCloseTo(8, 0);
-      expect(isOnSpacingScale(box!.gap)).toBe(true);
+      expect(measuredProjectList.gap).toBeCloseTo(8, 0);
+      expect(isOnSpacingScale(measuredProjectList.gap)).toBe(true);
     }
   });
 
@@ -160,14 +175,17 @@ test.describe("Design Bench: Dashboard", () => {
     const projectItem = page.locator("main section a[href^='/projects/']").first();
     if (await projectItem.isVisible()) {
       const box = await measureLocator(projectItem);
-      expect(box).not.toBeNull();
+      const measuredProjectItem = requireValue(box, "Unable to measure project list item");
 
       // Padding should be on spacing scale
-      expect(isOnSpacingScale(box!.paddingTop)).toBe(true);
-      expect(isOnSpacingScale(box!.paddingLeft)).toBe(true);
+      expect(isOnSpacingScale(measuredProjectItem.paddingTop)).toBe(true);
+      expect(isOnSpacingScale(measuredProjectItem.paddingLeft)).toBe(true);
 
       // Balanced horizontal padding
-      const hBalance = checkHBalance(box!.paddingLeft, box!.paddingRight);
+      const hBalance = checkHBalance(
+        measuredProjectItem.paddingLeft,
+        measuredProjectItem.paddingRight
+      );
       expect(hBalance.balanced).toBe(true);
     }
   });
@@ -177,11 +195,11 @@ test.describe("Design Bench: Dashboard", () => {
     const actionItem = page.locator("main section a[href='/files/upload']").first();
     if (await actionItem.isVisible()) {
       const box = await measureLocator(actionItem);
-      expect(box).not.toBeNull();
+      const measuredActionItem = requireValue(box, "Unable to measure quick action item");
 
       // gap-3 = 12px
-      expect(box!.gap).toBeCloseTo(12, 0);
-      expect(isOnSpacingScale(box!.gap)).toBe(true);
+      expect(measuredActionItem.gap).toBeCloseTo(12, 0);
+      expect(isOnSpacingScale(measuredActionItem.gap)).toBe(true);
     }
   });
 

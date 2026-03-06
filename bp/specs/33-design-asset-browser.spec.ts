@@ -37,13 +37,16 @@ test.describe("Design Bench: Asset Browser", () => {
   test("project detail page padding", async ({ authedPage: page }) => {
     const container = await measureBox(page, "main > div");
     expect(container).not.toBeNull();
+    if (!container) {
+      throw new Error("Unable to measure project detail container");
+    }
 
     // Padding should be on spacing scale
-    expect(isOnSpacingScale(container!.paddingTop)).toBe(true);
-    expect(isOnSpacingScale(container!.paddingLeft)).toBe(true);
+    expect(isOnSpacingScale(container.paddingTop)).toBe(true);
+    expect(isOnSpacingScale(container.paddingLeft)).toBe(true);
 
     // Horizontal balance
-    const hBalance = checkHBalance(container!.paddingLeft, container!.paddingRight);
+    const hBalance = checkHBalance(container.paddingLeft, container.paddingRight);
     expect(hBalance.balanced).toBe(true);
 
     await captureScreenshot(page, "33-asset-browser-container");
@@ -54,10 +57,13 @@ test.describe("Design Bench: Asset Browser", () => {
     if (await heading.isVisible()) {
       const typo = await measureLocatorTypography(heading);
       expect(typo).not.toBeNull();
+      if (!typo) {
+        throw new Error("Unable to measure project heading typography");
+      }
 
       // Project name should be prominent (h2-h1 range)
-      expect(typo!.fontSize).toBeGreaterThanOrEqual(20);
-      expect(typo!.fontSize).toBeLessThanOrEqual(32);
+      expect(typo.fontSize).toBeGreaterThanOrEqual(20);
+      expect(typo.fontSize).toBeLessThanOrEqual(32);
     }
   });
 
@@ -67,27 +73,34 @@ test.describe("Design Bench: Asset Browser", () => {
     if (await grid.isVisible()) {
       const box = await measureLocator(grid);
       expect(box).not.toBeNull();
+      if (!box) {
+        throw new Error("Unable to measure asset grid");
+      }
 
       // Gap should be on spacing scale
-      if (box!.gap > 0) {
-        expect(isOnSpacingScale(box!.gap)).toBe(true);
+      if (box.gap > 0) {
+        expect(isOnSpacingScale(box.gap)).toBe(true);
       }
     }
   });
 
   test("folder and file cards have consistent grid layout", async ({ authedPage: page }) => {
-    // Check that all visible cards in the grid share consistent widths
-    const gridCards = await page.evaluate(() => {
-      const grid = document.querySelector("[class*='grid-cols']");
-      if (!grid) return [];
-      const children = Array.from(grid.children).filter(
-        (c) => getComputedStyle(c).display !== "none"
-      );
-      return children.slice(0, 6).map((c) => ({
-        w: c.getBoundingClientRect().width,
-        h: c.getBoundingClientRect().height,
-      }));
-    });
+    const candidateCards = page
+      .locator(
+        "main a[href*='/files/'], main button[aria-label*='folder' i], main button[aria-label*='file' i]"
+      )
+      .filter({ hasNotText: /Upload Files/i });
+
+    const total = await candidateCards.count();
+    const sample = Math.min(total, 6);
+    const gridCards: Array<{ w: number; h: number }> = [];
+
+    for (let i = 0; i < sample; i++) {
+      const box = await candidateCards.nth(i).boundingBox();
+      if (box) {
+        gridCards.push({ w: box.width, h: box.height });
+      }
+    }
 
     if (gridCards.length > 1) {
       // Cards in the same column should share width (grid enforces this)
@@ -104,33 +117,41 @@ test.describe("Design Bench: Asset Browser", () => {
     if (await uploadBtn.isVisible()) {
       const box = await measureLocator(uploadBtn);
       expect(box).not.toBeNull();
+      if (!box) {
+        throw new Error("Unable to measure upload button");
+      }
 
       // Button padding should be on spacing scale
-      expect(isOnSpacingScale(box!.paddingLeft)).toBe(true);
-      expect(isOnSpacingScale(box!.paddingRight)).toBe(true);
+      expect(isOnSpacingScale(box.paddingLeft)).toBe(true);
+      expect(isOnSpacingScale(box.paddingRight)).toBe(true);
 
       // Button padding should be balanced
-      const hBalance = checkHBalance(box!.paddingLeft, box!.paddingRight);
+      const hBalance = checkHBalance(box.paddingLeft, box.paddingRight);
       expect(hBalance.balanced).toBe(true);
 
       // Button height should match a token
       const heightMatch =
-        Math.abs(box!.height - TOKENS.height.buttonSm) < 2 ||
-        Math.abs(box!.height - TOKENS.height.buttonMd) < 2 ||
-        Math.abs(box!.height - TOKENS.height.buttonLg) < 2;
+        Math.abs(box.height - TOKENS.height.buttonSm) < 2 ||
+        Math.abs(box.height - TOKENS.height.buttonMd) < 2 ||
+        Math.abs(box.height - TOKENS.height.buttonLg) < 2;
       expect(heightMatch).toBe(true);
     }
   });
 
   test("view controls are balanced", async ({ authedPage: page }) => {
     // View toggle and sort controls in the toolbar
-    const toolbar = page.locator("[class*='flex'][class*='items-center'][class*='justify-between']").first();
+    const toolbar = page
+      .locator("[class*='flex'][class*='items-center'][class*='justify-between']")
+      .first();
     if (await toolbar.isVisible()) {
       const box = await measureLocator(toolbar);
       expect(box).not.toBeNull();
+      if (!box) {
+        throw new Error("Unable to measure asset browser toolbar");
+      }
 
       // Toolbar should have balanced horizontal padding
-      const hBalance = checkHBalance(box!.paddingLeft, box!.paddingRight);
+      const hBalance = checkHBalance(box.paddingLeft, box.paddingRight);
       expect(hBalance.balanced).toBe(true);
     }
   });
@@ -143,14 +164,19 @@ test.describe("Design Bench: Asset Browser", () => {
       await page.waitForTimeout(500);
 
       // Breadcrumb nav
-      const breadcrumb = page.locator("nav[aria-label*='Breadcrumb'], [class*='breadcrumb']").first();
+      const breadcrumb = page
+        .locator("nav[aria-label*='Breadcrumb'], [class*='breadcrumb']")
+        .first();
       if (await breadcrumb.isVisible()) {
         const box = await measureLocator(breadcrumb);
         expect(box).not.toBeNull();
+        if (!box) {
+          throw new Error("Unable to measure breadcrumb layout");
+        }
 
         // Gap between breadcrumb items should be on-scale
-        if (box!.gap > 0) {
-          expect(isOnSpacingScale(box!.gap)).toBe(true);
+        if (box.gap > 0) {
+          expect(isOnSpacingScale(box.gap)).toBe(true);
         }
 
         await captureScreenshot(page, "33-breadcrumbs");
