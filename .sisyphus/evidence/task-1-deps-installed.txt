@@ -1,0 +1,3 @@
+✓ @headlessui/react installed
+✓ motion installed
+✓ @heroicons/react installed

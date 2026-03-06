@@ -1,0 +1,8 @@
+170:) & { className?: string; children: React.ReactNode; loading?: boolean } & (
+182:  { color, outline, plain, className, children, loading, ...props }: ButtonProps,
+197:      {loading && <SpinnerIcon data-slot="icon" className="size-4" />}
+210:        aria-busy={loading || undefined}
+224:      disabled={loading || buttonProps.disabled}
+225:      aria-busy={loading || undefined}
+
+lucide-react matches in spinner.tsx: 0

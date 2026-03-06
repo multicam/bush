@@ -1,0 +1,7 @@
+166 src/web/lib/icons.tsx
+Export count:
+7
+SpinnerIcon check:
+ * SpinnerIcon — replaces Lucide's Loader2
+ * Usage: <SpinnerIcon className="size-4" /> or <SpinnerIcon data-slot="icon" />
+export function SpinnerIcon({ className = "size-4", ...props }: React.SVGProps<SVGSVGElement>) {

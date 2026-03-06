@@ -1,0 +1,11 @@
+43
+src/web/components/ui/avatar.old.tsx
+src/web/components/ui/badge.old.tsx
+src/web/components/ui/button.old.tsx
+src/web/components/ui/dropdown.old.tsx
+src/web/components/ui/input.old.tsx
+src/web/components/ui/modal.old.tsx
+src/web/components/ui/select.old.tsx
+import NextLink from "next/link";
+  props: React.ComponentPropsWithoutRef<typeof NextLink>,
+      <NextLink {...props} ref={ref} />

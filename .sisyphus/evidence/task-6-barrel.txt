@@ -1,0 +1,35 @@
+TASK 6: Barrel Export Rewrite - Evidence
+==========================================
+
+VERIFICATION RESULTS:
+- TypeScript typecheck: PASS (no errors on index.ts)
+- Export count: 32 statements
+  - 27 Catalyst UI Kit components
+  - 5 Bush custom components (Spinner, Toast, Tooltip, Skeleton, KeyboardLegend)
+
+COMPONENT CATEGORIES EXPORTED:
+✓ Layout: sidebar-layout, stacked-layout, auth-layout, navbar, sidebar
+✓ Core: button, link
+✓ Forms: input, textarea, select, checkbox, radio, switch, listbox, combobox, fieldset
+✓ Overlays: dialog, dropdown, alert
+✓ Data Display: badge, avatar, table, description-list, pagination
+✓ Typography: heading, text, divider
+✓ Bush Custom: spinner, toast, tooltip, skeleton, keyboard-legend
+
+SAMPLE IMPORTS VERIFIED:
+✓ import { Button, Dialog, DialogTitle, DialogBody, DialogActions } from '@/web/components/ui'
+✓ import { Input, Sidebar, SidebarItem, SidebarBody, SidebarHeader, SidebarFooter, SidebarLabel } from '@/web/components/ui'
+✓ import { DropdownItem, DropdownMenu } from '@/web/components/ui'
+✓ import { Spinner, SpinnerIcon } from '@/web/components/ui'
+✓ import { Toast, ToastContainer } from '@/web/components/ui'
+✓ import { Tooltip, Skeleton, KeyboardLegend } from '@/web/components/ui'
+
+STRUCTURE:
+- File: src/web/components/ui/index.ts
+- Lines: 55
+- Format: Organized by component category with clear section comments
+- No .old.tsx files exported
+- No test files exported
+- All exports use `export *` pattern (re-exports all named exports)
+
+STATUS: COMPLETE ✓
