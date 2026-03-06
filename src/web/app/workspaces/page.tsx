@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/web/components/layout";
 import { Button } from "@/web/components/ui";
 import { useAuth } from "@/web/context";
-import { Loader2, Plus, Search } from "lucide-react";
+import { SpinnerIcon, PlusIcon, MagnifyingGlassIcon } from "@/web/lib/icons";
 import {
   workspacesApi,
   extractCollectionAttributes,
@@ -58,9 +58,10 @@ export default function WorkspacesPage() {
     fetchWorkspaces();
   }, [isAuthenticated, authLoading, login]);
 
-  const filteredWorkspaces = workspaces.filter((workspace) =>
-    workspace.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (workspace.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+  const filteredWorkspaces = workspaces.filter(
+    (workspace) =>
+      workspace.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (workspace.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
   // Format date for display
@@ -79,7 +80,7 @@ export default function WorkspacesPage() {
       <AppLayout>
         <div className="p-8 max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center p-16 text-center text-secondary">
-            <Loader2 className="w-8 h-8 animate-spin mb-4" />
+            <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading workspaces...</p>
           </div>
         </div>
@@ -96,7 +97,7 @@ export default function WorkspacesPage() {
             <h2 className="text-primary m-0 mb-2">Failed to load workspaces</h2>
             <p className="text-secondary m-0 mb-6">{errorMessage}</p>
             <Button
-              variant="primary"
+              color="bush"
               onClick={() => {
                 setLoadingState("loading");
                 setErrorMessage("");
@@ -122,8 +123,8 @@ export default function WorkspacesPage() {
               Manage your workspaces and collaborate with your team
             </p>
           </div>
-          <Button variant="primary" onClick={() => window.location.href = "/workspaces/new"}>
-            <Plus className="w-4 h-4 mr-1" />
+          <Button color="bush" onClick={() => (window.location.href = "/workspaces/new")}>
+            <PlusIcon className="w-4 h-4 mr-1" />
             New Workspace
           </Button>
         </div>
@@ -131,7 +132,7 @@ export default function WorkspacesPage() {
         {/* Search */}
         <div className="mb-8">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
             <input
               type="text"
               placeholder="Search workspaces..."
@@ -171,15 +172,12 @@ export default function WorkspacesPage() {
           <div className="flex flex-col items-center justify-center p-16 text-center text-secondary">
             <p className="mb-4">No workspaces found</p>
             {searchQuery && (
-              <Button variant="secondary" onClick={() => setSearchQuery("")}>
+              <Button outline onClick={() => setSearchQuery("")}>
                 Clear search
               </Button>
             )}
             {workspaces.length === 0 && (
-              <Button
-                variant="primary"
-                onClick={() => window.location.href = "/workspaces/new"}
-              >
+              <Button color="bush" onClick={() => (window.location.href = "/workspaces/new")}>
                 Create your first workspace
               </Button>
             )}
