@@ -293,3 +293,33 @@ Rewrote `src/web/components/ui/index.ts` to export all 27 Catalyst components + 
 - Several files listed in the task had already been migrated — always re-read files before editing, don't trust task spec for current state
 - `SpinnerIcon` from `@/web/lib/icons` already has `animate-spin` baked in — never add it again in JSX
 - The edit tool can produce unexpected results when `oldString` is multi-line and similar patterns exist nearby — prefer targeted single-concept edits over large block replacements
+
+## [2026-03-06] Task: 15 — Remove lucide-react
+
+**Dependency removal completed:**
+
+- ✓ Verified zero `lucide-react` imports in src/ (only comment reference in `src/shared/file-types.ts:53` remains — acceptable)
+- ✓ `bun remove lucide-react` executed successfully
+- ✓ `tailwind-merge` is ACTIVELY USED in `src/shared/cn.ts` (via `twMerge` function) — NOT removed
+- ✓ `bun run typecheck` passes with zero errors after removal
+- ✓ Commit: `f1635ed` "refactor(ui): remove lucide-react dependency"
+
+**Key finding:** `tailwind-merge` is a core dependency for the `cn()` utility function that combines class names with Tailwind deduplication. It's used in `src/web/components/upload/dropzone.tsx` and must remain.
+
+## [2026-03-06] Task: 16 — Component Tests
+
+**Tests rewritten for Catalyst APIs (39 new passing tests):**
+
+- ✓ Deleted: old button.test.tsx (variant prop), input.test.tsx (label/error props), modal.test.tsx (deleted Modal), toast.test.tsx
+- ✓ Created: button.test.tsx (14 tests), dialog.test.tsx (6), input.test.tsx (9), toast.test.tsx (10)
+- ✓ Commits: `9ad377f` + `55508b5` "test(ui): rewrite component tests for Catalyst APIs"
+
+**Critical fix: vitest.workspace.ts had hardcoded `/home/tgds/Code/bush` paths** (wrong machine). Fixed to `path.resolve(__dirname, ...)`. This was why `button.test.tsx` and `toast.test.tsx` showed "0 test" — button.tsx imports `@/web/lib/icons` and toast.tsx imports `@/web/lib/icons` + `@/web/lib/utils`. Without the alias, Vitest failed to transform the files.
+
+**Toast Heroicons test pattern:** Icons from `@heroicons/react/16/solid` render as `<svg className="shrink-0 size-5">`. Query with `alert.querySelector("svg.size-5")` — NOT `aria-hidden` (Heroicons don't auto-add it). Dismiss XMarkIcon uses `size-4` class — easily distinguished.
+
+**Dialog open/close in JSDOM:** HeadlessUI v2 Dialog with `open={false}` unmounts children immediately in test environment (no CSS transition wait). `screen.queryByText(...)` correctly returns null when closed.
+
+**Input Field composition:** Catalyst Input has NO `label`, `error`, `helperText` props — these are in the old custom API. Use `<Field><Label/><Input/><ErrorMessage/></Field>` composition from `fieldset.tsx`. ErrorMessage has class `text-red-600` (queryable in JSDOM).
+
+**SpinnerIcon loading test:** Query `container.querySelector("svg.animate-spin")` — SpinnerIcon is `aria-hidden="true"` so `getByRole` won't find it. The class `animate-spin` is the reliable selector.
