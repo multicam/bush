@@ -219,13 +219,13 @@ function ToastIcon({ type }: { type: ToastType }) {
 
   switch (type) {
     case "success":
-      return <CheckCircle2 className={iconClass} />;
+      return <CheckCircleIcon className={iconClass} />;
     case "error":
-      return <XCircle className={iconClass} />;
+      return <XCircleIcon className={iconClass} />;
     case "warning":
-      return <AlertTriangle className={iconClass} />;
+      return <ExclamationTriangleIcon className={iconClass} />;
     case "info":
-      return <Info className={iconClass} />;
+      return <InformationCircleIcon className={iconClass} />;
   }
 }
 
