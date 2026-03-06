@@ -1,59 +1,86 @@
-/**
- * Bush Platform - App Layout Component
- *
- * Main layout wrapper with icon rail sidebar that expands on hover.
- * Reference: specs/20-design-foundations.md - App Shell Layout
- *
- * Design principles:
- * - Icon rail: 64px wide, expands to 240px on hover
- * - No fixed top header bar - page-level headers are part of content scroll
- * - Quiet until needed: sidebar is thin rail until hovered
- */
 "use client";
 
-import { type ReactNode, useState, useEffect } from "react";
-import { useAuth, useHasRole, useTheme } from "@/web/context";
-import { Avatar, Badge } from "@/web/components/ui";
-import { getDisplayName } from "@/web/lib/auth";
-import { notificationsApi } from "@/web/lib/api";
-import { useUserEvents } from "@/web/hooks/use-realtime";
-import { NotificationBell, NotificationDropdown } from "@/web/components/notifications";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { Avatar } from "@/web/components/ui/avatar";
 import {
-  LayoutDashboard,
-  Briefcase,
-  FolderOpen,
-  FileText,
-  Layers,
-  Share2,
-  Settings,
-  Sun,
-  Moon,
-  LogOut,
-  User,
-  ChevronDown,
-} from "lucide-react";
-import type { AuthState } from "@/auth";
+  Dropdown,
+  DropdownButton,
+  DropdownDivider,
+  DropdownItem,
+  DropdownLabel,
+  DropdownMenu,
+} from "@/web/components/ui/dropdown";
+import { Navbar, NavbarItem, NavbarSection, NavbarSpacer } from "@/web/components/ui/navbar";
+import {
+  Sidebar,
+  SidebarBody,
+  SidebarDivider,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarItem,
+  SidebarLabel,
+  SidebarSection,
+  SidebarSpacer,
+} from "@/web/components/ui/sidebar";
+import { SidebarLayout } from "@/web/components/ui/sidebar-layout";
+import { useAuth, useHasRole } from "@/web/context/auth-context";
+import { useTheme } from "@/web/context/theme-context";
+import { useUserEvents } from "@/web/hooks/use-realtime";
+import { getDisplayName, getUserInitials } from "@/web/lib/auth";
+import { notificationsApi } from "@/web/lib/api";
+import {
+  ArrowRightStartOnRectangleIcon,
+  BellIcon,
+  BriefcaseIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  FolderOpenIcon,
+  HomeIcon,
+  MoonIcon,
+  ShareIcon,
+  Square2StackIcon,
+  SunIcon,
+  UserCircleIcon,
+} from "@/web/lib/icons";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
-type Account = NonNullable<AuthState["currentAccount"]>;
+interface InlineNotification {
+  id: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+}
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const pathname = usePathname();
   const { user, currentAccount, accounts, switchAccount, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isOwner = useHasRole("owner");
   const isContentAdmin = useHasRole("content_admin");
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<InlineNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const displayName = user ? getDisplayName(user) : "User";
+  const initials = user ? getUserInitials(user) : "U";
+  const canAccessSettings = isOwner || isContentAdmin;
 
-  // Fetch unread count on mount
+  const unreadLabel = useMemo(() => {
+    if (unreadCount <= 0) {
+      return null;
+    }
+
+    return unreadCount > 99 ? "99+" : String(unreadCount);
+  }, [unreadCount]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -75,7 +102,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     };
   }, []);
 
-  // Subscribe to real-time notification events to update unread count
   useUserEvents(user?.id, {
     eventFilter: "notification.created",
     onEvent: () => {
@@ -83,282 +109,288 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
   });
 
+  const loadNotifications = async () => {
+    setNotificationsLoading(true);
+
+    try {
+      const response = await notificationsApi.list({ limit: 6 });
+      setNotifications(
+        response.data.map((item) => ({
+          id: item.id,
+          title: item.attributes.title,
+          body: item.attributes.body,
+          read: item.attributes.read,
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   const handleSwitchAccount = async (accountId: string) => {
     await switchAccount(accountId);
-    setShowAccountMenu(false);
   };
 
-  const handleNotificationClick = () => {
-    setShowNotifications(!showNotifications);
-    setShowUserMenu(false);
-    setShowAccountMenu(false);
-  };
-
-  const handleMarkAllRead = () => {
-    setUnreadCount(0);
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsApi.markAllRead();
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
   };
 
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Icon Rail Sidebar */}
-      <aside
-        className={`
-          flex flex-col relative
-          bg-surface-0 border-r border-border-default
-          transition-all duration-slow ease-default
-          ${isExpanded ? "w-60" : "w-16"}
-        `}
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
-      >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-border-default">
-          <span className={`font-bold text-text-primary transition-opacity duration-normal ${isExpanded ? "text-xl" : "text-xl text-center w-full"}`}>
-            {isExpanded ? "Bush" : "B"}
-          </span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 py-2 overflow-y-auto">
-          <NavItem
-            href="/dashboard"
-            icon={<LayoutDashboard size={20} />}
-            label="Dashboard"
-            expanded={isExpanded}
-          />
-          <NavItem
-            href="/workspaces"
-            icon={<Briefcase size={20} />}
-            label="Workspaces"
-            expanded={isExpanded}
-          />
-          <NavItem
-            href="/projects"
-            icon={<FolderOpen size={20} />}
-            label="Projects"
-            expanded={isExpanded}
-          />
-          <NavItem
-            href="/files"
-            icon={<FileText size={20} />}
-            label="Files"
-            expanded={isExpanded}
-          />
-          <NavItem
-            href="/collections"
-            icon={<Layers size={20} />}
-            label="Collections"
-            expanded={isExpanded}
-          />
-          <NavItem
-            href="/shares"
-            icon={<Share2 size={20} />}
-            label="Shares"
-            expanded={isExpanded}
-          />
-        </nav>
-
-        {/* Footer - Settings, Theme Toggle, User */}
-        <div className="border-t border-border-default py-2">
-          {(isOwner || isContentAdmin) && (
-            <NavItem
-              href="/settings"
-              icon={<Settings size={20} />}
-              label="Settings"
-              expanded={isExpanded}
-            />
-          )}
-
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`
-              w-full flex items-center gap-3 px-4 py-3
-              text-text-secondary hover:text-text-primary hover:bg-surface-2
-              transition-colors duration-fast
-            `}
-            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            {isExpanded && (
-              <span className="text-sm font-medium">
-                {theme === "dark" ? "Light Mode" : "Dark Mode"}
-              </span>
-            )}
-          </button>
-
-          {/* Account Switcher (if multiple accounts) */}
-          {accounts.length > 1 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowAccountMenu(!showAccountMenu)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3
-                  text-text-secondary hover:text-text-primary hover:bg-surface-2
-                  transition-colors duration-fast
-                `}
+    <SidebarLayout
+      navbar={
+        <Navbar>
+          <NavbarSpacer />
+          <NavbarSection>
+            <Dropdown>
+              <DropdownButton
+                as={NavbarItem}
+                onClick={loadNotifications}
+                aria-label="Open notifications"
               >
-                <div className="w-5 h-5 flex items-center justify-center text-xs font-medium bg-surface-2 rounded">
-                  {currentAccount?.name?.charAt(0).toUpperCase() || "A"}
-                </div>
-                {isExpanded && (
-                  <>
-                    <span className="flex-1 text-left text-sm font-medium truncate">
-                      {currentAccount?.name || "Select Account"}
-                    </span>
-                    <ChevronDown size={16} className="text-text-muted" />
-                  </>
-                )}
-              </button>
-
-              {/* Account Dropdown */}
-              {showAccountMenu && isExpanded && (
-                <div className="absolute bottom-full left-0 right-0 mb-1 mx-2 bg-surface-2 border border-border-default rounded-md shadow-lg overflow-hidden">
-                  {accounts.map((account: Account) => (
-                    <button
-                      key={account.id}
-                      onClick={() => handleSwitchAccount(account.id)}
-                      className={`
-                        w-full px-3 py-2 text-left text-sm
-                        hover:bg-surface-3 transition-colors
-                        ${account.id === currentAccount?.id ? "text-accent font-medium" : "text-text-primary"}
-                      `}
-                    >
-                      {account.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Notifications */}
-          <div className="relative">
-            <button
-              onClick={handleNotificationClick}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3
-                text-text-secondary hover:text-text-primary hover:bg-surface-2
-                transition-colors duration-fast
-              `}
-              aria-label="Notifications"
-            >
-              <NotificationBell
-                unreadCount={unreadCount}
-                isOpen={showNotifications}
-                onClick={() => {}}
-              />
-              {isExpanded && (
-                <span className="text-sm font-medium">Notifications</span>
-              )}
-            </button>
-
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <div className="absolute bottom-full left-0 mb-1 w-80 mx-2">
-                <NotificationDropdown
-                  isOpen={showNotifications}
-                  onClose={() => setShowNotifications(false)}
-                  unreadCount={unreadCount}
-                  onMarkAllRead={handleMarkAllRead}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3
-                text-text-secondary hover:text-text-primary hover:bg-surface-2
-                transition-colors duration-fast
-              `}
-            >
-              <Avatar size="sm" name={displayName} />
-              {isExpanded && (
-                <>
-                  <span className="flex-1 text-left text-sm font-medium truncate">
-                    {displayName}
+                <BellIcon />
+                {unreadLabel && (
+                  <span className="rounded-full bg-[#ff4017] px-1.5 text-xs font-semibold leading-5 text-white">
+                    {unreadLabel}
                   </span>
-                  {currentAccount && (
-                    <Badge variant="default" size="sm">
-                      {currentAccount.role.replace("_", " ")}
-                    </Badge>
-                  )}
-                </>
+                )}
+              </DropdownButton>
+              <DropdownMenu anchor="bottom end" className="min-w-80">
+                <DropdownItem onClick={handleMarkAllRead} disabled={unreadCount === 0}>
+                  <CheckIcon />
+                  <DropdownLabel>Mark all as read</DropdownLabel>
+                </DropdownItem>
+                <DropdownDivider />
+                {notificationsLoading && (
+                  <DropdownItem disabled>
+                    <DropdownLabel>Loading notifications...</DropdownLabel>
+                  </DropdownItem>
+                )}
+                {!notificationsLoading && notifications.length === 0 && (
+                  <DropdownItem disabled>
+                    <DropdownLabel>No notifications</DropdownLabel>
+                  </DropdownItem>
+                )}
+                {!notificationsLoading &&
+                  notifications.map((notification) => (
+                    <DropdownItem key={notification.id} href="/notifications">
+                      <BellIcon />
+                      <DropdownLabel>{notification.title}</DropdownLabel>
+                    </DropdownItem>
+                  ))}
+              </DropdownMenu>
+            </Dropdown>
+
+            <Dropdown>
+              <DropdownButton as={NavbarItem} aria-label="Open user menu">
+                <Avatar src={user?.avatarUrl} initials={initials} square />
+              </DropdownButton>
+              <DropdownMenu anchor="bottom end" className="min-w-64">
+                <DropdownItem href="/profile">
+                  <UserCircleIcon />
+                  <DropdownLabel>Profile</DropdownLabel>
+                </DropdownItem>
+                {canAccessSettings && (
+                  <DropdownItem href="/settings">
+                    <Cog6ToothIcon />
+                    <DropdownLabel>Settings</DropdownLabel>
+                  </DropdownItem>
+                )}
+                <DropdownDivider />
+                <DropdownItem onClick={logout}>
+                  <ArrowRightStartOnRectangleIcon />
+                  <DropdownLabel>Log out</DropdownLabel>
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </NavbarSection>
+        </Navbar>
+      }
+      sidebar={
+        <Sidebar>
+          <SidebarHeader>
+            <Dropdown>
+              <DropdownButton as={SidebarItem}>
+                <Avatar
+                  src={null}
+                  initials={currentAccount?.name?.charAt(0).toUpperCase() || "A"}
+                  alt={currentAccount?.name || "Current account"}
+                />
+                <SidebarLabel>{currentAccount?.name || "Select Account"}</SidebarLabel>
+                <ChevronDownIcon />
+              </DropdownButton>
+              <DropdownMenu anchor="bottom start" className="min-w-80 lg:min-w-64">
+                {accounts.length === 0 && (
+                  <DropdownItem disabled>
+                    <DropdownLabel>No accounts</DropdownLabel>
+                  </DropdownItem>
+                )}
+                {accounts.map((account) => (
+                  <DropdownItem key={account.id} onClick={() => handleSwitchAccount(account.id)}>
+                    <Avatar
+                      slot="icon"
+                      src={null}
+                      initials={account.name.charAt(0).toUpperCase()}
+                      alt={account.name}
+                    />
+                    <DropdownLabel>{account.name}</DropdownLabel>
+                    {account.id === currentAccount?.id && <CheckIcon />}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          </SidebarHeader>
+
+          <SidebarBody>
+            <SidebarSection>
+              <SidebarItem href="/dashboard" current={pathname.startsWith("/dashboard")}>
+                <HomeIcon />
+                <SidebarLabel>Dashboard</SidebarLabel>
+              </SidebarItem>
+              <SidebarItem href="/workspaces" current={pathname.startsWith("/workspaces")}>
+                <BriefcaseIcon />
+                <SidebarLabel>Workspaces</SidebarLabel>
+              </SidebarItem>
+              <SidebarItem href="/projects" current={pathname.startsWith("/projects")}>
+                <FolderOpenIcon />
+                <SidebarLabel>Projects</SidebarLabel>
+              </SidebarItem>
+              <SidebarItem href="/files" current={pathname.startsWith("/files")}>
+                <DocumentTextIcon />
+                <SidebarLabel>Files</SidebarLabel>
+              </SidebarItem>
+              <SidebarItem href="/collections" current={pathname.startsWith("/collections")}>
+                <Square2StackIcon />
+                <SidebarLabel>Collections</SidebarLabel>
+              </SidebarItem>
+              <SidebarItem href="/shares" current={pathname.startsWith("/shares")}>
+                <ShareIcon />
+                <SidebarLabel>Shares</SidebarLabel>
+              </SidebarItem>
+              {canAccessSettings && (
+                <SidebarItem href="/settings" current={pathname.startsWith("/settings")}>
+                  <Cog6ToothIcon />
+                  <SidebarLabel>Settings</SidebarLabel>
+                </SidebarItem>
               )}
-            </button>
+            </SidebarSection>
 
-            {/* User Dropdown */}
-            {showUserMenu && isExpanded && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 mx-2 bg-surface-2 border border-border-default rounded-md shadow-lg overflow-hidden">
-                <a
-                  href="/profile"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3 transition-colors"
+            <SidebarSpacer />
+
+            <SidebarSection>
+              <Dropdown>
+                <DropdownButton
+                  as={SidebarItem}
+                  onClick={loadNotifications}
+                  aria-label="Open notifications"
                 >
-                  <User size={16} />
-                  Profile
-                </a>
-                <a
-                  href="/settings"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3 transition-colors"
-                >
-                  <Settings size={16} />
-                  Settings
-                </a>
-                <div className="border-t border-border-default" />
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-status-error hover:bg-surface-3 transition-colors"
-                >
-                  <LogOut size={16} />
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
+                  <BellIcon />
+                  <SidebarLabel>Notifications</SidebarLabel>
+                  {unreadLabel && (
+                    <span className="rounded-full bg-[#ff4017] px-1.5 text-xs font-semibold leading-5 text-white">
+                      {unreadLabel}
+                    </span>
+                  )}
+                </DropdownButton>
+                <DropdownMenu anchor="top start" className="min-w-80 lg:min-w-72">
+                  <DropdownItem onClick={handleMarkAllRead} disabled={unreadCount === 0}>
+                    <CheckIcon />
+                    <DropdownLabel>Mark all as read</DropdownLabel>
+                  </DropdownItem>
+                  <DropdownDivider />
+                  {notificationsLoading && (
+                    <DropdownItem disabled>
+                      <DropdownLabel>Loading notifications...</DropdownLabel>
+                    </DropdownItem>
+                  )}
+                  {!notificationsLoading && notifications.length === 0 && (
+                    <DropdownItem disabled>
+                      <DropdownLabel>No notifications</DropdownLabel>
+                    </DropdownItem>
+                  )}
+                  {!notificationsLoading &&
+                    notifications.map((notification) => (
+                      <DropdownItem key={notification.id} href="/notifications">
+                        <BellIcon />
+                        <DropdownLabel>{notification.title}</DropdownLabel>
+                      </DropdownItem>
+                    ))}
+                  <DropdownDivider />
+                  <DropdownItem href="/notifications">
+                    <BellIcon />
+                    <DropdownLabel>View all notifications</DropdownLabel>
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </SidebarSection>
+          </SidebarBody>
 
-      {/* Main content area */}
-      <main className="flex-1 min-w-0 bg-surface-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  );
-}
+          <SidebarFooter>
+            <SidebarSection>
+              <SidebarItem
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              >
+                {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+                <SidebarLabel>{theme === "dark" ? "Light Mode" : "Dark Mode"}</SidebarLabel>
+              </SidebarItem>
+            </SidebarSection>
 
-/**
- * Nav Item Component
- *
- * Sidebar navigation item with icon and optional label.
- * Labels fade in after sidebar width transition completes.
- */
-interface NavItemProps {
-  href: string;
-  icon: ReactNode;
-  label: string;
-  expanded: boolean;
-}
+            <SidebarDivider />
 
-function NavItem({ href, icon, label, expanded }: NavItemProps) {
-  return (
-    <a
-      href={href}
-      className={`
-        flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-md
-        text-text-secondary hover:text-text-primary hover:bg-surface-2
-        transition-colors duration-fast
-      `}
+            <SidebarSection>
+              <Dropdown>
+                <DropdownButton as={SidebarItem}>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Avatar
+                      src={user?.avatarUrl}
+                      initials={initials}
+                      className="size-10"
+                      square
+                      alt={displayName}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">
+                        {displayName}
+                      </span>
+                      <span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
+                        {user?.email || ""}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronUpIcon />
+                </DropdownButton>
+                <DropdownMenu anchor="top start" className="min-w-64">
+                  <DropdownItem href="/profile">
+                    <UserCircleIcon />
+                    <DropdownLabel>Profile</DropdownLabel>
+                  </DropdownItem>
+                  {canAccessSettings && (
+                    <DropdownItem href="/settings">
+                      <Cog6ToothIcon />
+                      <DropdownLabel>Settings</DropdownLabel>
+                    </DropdownItem>
+                  )}
+                  <DropdownDivider />
+                  <DropdownItem onClick={logout}>
+                    <ArrowRightStartOnRectangleIcon />
+                    <DropdownLabel>Log out</DropdownLabel>
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </SidebarSection>
+          </SidebarFooter>
+        </Sidebar>
+      }
     >
-      <span className="flex-shrink-0">{icon}</span>
-      {expanded && (
-        <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
-          {label}
-        </span>
-      )}
-    </a>
+      {children}
+    </SidebarLayout>
   );
 }
