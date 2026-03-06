@@ -53,6 +53,12 @@ export function Badge({
   );
 }
 
+type BadgeButtonButtonProps = { href?: never } & Omit<Headless.ButtonProps, "as" | "className">;
+type BadgeButtonLinkProps = { href: string } & Omit<
+  React.ComponentPropsWithoutRef<typeof Link>,
+  "className"
+>;
+
 export const BadgeButton = forwardRef(function BadgeButton(
   {
     color = "zinc",
@@ -60,8 +66,8 @@ export const BadgeButton = forwardRef(function BadgeButton(
     children,
     ...props
   }: BadgeProps & { className?: string; children: React.ReactNode } & (
-      | ({ href?: never } & Omit<Headless.ButtonProps, "as" | "className">)
-      | ({ href: string } & Omit<React.ComponentPropsWithoutRef<typeof Link>, "className">)
+      | BadgeButtonButtonProps
+      | BadgeButtonLinkProps
     ),
   ref: React.ForwardedRef<HTMLElement>
 ) {
@@ -70,14 +76,27 @@ export const BadgeButton = forwardRef(function BadgeButton(
     "group relative inline-flex rounded-md focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-blue-500"
   );
 
-  return typeof props.href === "string" ? (
-    <Link {...props} className={classes} ref={ref as React.ForwardedRef<HTMLAnchorElement>}>
-      <TouchTarget>
-        <Badge color={color}>{children}</Badge>
-      </TouchTarget>
-    </Link>
-  ) : (
-    <Headless.Button {...props} className={classes} ref={ref}>
+  const { href, ...rest } = props as BadgeButtonButtonProps | BadgeButtonLinkProps;
+
+  if (typeof href === "string") {
+    const linkProps = rest as Omit<BadgeButtonLinkProps, "href">;
+    return (
+      <Link
+        {...linkProps}
+        href={href}
+        className={classes}
+        ref={ref as unknown as React.ForwardedRef<HTMLAnchorElement>}
+      >
+        <TouchTarget>
+          <Badge color={color}>{children}</Badge>
+        </TouchTarget>
+      </Link>
+    );
+  }
+
+  const buttonProps = rest as BadgeButtonButtonProps;
+  return (
+    <Headless.Button {...buttonProps} className={classes} ref={ref}>
       <TouchTarget>
         <Badge color={color}>{children}</Badge>
       </TouchTarget>

@@ -11,10 +11,11 @@ export function Dropdown(props: Headless.MenuProps) {
 }
 
 export function DropdownButton<T extends React.ElementType = typeof Button>({
-  as = Button,
+  as,
   ...props
-}: { className?: string } & Omit<Headless.MenuButtonProps<T>, "className">) {
-  return <Headless.MenuButton as={as} {...props} />;
+}: { as?: T; className?: string } & Omit<Headless.MenuButtonProps<T>, "className">) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <Headless.MenuButton as={(as ?? Button) as any} {...(props as any)} />;
 }
 
 export function DropdownMenu({
@@ -50,13 +51,19 @@ export function DropdownMenu({
   );
 }
 
+type DropdownItemButtonProps = { href?: never } & Omit<
+  Headless.MenuItemProps<"button">,
+  "as" | "className"
+>;
+type DropdownItemLinkProps = { href: string } & Omit<
+  Headless.MenuItemProps<typeof Link>,
+  "as" | "className"
+>;
+
 export function DropdownItem({
   className,
   ...props
-}: { className?: string } & (
-  | ({ href?: never } & Omit<Headless.MenuItemProps<"button">, "as" | "className">)
-  | ({ href: string } & Omit<Headless.MenuItemProps<typeof Link>, "as" | "className">)
-)) {
+}: { className?: string } & (DropdownItemButtonProps | DropdownItemLinkProps)) {
   const classes = clsx(
     className,
     // Base styles
@@ -78,10 +85,18 @@ export function DropdownItem({
     "*:data-[slot=avatar]:mr-2.5 *:data-[slot=avatar]:-ml-1 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:mr-2 sm:*:data-[slot=avatar]:size-5"
   );
 
-  return typeof props.href === "string" ? (
-    <Headless.MenuItem as={Link} {...props} className={classes} />
-  ) : (
-    <Headless.MenuItem as="button" type="button" {...props} className={classes} />
+  const { href, ...rest } = props as DropdownItemButtonProps | DropdownItemLinkProps;
+
+  if (typeof href === "string") {
+    const linkProps = rest as Omit<DropdownItemLinkProps, "href">;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <Headless.MenuItem as={Link} {...(linkProps as any)} href={href} className={classes} />;
+  }
+
+  const buttonProps = rest as DropdownItemButtonProps;
+  return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <Headless.MenuItem as="button" type="button" {...(buttonProps as any)} className={classes} />
   );
 }
 

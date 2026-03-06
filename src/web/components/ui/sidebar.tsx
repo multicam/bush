@@ -82,6 +82,12 @@ export function SidebarHeading({ className, ...props }: React.ComponentPropsWith
   );
 }
 
+type SidebarItemButtonProps = { href?: never } & Omit<Headless.ButtonProps, "as" | "className">;
+type SidebarItemLinkProps = { href: string } & Omit<
+  Headless.ButtonProps<typeof Link>,
+  "as" | "className"
+>;
+
 export const SidebarItem = forwardRef(function SidebarItem(
   {
     current,
@@ -89,8 +95,8 @@ export const SidebarItem = forwardRef(function SidebarItem(
     children,
     ...props
   }: { current?: boolean; className?: string; children: React.ReactNode } & (
-    | ({ href?: never } & Omit<Headless.ButtonProps, "as" | "className">)
-    | ({ href: string } & Omit<Headless.ButtonProps<typeof Link>, "as" | "className">)
+    | SidebarItemButtonProps
+    | SidebarItemLinkProps
   ),
   ref: React.ForwardedRef<HTMLAnchorElement | HTMLButtonElement>
 ) {
@@ -116,6 +122,8 @@ export const SidebarItem = forwardRef(function SidebarItem(
     "dark:data-current:*:data-[slot=icon]:fill-white"
   );
 
+  const { href, ...rest } = props as SidebarItemButtonProps | SidebarItemLinkProps;
+
   return (
     <span className={clsx(className, "relative")}>
       {current && (
@@ -124,10 +132,11 @@ export const SidebarItem = forwardRef(function SidebarItem(
           className="absolute inset-y-2 -left-4 w-0.5 rounded-full bg-zinc-950 dark:bg-white"
         />
       )}
-      {typeof props.href === "string" ? (
+      {typeof href === "string" ? (
         <Headless.CloseButton
           as={Link}
-          {...props}
+          {...(rest as Omit<SidebarItemLinkProps, "href">)}
+          href={href}
           className={classes}
           data-current={current ? "true" : undefined}
           ref={ref}
@@ -136,7 +145,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
         </Headless.CloseButton>
       ) : (
         <Headless.Button
-          {...props}
+          {...(rest as SidebarItemButtonProps)}
           className={clsx("cursor-default", classes)}
           data-current={current ? "true" : undefined}
           ref={ref}

@@ -35,6 +35,12 @@ export function NavbarSpacer({ className, ...props }: React.ComponentPropsWithou
   return <div aria-hidden="true" {...props} className={clsx(className, "-ml-4 flex-1")} />;
 }
 
+type NavbarItemButtonProps = { href?: never } & Omit<Headless.ButtonProps, "as" | "className">;
+type NavbarItemLinkProps = { href: string } & Omit<
+  React.ComponentPropsWithoutRef<typeof Link>,
+  "className"
+>;
+
 export const NavbarItem = forwardRef(function NavbarItem(
   {
     current,
@@ -42,8 +48,8 @@ export const NavbarItem = forwardRef(function NavbarItem(
     children,
     ...props
   }: { current?: boolean; className?: string; children: React.ReactNode } & (
-    | ({ href?: never } & Omit<Headless.ButtonProps, "as" | "className">)
-    | ({ href: string } & Omit<React.ComponentPropsWithoutRef<typeof Link>, "className">)
+    | NavbarItemButtonProps
+    | NavbarItemLinkProps
   ),
   ref: React.ForwardedRef<HTMLAnchorElement | HTMLButtonElement>
 ) {
@@ -66,6 +72,8 @@ export const NavbarItem = forwardRef(function NavbarItem(
     "dark:data-active:bg-white/5 dark:data-active:*:data-[slot=icon]:fill-white"
   );
 
+  const { href, ...rest } = props as NavbarItemButtonProps | NavbarItemLinkProps;
+
   return (
     <span className={clsx(className, "relative")}>
       {current && (
@@ -74,9 +82,10 @@ export const NavbarItem = forwardRef(function NavbarItem(
           className="absolute inset-x-2 -bottom-2.5 h-0.5 rounded-full bg-zinc-950 dark:bg-white"
         />
       )}
-      {typeof props.href === "string" ? (
+      {typeof href === "string" ? (
         <Link
-          {...props}
+          {...(rest as Omit<NavbarItemLinkProps, "href">)}
+          href={href}
           className={classes}
           data-current={current ? "true" : undefined}
           ref={ref as React.ForwardedRef<HTMLAnchorElement>}
@@ -85,7 +94,7 @@ export const NavbarItem = forwardRef(function NavbarItem(
         </Link>
       ) : (
         <Headless.Button
-          {...props}
+          {...(rest as NavbarItemButtonProps)}
           className={clsx("cursor-default", classes)}
           data-current={current ? "true" : undefined}
           ref={ref}

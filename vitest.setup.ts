@@ -5,6 +5,7 @@
  * This file runs before any test files.
  */
 import { vi } from "vitest";
+import "@testing-library/jest-dom";
 
 // Mock bun:sqlite for vitest/node environment
 vi.mock("bun:sqlite", () => {
