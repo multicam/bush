@@ -1,66 +1,58 @@
 /**
  * Bush Platform - UI Components Index
  *
- * Exports all UI components for the Bush platform.
+ * Exports all Catalyst UI Kit components and Bush custom components.
  * Reference: QW3 Component Library Foundation
  */
 
-// Core components
-export { Button } from "./button.js";
-export type { ButtonProps, ButtonVariant, ButtonSize } from "./button.js";
+// ============================================================
+// Catalyst UI Kit Components (27 components)
+// ============================================================
 
-export { Input } from "./input.js";
-export type { InputProps, InputSize } from "./input.js";
+// Layout Components
+export * from "./sidebar-layout";
+export * from "./stacked-layout";
+export * from "./auth-layout";
+export * from "./navbar";
+export * from "./sidebar";
 
-export { Select } from "./select.js";
-export type { SelectProps, SelectSize, SelectOption } from "./select.js";
+// Core Components
+export * from "./button";
+export * from "./link";
 
-export { Modal } from "./modal.js";
-export type { ModalProps, ModalSize } from "./modal.js";
+// Form Components
+export * from "./input";
+export * from "./textarea";
+export * from "./select";
+export * from "./checkbox";
+export * from "./radio";
+export * from "./switch";
+export * from "./listbox";
+export * from "./combobox";
+export * from "./fieldset";
 
-export { ToastProvider, useToast } from "./toast.js";
-export type { ToastType, Toast, ToastProviderProps } from "./toast.js";
+// Overlay Components
+export * from "./dialog";
+export * from "./dropdown";
+export * from "./alert";
 
-export { Dropdown } from "./dropdown.js";
-export type { DropdownProps, DropdownOption, DropdownItem, DropdownSeparator } from "./dropdown.js";
+// Data Display Components
+export * from "./badge";
+export * from "./avatar";
+export * from "./table";
+export * from "./description-list";
+export * from "./pagination";
 
-export { Tooltip } from "./tooltip.js";
-export type { TooltipProps, TooltipPosition } from "./tooltip.js";
+// Typography Components
+export * from "./heading";
+export * from "./text";
+export * from "./divider";
 
-// Utility components
-export { Spinner } from "./spinner.js";
-export type { SpinnerProps, SpinnerSize } from "./spinner.js";
-
-export { Badge } from "./badge.js";
-export type { BadgeProps, BadgeVariant, BadgeSize } from "./badge.js";
-
-export { Avatar } from "./avatar.js";
-export type { AvatarProps, AvatarSize } from "./avatar.js";
-
-export { KeyboardLegend } from "./keyboard-legend.js";
-export type { KeyboardLegendProps, KeyboardShortcut, ShortcutGroup } from "./keyboard-legend.js";
-
-export {
-  Skeleton,
-  SkeletonText,
-  SkeletonAvatar,
-  SkeletonCard,
-  SkeletonAssetCard,
-  SkeletonTableRow,
-  SkeletonComment,
-  SkeletonGrid,
-  SkeletonTable,
-  SkeletonCommentList,
-} from "./skeleton.js";
-export type {
-  SkeletonProps,
-  SkeletonTextProps,
-  SkeletonAvatarProps,
-  SkeletonCardProps,
-  SkeletonAssetCardProps,
-  SkeletonTableRowProps,
-  SkeletonCommentProps,
-  SkeletonGridProps,
-  SkeletonTableProps,
-  SkeletonCommentListProps,
-} from "./skeleton.js";
+// ============================================================
+// Bush Custom Components (kept, not replaced by Catalyst)
+// ============================================================
+export * from "./spinner";
+export * from "./toast";
+export * from "./tooltip";
+export * from "./skeleton";
+export * from "./keyboard-legend";
