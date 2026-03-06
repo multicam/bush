@@ -1,43 +1,24 @@
-/**
- * Bush Platform - Spinner Component
- *
- * Loading spinner with multiple sizes.
- * Reference: specs/21-design-components.md
- */
+import { SpinnerIcon } from "@/web/lib/icons";
 
-import { Loader2 } from "lucide-react";
-import { cn } from "@/web/lib/utils";
+export { SpinnerIcon };
 
-export type SpinnerSize = "sm" | "md" | "lg" | "xl";
-
-export interface SpinnerProps {
-  /** Size of the spinner */
-  size?: SpinnerSize;
-  /** Additional CSS class */
+interface SpinnerProps {
   className?: string;
-  /** Accessible label */
   label?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-const sizeClasses: Record<SpinnerSize, string> = {
-  sm: "size-4", // 16px
-  md: "size-6", // 24px
-  lg: "size-8", // 32px
-  xl: "size-12", // 48px
+const sizeClasses = {
+  sm: "size-3",
+  md: "size-4",
+  lg: "size-6",
 };
 
-export function Spinner({ size = "md", className = "", label = "Loading" }: SpinnerProps) {
+export function Spinner({ className, label = "Loading...", size = "md" }: SpinnerProps) {
   return (
-    <Loader2
-      className={cn(
-        "animate-spin text-current",
-        sizeClasses[size],
-        className
-      )}
-      role="status"
-      aria-label={label}
-    />
+    <div role="status" className={`inline-flex items-center gap-2 ${className ?? ""}`}>
+      <SpinnerIcon className={sizeClasses[size]} />
+      {label && <span className="sr-only">{label}</span>}
+    </div>
   );
 }
-
-export default Spinner;

@@ -1,6 +1,7 @@
 import * as Headless from "@headlessui/react";
 import clsx from "clsx";
 import React, { forwardRef } from "react";
+import { SpinnerIcon } from "@/web/lib/icons";
 import { Link } from "./link";
 
 const styles = {
@@ -166,13 +167,19 @@ type ButtonProps = (
   | { color?: keyof typeof styles.colors; outline?: never; plain?: never }
   | { color?: never; outline: true; plain?: never }
   | { color?: never; outline?: never; plain: true }
-) & { className?: string; children: React.ReactNode } & (
-    | ({ href?: never } & Omit<Headless.ButtonProps, "as" | "className">)
-    | ({ href: string } & Omit<React.ComponentPropsWithoutRef<typeof Link>, "className">)
+) & { className?: string; children: React.ReactNode; loading?: boolean } & (
+    | ButtonAsButtonProps
+    | ButtonAsLinkProps
   );
 
+type ButtonAsButtonProps = { href?: never } & Omit<Headless.ButtonProps, "as" | "className">;
+type ButtonAsLinkProps = { href: string } & Omit<
+  React.ComponentPropsWithoutRef<typeof Link>,
+  "className"
+>;
+
 export const Button = forwardRef(function Button(
-  { color, outline, plain, className, children, ...props }: ButtonProps,
+  { color, outline, plain, className, children, loading, ...props }: ButtonProps,
   ref: React.ForwardedRef<HTMLElement>
 ) {
   let classes = clsx(
@@ -185,13 +192,39 @@ export const Button = forwardRef(function Button(
         : clsx(styles.solid, styles.colors[color ?? "dark/zinc"])
   );
 
-  return typeof props.href === "string" ? (
-    <Link {...props} className={classes} ref={ref as React.ForwardedRef<HTMLAnchorElement>}>
+  let content = (
+    <>
+      {loading && <SpinnerIcon data-slot="icon" className="size-4" />}
       <TouchTarget>{children}</TouchTarget>
-    </Link>
-  ) : (
-    <Headless.Button {...props} className={clsx(classes, "cursor-default")} ref={ref}>
-      <TouchTarget>{children}</TouchTarget>
+    </>
+  );
+
+  if ("href" in props && typeof props.href === "string") {
+    let linkProps = props as ButtonAsLinkProps;
+
+    return (
+      <Link
+        {...linkProps}
+        className={classes}
+        ref={ref as React.ForwardedRef<HTMLAnchorElement>}
+        aria-busy={loading || undefined}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  let buttonProps = props as ButtonAsButtonProps;
+
+  return (
+    <Headless.Button
+      {...buttonProps}
+      className={clsx(classes, "cursor-default")}
+      ref={ref}
+      disabled={loading || buttonProps.disabled}
+      aria-busy={loading || undefined}
+    >
+      {content}
     </Headless.Button>
   );
 });
