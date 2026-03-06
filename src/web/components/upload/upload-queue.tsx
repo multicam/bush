@@ -19,7 +19,7 @@ import {
 } from "@/web/lib/upload-client";
 import { formatFileSize, getFileIcon, getFileCategory } from "@/shared/file-types";
 import { Button, Badge } from "@/web/components/ui";
-import { Pause, Play, RotateCcw, X } from "lucide-react";
+import { PauseIcon, PlayIcon, ArrowPathIcon, XMarkIcon } from "@/web/lib/icons";
 
 export interface QueuedFile {
   /** Unique ID for this queued upload */
@@ -80,16 +80,16 @@ export interface UploadQueueProps {
 /**
  * Get status badge variant based on upload status
  */
-function getStatusVariant(status: UploadStatus): "default" | "success" | "warning" | "error" {
+function getStatusColor(status: UploadStatus): "zinc" | "green" | "amber" | "red" {
   switch (status) {
     case "completed":
-      return "success";
+      return "green";
     case "failed":
-      return "error";
+      return "red";
     case "paused":
-      return "warning";
+      return "amber";
     default:
-      return "default";
+      return "zinc";
   }
 }
 
@@ -180,14 +180,7 @@ interface UploadItemProps {
   onRetry?: (fileId: string) => void;
 }
 
-function UploadItem({
-  item,
-  onPause,
-  onResume,
-  onCancel,
-  onRemove,
-  onRetry,
-}: UploadItemProps) {
+function UploadItem({ item, onPause, onResume, onCancel, onRemove, onRetry }: UploadItemProps) {
   const { id, file, progress, error } = item;
   const status = progress?.status ?? "pending";
   const percent = progress?.progress ?? 0;
@@ -229,11 +222,7 @@ function UploadItem({
   const canRetry = isFailed || isCancelled;
 
   // Status background color
-  const statusBgClass = isCompleted
-    ? "bg-emerald-500/5"
-    : isFailed
-      ? "bg-red-500/5"
-      : "";
+  const statusBgClass = isCompleted ? "bg-emerald-500/5" : isFailed ? "bg-red-500/5" : "";
 
   return (
     <div
@@ -249,7 +238,10 @@ function UploadItem({
           {getFileIcon(file.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <span className="block text-sm font-medium text-primary whitespace-nowrap overflow-hidden text-ellipsis" title={file.name}>
+          <span
+            className="block text-sm font-medium text-primary whitespace-nowrap overflow-hidden text-ellipsis"
+            title={file.name}
+          >
             {file.name}
           </span>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted">
@@ -269,9 +261,7 @@ function UploadItem({
           </div>
           {error && <div className="mt-1 text-xs text-red-500">{error}</div>}
         </div>
-        <Badge variant={getStatusVariant(status)} size="sm">
-          {getStatusLabel(status)}
-        </Badge>
+        <Badge color={getStatusColor(status)}>{getStatusLabel(status)}</Badge>
       </div>
 
       {/* Progress bar */}
@@ -289,7 +279,8 @@ function UploadItem({
           </div>
           <span className="text-xs text-muted whitespace-nowrap min-w-[100px] text-right">
             {percent.toFixed(1)}%
-            {uploadedBytes > 0 && ` (${formatFileSize(uploadedBytes)} / ${formatFileSize(file.size)})`}
+            {uploadedBytes > 0 &&
+              ` (${formatFileSize(uploadedBytes)} / ${formatFileSize(file.size)})`}
           </span>
         </div>
       )}
@@ -297,28 +288,28 @@ function UploadItem({
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
         {canPause && (
-          <Button variant="ghost" size="sm" onClick={handlePause} aria-label="Pause upload">
-            <Pause className="w-4 h-4" />
+          <Button plain onClick={handlePause} aria-label="Pause upload">
+            <PauseIcon className="size-4" />
           </Button>
         )}
         {canResume && (
-          <Button variant="ghost" size="sm" onClick={handleResume} aria-label="Resume upload">
-            <Play className="w-4 h-4" />
+          <Button plain onClick={handleResume} aria-label="Resume upload">
+            <PlayIcon className="size-4" />
           </Button>
         )}
         {canRetry && (
-          <Button variant="ghost" size="sm" onClick={handleRetry} aria-label="Retry upload">
-            <RotateCcw className="w-4 h-4" />
+          <Button plain onClick={handleRetry} aria-label="Retry upload">
+            <ArrowPathIcon className="size-4" />
           </Button>
         )}
         {canCancel && (
-          <Button variant="ghost" size="sm" onClick={handleCancel} aria-label="Cancel upload">
-            <X className="w-4 h-4" />
+          <Button plain onClick={handleCancel} aria-label="Cancel upload">
+            <XMarkIcon className="size-4" />
           </Button>
         )}
         {canRemove && (
-          <Button variant="ghost" size="sm" onClick={handleRemove} aria-label="Remove from queue">
-            <X className="w-4 h-4" />
+          <Button plain onClick={handleRemove} aria-label="Remove from queue">
+            <XMarkIcon className="size-4" />
           </Button>
         )}
       </div>
@@ -498,7 +489,7 @@ export function UploadQueue({
       <div className="flex flex-wrap items-center gap-4 px-5 py-4 bg-surface-3 border-b border-border-default">
         <div className="flex items-center gap-3">
           <h3 className="m-0 text-base font-semibold text-primary">Upload Queue</h3>
-          <Badge variant="default" size="sm">
+          <Badge color="zinc">
             {stats.activeCount} of {stats.total}
           </Badge>
         </div>
@@ -522,17 +513,17 @@ export function UploadQueue({
         {/* Queue actions */}
         <div className="flex items-center gap-2 ml-auto">
           {stats.failed > 0 && (
-            <Button variant="secondary" size="sm" onClick={handleRetryAll}>
+            <Button color="zinc" onClick={handleRetryAll}>
               Retry All ({stats.failed})
             </Button>
           )}
           {stats.activeCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleCancelAll}>
+            <Button plain onClick={handleCancelAll}>
               Cancel All
             </Button>
           )}
           {stats.completed + stats.failed + stats.cancelled > 0 && stats.activeCount === 0 && (
-            <Button variant="ghost" size="sm" onClick={handleClearCompleted}>
+            <Button plain onClick={handleClearCompleted}>
               Clear Completed
             </Button>
           )}
