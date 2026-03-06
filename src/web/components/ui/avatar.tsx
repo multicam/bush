@@ -74,20 +74,41 @@ export const AvatarButton = forwardRef(function AvatarButton(
     ),
   ref: React.ForwardedRef<HTMLButtonElement>
 ) {
+  type ButtonVariantProps = { href?: never } & Omit<Headless.ButtonProps, "as" | "className">;
+  type LinkVariantProps = { href: string } & Omit<
+    React.ComponentPropsWithoutRef<typeof Link>,
+    "className"
+  >;
+
   const classes = clsx(
     className,
     square ? "rounded-[20%]" : "rounded-full",
     "relative inline-grid focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-blue-500"
   );
 
-  return typeof props.href === "string" ? (
-    <Link {...props} className={classes} ref={ref as React.ForwardedRef<HTMLAnchorElement>}>
-      <TouchTarget>
-        <Avatar src={src} square={square} initials={initials} alt={alt} />
-      </TouchTarget>
-    </Link>
-  ) : (
-    <Headless.Button {...props} className={classes} ref={ref}>
+  const { href, ...rest } = props as ButtonVariantProps | LinkVariantProps;
+
+  if (typeof href === "string") {
+    const linkProps = rest as Omit<LinkVariantProps, "href">;
+
+    return (
+      <Link
+        {...linkProps}
+        href={href}
+        className={classes}
+        ref={ref as unknown as React.ForwardedRef<HTMLAnchorElement>}
+      >
+        <TouchTarget>
+          <Avatar src={src} square={square} initials={initials} alt={alt} />
+        </TouchTarget>
+      </Link>
+    );
+  }
+
+  const buttonProps = rest as ButtonVariantProps;
+
+  return (
+    <Headless.Button {...buttonProps} className={classes} ref={ref}>
       <TouchTarget>
         <Avatar src={src} square={square} initials={initials} alt={alt} />
       </TouchTarget>
