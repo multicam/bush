@@ -13,7 +13,13 @@ import {
   type ShareActivityType,
 } from "@/web/lib/api";
 import type { ShareActivityEntry } from "./types";
-import { Eye, MessageSquare, Download, FileText, Loader2 } from "lucide-react";
+import {
+  EyeIcon,
+  ChatBubbleLeftIcon,
+  ArrowDownTrayIcon,
+  DocumentTextIcon,
+  SpinnerIcon,
+} from "@/web/lib/icons";
 
 interface ShareActivityFeedProps {
   shareId: string;
@@ -27,13 +33,13 @@ function getActivityIcon(type: ShareActivityType): React.ReactNode {
   const iconClass = "w-4 h-4";
   switch (type) {
     case "view":
-      return <Eye className={iconClass} />;
+      return <EyeIcon className={iconClass} />;
     case "comment":
-      return <MessageSquare className={iconClass} />;
+      return <ChatBubbleLeftIcon className={iconClass} />;
     case "download":
-      return <Download className={iconClass} />;
+      return <ArrowDownTrayIcon className={iconClass} />;
     default:
-      return <FileText className={iconClass} />;
+      return <DocumentTextIcon className={iconClass} />;
   }
 }
 
@@ -115,7 +121,7 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
     return (
       <div className="flex flex-col gap-2">
         <div className="flex flex-col items-center justify-center p-16">
-          <Loader2 className="w-10 h-10 text-accent animate-spin" />
+          <SpinnerIcon className="w-10 h-10 text-accent" />
         </div>
       </div>
     );
@@ -149,9 +155,7 @@ export function ShareActivityFeed({ shareId, limit = 20 }: ShareActivityFeedProp
             {getActivityIcon(activity.type)}
           </div>
           <div className="flex-1 flex flex-col gap-0.5">
-            <span className="text-[13px] text-primary">
-              {getActivityDescription(activity)}
-            </span>
+            <span className="text-[13px] text-primary">{getActivityDescription(activity)}</span>
             <span className="text-[11px] text-secondary/80">
               {formatRelativeTime(activity.createdAt)}
             </span>

@@ -7,7 +7,21 @@
 
 import { useState } from "react";
 import { Badge } from "@/web/components/ui";
-import { Grid3X3, LayoutPanelTop, Eye, MessageSquare, Download, Lock, Clock, Copy, Pencil, MoreVertical, Files, ExternalLink, Trash2 } from "lucide-react";
+import {
+  Squares2X2Icon,
+  ViewColumnsIcon,
+  EyeIcon,
+  ChatBubbleLeftIcon,
+  ArrowDownTrayIcon,
+  LockClosedIcon,
+  ClockIcon,
+  ClipboardDocumentIcon,
+  PencilIcon,
+  EllipsisVerticalIcon,
+  DocumentDuplicateIcon,
+  ArrowTopRightOnSquareIcon,
+  TrashIcon,
+} from "@/web/lib/icons";
 import type { ShareWithRelationships, ShareLayout } from "./types";
 
 interface ShareCardProps {
@@ -51,32 +65,26 @@ function getLayoutIcon(layout: ShareLayout): React.ReactNode {
   const iconClass = "w-4 h-4";
   switch (layout) {
     case "grid":
-      return <Grid3X3 className={iconClass} />;
+      return <Squares2X2Icon className={iconClass} />;
     case "reel":
-      return <LayoutPanelTop className={iconClass} />;
+      return <ViewColumnsIcon className={iconClass} />;
     case "viewer":
-      return <Eye className={iconClass} />;
+      return <EyeIcon className={iconClass} />;
     default:
-      return <Grid3X3 className={iconClass} />;
+      return <Squares2X2Icon className={iconClass} />;
   }
 }
 
-/**
- * Get status badge variant
- */
-function getStatusBadgeVariant(share: ShareWithRelationships): "success" | "warning" | "error" | "default" {
+function getStatusBadgeColor(share: ShareWithRelationships): "red" | "amber" | "green" {
   if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
-    return "error";
+    return "red";
   }
   if (share.passphrase) {
-    return "warning";
+    return "amber";
   }
-  return "success";
+  return "green";
 }
 
-/**
- * Get status label
- */
 function getStatusLabel(share: ShareWithRelationships): string {
   if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
     return "expired";
@@ -106,9 +114,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
           {getLayoutIcon(share.layout)}
           <span className="capitalize">{share.layout}</span>
         </div>
-        <Badge variant={getStatusBadgeVariant(share)} size="sm">
-          {getStatusLabel(share)}
-        </Badge>
+        <Badge color={getStatusBadgeColor(share)}>{getStatusLabel(share)}</Badge>
       </div>
 
       <h3 className="text-base font-semibold mb-2 text-primary overflow-hidden text-ellipsis whitespace-nowrap">
@@ -122,21 +128,19 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
           </span>
         )}
         {share.created_by && (
-          <span>
-            by {share.created_by.firstName || share.created_by.email.split("@")[0]}
-          </span>
+          <span>by {share.created_by.firstName || share.created_by.email.split("@")[0]}</span>
         )}
       </div>
 
       <div className="flex gap-2 mb-3">
         {share.allowComments && (
           <span className="text-sm opacity-70" title="Comments enabled">
-            <MessageSquare className="w-4 h-4" />
+            <ChatBubbleLeftIcon className="w-4 h-4" />
           </span>
         )}
         {share.allowDownloads && (
           <span className="text-sm opacity-70" title="Downloads enabled">
-            <Download className="w-4 h-4" />
+            <ArrowDownTrayIcon className="w-4 h-4" />
           </span>
         )}
         {share.passphrase && (
@@ -145,7 +149,10 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
           </span>
         )}
         {share.expiresAt && (
-          <span className="text-sm opacity-70" title={`Expires ${new Date(share.expiresAt).toLocaleDateString()}`}>
+          <span
+            className="text-sm opacity-70"
+            title={`Expires ${new Date(share.expiresAt).toLocaleDateString()}`}
+          >
             <Clock className="w-4 h-4" />
           </span>
         )}
@@ -153,9 +160,7 @@ export function ShareCard({ share, onEdit: _onEdit, onDuplicate, onDelete }: Sha
 
       <div className="flex justify-between items-center pt-3 border-t border-border-default text-[11px] text-secondary/80">
         <span className="font-mono bg-surface-2 px-1.5 py-0.5 rounded-sm">/{share.slug}</span>
-        <span>
-          Updated {formatRelativeTime(share.updatedAt)}
-        </span>
+        <span>Updated {formatRelativeTime(share.updatedAt)}</span>
       </div>
 
       <div className="flex gap-2 mt-3">

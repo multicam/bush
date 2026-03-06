@@ -10,28 +10,27 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 import { TranscriptSegment } from "./transcript-segment";
-import {
-  transcriptionApi,
-  TranscriptionAttributes,
-  TranscriptWordAttributes,
-} from "../../lib/api";
+import { transcriptionApi, TranscriptionAttributes, TranscriptWordAttributes } from "../../lib/api";
 import type {
   TranscriptPanelProps,
   Transcript,
   TranscriptWord,
   TranscriptionStatus,
 } from "./types";
-import {
-  groupWordsBySpeaker,
-  getSpeakerColorIndex,
-  formatTime,
-} from "./types";
+import { groupWordsBySpeaker, getSpeakerColorIndex, formatTime } from "./types";
 import { cn } from "@/web/lib/utils";
 
 /** Transcript icon */
 function TranscriptIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
@@ -44,7 +43,14 @@ function TranscriptIcon() {
 /** Export icon */
 function ExportIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -55,7 +61,14 @@ function ExportIcon() {
 /** Refresh icon */
 function RefreshIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <polyline points="23 4 23 10 17 10" />
       <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
     </svg>
@@ -65,7 +78,14 @@ function RefreshIcon() {
 /** Search icon */
 function SearchIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
@@ -75,7 +95,13 @@ function SearchIcon() {
 /** Empty state icon */
 function EmptyIcon() {
   return (
-    <svg className="w-12 h-12 text-text-tertiary opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      className="w-12 h-12 text-text-tertiary opacity-50"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
@@ -192,8 +218,7 @@ export function TranscriptPanel({
       const wordRect = wordEl.getBoundingClientRect();
 
       const isOutOfView =
-        wordRect.top < containerRect.top + 100 ||
-        wordRect.bottom > containerRect.bottom - 100;
+        wordRect.top < containerRect.top + 100 || wordRect.bottom > containerRect.bottom - 100;
 
       if (isOutOfView) {
         wordEl.scrollIntoView({
@@ -217,10 +242,7 @@ export function TranscriptPanel({
         speaker_identification: true,
       });
 
-      const mappedTranscript = mapTranscript(
-        response.data.id,
-        response.data.attributes
-      );
+      const mappedTranscript = mapTranscript(response.data.id, response.data.attributes);
       setTranscript(mappedTranscript);
       setWords([]);
       onStatusChange?.(mappedTranscript.status);
@@ -241,9 +263,7 @@ export function TranscriptPanel({
         // Optimistically update local state
         setWords((prev) =>
           prev.map((w) =>
-            w.id === wordId
-              ? { ...w, word: newWord, originalWord: w.originalWord || w.word }
-              : w
+            w.id === wordId ? { ...w, word: newWord, originalWord: w.originalWord || w.word } : w
           )
         );
 
@@ -297,7 +317,12 @@ export function TranscriptPanel({
 
         // Download
         const blob = new Blob([content], {
-          type: format === "vtt" ? "text/vtt" : format === "srt" ? "application/x-subrip" : "text/plain",
+          type:
+            format === "vtt"
+              ? "text/vtt"
+              : format === "srt"
+                ? "application/x-subrip"
+                : "text/plain",
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -357,7 +382,12 @@ export function TranscriptPanel({
     };
 
     return (
-      <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide rounded-full", statusClasses[status])}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide rounded-full",
+          statusClasses[status]
+        )}
+      >
         {status === "processing" && <Spinner size="sm" />}
         {statusLabels[status]}
       </span>
@@ -428,9 +458,7 @@ export function TranscriptPanel({
         <div className="flex flex-col items-center justify-center gap-4 p-8 text-text-secondary">
           <Spinner size="lg" />
           <span className="text-sm">
-            {transcript.status === "pending"
-              ? "Waiting to process..."
-              : "Transcribing audio..."}
+            {transcript.status === "pending" ? "Waiting to process..." : "Transcribing audio..."}
           </span>
         </div>
       </div>
@@ -449,10 +477,8 @@ export function TranscriptPanel({
           {renderStatus(transcript.status)}
         </div>
         <div className="flex flex-col gap-2 p-4 px-4 text-[13px] text-red-500 bg-red-500/10">
-          <span className="leading-snug">
-            {transcript.errorMessage || "Transcription failed"}
-          </span>
-          <Button size="sm" onClick={handleRegenerate} disabled={isRegenerating}>
+          <span className="leading-snug">{transcript.errorMessage || "Transcription failed"}</span>
+          <Button onClick={handleRegenerate} disabled={isRegenerating}>
             {isRegenerating ? (
               <>
                 <Spinner size="sm" /> Retrying...
@@ -478,17 +504,11 @@ export function TranscriptPanel({
           Transcript
         </h3>
         <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowExport(!showExport)}
-            title="Export transcript"
-          >
+          <Button plain onClick={() => setShowExport(!showExport)} title="Export transcript">
             <ExportIcon />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            plain
             onClick={handleRegenerate}
             disabled={isRegenerating}
             title="Regenerate transcript"
@@ -501,14 +521,10 @@ export function TranscriptPanel({
       {/* Info bar */}
       <div className="flex items-center gap-4 p-2 px-4 text-xs text-text-secondary border-b border-surface-1">
         {transcript.language && (
-          <span className="flex items-center gap-1">
-            {transcript.language.toUpperCase()}
-          </span>
+          <span className="flex items-center gap-1">{transcript.language.toUpperCase()}</span>
         )}
         {transcript.durationSeconds && (
-          <span className="flex items-center gap-1">
-            {formatTime(transcript.durationSeconds)}
-          </span>
+          <span className="flex items-center gap-1">{formatTime(transcript.durationSeconds)}</span>
         )}
         {transcript.speakerCount && transcript.speakerCount > 0 && (
           <span className="flex items-center gap-1">
@@ -526,13 +542,13 @@ export function TranscriptPanel({
       {showExport && (
         <div className="flex items-center gap-2 p-2 px-4 text-[13px] bg-surface-1 border-b border-surface-2">
           <span className="text-text-secondary">Export as:</span>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("vtt")}>
+          <Button plain onClick={() => handleExport("vtt")}>
             VTT
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("srt")}>
+          <Button plain onClick={() => handleExport("srt")}>
             SRT
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleExport("txt")}>
+          <Button plain onClick={() => handleExport("txt")}>
             TXT
           </Button>
         </div>
@@ -559,7 +575,7 @@ export function TranscriptPanel({
       {error && (
         <div className="flex flex-col gap-2 p-3 px-4 text-[13px] text-red-500 bg-red-500/10">
           <span>{error}</span>
-          <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+          <Button plain onClick={() => setError(null)}>
             Dismiss
           </Button>
         </div>

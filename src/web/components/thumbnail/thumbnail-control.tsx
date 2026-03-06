@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Play, ImagePlus, Trash2, Loader2 } from "lucide-react";
+import { XMarkIcon, PlayIcon, ImagePlusIcon, TrashIcon, SpinnerIcon } from "@/web/lib/icons";
 import { filesApi } from "../../lib/api";
 
 export interface ThumbnailControlProps {
@@ -157,7 +157,7 @@ export function ThumbnailControl({
             onClick={onClose}
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <XMarkIcon className="w-5 h-5" />
           </button>
         )}
       </div>
@@ -183,12 +183,12 @@ export function ThumbnailControl({
             >
               {isCapturing ? (
                 <>
-                  <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                  <SpinnerIcon className="w-[18px] h-[18px]" />
                   Capturing...
                 </>
               ) : (
                 <>
-                  <Play className="w-[18px] h-[18px]" />
+                  <PlayIcon className="w-[18px] h-[18px]" />
                   Capture Current Frame
                 </>
               )}
@@ -207,12 +207,12 @@ export function ThumbnailControl({
           >
             {isUploading ? (
               <>
-                <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                <SpinnerIcon className="w-[18px] h-[18px]" />
                 Uploading...
               </>
             ) : (
               <>
-                <ImagePlus className="w-[18px] h-[18px]" />
+                <ImagePlusIcon className="w-[18px] h-[18px]" />
                 Upload Image
               </>
             )}
@@ -236,17 +236,19 @@ export function ThumbnailControl({
             >
               {isRemoving ? (
                 <>
-                  <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                  <SpinnerIcon className="w-[18px] h-[18px]" />
                   Removing...
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-[18px] h-[18px]" />
+                  <TrashIcon className="w-[18px] h-[18px]" />
                   Remove Custom Thumbnail
                 </>
               )}
             </button>
-            <p className="m-0 text-xs text-secondary text-center">Revert to auto-generated thumbnail</p>
+            <p className="m-0 text-xs text-secondary text-center">
+              Revert to auto-generated thumbnail
+            </p>
           </div>
         )}
       </div>

@@ -7,11 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/web/components/ui";
-import {
-  sharesApi,
-  getErrorMessage,
-  type ShareBranding,
-} from "@/web/lib/api";
+import { sharesApi, getErrorMessage, type ShareBranding } from "@/web/lib/api";
 import type { Share, ShareFormData, LayoutOption } from "./types";
 import { DEFAULT_SHARE_FORM, LAYOUT_OPTIONS } from "./types";
 
@@ -218,9 +214,7 @@ export function ShareBuilder({
       {/* Layout Selection */}
       <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-primary">Layout</h3>
-        <p className="text-[13px] text-secondary">
-          Choose how assets will be displayed to viewers
-        </p>
+        <p className="text-[13px] text-secondary">Choose how assets will be displayed to viewers</p>
 
         <div className="grid grid-cols-3 gap-3">
           {LAYOUT_OPTIONS.map((option: LayoutOption) => (
@@ -291,9 +285,11 @@ export function ShareBuilder({
             }`}
             onClick={() => handleToggle("allow_comments")}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              formData.allow_comments ? "translate-x-5" : ""
-            }`}></span>
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                formData.allow_comments ? "translate-x-5" : ""
+              }`}
+            ></span>
           </button>
         </div>
 
@@ -309,9 +305,11 @@ export function ShareBuilder({
             }`}
             onClick={() => handleToggle("allow_downloads")}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              formData.allow_downloads ? "translate-x-5" : ""
-            }`}></span>
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                formData.allow_downloads ? "translate-x-5" : ""
+              }`}
+            ></span>
           </button>
         </div>
 
@@ -327,9 +325,11 @@ export function ShareBuilder({
             }`}
             onClick={() => handleToggle("show_all_versions")}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              formData.show_all_versions ? "translate-x-5" : ""
-            }`}></span>
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                formData.show_all_versions ? "translate-x-5" : ""
+              }`}
+            ></span>
           </button>
         </div>
 
@@ -345,9 +345,11 @@ export function ShareBuilder({
             }`}
             onClick={() => handleToggle("show_transcription")}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              formData.show_transcription ? "translate-x-5" : ""
-            }`}></span>
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                formData.show_transcription ? "translate-x-5" : ""
+              }`}
+            ></span>
           </button>
         </div>
       </div>
@@ -355,9 +357,7 @@ export function ShareBuilder({
       {/* Branding */}
       <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-primary">Branding</h3>
-        <p className="text-[13px] text-secondary">
-          Customize the appearance of your share page
-        </p>
+        <p className="text-[13px] text-secondary">Customize the appearance of your share page</p>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -429,11 +429,18 @@ export function ShareBuilder({
               className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
                 formData.branding.dark_mode !== false ? "bg-accent" : "bg-border-default"
               }`}
-              onClick={() => handleBrandingChange("dark_mode", formData.branding.dark_mode === false ? true : false)}
+              onClick={() =>
+                handleBrandingChange(
+                  "dark_mode",
+                  formData.branding.dark_mode === false ? true : false
+                )
+              }
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                formData.branding.dark_mode !== false ? "translate-x-5" : ""
-              }`}></span>
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                  formData.branding.dark_mode !== false ? "translate-x-5" : ""
+                }`}
+              ></span>
             </button>
           </div>
         </div>
@@ -443,11 +450,11 @@ export function ShareBuilder({
       <div className="flex flex-col gap-3">
         <div className="flex gap-3 justify-end">
           {onCancel && (
-            <Button variant="secondary" onClick={onCancel} disabled={saving}>
+            <Button outline onClick={onCancel} disabled={saving}>
               Cancel
             </Button>
           )}
-          <Button variant="primary" type="submit" disabled={saving || !formData.name.trim()}>
+          <Button color="bush" type="submit" disabled={saving || !formData.name.trim()}>
             {saving ? "Saving..." : shareId ? "Update Share" : "Create Share"}
           </Button>
         </div>

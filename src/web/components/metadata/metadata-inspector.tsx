@@ -8,7 +8,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Info, ChevronDown, Star, X } from "lucide-react";
+import { InformationCircleIcon, ChevronDownIcon, StarIcon, XMarkIcon } from "@/web/lib/icons";
 import { Spinner } from "../ui/spinner";
 import { metadataApi, type TechnicalMetadata, type FileMetadataAttributes } from "../../lib/api";
 import { BUILTIN_FIELDS, type BuiltInField } from "./types";
@@ -61,7 +61,11 @@ function formatSampleRate(rate: number | null): string {
 }
 
 /** Rating input component */
-function RatingInput({ value, onChange, disabled }: {
+function RatingInput({
+  value,
+  onChange,
+  disabled,
+}: {
   value: number | null;
   onChange: (value: number | null) => void;
   disabled?: boolean;
@@ -75,17 +79,12 @@ function RatingInput({ value, onChange, disabled }: {
           key={star}
           className={`cursor-pointer text-muted transition-colors ${
             disabled ? "cursor-default opacity-50" : ""
-          } ${
-            (hoverValue ?? value ?? 0) >= star ? "text-amber-500" : ""
-          }`}
+          } ${(hoverValue ?? value ?? 0) >= star ? "text-amber-500" : ""}`}
           onClick={() => !disabled && onChange(value === star ? null : star)}
           onMouseEnter={() => !disabled && setHoverValue(star)}
           onMouseLeave={() => setHoverValue(null)}
         >
-          <Star
-            size={16}
-            fill={(hoverValue ?? value ?? 0) >= star ? "currentColor" : "none"}
-          />
+          <StarIcon className="size-4" />
         </span>
       ))}
     </div>
@@ -93,7 +92,11 @@ function RatingInput({ value, onChange, disabled }: {
 }
 
 /** Keywords input component */
-function KeywordsInput({ value, onChange, disabled }: {
+function KeywordsInput({
+  value,
+  onChange,
+  disabled,
+}: {
   value: string[];
   onChange: (value: string[]) => void;
   disabled?: boolean;
@@ -129,7 +132,7 @@ function KeywordsInput({ value, onChange, disabled }: {
               className="cursor-pointer opacity-60 hover:opacity-100 flex items-center justify-center"
               onClick={() => handleRemove(keyword)}
             >
-              <X size={12} />
+              <XMarkIcon className="size-3" />
             </span>
           )}
         </span>
@@ -268,9 +271,16 @@ function MetadataFieldRow({
       </div>
       <div
         className={`text-xs text-primary text-right break-words max-w-[180px] ${
-          isEditableField ? "cursor-pointer px-2 py-1 -m-1 rounded-sm transition-colors hover:bg-surface-3" : ""
+          isEditableField
+            ? "cursor-pointer px-2 py-1 -m-1 rounded-sm transition-colors hover:bg-surface-3"
+            : ""
         }`}
-        onClick={() => isEditableField && fieldType !== "rating" && fieldType !== "keywords" && setIsEditing(true)}
+        onClick={() =>
+          isEditableField &&
+          fieldType !== "rating" &&
+          fieldType !== "keywords" &&
+          setIsEditing(true)
+        }
       >
         {isEditing ? renderEditableInput() : formatValue()}
       </div>
@@ -296,15 +306,12 @@ function Section({
         className="px-4 py-3 bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-secondary flex items-center gap-2 cursor-pointer select-none hover:bg-surface-3"
         onClick={() => setCollapsed(!collapsed)}
       >
-        <ChevronDown
-          size={12}
-          className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+        <ChevronDownIcon
+          className={`size-3 transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
         />
         {title}
       </div>
-      <div className={collapsed ? "hidden" : ""}>
-        {children}
-      </div>
+      <div className={collapsed ? "hidden" : ""}>{children}</div>
     </div>
   );
 }
@@ -361,29 +368,36 @@ export function MetadataInspector({
   }, [fileId]);
 
   // Handle field update
-  const handleFieldUpdate = useCallback(async (fieldId: string, value: unknown) => {
-    if (!metadata) return;
+  const handleFieldUpdate = useCallback(
+    async (fieldId: string, value: unknown) => {
+      if (!metadata) return;
 
-    try {
-      await metadataApi.updateField(fileId, fieldId, value as string | number | boolean | string[] | null);
+      try {
+        await metadataApi.updateField(
+          fileId,
+          fieldId,
+          value as string | number | boolean | string[] | null
+        );
 
-      // Update local state
-      if (fieldId in metadata.builtin) {
-        setMetadata({
-          ...metadata,
-          builtin: {
-            ...metadata.builtin,
-            [fieldId]: value,
-          },
-        });
+        // Update local state
+        if (fieldId in metadata.builtin) {
+          setMetadata({
+            ...metadata,
+            builtin: {
+              ...metadata.builtin,
+              [fieldId]: value,
+            },
+          });
+        }
+
+        // Notify parent
+        onUpdate?.(fieldId, value);
+      } catch (err) {
+        console.error("Failed to update metadata:", err);
       }
-
-      // Notify parent
-      onUpdate?.(fieldId, value);
-    } catch (err) {
-      console.error("Failed to update metadata:", err);
-    }
-  }, [fileId, metadata, onUpdate]);
+    },
+    [fileId, metadata, onUpdate]
+  );
 
   // Build technical fields from metadata
   const technicalFields = useMemo(() => {
@@ -393,37 +407,82 @@ export function MetadataInspector({
     const fields: Array<{ field: BuiltInField; value: unknown }> = [];
 
     // Add file info
-    fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "originalName")!, value: metadata.file.original_name });
-    fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "mimeType")!, value: metadata.file.mime_type });
-    fields.push({ field: { id: "fileSize", name: "File Size", type: "read-only", editable: false, category: "technical" } as BuiltInField, value: metadata.file.file_size_bytes });
+    fields.push({
+      field: BUILTIN_FIELDS.find((f) => f.id === "originalName")!,
+      value: metadata.file.original_name,
+    });
+    fields.push({
+      field: BUILTIN_FIELDS.find((f) => f.id === "mimeType")!,
+      value: metadata.file.mime_type,
+    });
+    fields.push({
+      field: {
+        id: "fileSize",
+        name: "File Size",
+        type: "read-only",
+        editable: false,
+        category: "technical",
+      } as BuiltInField,
+      value: metadata.file.file_size_bytes,
+    });
 
     // Add technical metadata
     if (tech.duration !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "duration")!, value: tech.duration });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "duration")!,
+        value: tech.duration,
+      });
     }
     if (tech.width !== null || tech.height !== null) {
-      fields.push({ field: { id: "resolution", name: "Resolution", type: "read-only", editable: false, category: "technical" } as BuiltInField, value: tech.width && tech.height ? `${tech.width} x ${tech.height}` : null });
+      fields.push({
+        field: {
+          id: "resolution",
+          name: "Resolution",
+          type: "read-only",
+          editable: false,
+          category: "technical",
+        } as BuiltInField,
+        value: tech.width && tech.height ? `${tech.width} x ${tech.height}` : null,
+      });
     }
     if (tech.frameRate !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "frameRate")!, value: tech.frameRate });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "frameRate")!,
+        value: tech.frameRate,
+      });
     }
     if (tech.videoCodec !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "videoCodec")!, value: tech.videoCodec });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "videoCodec")!,
+        value: tech.videoCodec,
+      });
     }
     if (tech.audioCodec !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "audioCodec")!, value: tech.audioCodec });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "audioCodec")!,
+        value: tech.audioCodec,
+      });
     }
     if (tech.bitRate !== null) {
       fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "bitRate")!, value: tech.bitRate });
     }
     if (tech.sampleRate !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "sampleRate")!, value: tech.sampleRate });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "sampleRate")!,
+        value: tech.sampleRate,
+      });
     }
     if (tech.channels !== null) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "channels")!, value: tech.channels });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "channels")!,
+        value: tech.channels,
+      });
     }
     if (tech.isHDR) {
-      fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "hdrType")!, value: tech.hdrType || "HDR" });
+      fields.push({
+        field: BUILTIN_FIELDS.find((f) => f.id === "hdrType")!,
+        value: tech.hdrType || "HDR",
+      });
     }
     if (tech.format !== null) {
       fields.push({ field: BUILTIN_FIELDS.find((f) => f.id === "format")!, value: tech.format });
@@ -447,10 +506,12 @@ export function MetadataInspector({
 
   if (isLoading) {
     return (
-      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+      <div
+        className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}
+      >
         <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
           <div className="text-sm font-semibold text-primary flex items-center gap-2">
-            <Info size={16} />
+            <InformationCircleIcon className="size-4" />
             Metadata
           </div>
         </div>
@@ -463,10 +524,12 @@ export function MetadataInspector({
 
   if (error) {
     return (
-      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+      <div
+        className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}
+      >
         <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
           <div className="text-sm font-semibold text-primary flex items-center gap-2">
-            <Info size={16} />
+            <InformationCircleIcon className="size-4" />
             Metadata
           </div>
         </div>
@@ -477,10 +540,12 @@ export function MetadataInspector({
 
   if (!metadata) {
     return (
-      <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+      <div
+        className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}
+      >
         <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
           <div className="text-sm font-semibold text-primary flex items-center gap-2">
-            <Info size={16} />
+            <InformationCircleIcon className="size-4" />
             Metadata
           </div>
         </div>
@@ -490,10 +555,12 @@ export function MetadataInspector({
   }
 
   return (
-    <div className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}>
+    <div
+      className={`w-80 bg-surface-1 border-l border-border-default flex flex-col h-full ${className || ""}`}
+    >
       <div className="px-4 py-4 border-b border-border-default flex items-center justify-between">
         <div className="text-sm font-semibold text-primary flex items-center gap-2">
-          <Info size={16} />
+          <InformationCircleIcon className="size-4" />
           Metadata
         </div>
       </div>
@@ -501,7 +568,9 @@ export function MetadataInspector({
       <div className="flex-1 overflow-y-auto">
         {/* File info */}
         <div className="px-4 py-4 border-b border-border-default">
-          <div className="text-sm font-medium text-primary mb-2 break-words">{metadata.file.name}</div>
+          <div className="text-sm font-medium text-primary mb-2 break-words">
+            {metadata.file.name}
+          </div>
           <div className="flex flex-col gap-1">
             <div className="text-[11px] text-secondary">
               Uploaded {new Date(metadata.file.created_at).toLocaleDateString()}
@@ -537,7 +606,9 @@ export function MetadataInspector({
           />
           <MetadataFieldRow
             field={{ id: "assignee_id", name: "Assignee", type: "user" }}
-            value={metadata.builtin.assignee?.first_name ?? metadata.builtin.assignee?.email ?? null}
+            value={
+              metadata.builtin.assignee?.first_name ?? metadata.builtin.assignee?.email ?? null
+            }
             editable={editable}
             onChange={(value) => handleFieldUpdate("assignee_id", value)}
           />
@@ -547,12 +618,7 @@ export function MetadataInspector({
         {showTechnical && technicalFields.length > 0 && (
           <Section title="Technical" collapsed>
             {technicalFields.map(({ field, value }) => (
-              <MetadataFieldRow
-                key={field.id}
-                field={field}
-                value={value}
-                editable={false}
-              />
+              <MetadataFieldRow key={field.id} field={field} value={value} editable={false} />
             ))}
           </Section>
         )}
