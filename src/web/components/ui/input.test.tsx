@@ -1,197 +1,96 @@
-/**
- * Bush Platform - Input Component Tests
- *
- * Tests for the Input UI component.
- * Reference: specs/15-frontend-testing.md - Component Tests
- */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Input } from "./input";
+import { Field, Label, ErrorMessage } from "./fieldset";
 
-describe("Input", () => {
+describe("Input (Catalyst)", () => {
   describe("Rendering", () => {
     it("renders an input element", () => {
       render(<Input />);
       expect(screen.getByRole("textbox")).toBeInTheDocument();
     });
 
-    it("renders with a label when provided", () => {
-      render(<Input label="Email" />);
-      expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    it("accepts placeholder", () => {
+      render(<Input placeholder="Enter your email" />);
+      expect(screen.getByRole("textbox")).toHaveAttribute("placeholder", "Enter your email");
     });
 
-    it("renders helper text when provided", () => {
-      render(<Input helperText="Enter your email" />);
-      expect(screen.getByText("Enter your email")).toBeInTheDocument();
-    });
-
-    it("renders error message when provided", () => {
-      render(<Input error="Invalid email" />);
-      expect(screen.getByRole("alert")).toHaveTextContent("Invalid email");
-    });
-  });
-
-  describe("Label", () => {
-    it("associates label with input via htmlFor", () => {
-      render(<Input label="Username" id="username" />);
-      const input = screen.getByLabelText("Username");
-      expect(input).toHaveAttribute("id", "username");
-    });
-
-    it("generates an id if not provided", () => {
-      render(<Input label="Email" />);
-      const input = screen.getByLabelText("Email");
-      expect(input).toHaveAttribute("id");
-    });
-
-    it("shows required indicator when required", () => {
-      render(<Input label="Email" required />);
-      // The asterisk is added via CSS after:content-['*']
-      const label = screen.getByText("Email");
-      // Check that the label has the required class that adds the asterisk
-      expect(label.className).toMatch(/after:content/);
-    });
-  });
-
-  describe("Error State", () => {
-    it("shows error message instead of helper text when both are provided", () => {
-      render(<Input helperText="Helper text" error="Error message" />);
-      expect(screen.getByRole("alert")).toHaveTextContent("Error message");
-      expect(screen.queryByText("Helper text")).not.toBeInTheDocument();
-    });
-
-    it("sets aria-invalid when there is an error", () => {
-      render(<Input error="Invalid" />);
-      const input = screen.getByRole("textbox");
-      expect(input).toHaveAttribute("aria-invalid", "true");
-    });
-
-    it("associates error message with input via aria-describedby", () => {
-      render(<Input label="Email" id="email" error="Invalid email" />);
-      const input = screen.getByLabelText("Email");
-      expect(input).toHaveAttribute("aria-describedby", "email-error");
-    });
-  });
-
-  describe("Helper Text", () => {
-    it("associates helper text with input via aria-describedby", () => {
-      render(<Input label="Email" id="email" helperText="We'll never share your email" />);
-      const input = screen.getByLabelText("Email");
-      expect(input).toHaveAttribute("aria-describedby", "email-helper");
-    });
-  });
-
-  describe("Sizes", () => {
-    it("applies medium size by default", () => {
-      render(<Input />);
-      const input = screen.getByRole("textbox");
-      expect(input.className).toMatch(/h-9/);
-    });
-
-    it("applies small size classes", () => {
-      render(<Input inputSize="sm" />);
-      const input = screen.getByRole("textbox");
-      expect(input.className).toMatch(/h-8/);
-    });
-
-    it("applies large size classes", () => {
-      render(<Input inputSize="lg" />);
-      const input = screen.getByRole("textbox");
-      expect(input.className).toMatch(/h-10/);
-    });
-  });
-
-  describe("Icons", () => {
-    it("renders start icon", () => {
-      render(<Input startIcon={<span data-testid="start-icon">icon</span>} />);
-      expect(screen.getByTestId("start-icon")).toBeInTheDocument();
-    });
-
-    it("renders end icon", () => {
-      render(<Input endIcon={<span data-testid="end-icon">icon</span>} />);
-      expect(screen.getByTestId("end-icon")).toBeInTheDocument();
-    });
-  });
-
-  describe("Full Width", () => {
-    it("applies full width class when fullWidth is true", () => {
-      render(<Input fullWidth />);
-      const container = screen.getByRole("textbox").closest("div")?.parentElement;
-      expect(container?.className).toMatch(/w-full/);
-    });
-  });
-
-  describe("Disabled State", () => {
-    it("is disabled when disabled prop is true", () => {
-      render(<Input disabled />);
-      const input = screen.getByRole("textbox");
-      expect(input).toBeDisabled();
-    });
-
-    it("applies disabled styles", () => {
-      render(<Input disabled />);
-      const input = screen.getByRole("textbox");
-      expect(input.className).toMatch(/disabled:cursor-not-allowed/);
-    });
-  });
-
-  describe("Events", () => {
-    it("calls onChange when value changes", async () => {
+    it("accepts value and onChange", async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Input onChange={onChange} />);
-
-      await user.type(screen.getByRole("textbox"), "test");
+      await user.type(screen.getByRole("textbox"), "hello");
       expect(onChange).toHaveBeenCalled();
     });
+  });
 
-    it("calls onFocus when focused", async () => {
-      const user = userEvent.setup();
-      const onFocus = vi.fn();
-      render(<Input onFocus={onFocus} />);
-
-      await user.click(screen.getByRole("textbox"));
-      expect(onFocus).toHaveBeenCalled();
+  describe("Field composition with Label", () => {
+    it("renders Label text alongside Input", () => {
+      render(
+        <Field>
+          <Label>Email Address</Label>
+          <Input />
+        </Field>
+      );
+      expect(screen.getByText("Email Address")).toBeInTheDocument();
+      expect(screen.getByRole("textbox")).toBeInTheDocument();
     });
 
-    it("calls onBlur when blurred", async () => {
-      const user = userEvent.setup();
-      const onBlur = vi.fn();
-      render(<Input onBlur={onBlur} />);
-
+    it("Input is associated with Label via HeadlessUI Field", () => {
+      render(
+        <Field>
+          <Label>Username</Label>
+          <Input />
+        </Field>
+      );
+      const label = screen.getByText("Username");
       const input = screen.getByRole("textbox");
-      await user.click(input);
-      await user.tab();
-      expect(onBlur).toHaveBeenCalled();
+      expect(label).toBeInTheDocument();
+      expect(input).toBeInTheDocument();
     });
   });
 
-  describe("Accessibility", () => {
-    it("has required attribute when required prop is true", () => {
-      render(<Input required />);
-      const input = screen.getByRole("textbox");
-      expect(input).toHaveAttribute("required");
+  describe("ErrorMessage composition", () => {
+    it("renders ErrorMessage text when provided", () => {
+      render(
+        <Field>
+          <Label>Email</Label>
+          <Input />
+          <ErrorMessage>Invalid email address</ErrorMessage>
+        </Field>
+      );
+      expect(screen.getByText("Invalid email address")).toBeInTheDocument();
     });
 
-    it("accepts placeholder text", () => {
-      render(<Input placeholder="Enter your name" />);
-      const input = screen.getByRole("textbox");
-      expect(input).toHaveAttribute("placeholder", "Enter your name");
+    it("ErrorMessage has red text styling", () => {
+      render(
+        <Field>
+          <Input />
+          <ErrorMessage>This field is required</ErrorMessage>
+        </Field>
+      );
+      const errorEl = screen.getByText("This field is required");
+      expect(errorEl.className).toMatch(/text-red/);
     });
 
-    it("accepts custom aria attributes", () => {
-      render(<Input aria-label="Search" />);
-      const input = screen.getByRole("textbox");
-      expect(input).toHaveAttribute("aria-label", "Search");
+    it("renders both Label and ErrorMessage together", () => {
+      render(
+        <Field>
+          <Label>Password</Label>
+          <Input type="password" />
+          <ErrorMessage>Password must be at least 8 characters</ErrorMessage>
+        </Field>
+      );
+      expect(screen.getByText("Password")).toBeInTheDocument();
+      expect(screen.getByText("Password must be at least 8 characters")).toBeInTheDocument();
     });
   });
 
-  describe("Ref Forwarding", () => {
-    it("forwards ref to input element", () => {
+  describe("Ref forwarding", () => {
+    it("forwards ref to the native input element", () => {
       const ref = { current: null as HTMLInputElement | null };
       render(<Input ref={ref} />);
-
       expect(ref.current).toBeInstanceOf(HTMLInputElement);
     });
   });

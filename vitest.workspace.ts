@@ -5,6 +5,7 @@
  * Reference: specs/15-frontend-testing.md
  */
 import { defineWorkspace } from "vitest/config";
+import path from "path";
 
 export default defineWorkspace([
   {
@@ -28,16 +29,16 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
-        "@/config": "/home/tgds/Code/bush/src/config/index.ts",
-        "@/config/env": "/home/tgds/Code/bush/src/config/env.ts",
-        "@/db": "/home/tgds/Code/bush/src/db/index.ts",
-        "@/db/schema": "/home/tgds/Code/bush/src/db/schema.ts",
-        "@/api": "/home/tgds/Code/bush/src/api/index.ts",
-        "@/auth": "/home/tgds/Code/bush/src/auth/index.ts",
-        "@/redis": "/home/tgds/Code/bush/src/redis/index.ts",
-        "@/permissions": "/home/tgds/Code/bush/src/permissions/index.ts",
-        "@/web": "/home/tgds/Code/bush/src/web",
-        "@/shared": "/home/tgds/Code/bush/src/shared",
+        "@/config": path.resolve(__dirname, "src/config/index.ts"),
+        "@/config/env": path.resolve(__dirname, "src/config/env.ts"),
+        "@/db": path.resolve(__dirname, "src/db/index.ts"),
+        "@/db/schema": path.resolve(__dirname, "src/db/schema.ts"),
+        "@/api": path.resolve(__dirname, "src/api/index.ts"),
+        "@/auth": path.resolve(__dirname, "src/auth/index.ts"),
+        "@/redis": path.resolve(__dirname, "src/redis/index.ts"),
+        "@/permissions": path.resolve(__dirname, "src/permissions/index.ts"),
+        "@/web": path.resolve(__dirname, "src/web"),
+        "@/shared": path.resolve(__dirname, "src/shared"),
       },
     },
   },
@@ -53,8 +54,8 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
-        "@/web": "/home/tgds/Code/bush/src/web",
-        "@/config": "/home/tgds/Code/bush/src/config/index.ts",
+        "@/web": path.resolve(__dirname, "src/web"),
+        "@/config": path.resolve(__dirname, "src/config/index.ts"),
       },
     },
   },

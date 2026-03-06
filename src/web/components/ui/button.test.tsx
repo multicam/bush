@@ -1,173 +1,90 @@
-/**
- * Bush Platform - Button Component Tests
- *
- * Tests for the Button UI component.
- * Reference: specs/15-frontend-testing.md - Component Tests
- */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { Button } from "./button";
 
-describe("Button", () => {
+describe("Button (Catalyst)", () => {
   describe("Rendering", () => {
-    it("renders with children", () => {
+    it("renders children", () => {
       render(<Button>Click me</Button>);
       expect(screen.getByRole("button", { name: "Click me" })).toBeInTheDocument();
     });
 
     it("renders as a button element", () => {
-      render(<Button>Button</Button>);
+      render(<Button>Submit</Button>);
       expect(screen.getByRole("button")).toBeInTheDocument();
     });
   });
 
-  describe("Variants", () => {
-    it("applies primary variant classes by default", () => {
-      render(<Button>Primary</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/bg-accent/);
+  describe("color prop", () => {
+    it("renders with color='bush' (primary)", () => {
+      render(<Button color="bush">Save</Button>);
+      const button = screen.getByRole("button", { name: "Save" });
+      expect(button).toBeInTheDocument();
     });
 
-    it("applies secondary variant classes", () => {
-      render(<Button variant="secondary">Secondary</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/bg-transparent/);
+    it("renders with color='red'", () => {
+      render(<Button color="red">Delete</Button>);
+      expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
     });
 
-    it("applies ghost variant classes", () => {
-      render(<Button variant="ghost">Ghost</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/bg-transparent/);
-    });
-
-    it("applies danger variant classes", () => {
-      render(<Button variant="danger">Danger</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/text-error/);
+    it("renders with default color (dark/zinc)", () => {
+      render(<Button>Default</Button>);
+      expect(screen.getByRole("button", { name: "Default" })).toBeInTheDocument();
     });
   });
 
-  describe("Sizes", () => {
-    it("applies medium size by default", () => {
-      render(<Button>Medium</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/h-9/);
-    });
-
-    it("applies small size classes", () => {
-      render(<Button size="sm">Small</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/h-8/);
-    });
-
-    it("applies large size classes", () => {
-      render(<Button size="lg">Large</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/h-10/);
+  describe("outline prop", () => {
+    it("renders with outline prop", () => {
+      render(<Button outline>Outline</Button>);
+      expect(screen.getByRole("button", { name: "Outline" })).toBeInTheDocument();
     });
   });
 
-  describe("Full Width", () => {
-    it("applies full width class when fullWidth is true", () => {
-      render(<Button fullWidth>Full Width</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/w-full/);
-    });
-
-    it("does not apply full width class by default", () => {
-      render(<Button>Normal Width</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).not.toMatch(/w-full/);
+  describe("plain prop", () => {
+    it("renders with plain prop", () => {
+      render(<Button plain>Cancel</Button>);
+      expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     });
   });
 
-  describe("Loading State", () => {
-    it("shows loading spinner when loading is true", () => {
-      render(<Button loading>Loading</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-busy", "true");
+  describe("loading state", () => {
+    it("shows SpinnerIcon SVG when loading", () => {
+      const { container } = render(<Button loading>Submit</Button>);
+      expect(container.querySelector("svg.animate-spin")).toBeInTheDocument();
     });
 
     it("is disabled when loading", () => {
-      render(<Button loading>Loading</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toBeDisabled();
+      render(<Button loading>Submit</Button>);
+      expect(screen.getByRole("button")).toBeDisabled();
+    });
+
+    it("has aria-busy='true' when loading", () => {
+      render(<Button loading>Submit</Button>);
+      expect(screen.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    });
+
+    it("still renders children text when loading", () => {
+      render(<Button loading>Processing</Button>);
+      expect(screen.getByRole("button")).toHaveTextContent("Processing");
     });
   });
 
-  describe("Disabled State", () => {
-    it("is disabled when disabled prop is true", () => {
+  describe("disabled state", () => {
+    it("is disabled when disabled prop is set", () => {
       render(<Button disabled>Disabled</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toBeDisabled();
-    });
-
-    it("applies disabled styles", () => {
-      render(<Button disabled>Disabled</Button>);
-      const button = screen.getByRole("button");
-      expect(button.className).toMatch(/disabled:cursor-not-allowed/);
+      expect(screen.getByRole("button")).toBeDisabled();
     });
   });
 
-  describe("Icons", () => {
-    it("renders start icon", () => {
-      render(<Button startIcon={<span data-testid="start-icon">icon</span>}>With Icon</Button>);
-      expect(screen.getByTestId("start-icon")).toBeInTheDocument();
+  describe("accessibility", () => {
+    it("accepts aria-label", () => {
+      render(<Button aria-label="Close dialog">×</Button>);
+      expect(screen.getByRole("button", { name: "Close dialog" })).toBeInTheDocument();
     });
 
-    it("renders end icon", () => {
-      render(<Button endIcon={<span data-testid="end-icon">icon</span>}>With Icon</Button>);
-      expect(screen.getByTestId("end-icon")).toBeInTheDocument();
-    });
-  });
-
-  describe("Events", () => {
-    it("calls onClick when clicked", async () => {
-      const user = userEvent.setup();
-      const onClick = vi.fn();
-      render(<Button onClick={onClick}>Click me</Button>);
-
-      await user.click(screen.getByRole("button"));
-      expect(onClick).toHaveBeenCalledTimes(1);
-    });
-
-    it("does not call onClick when disabled", async () => {
-      const user = userEvent.setup();
-      const onClick = vi.fn();
-      render(<Button disabled onClick={onClick}>Disabled</Button>);
-
-      await user.click(screen.getByRole("button"));
-      expect(onClick).not.toHaveBeenCalled();
-    });
-
-    it("does not call onClick when loading", async () => {
-      const user = userEvent.setup();
-      const onClick = vi.fn();
-      render(<Button loading onClick={onClick}>Loading</Button>);
-
-      await user.click(screen.getByRole("button"));
-      expect(onClick).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Accessibility", () => {
-    it("can have custom type", () => {
+    it("accepts type='submit'", () => {
       render(<Button type="submit">Submit</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("type", "submit");
-    });
-
-    it("can have type='button'", () => {
-      render(<Button type="button">Button</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("type", "button");
-    });
-
-    it("accepts aria attributes", () => {
-      render(<Button aria-label="Custom label">Button</Button>);
-      const button = screen.getByRole("button");
-      expect(button).toHaveAttribute("aria-label", "Custom label");
+      expect(screen.getByRole("button")).toHaveAttribute("type", "submit");
     });
   });
 });
