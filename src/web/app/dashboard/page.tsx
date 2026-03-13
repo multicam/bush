@@ -114,11 +114,9 @@ export default function DashboardPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto">
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <SpinnerIcon className="w-8 h-8 mb-4 text-accent" />
-            <p className="m-0">Loading dashboard...</p>
-          </div>
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+          <SpinnerIcon className="w-8 h-8 mb-4 text-accent" />
+          <p className="m-0">Loading dashboard...</p>
         </div>
       </AppLayout>
     );
@@ -128,21 +126,19 @@ export default function DashboardPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto">
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <h2 className="text-primary m-0 mb-2">Failed to load dashboard</h2>
-            <p className="text-secondary m-0 mb-6">{errorMessage}</p>
-            <Button
-              color="bush"
-              onClick={() => {
-                setLoadingState("loading");
-                setErrorMessage("");
-                window.location.reload();
-              }}
-            >
-              Try Again
-            </Button>
-          </div>
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <h2 className="text-primary m-0 mb-2">Failed to load dashboard</h2>
+          <p className="text-secondary m-0 mb-6">{errorMessage}</p>
+          <Button
+            color="bush"
+            onClick={() => {
+              setLoadingState("loading");
+              setErrorMessage("");
+              window.location.reload();
+            }}
+          >
+            Try Again
+          </Button>
         </div>
       </AppLayout>
     );
@@ -150,25 +146,25 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-[80rem] mx-auto">
-        <div className="flex items-start justify-between mb-8 flex-col gap-4 sm:flex-row sm:gap-0">
+      <div>
+        <div className="flex items-start justify-between mb-12 gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-primary m-0">Dashboard</h1>
-            <p className="mt-1 text-sm text-secondary">
+            <h1 className="text-3xl font-bold text-primary m-0 mb-2">Dashboard</h1>
+            <p className="text-sm text-secondary m-0">
               Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
             </p>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
+          <div className="flex gap-3 max-sm:w-full">
             <Button
               outline
-              className="flex-1 sm:flex-initial"
+              className="max-sm:flex-1"
               onClick={() => (window.location.href = "/workspaces")}
             >
               View Workspaces
             </Button>
             <Button
               color="bush"
-              className="flex-1 sm:flex-initial"
+              className="max-sm:flex-1"
               onClick={() => (window.location.href = "/projects/new")}
             >
               New Project
@@ -177,51 +173,74 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
-            <span className="block text-3xl font-bold text-primary">{stats.workspacesCount}</span>
-            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">
+        <div className="grid grid-cols-4 gap-5 mb-12 max-md:grid-cols-2">
+          <div className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <span className="block text-4xl font-bold text-primary mb-3">
+              {stats.workspacesCount}
+            </span>
+            <span className="block text-xs font-medium text-muted uppercase tracking-widest">
               Workspaces
             </span>
           </div>
-          <div className="bg-surface-2 border border-border-default rounded-md p-5 text-center">
-            <span className="block text-3xl font-bold text-primary">{stats.projectsCount}</span>
-            <span className="block text-xs text-secondary mt-1 uppercase tracking-wide">
+          <div className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <span className="block text-4xl font-bold text-primary mb-3">
+              {stats.projectsCount}
+            </span>
+            <span className="block text-xs font-medium text-muted uppercase tracking-widest">
               Projects
+            </span>
+          </div>
+          <div className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <span className="block text-4xl font-bold text-primary mb-3">0</span>
+            <span className="block text-xs font-medium text-muted uppercase tracking-widest">
+              Files
+            </span>
+          </div>
+          <div className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <span className="block text-4xl font-bold text-primary mb-3">0</span>
+            <span className="block text-xs font-medium text-muted uppercase tracking-widest">
+              Shares
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* Recent Projects */}
-          <section className="bg-surface-2 border border-border-default rounded-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-primary m-0">Recent Projects</h2>
+          <section className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-sm font-semibold text-primary m-0 uppercase tracking-widest">
+                Recent Projects
+              </h2>
               <a href="/projects" className="text-xs text-accent no-underline hover:underline">
                 View all
               </a>
             </div>
             {recentProjects.length > 0 ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col">
                 {recentProjects.map((project) => (
                   <a
                     key={project.id}
                     href={`/projects/${project.id}`}
-                    className="flex items-center justify-between p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+                    className="flex items-center justify-between py-4 border-b border-border-hover last:border-b-0 no-underline transition-colors group"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium text-primary">{project.name}</span>
-                      <span className="text-xs text-secondary">{project.workspaceName}</span>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-sm font-medium text-primary group-hover:text-accent transition-colors truncate">
+                        {project.name}
+                      </span>
+                      <span className="text-xs text-muted">{project.workspaceName}</span>
                     </div>
-                    <Badge color={project.isRestricted ? "amber" : "green"}>
+                    <Badge
+                      color={project.isRestricted ? "amber" : "green"}
+                      className="ml-3 shrink-0"
+                    >
                       {project.isRestricted ? "restricted" : "active"}
                     </Badge>
                   </a>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 text-center text-secondary">
-                <p className="mb-4">No projects yet</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <p className="text-sm text-secondary mb-4">No projects yet</p>
                 <Button color="bush" onClick={() => (window.location.href = "/projects/new")}>
                   Create your first project
                 </Button>
@@ -230,38 +249,48 @@ export default function DashboardPage() {
           </section>
 
           {/* Quick Actions */}
-          <section className="bg-surface-2 border border-border-default rounded-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-primary m-0">Quick Actions</h2>
+          <section className="bg-surface-3 border border-border-hover rounded-xl p-8">
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-primary m-0 uppercase tracking-widest">
+                Quick Actions
+              </h2>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <a
                 href="/files/upload"
-                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+                className="flex items-center gap-4 px-5 py-4 bg-surface-2 border border-border-hover rounded-lg no-underline transition-all hover:border-accent/50 hover:bg-surface-3 group"
               >
-                <ArrowUpTrayIcon className="w-4 h-4 text-secondary" />
-                <span className="text-sm text-primary">Upload Files</span>
+                <div className="w-9 h-9 rounded-lg bg-surface-3 border border-border-hover flex items-center justify-center shrink-0 group-hover:border-accent/30 transition-colors">
+                  <ArrowUpTrayIcon className="w-4 h-4 text-secondary" />
+                </div>
+                <span className="text-sm font-medium text-primary">Upload Files</span>
               </a>
               <a
                 href="/shares/new"
-                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+                className="flex items-center gap-4 px-5 py-4 bg-surface-2 border border-border-hover rounded-lg no-underline transition-all hover:border-accent/50 hover:bg-surface-3 group"
               >
-                <ShareIcon className="w-4 h-4 text-secondary" />
-                <span className="text-sm text-primary">Create Share</span>
+                <div className="w-9 h-9 rounded-lg bg-surface-3 border border-border-hover flex items-center justify-center shrink-0 group-hover:border-accent/30 transition-colors">
+                  <ShareIcon className="w-4 h-4 text-secondary" />
+                </div>
+                <span className="text-sm font-medium text-primary">Create Share</span>
               </a>
               <a
                 href="/settings/team"
-                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+                className="flex items-center gap-4 px-5 py-4 bg-surface-2 border border-border-hover rounded-lg no-underline transition-all hover:border-accent/50 hover:bg-surface-3 group"
               >
-                <UserGroupIcon className="w-4 h-4 text-secondary" />
-                <span className="text-sm text-primary">Invite Team</span>
+                <div className="w-9 h-9 rounded-lg bg-surface-3 border border-border-hover flex items-center justify-center shrink-0 group-hover:border-accent/30 transition-colors">
+                  <UserGroupIcon className="w-4 h-4 text-secondary" />
+                </div>
+                <span className="text-sm font-medium text-primary">Invite Team</span>
               </a>
               <a
                 href="/workspaces/new"
-                className="flex items-center gap-3 p-3 bg-surface-1 border border-border-default rounded-sm no-underline transition-colors hover:border-accent hover:bg-surface-2"
+                className="flex items-center gap-4 px-5 py-4 bg-surface-2 border border-border-hover rounded-lg no-underline transition-all hover:border-accent/50 hover:bg-surface-3 group"
               >
-                <FolderPlusIcon className="w-4 h-4 text-secondary" />
-                <span className="text-sm text-primary">New Workspace</span>
+                <div className="w-9 h-9 rounded-lg bg-surface-3 border border-border-hover flex items-center justify-center shrink-0 group-hover:border-accent/30 transition-colors">
+                  <FolderPlusIcon className="w-4 h-4 text-secondary" />
+                </div>
+                <span className="text-sm font-medium text-primary">New Workspace</span>
               </a>
             </div>
           </section>
@@ -269,9 +298,9 @@ export default function DashboardPage() {
 
         {/* Getting Started */}
         {stats.workspacesCount === 0 && (
-          <section className="bg-surface-2 border border-border-default rounded-md p-8 text-center">
-            <h2 className="text-base font-semibold text-primary m-0">Getting Started</h2>
-            <p className="text-secondary mb-6">
+          <section className="bg-surface-3 border border-border-hover rounded-xl p-14 text-center">
+            <h2 className="text-base font-semibold text-primary m-0 mb-2">Getting Started</h2>
+            <p className="text-sm text-secondary mb-6 max-w-md mx-auto">
               Welcome to Bush! To get started, create your first workspace to organize your projects
               and files.
             </p>

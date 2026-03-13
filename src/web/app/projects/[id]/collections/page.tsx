@@ -147,7 +147,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
   if (!projectId || authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+        <div className="">
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
             <p className="text-secondary">Loading collections...</p>
@@ -161,7 +161,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+        <div className="">
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <h2 className="text-lg text-primary m-0 mb-2">Failed to load collections</h2>
             <p className="text-secondary mb-4">{errorMessage}</p>
@@ -176,7 +176,7 @@ export default function CollectionsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
+      <div className="">
         {/* Header */}
         <div className="flex justify-between items-start mb-8 sm:flex-col sm:gap-4">
           <div>

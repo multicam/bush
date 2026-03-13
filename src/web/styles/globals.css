@@ -23,9 +23,11 @@
 /* ----------------------------------------
    BASE RESET
    ---------------------------------------- */
-* {
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+  }
 }
 
 /* ----------------------------------------
@@ -98,12 +100,19 @@ p {
    LINKS
    ---------------------------------------- */
 a {
-  color: var(--accent);
   text-decoration: none;
   transition: color var(--duration-fast) var(--ease-default);
 }
 
-a:hover {
+p a,
+li a,
+.prose a {
+  color: var(--accent);
+}
+
+p a:hover,
+li a:hover,
+.prose a:hover {
   color: var(--accent-hover);
 }
 
@@ -112,7 +121,9 @@ a:hover {
    ---------------------------------------- */
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--surface-1),
+    0 0 0 4px var(--accent);
 }
 
 /* Remove focus outline for mouse users, keep for keyboard */
@@ -139,6 +150,21 @@ a:hover {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ----------------------------------------
+   APP SHELL LAYOUT
+   Explicit rules because Tailwind v4 @theme overrides the default
+   spacing scale, so numeric utilities like pl-64 are not generated.
+   ---------------------------------------- */
+.sidebar-offset {
+  padding-left: 256px; /* matches sidebar w-64 = 16rem = 256px */
+}
+
+@media (max-width: 1023px) {
+  .sidebar-offset {
+    padding-left: 0;
   }
 }
 

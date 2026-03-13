@@ -74,7 +74,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const canAccessSettings = isOwner || isContentAdmin;
 
   const unreadLabel = useMemo(() => {
-    if (unreadCount <= 0) {
+    if (!unreadCount || unreadCount <= 0 || isNaN(unreadCount)) {
       return null;
     }
 

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "devtools": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-devtools", "--executablePath", "/snap/bin/brave", "--remote-debugging-port", "9222"]
+    },
+    "grab": {
+      "command": "npx",
+      "args": ["-y", "react-grab-mcp"]
+    }
+  }
+}

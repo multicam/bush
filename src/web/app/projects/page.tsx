@@ -118,40 +118,32 @@ export default function ProjectsPage() {
     return "active";
   };
 
-  // Format relative time
   const formatRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Unknown";
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) {
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) {
-      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
-    }
-    if (diffDays < 7) {
-      return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
-    }
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
   // Loading state
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto">
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
-            <p>Loading projects...</p>
-          </div>
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
+          <SpinnerIcon className="w-8 h-8 text-accent mb-4" />
+          <p>Loading projects...</p>
         </div>
       </AppLayout>
     );
@@ -161,21 +153,19 @@ export default function ProjectsPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-[80rem] mx-auto">
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <h2 className="text-primary m-0 mb-2">Failed to load projects</h2>
-            <p className="text-secondary m-0 mb-6">{errorMessage}</p>
-            <Button
-              color="bush"
-              onClick={() => {
-                setLoadingState("loading");
-                setErrorMessage("");
-                window.location.reload();
-              }}
-            >
-              Try Again
-            </Button>
-          </div>
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <h2 className="text-primary m-0 mb-2">Failed to load projects</h2>
+          <p className="text-secondary m-0 mb-6">{errorMessage}</p>
+          <Button
+            color="bush"
+            onClick={() => {
+              setLoadingState("loading");
+              setErrorMessage("");
+              window.location.reload();
+            }}
+          >
+            Try Again
+          </Button>
         </div>
       </AppLayout>
     );
@@ -183,34 +173,33 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
-        <div className="flex items-start justify-between mb-8 sm:flex-col sm:gap-4">
+      <div>
+        <div className="flex items-start justify-between mb-12 gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-primary m-0">Projects</h1>
-            <p className="mt-1 text-sm text-secondary">Browse and manage your projects</p>
+            <h1 className="text-3xl font-bold text-primary m-0 mb-2">Projects</h1>
+            <p className="text-sm text-secondary m-0">Browse and manage your projects</p>
           </div>
           <Button color="bush" onClick={() => (window.location.href = "/projects/new")}>
             New Project
           </Button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center justify-between mb-8 gap-4 md:flex-col md:items-stretch">
-          <div className="flex items-center gap-3 flex-1 md:flex-col">
+        <div className="flex items-center justify-between mb-10 gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <input
               type="text"
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-80 px-3 py-2 text-sm bg-surface-1 border border-border-default rounded-md text-primary transition-colors focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15 placeholder:text-muted md:max-w-none"
+              className="flex-1 min-w-0 px-4 py-2.5 text-sm bg-surface-3 border border-border-hover rounded-lg text-primary transition-colors focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15 placeholder:text-muted"
             />
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={filterWorkspace || "all"}
                 onChange={(e) =>
                   setFilterWorkspace(e.target.value === "all" ? null : e.target.value)
                 }
-                className="px-3 py-2 pr-8 text-sm bg-surface-1 border border-border-default rounded-md text-primary cursor-pointer appearance-none focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15"
+                className="px-4 py-2.5 pr-9 text-sm bg-surface-3 border border-border-hover rounded-lg text-primary cursor-pointer appearance-none focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15"
               >
                 <option value="all">All Workspaces</option>
                 {workspaces.map((w) => (
@@ -219,20 +208,20 @@ export default function ProjectsPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
+              <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex border border-border-default rounded-md overflow-hidden">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex border border-border-hover rounded-lg overflow-hidden">
               <button
-                className={`px-3 py-2 text-base bg-surface-1 border-none cursor-pointer transition-colors ${viewMode === "grid" ? "bg-surface-2 text-primary" : "text-secondary hover:bg-surface-2"}`}
+                className={`px-3 py-2.5 border-none cursor-pointer transition-colors ${viewMode === "grid" ? "bg-surface-3 text-primary" : "bg-surface-2 text-muted hover:text-secondary hover:bg-surface-3"}`}
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
               >
                 <Squares2X2Icon className="w-4 h-4" />
               </button>
               <button
-                className={`px-3 py-2 text-base bg-surface-1 border-none cursor-pointer transition-colors ${viewMode === "list" ? "bg-surface-2 text-primary" : "text-secondary hover:bg-surface-2"}`}
+                className={`px-3 py-2.5 border-none cursor-pointer transition-colors border-l border-border-default ${viewMode === "list" ? "bg-surface-3 text-primary" : "bg-surface-2 text-muted hover:text-secondary hover:bg-surface-3"}`}
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
               >
@@ -242,49 +231,52 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        {/* Projects */}
         {viewMode === "grid" ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 sm:grid-cols-1">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
             {filteredProjects.map((project) => (
               <a
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="flex flex-col p-5 bg-surface-2 border border-border-default rounded-lg no-underline transition-colors hover:border-accent hover:shadow-md"
+                className="flex flex-col p-8 bg-surface-3 border border-border-hover rounded-xl no-underline transition-all hover:border-accent/50 hover:shadow-lg hover:-translate-y-0.5 group"
               >
-                <div className="flex justify-end mb-3">
-                  <Badge color={getStatusBadgeColor(project)}>{getStatusLabel(project)}</Badge>
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <h3 className="text-base font-semibold text-primary m-0 leading-snug group-hover:text-accent transition-colors">
+                    {project.name}
+                  </h3>
+                  <Badge color={getStatusBadgeColor(project)} className="shrink-0">
+                    {getStatusLabel(project)}
+                  </Badge>
                 </div>
-                <h3 className="text-base font-semibold text-primary m-0 mb-2">{project.name}</h3>
-                <p className="text-sm text-secondary leading-6 mb-3 flex-1">
+                <p className="text-sm text-secondary leading-relaxed mb-6 flex-1 line-clamp-2">
                   {project.description || "No description"}
                 </p>
-                <div className="flex items-center gap-2 text-xs text-muted mb-2">
-                  <span className="text-accent">{project.workspaceName}</span>
-                </div>
-                <div className="pt-3 border-t border-border-default">
+                <div className="flex items-center justify-between pt-5 border-t border-border-hover">
+                  <span className="text-xs text-muted">{project.workspaceName}</span>
                   <span className="text-xs text-muted">
-                    Updated {formatRelativeTime(project.updatedAt)}
+                    {formatRelativeTime(project.updatedAt)}
                   </span>
                 </div>
               </a>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col bg-surface-2 border border-border-default rounded-lg overflow-hidden">
+          <div className="flex flex-col bg-surface-3 border border-border-hover rounded-xl overflow-hidden">
             {filteredProjects.map((project) => (
               <a
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="flex items-center justify-between px-5 py-4 no-underline border-b border-border-default last:border-b-0 transition-colors hover:bg-surface-3"
+                className="flex items-center justify-between px-7 py-5 no-underline border-b border-border-hover last:border-b-0 transition-colors hover:bg-surface-4 group"
               >
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">{project.name}</h3>
-                  <p className="text-xs text-secondary m-0 whitespace-nowrap overflow-hidden text-ellipsis">
+                <div className="flex-1 min-w-0 mr-8">
+                  <h3 className="text-sm font-semibold text-primary m-0 mb-0.5 group-hover:text-accent transition-colors">
+                    {project.name}
+                  </h3>
+                  <p className="text-xs text-muted m-0 truncate">
                     {project.description || "No description"}
                   </p>
                 </div>
-                <div className="flex items-center gap-4 ml-8 md:hidden">
-                  <span className="text-xs text-accent whitespace-nowrap">
+                <div className="flex items-center gap-5 shrink-0">
+                  <span className="text-xs text-muted whitespace-nowrap hidden md:block">
                     {project.workspaceName}
                   </span>
                   <Badge color={getStatusBadgeColor(project)}>{getStatusLabel(project)}</Badge>
@@ -298,8 +290,8 @@ export default function ProjectsPage() {
         )}
 
         {filteredProjects.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
-            <p className="mb-4">No projects found</p>
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <p className="text-sm text-secondary mb-5">No projects found</p>
             {(searchQuery || filterWorkspace) && (
               <Button
                 outline

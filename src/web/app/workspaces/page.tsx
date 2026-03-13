@@ -78,7 +78,7 @@ export default function WorkspacesPage() {
   if (authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="">
           <div className="flex flex-col items-center justify-center p-16 text-center text-secondary">
             <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading workspaces...</p>
@@ -92,7 +92,7 @@ export default function WorkspacesPage() {
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="">
           <div className="flex flex-col items-center justify-center p-16 text-center">
             <h2 className="text-primary m-0 mb-2">Failed to load workspaces</h2>
             <p className="text-secondary m-0 mb-6">{errorMessage}</p>
@@ -115,62 +115,60 @@ export default function WorkspacesPage() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="flex items-start justify-between mb-8">
+      <div>
+        <div className="flex items-start justify-between mb-12 gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-primary m-0">Workspaces</h1>
-            <p className="mt-1 text-sm text-secondary">
+            <h1 className="text-3xl font-bold text-primary m-0 mb-2">Workspaces</h1>
+            <p className="text-sm text-secondary m-0">
               Manage your workspaces and collaborate with your team
             </p>
           </div>
           <Button color="bush" onClick={() => (window.location.href = "/workspaces/new")}>
-            <PlusIcon className="w-4 h-4 mr-1" />
+            <PlusIcon className="w-4 h-4 mr-1.5" />
             New Workspace
           </Button>
         </div>
 
-        {/* Search */}
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+        <div className="mb-10">
+          <div className="relative max-w-lg">
+            <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
             <input
               type="text"
               placeholder="Search workspaces..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-surface-1 border border-border-default rounded-sm text-primary transition-colors placeholder:text-muted focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-surface-3 border border-border-hover rounded-lg text-primary transition-colors placeholder:text-muted focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/15"
             />
           </div>
         </div>
 
-        {/* Workspaces Grid */}
         <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6">
           {filteredWorkspaces.map((workspace) => (
             <a
               key={workspace.id}
               href={`/workspaces/${workspace.id}`}
-              className="flex flex-col p-6 bg-surface-2 border border-border-default rounded-md no-underline transition-colors hover:border-accent hover:shadow-md"
+              className="flex flex-col p-8 bg-surface-3 border border-border-hover rounded-xl no-underline transition-all hover:border-accent/50 hover:shadow-lg hover:-translate-y-0.5 group"
             >
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <h3 className="text-lg font-semibold text-primary m-0">{workspace.name}</h3>
+              <div className="mb-3">
+                <h3 className="text-base font-semibold text-primary m-0 group-hover:text-accent transition-colors">
+                  {workspace.name}
+                </h3>
               </div>
-              <p className="text-sm text-secondary mb-4 leading-relaxed">
+              <p className="text-sm text-secondary mb-6 leading-relaxed flex-1 line-clamp-2">
                 {workspace.description || "No description"}
               </p>
-              <div className="flex gap-6 mt-auto pt-4 border-t border-border-default">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted uppercase tracking-wide">
-                    Created {formatDate(workspace.createdAt)}
-                  </span>
-                </div>
+              <div className="pt-5 border-t border-border-hover">
+                <span className="text-xs font-medium text-muted uppercase tracking-widest">
+                  Created {formatDate(workspace.createdAt)}
+                </span>
               </div>
             </a>
           ))}
         </div>
 
         {filteredWorkspaces.length === 0 && (
-          <div className="flex flex-col items-center justify-center p-16 text-center text-secondary">
-            <p className="mb-4">No workspaces found</p>
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <p className="text-sm text-secondary mb-5">No workspaces found</p>
             {searchQuery && (
               <Button outline onClick={() => setSearchQuery("")}>
                 Clear search

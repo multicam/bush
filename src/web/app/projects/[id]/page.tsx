@@ -524,7 +524,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (!projectId || authLoading || loadingState === "loading") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-full mx-auto">
+        <div className="">
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-secondary">
             <SpinnerIcon className="w-8 h-8 mb-4" />
             <p>Loading project...</p>
@@ -538,7 +538,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (loadingState === "error") {
     return (
       <AppLayout>
-        <div className="p-8 max-w-full mx-auto">
+        <div className="">
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
             <h2 className="text-primary mb-2">Failed to load project</h2>
             <p className="text-secondary mb-6">{errorMessage}</p>
@@ -559,7 +559,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-full mx-auto">
+      <div className="">
         {/* Header */}
         <div className="flex items-start justify-between mb-6 max-sm:flex-col max-sm:gap-4">
           <div className="flex items-start gap-4">

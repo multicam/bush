@@ -33,7 +33,14 @@ import {
   type CustomFieldType,
 } from "@/web/lib/api";
 
-type SettingsTab = "profile" | "account" | "team" | "custom-fields" | "notifications" | "security" | "billing";
+type SettingsTab =
+  | "profile"
+  | "account"
+  | "team"
+  | "custom-fields"
+  | "notifications"
+  | "security"
+  | "billing";
 
 interface Member extends MemberAttributes {
   id: string;
@@ -140,7 +147,11 @@ export default function SettingsPage() {
         email: inviteEmail.trim(),
         role: inviteRole,
       });
-      const newMember = extractMemberCollection({ data: [response.data], links: {}, meta: { total_count: 1, page_size: 1, has_more: false } })[0];
+      const newMember = extractMemberCollection({
+        data: [response.data],
+        links: {},
+        meta: { total_count: 1, page_size: 1, has_more: false },
+      })[0];
       setMembers((prev) => [...prev, newMember as Member]);
       setInviteEmail("");
       setInviteRole("member");
@@ -160,9 +171,7 @@ export default function SettingsPage() {
 
     try {
       await membersApi.updateRole(currentAccount.id, memberId, newRole);
-      setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
-      );
+      setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)));
     } catch (error) {
       console.error("Failed to update role:", error);
       alert(getErrorMessage(error));
@@ -227,9 +236,13 @@ export default function SettingsPage() {
     setFieldFormError(null);
 
     try {
-      const options = fieldForm.type === "single_select" || fieldForm.type === "multi_select"
-        ? fieldForm.options.split(",").map((o) => o.trim()).filter(Boolean)
-        : undefined;
+      const options =
+        fieldForm.type === "single_select" || fieldForm.type === "multi_select"
+          ? fieldForm.options
+              .split(",")
+              .map((o) => o.trim())
+              .filter(Boolean)
+          : undefined;
 
       if (editingField) {
         await customFieldsApi.update(editingField.slug, {
@@ -242,7 +255,14 @@ export default function SettingsPage() {
         setCustomFields((prev) =>
           prev.map((f) =>
             f.slug === editingField.slug
-              ? { ...f, name: fieldForm.name, description: fieldForm.description, options: options ?? null, isVisibleByDefault: fieldForm.isVisibleByDefault, editableBy: fieldForm.editableBy }
+              ? {
+                  ...f,
+                  name: fieldForm.name,
+                  description: fieldForm.description,
+                  options: options ?? null,
+                  isVisibleByDefault: fieldForm.isVisibleByDefault,
+                  editableBy: fieldForm.editableBy,
+                }
               : f
           )
         );
@@ -268,7 +288,11 @@ export default function SettingsPage() {
 
   // Handle delete field
   const handleDeleteField = async (fieldId: string) => {
-    if (!confirm("Are you sure you want to delete this custom field? All data stored in this field will be lost.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this custom field? All data stored in this field will be lost."
+      )
+    ) {
       setDeleteFieldId(null);
       return;
     }
@@ -317,18 +341,25 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-[80rem] mx-auto sm:p-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary m-0">Settings</h1>
+      <div>
+        <div className="mb-12">
+          <h1 className="text-3xl font-bold text-primary m-0 mb-2">Settings</h1>
+          <p className="text-sm text-secondary m-0">
+            Manage your account and workspace preferences
+          </p>
         </div>
 
-        <div className="grid grid-cols-[200px_1fr] gap-8 md:grid-cols-1 md:gap-0">
-          {/* Sidebar Navigation */}
-          <nav className="flex flex-col gap-1 md:flex-row md:overflow-x-auto md:pb-2 md:mb-4 md:gap-2">
+        <div className="grid grid-cols-[220px_1fr] gap-12 max-lg:grid-cols-1 max-lg:gap-0">
+          <nav className="flex flex-col gap-0.5 max-lg:flex-row max-lg:overflow-x-auto max-lg:pb-3 max-lg:mb-6 max-lg:gap-1">
             {filteredTabs.map((tab) => (
               <button
                 key={tab.id}
-                className={`px-4 py-3 text-sm font-medium text-secondary bg-transparent border-none rounded-lg cursor-pointer text-left transition-colors md:whitespace-nowrap hover:text-primary hover:bg-surface-2 ${activeTab === tab.id ? "text-accent bg-[rgba(0,102,255,0.1)]" : ""}`}
+                className={`px-3 py-2.5 text-sm font-medium border-none rounded-lg cursor-pointer text-left transition-colors max-lg:whitespace-nowrap ${activeTab === tab.id ? "" : "text-secondary bg-transparent hover:text-primary hover:bg-surface-3"}`}
+                style={
+                  activeTab === tab.id
+                    ? { color: "#ff4017", backgroundColor: "rgba(255,64,23,0.12)" }
+                    : undefined
+                }
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
@@ -339,44 +370,34 @@ export default function SettingsPage() {
           {/* Content */}
           <div className="min-w-0">
             {activeTab === "profile" && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
                 <h2 className="text-lg font-semibold text-primary m-0 mb-2">Profile Settings</h2>
-                <p className="text-sm text-secondary mb-6">
+                <p className="text-sm text-secondary mb-10">
                   Update your personal information and preferences.
                 </p>
 
-                <div className="flex flex-col gap-5">
-                  <div className="flex items-center gap-4 mb-2">
+                <div className="flex flex-col gap-8">
+                  <div className="flex items-center gap-5 mb-2">
                     <div className="w-16 h-16 flex items-center justify-center bg-surface-3 rounded-full text-xl font-semibold text-secondary">
                       {initials}
                     </div>
                     <Button outline>Change Avatar</Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-1">
+                  <div className="grid grid-cols-2 gap-6 max-sm:grid-cols-1">
                     <Field>
                       <Label>First Name</Label>
-                      <Input
-                        defaultValue={user?.firstName || ""}
-                        placeholder="Enter first name"
-                      />
+                      <Input defaultValue={user?.firstName || ""} placeholder="Enter first name" />
                     </Field>
                     <Field>
                       <Label>Last Name</Label>
-                      <Input
-                        defaultValue={user?.lastName || ""}
-                        placeholder="Enter last name"
-                      />
+                      <Input defaultValue={user?.lastName || ""} placeholder="Enter last name" />
                     </Field>
                   </div>
 
                   <Field>
                     <Label>Email</Label>
-                    <Input
-                      type="email"
-                      defaultValue={user?.email || ""}
-                      disabled
-                    />
+                    <Input type="email" defaultValue={user?.email || ""} disabled />
                     <Description>Email is managed by your authentication provider</Description>
                   </Field>
 
@@ -388,7 +409,7 @@ export default function SettingsPage() {
                     />
                   </Field>
 
-                  <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
+                  <div className="flex justify-end mt-2 pt-8 border-t border-border-hover">
                     <Button color="bush">Save Changes</Button>
                   </div>
                 </div>
@@ -396,29 +417,35 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "account" && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
                 <h2 className="text-lg font-semibold text-primary m-0 mb-2">Account Settings</h2>
-                <p className="text-sm text-secondary mb-6">
+                <p className="text-sm text-secondary mb-10">
                   Manage your account details and preferences.
                 </p>
 
                 {currentAccount && (
-                  <div className="p-4 bg-surface-1 border border-border-default rounded-lg mb-6">
+                  <div className="p-5 bg-surface-2 border border-border-hover rounded-xl mb-8">
                     <div className="flex items-center gap-3 mb-4">
-                      <h3 className="text-base font-semibold text-primary m-0">{currentAccount.name}</h3>
+                      <h3 className="text-base font-semibold text-primary m-0">
+                        {currentAccount.name}
+                      </h3>
                       <Badge color="zinc">{currentAccount.role.replace("_", " ")}</Badge>
                     </div>
-                    <div className="flex gap-8 sm:flex-col sm:gap-4">
+                    <div className="flex gap-8 max-sm:flex-col max-sm:gap-3">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs text-secondary uppercase tracking-wide">Plan</span>
                         <span className="text-sm font-medium text-primary">Pro</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-secondary uppercase tracking-wide">Storage</span>
+                        <span className="text-xs text-secondary uppercase tracking-wide">
+                          Storage
+                        </span>
                         <span className="text-sm font-medium text-primary">479 GB / 2 TB</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-secondary uppercase tracking-wide">Members</span>
+                        <span className="text-xs text-secondary uppercase tracking-wide">
+                          Members
+                        </span>
                         <span className="text-sm font-medium text-primary">15 / 25</span>
                       </div>
                     </div>
@@ -436,15 +463,18 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "team" && (isOwner || isContentAdmin) && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
                 <h2 className="text-lg font-semibold text-primary m-0 mb-2">Team Management</h2>
-                <p className="text-sm text-secondary mb-6">
+                <p className="text-sm text-secondary mb-10">
                   Manage team members and their permissions.
                 </p>
 
                 {/* Invite Form */}
-                <form onSubmit={handleInviteMember} className="mb-6 p-4 bg-surface-1 border border-border-default rounded-lg">
-                  <div className="flex gap-4 items-end sm:flex-col sm:items-stretch">
+                <form
+                  onSubmit={handleInviteMember}
+                  className="mb-8 p-5 bg-surface-2 border border-border-hover rounded-xl"
+                >
+                  <div className="flex gap-4 items-end max-sm:flex-col max-sm:items-stretch">
                     <div className="flex-1">
                       <Field>
                         <Label>Email Address</Label>
@@ -462,7 +492,7 @@ export default function SettingsPage() {
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value as AccountRole)}
-                        className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm border border-border-hover rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="member">Member</option>
                         <option value="guest">Guest</option>
@@ -483,9 +513,7 @@ export default function SettingsPage() {
                       {inviteLoading ? "Inviting..." : "Invite"}
                     </Button>
                   </div>
-                  {inviteError && (
-                    <p className="text-red-500 text-sm mt-2">{inviteError}</p>
-                  )}
+                  {inviteError && <p className="text-red-500 text-sm mt-2">{inviteError}</p>}
                 </form>
 
                 {/* Members List */}
@@ -501,18 +529,19 @@ export default function SettingsPage() {
                 ) : members.length === 0 ? (
                   <p className="p-8 text-center text-secondary">No team members found.</p>
                 ) : (
-                  <div className="flex flex-col border border-border-default rounded-lg overflow-hidden">
+                  <div className="flex flex-col border border-border-hover rounded-lg overflow-hidden">
                     {members.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between px-4 py-3.5 border-b border-border-default bg-surface-1 last:border-b-0">
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between px-5 py-4 border-b border-border-hover bg-surface-2 last:border-b-0"
+                      >
                         <div className="flex flex-col gap-0.5">
                           <span className="text-sm font-medium text-primary">
                             {member.user.first_name && member.user.last_name
                               ? `${member.user.first_name} ${member.user.last_name}`
                               : member.user.email}
                           </span>
-                          <span className="text-xs text-secondary">
-                            {member.user.email}
-                          </span>
+                          <span className="text-xs text-secondary">{member.user.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {roleUpdateLoading === member.id ? (
@@ -525,11 +554,16 @@ export default function SettingsPage() {
                             <>
                               <select
                                 value={member.role}
-                                onChange={(e) => handleRoleUpdate(member.id, e.target.value as AccountRole)}
-                                className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] mr-2 focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                                onChange={(e) =>
+                                  handleRoleUpdate(member.id, e.target.value as AccountRole)
+                                }
+                                className="px-3 py-2 text-sm border border-border-hover rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] mr-2 focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                                 disabled={
-                                  ((member.role === "owner" || member.role === "content_admin") && !isOwner) ||
-                                  (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
+                                  ((member.role === "owner" || member.role === "content_admin") &&
+                                    !isOwner) ||
+                                  (isContentAdmin &&
+                                    !isOwner &&
+                                    (member.role === "owner" || member.role === "content_admin"))
                                 }
                               >
                                 <option value="member">Member</option>
@@ -544,14 +578,18 @@ export default function SettingsPage() {
                               </select>
                               <Button
                                 plain
-                                onClick={() => handleRemoveMember(
-                                  member.id,
-                                  member.user.first_name && member.user.last_name
-                                    ? `${member.user.first_name} ${member.user.last_name}`
-                                    : member.user.email
-                                )}
+                                onClick={() =>
+                                  handleRemoveMember(
+                                    member.id,
+                                    member.user.first_name && member.user.last_name
+                                      ? `${member.user.first_name} ${member.user.last_name}`
+                                      : member.user.email
+                                  )
+                                }
                                 disabled={
-                                  (isContentAdmin && !isOwner && (member.role === "owner" || member.role === "content_admin"))
+                                  isContentAdmin &&
+                                  !isOwner &&
+                                  (member.role === "owner" || member.role === "content_admin")
                                 }
                               >
                                 Remove
@@ -567,10 +605,10 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "custom-fields" && (isOwner || isContentAdmin) && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
-                <div className="flex justify-between items-start mb-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
+                <div className="flex justify-between items-start mb-8">
                   <div>
-                    <h2 className="text-lg font-semibold text-primary m-0 mb-2">Custom Fields</h2>
+                    <h2 className="text-lg font-semibold text-primary m-0 mb-1">Custom Fields</h2>
                     <p className="text-sm text-secondary">
                       Create and manage custom metadata fields for your assets.
                     </p>
@@ -593,13 +631,17 @@ export default function SettingsPage() {
                   <div className="p-8 text-center text-secondary">
                     <p>No custom fields defined yet.</p>
                     <p className="text-sm text-secondary mt-2">
-                      Custom fields let you add custom metadata to assets beyond the built-in fields.
+                      Custom fields let you add custom metadata to assets beyond the built-in
+                      fields.
                     </p>
                   </div>
                 ) : (
-                  <div className="flex flex-col border border-border-default rounded-lg overflow-hidden">
+                  <div className="flex flex-col border border-border-hover rounded-lg overflow-hidden">
                     {customFields.map((field) => (
-                      <div key={field.slug} className="flex items-center justify-between p-4 border-b border-border-default bg-surface-1 last:border-b-0">
+                      <div
+                        key={field.slug}
+                        className="flex items-center justify-between px-5 py-4 border-b border-border-hover bg-surface-2 last:border-b-0"
+                      >
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-primary">{field.name}</span>
                           <div className="flex items-center gap-2">
@@ -638,9 +680,7 @@ export default function SettingsPage() {
 
                 {/* Create/Edit Field Dialog */}
                 <Dialog open={showFieldModal} onClose={setShowFieldModal}>
-                  <DialogTitle>
-                    {editingField ? "Edit Field" : "Create Custom Field"}
-                  </DialogTitle>
+                  <DialogTitle>{editingField ? "Edit Field" : "Create Custom Field"}</DialogTitle>
                   <form onSubmit={handleSaveField}>
                     <DialogBody>
                       {fieldFormError && (
@@ -657,11 +697,18 @@ export default function SettingsPage() {
                           />
                         </Field>
                         <div>
-                          <label className="block text-sm font-medium text-primary mb-1.5">Field Type</label>
+                          <label className="block text-sm font-medium text-primary mb-1.5">
+                            Field Type
+                          </label>
                           <select
                             value={fieldForm.type}
-                            onChange={(e) => setFieldForm({ ...fieldForm, type: e.target.value as CustomFieldType })}
-                            className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                            onChange={(e) =>
+                              setFieldForm({
+                                ...fieldForm,
+                                type: e.target.value as CustomFieldType,
+                              })
+                            }
+                            className="px-3 py-2 text-sm border border-border-hover rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                             disabled={!!editingField}
                           >
                             <option value="text">Text</option>
@@ -676,15 +723,20 @@ export default function SettingsPage() {
                             <option value="rating">Rating</option>
                           </select>
                           {editingField && (
-                            <span className="block text-xs text-secondary mt-1">Field type cannot be changed after creation</span>
+                            <span className="block text-xs text-secondary mt-1">
+                              Field type cannot be changed after creation
+                            </span>
                           )}
                         </div>
-                        {(fieldForm.type === "single_select" || fieldForm.type === "multi_select") && (
+                        {(fieldForm.type === "single_select" ||
+                          fieldForm.type === "multi_select") && (
                           <Field>
                             <Label>Options</Label>
                             <Input
                               value={fieldForm.options}
-                              onChange={(e) => setFieldForm({ ...fieldForm, options: e.target.value })}
+                              onChange={(e) =>
+                                setFieldForm({ ...fieldForm, options: e.target.value })
+                              }
                               placeholder="Option 1, Option 2, Option 3"
                             />
                             <Description>Separate options with commas</Description>
@@ -694,16 +746,25 @@ export default function SettingsPage() {
                           <Label>Description (optional)</Label>
                           <Input
                             value={fieldForm.description}
-                            onChange={(e) => setFieldForm({ ...fieldForm, description: e.target.value })}
+                            onChange={(e) =>
+                              setFieldForm({ ...fieldForm, description: e.target.value })
+                            }
                             placeholder="Help text for this field"
                           />
                         </Field>
                         <div>
-                          <label className="block text-sm font-medium text-primary mb-1.5">Editable By</label>
+                          <label className="block text-sm font-medium text-primary mb-1.5">
+                            Editable By
+                          </label>
                           <select
                             value={fieldForm.editableBy}
-                            onChange={(e) => setFieldForm({ ...fieldForm, editableBy: e.target.value as "admin" | "full_access" })}
-                            className="px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
+                            onChange={(e) =>
+                              setFieldForm({
+                                ...fieldForm,
+                                editableBy: e.target.value as "admin" | "full_access",
+                              })
+                            }
+                            className="px-3 py-2 text-sm border border-border-hover rounded-lg bg-surface-1 text-primary cursor-pointer min-w-[140px] w-full focus:outline-none focus:border-accent focus:ring-2 focus:ring-[rgba(0,102,255,0.1)] disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             <option value="full_access">Full Access and above</option>
                             <option value="admin">Admin only</option>
@@ -714,7 +775,9 @@ export default function SettingsPage() {
                             <input
                               type="checkbox"
                               checked={fieldForm.isVisibleByDefault}
-                              onChange={(e) => setFieldForm({ ...fieldForm, isVisibleByDefault: e.target.checked })}
+                              onChange={(e) =>
+                                setFieldForm({ ...fieldForm, isVisibleByDefault: e.target.checked })
+                              }
                               className="w-4 h-4 cursor-pointer"
                             />
                             Visible by default in projects
@@ -723,11 +786,7 @@ export default function SettingsPage() {
                       </div>
                     </DialogBody>
                     <DialogActions>
-                      <Button
-                        type="button"
-                        plain
-                        onClick={() => setShowFieldModal(false)}
-                      >
+                      <Button type="button" plain onClick={() => setShowFieldModal(false)}>
                         Cancel
                       </Button>
                       <Button
@@ -735,7 +794,11 @@ export default function SettingsPage() {
                         color="bush"
                         disabled={fieldFormLoading || !fieldForm.name.trim()}
                       >
-                        {fieldFormLoading ? "Saving..." : (editingField ? "Save Changes" : "Create Field")}
+                        {fieldFormLoading
+                          ? "Saving..."
+                          : editingField
+                            ? "Save Changes"
+                            : "Create Field"}
                       </Button>
                     </DialogActions>
                   </form>
@@ -744,14 +807,16 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "notifications" && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Notification Preferences</h2>
-                <p className="text-sm text-secondary mb-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">
+                  Notification Preferences
+                </h2>
+                <p className="text-sm text-secondary mb-10">
                   Choose how and when you want to be notified.
                 </p>
 
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between p-5 bg-surface-2 border border-border-hover rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium text-primary">Email Notifications</span>
                       <span className="text-xs text-secondary">
@@ -760,7 +825,7 @@ export default function SettingsPage() {
                     </div>
                     <input type="checkbox" defaultChecked className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                  <div className="flex items-center justify-between p-5 bg-surface-2 border border-border-hover rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium text-primary">Comment Mentions</span>
                       <span className="text-xs text-secondary">
@@ -769,7 +834,7 @@ export default function SettingsPage() {
                     </div>
                     <input type="checkbox" defaultChecked className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                  <div className="flex items-center justify-between p-5 bg-surface-2 border border-border-hover rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium text-primary">Share Activity</span>
                       <span className="text-xs text-secondary">
@@ -778,7 +843,7 @@ export default function SettingsPage() {
                     </div>
                     <input type="checkbox" className="w-10 h-6 cursor-pointer" />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-surface-1 border border-border-default rounded-lg">
+                  <div className="flex items-center justify-between p-5 bg-surface-2 border border-border-hover rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium text-primary">Weekly Digest</span>
                       <span className="text-xs text-secondary">
@@ -789,21 +854,23 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-4 pt-4 border-t border-border-default">
+                <div className="flex justify-end mt-6 pt-6 border-t border-border-hover">
                   <Button color="bush">Save Preferences</Button>
                 </div>
               </section>
             )}
 
             {activeTab === "security" && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
                 <h2 className="text-lg font-semibold text-primary m-0 mb-2">Security Settings</h2>
-                <p className="text-sm text-secondary mb-6">
+                <p className="text-sm text-secondary mb-10">
                   Manage your security preferences and active sessions.
                 </p>
 
                 <div className="mb-8 last:mb-0">
-                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">Two-Factor Authentication</h3>
+                  <h3 className="text-sm font-semibold text-primary m-0 mb-1">
+                    Two-Factor Authentication
+                  </h3>
                   <p className="text-xs text-secondary mb-3">
                     Add an extra layer of security to your account.
                   </p>
@@ -813,7 +880,7 @@ export default function SettingsPage() {
                 <div className="mb-8 last:mb-0">
                   <h3 className="text-sm font-semibold text-primary m-0 mb-1">Active Sessions</h3>
                   <div className="mb-3">
-                    <div className="flex items-center justify-between px-4 py-3 bg-surface-1 border border-border-default rounded-lg">
+                    <div className="flex items-center justify-between px-5 py-4 bg-surface-2 border border-border-hover rounded-xl">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-medium text-primary">Current Session</span>
                         <span className="text-xs text-secondary">Chrome on macOS</span>
@@ -821,27 +888,29 @@ export default function SettingsPage() {
                       <Badge color="green">Active</Badge>
                     </div>
                   </div>
-                  <Button plain>
-                    Sign out all other sessions
-                  </Button>
+                  <Button plain>Sign out all other sessions</Button>
                 </div>
               </section>
             )}
 
             {activeTab === "billing" && isOwner && (
-              <section className="bg-surface-2 border border-border-default rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-primary m-0 mb-2">Billing & Subscription</h2>
-                <p className="text-sm text-secondary mb-6">
+              <section className="bg-surface-3 border border-border-hover rounded-xl p-9">
+                <h2 className="text-lg font-semibold text-primary m-0 mb-2">
+                  Billing & Subscription
+                </h2>
+                <p className="text-sm text-secondary mb-10">
                   Manage your subscription and billing information.
                 </p>
 
-                <div className="p-5 bg-surface-1 border border-border-default rounded-lg mb-6">
+                <div className="p-6 bg-surface-2 border border-border-hover rounded-xl mb-8">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-lg font-semibold text-primary m-0">Pro Plan</h3>
                     <Badge color="blue">Active</Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-secondary m-0">$29/month - 2 TB storage - 25 team members</p>
+                    <p className="text-sm text-secondary m-0">
+                      $29/month - 2 TB storage - 25 team members
+                    </p>
                     <p className="text-xs text-secondary mt-1">Renews on March 15, 2024</p>
                   </div>
                 </div>
