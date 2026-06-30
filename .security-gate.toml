@@ -1,0 +1,199 @@
+# Supply-chain allowlist for bush
+# Phase 5 mop-up — 2026-05-25
+# CVE-tagged packages (@hono/node-server, hono@4.11.9, next@15.5.12) NOT allowlisted.
+
+[[allowlist]]
+package        = "2"
+ecosystem      = "npm"
+reason         = "Version string '2' misidentified as package name by gate parser; it is the inherits@2 semver spec inside glob@8.1.0's dep tree, not an installed package"
+reviewed       = "2026-05-26"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "@aws-sdk/client-sso"
+ecosystem      = "npm"
+reason         = "Official AWS SDK; typo-distance FP vs @aws-sdk/client-s3"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "@rollup/*"
+ecosystem      = "npm"
+reason         = "Rollup official org family (platform binaries + plugins, 26+ names); staleness FP from synchronized release. Wildcard syntax requires '/*' suffix."
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "rollup"
+ecosystem      = "npm"
+reason         = "Rollup bundler core; staleness FP from synchronized release with platform binaries"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "acorn"
+ecosystem      = "npm"
+reason         = "JS parser; typo-distance FP vs cors"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "bl"
+ecosystem      = "npm"
+reason         = "rvagg/bl Buffer List; typo-distance FP vs ws"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "cac"
+ecosystem      = "npm"
+reason         = "cacjs/cac CLI framework; typo-distance FP vs swc"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "call-bound"
+ecosystem      = "npm"
+reason         = "ljharb companion to call-bind; typo-distance FP"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "d"
+ecosystem      = "npm"
+reason         = "medikoo/d property descriptor utility; typo-distance FP vs ws"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "deep-eql"
+ecosystem      = "npm"
+reason         = "chaijs/deep-eql used by chai; typo-distance FP vs deep-equal"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "ext"
+ecosystem      = "npm"
+reason         = "medikoo/es5-ext companion; typo-distance FP vs next"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "fast-xml-parser"
+ecosystem      = "npm"
+reason         = "NaturalIntelligence/fast-xml-parser; staleness FP from recent point release"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "hanji"
+ecosystem      = "npm"
+reason         = "drizzle-team/hanji CLI rendering; typo-distance FP vs hapi"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "heap"
+ecosystem      = "npm"
+reason         = "qiao/heap.js binary heap; typo-distance FP vs hapi"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "hono"
+ecosystem      = "npm"
+reason         = "Hono web framework — current versions only; staleness+typo FP. Pinned CVE versions are NOT allowlisted (4.11.x has GHSA-q5qw-h33p-qvwr)"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "ini"
+ecosystem      = "npm"
+reason         = "npm/ini config parser; typo-distance FP vs joi"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "jiti"
+ecosystem      = "npm"
+reason         = "unjs/jiti TypeScript runtime loader; typo-distance FP vs vite"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "jsesc"
+ecosystem      = "npm"
+reason         = "mathiasbynens/jsesc; typo-distance FP vs jest"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "levn"
+ecosystem      = "npm"
+reason         = "gkz/levn Light EcmaScript Value Notation; typo-distance FP vs less"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "motion"
+ecosystem      = "npm"
+reason         = "motiondivision/motion (formerly framer-motion); typo-distance FP vs emotion"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "mrmime"
+ecosystem      = "npm"
+reason         = "lukeed/mrmime tiny mime resolver; typo-distance FP vs mime"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "parse5"
+ecosystem      = "npm"
+reason         = "inikulin/parse5 HTML5 parser; typo-distance FP vs parcel"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "pump"
+ecosystem      = "npm"
+reason         = "mafintosh/pump; typo-distance FP vs yup"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "rc"
+ecosystem      = "npm"
+reason         = "dominictarr/rc config loader; typo-distance FP vs ws"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "saxes"
+ecosystem      = "npm"
+reason         = "lddubeau/saxes SAX-style XML parser; typo-distance FP vs sass"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "sirv"
+ecosystem      = "npm"
+reason         = "lukeed/sirv static file server; typo-distance FP vs swr"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "type"
+ecosystem      = "npm"
+reason         = "medikoo/type runtime type checker; typo-distance FP vs tape"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
+
+[[allowlist]]
+package        = "undici"
+ecosystem      = "npm"
+reason         = "nodejs/undici HTTP/1.1 client; staleness FP from recent release"
+reviewed       = "2026-05-25"
+review_expires = "2026-08-26"
