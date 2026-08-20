@@ -44,7 +44,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": ">=0.45.2",
     "hls.js": "^1.6.15",
-    "hono": ">=4.12.4",
+    "hono": ">=4.12.25",
     "ioredis": "^5.3.0",
     "motion": "^12.35.0",
     "next": "^15.5.18",
@@ -65,10 +65,11 @@
     "@hono/node-server": ">=1.19.10 <2",
     "next": ">=15.5.18 <16",
     "ws": ">=8.21.0 <9",
-    "@vitest/browser": ">=4.1.8 <5",
+    "@vitest/browser": "4.1.10",
     "nodemailer": ">=9.0.1 <10",
     "vite": ">=6.4.3 <7",
-    "vitest": ">=3.2.6 <4"
+    "vitest": ">=3.2.6 <4",
+    "hono": "4.12.25"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
