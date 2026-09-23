@@ -69,7 +69,8 @@
     "nodemailer": ">=9.0.1 <10",
     "vite": ">=6.4.3 <7",
     "vitest": ">=3.2.6 <4",
-    "hono": "4.12.25"
+    "hono": "4.12.25",
+    "postcss": ">=8.5.18 <9"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
